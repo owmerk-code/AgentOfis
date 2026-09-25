@@ -434,7 +434,7 @@ def son_yedek_saat() -> float:
         return float("inf")
 
 
-def gerekirse_al(olay=None) -> dict:
+def gerekirse_al(olay=None, *, depo_gonder: bool = False) -> dict:
     """Son yedek GUNLUK_ARALIK_SAAT'ten eskiyse alir.
 
     Yedek dusse bile is DURMAZ -- ama sessiz de kalmaz: `olay(tur, govde)`
@@ -449,6 +449,20 @@ def gerekirse_al(olay=None) -> dict:
         if olay:
             olay("uyari", f"Gunluk yedek ALINAMADI: {exc}")
         return {"hata": str(exc)}
+    if depo_gonder:
+        # ACIKCA istenir: sinamalar gerekirse_al'i cagirir ve yanlislikla
+        # GERCEK depoya gonderim yapmamali.
+        from . import depo
+        try:
+            s["depo"] = depo.gonder("gunluk")
+        except Exception as exc:      # noqa: BLE001 -- is durmasin
+            s["depo"] = {"durum": "hata", "sebep": str(exc)}
+        if olay:
+            d = s["depo"]
+            if d["durum"] in ("gonderildi", "degisiklik_yok"):
+                olay("depo_gonderildi", f"GitHub: {d['durum']} {d.get('commit', '')}")
+            else:
+                olay("uyari", f"GitHub gonderimi {d['durum']}: {d['sebep']}")
     if olay:
         eksik = [h for h in s["hedefler"] if h["durum"] != "tamam"]
         olay("yedek_alindi", f"{Path(s['arsiv']).name} · {s['dosya']} dosya"

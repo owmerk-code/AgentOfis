@@ -1999,7 +1999,7 @@ def _gunluk_yedek_arkada(db_yolu) -> None:
                                   "ORDER BY olusturuldu LIMIT 1").fetchone()
                 pid = r["id"] if r else None
                 Y.gerekirse_al((lambda tur, govde: db.olay_yaz(pid, tur, govde))
-                               if pid else None)
+                               if pid else None, depo_gonder=True)
             except Exception:     # noqa: BLE001 -- panel olmesin
                 pass
             time.sleep(3600)

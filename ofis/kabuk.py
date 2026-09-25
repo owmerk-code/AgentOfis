@@ -556,7 +556,7 @@ def _gunluk_yedek(ofis) -> None:
     if not Y.gercek_defter_mi(ofis.db.yol):
         return
     s = Y.gerekirse_al(lambda tur, govde: ofis.db.olay_yaz(
-        ofis.proje_id, tur, govde))
+        ofis.proje_id, tur, govde), depo_gonder=True)
     if s.get("hata"):
         yaz(f"[!] Gunluk yedek ALINAMADI: {s['hata']}")
         yaz("")
@@ -565,6 +565,9 @@ def _gunluk_yedek(ofis) -> None:
         for h in s["hedefler"]:
             if h["durum"] != "tamam":
                 yaz(f"  [!] {h['klasor']}: {h['hata']}")
+        d = s.get("depo") or {}
+        if d:
+            yaz(f"  GitHub: {d['durum']}" + (f" -- {d['sebep']}" if d.get("sebep") else ""))
         yaz("")
 
 
@@ -1454,6 +1457,14 @@ def komut_yedek(a) -> None:
             yaz(f"{r['dosya']} dosya acildi: {r['hedef']} ({r['zaman']} yedegi)")
             yaz("  Canli ofis DEGISMEDI. Once bu klasorde dene; sonra "
                 "canliyla degistirmek senin kararin.")
+        elif a.eylem == "github":
+            from ofis import depo
+            try:
+                d = depo.gonder(a.neden or "elle")
+            except depo.DepoHatasi as exc:
+                raise SystemExit(f"GitHub: {exc}")
+            yaz(f"GitHub: {d['durum']}" + (f" -- {d['sebep']}" if d.get("sebep") else "")
+                + (f" ({d['dosya']} dosya, {d['commit']})" if d.get("commit") else ""))
         elif a.eylem == "hedef":
             if a.yol == "ekle" and a.hedef:
                 yaz(f"Ek hedef eklendi: {Y.hedef_ekle(a.hedef)}")
@@ -1908,7 +1919,8 @@ def ayristirici() -> argparse.ArgumentParser:
     o.set_defaults(islev=komut_onayla)
 
     yd = alt.add_parser("yedek", help="YEDEK -- al / liste / dogrula / geri-yukle / hedef")
-    yd.add_argument("eylem", choices=["al", "liste", "dogrula", "geri-yukle", "hedef"])
+    yd.add_argument("eylem", choices=["al", "liste", "dogrula", "geri-yukle",
+                                      "hedef", "github"])
     yd.add_argument("yol", nargs="?", default=None,
                     help="arsiv yolu (dogrula/geri-yukle) ya da ekle|cikar (hedef)")
     yd.add_argument("--hedef", default=None, help="klasor")

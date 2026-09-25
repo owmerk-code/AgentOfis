@@ -1,6 +1,6 @@
-# Kod git'te; veri YEDEKTE (ofis/yedek.py). Canli veritabani git'e girmez:
-# her tur degisir, gecmisi sisirir ve tutarli kopyasi ancak sqlite
-# yedek API'siyle alinir.
+# Kod VE hafiza (metin olarak) gizli GitHub deposuna gider (ofis/depo.py).
+# Ham defter girmez: her tur degisir, gecmisi sisirir; metin hali
+# veri/disari/ofis.sql olarak girer. Tutarli ZIP yedegi ayrica alinir.
 __pycache__/
 *.pyc
 .pytest_cache/
@@ -10,6 +10,23 @@ veri/*.sqlite3
 veri/*.sqlite3-*
 veri/*.sqlite3.yedek-*
 veri/ornek-calisma/
-calisma/
 clewase-review/
 *.tar.gz
+*.part
+
+# Ajan ciktilari GIRER, medya ve oturum artigi GIRMEZ: buyuk dosya depoyu
+# sisirir (GitHub 100 MB siniri); medya ZIP yedeginde durur.
+calisma/**/*.png
+calisma/**/*.jpg
+calisma/**/*.jpeg
+calisma/**/*.webp
+calisma/**/*.gif
+calisma/**/*.mp4
+calisma/**/*.mov
+calisma/**/*.webm
+calisma/**/*.mp3
+calisma/**/*.wav
+calisma/**/*.log
+calisma/**/*.sqlite3*
+calisma/**/*.db
+calisma/**/node_modules/
