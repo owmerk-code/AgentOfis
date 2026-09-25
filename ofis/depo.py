@@ -214,7 +214,8 @@ def gonder(neden: str = "elle", *, kok: Path = None, db_yolu: Path = None,
              f"{len(degisen)} dosya.")
     if c.returncode != 0:
         return {"durum": "hata", "sebep": f"commit dustu: {c.stderr.strip()[:200]}"}
-    p = _git(kok, "push", "-q", "origin", "HEAD", zaman_asimi=300)
+    # Faz etiketleri de gider: "F1 bittiginde kod neydi" depoda da okunabilsin.
+    p = _git(kok, "push", "-q", "origin", "HEAD", "--tags", zaman_asimi=300)
     if p.returncode != 0:
         # Commit YEREL olarak kaldi; bir sonraki gonderim onu da goturur.
         return {"durum": "hata", "sebep": f"push dustu: {p.stderr.strip()[:200]}"}

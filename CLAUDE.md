@@ -136,7 +136,7 @@ Motor bir adaptör, model bir ayar, arayüz bir istemci.
 
 ## Kod durumu
 
-Yazıldı ve **duman testlerinden geçti** (2136/2136, 26.09.2026):
+Yazıldı ve **duman testlerinden geçti** (2162/2162, 26.09.2026):
 
 | Dosya | Ne yapar |
 |---|---|
@@ -186,9 +186,10 @@ Yazıldı ve **duman testlerinden geçti** (2136/2136, 26.09.2026):
 | `ofis/sartname.py` | **Sartname kapisi** — fable'in 1 numarali yeri. Olcutu YAZMAZ, DENETLER. Saf yargi isi: araclar KAPALI kosar (olculdu: aracli 3/4 dustu). Son sansta ogretmez, gorunur uyariyla gecirir. |
 | `ofis/kabuk.py` | **Komut satırı** — 26 komut (koddan sayıldı): `kur` · `ise-al` · `konus` · `hedef` · `devam` · `ekip` · `hesap` · `guncelle` · `bilgi` · `kural` · `model` · `plan` · `roller` · `ajan` · `gorsel` · `video` · `iptal` · `anahtar` · `yetenek` · `kullanim` · `saglik` · `durum` · `bekleyen` · `cevapla` · `onayla` · `panel`. |
 | `ofis/yedek.py` | **YEDEK** — kod + defter (sqlite yedek API'siyle, WAL'da tutarlı) + ajan çıktıları tek arşivde. Sır ALINMAZ. Atomik, ölçülür (özet + bütünlük), son 30 budanır, ek hedefe (Drive) kopyalanır. Geri yükleme yalnız BOŞ klasöre. Günlük tetik yalnız gerçek defterde. |
+| `ofis/depo.py` | **GİZLİ GITHUB DEPOSU** (`owmerk-code/AgentOfis`, PRIVATE) — kod + defterin METİN hâli (`veri/disari/ofis.sql`) + ajan çıktıları (medya hariç). Üç sert kapı: beklenen adres · PRIVATE · sır taraması (kasa değerleri + anahtar biçimleri). Günlük yedeğin arkasında. |
 | `baslat.bat` | Tek tık açılış — bağımlılık yoksa kurar, ilk açılışta örnek ofisi kurar. |
 
-Testler (`testler/`, hepsi jeton yakmadan koşar) — **2136/2136** (27 dosya, 26.09.2026'da tek tek koşturulup SAYILDI):
+Testler (`testler/`, hepsi jeton yakmadan koşar) — **2162/2162** (28 dosya, 26.09.2026'da tek tek koşturulup SAYILDI):
 `duman_cekirdek.py` 78 · `duman_motor.py` 102 · `duman_koltuk.py` 61 ·
 `duman_lider.py` 44 · `duman_mcp.py` 130 · `duman_panel.py` 341 ·
 `duman_orkestra.py` 57 · `duman_zincir.py` 71 · `duman_tavan.py` 27 · `duman_kullanim.py` 55 ·
@@ -197,7 +198,7 @@ Testler (`testler/`, hepsi jeton yakmadan koşar) — **2136/2136** (27 dosya, 2
 `duman_klasor.py` 35 · `duman_roller.py` 37 · `duman_ekip.py` 60 ·
 `duman_zorluk.py` 57 · `duman_hesap.py` 39 · `duman_tarayici.py` 155 ·
 `duman_video.py` 35 · `duman_baglayici.py` 60 · `duman_degisim.py` 101 ·
-`duman_riskli.py` 168 · `duman_hafiza.py` 56 · `duman_yedek.py` 47
+`duman_riskli.py` 168 · `duman_hafiza.py` 56 · `duman_yedek.py` 47 · `duman_depo.py` 26
 JS: `testler/panel_harita.mjs` (harita) · `testler/panel_yerlesim.mjs`
 (pano yerleşimi) — saf işlevler Node'da ÇALIŞTIRILIR; `duman_panel.py`
 koşturur (sayıları 341'in içinde) · `testler/panel_hafiza.mjs` (hafıza çizgesi)
@@ -10180,7 +10181,7 @@ Kullanıcı "başla" dedi. Gemini Pro henüz yok; plan ona bağlı olmayan
 kısımlarla ilerliyor (Claude + Codex). İlk iş: **bir şey bozulursa geri
 dönebilmek.** Bundan sonraki her değişiklik bunun üstünde duruyor.
 
-### 1. Yerel git — UZAK DEPO YOK
+### 1. Yerel git (sonra gizli GitHub deposuna bağlandı — bkz. §3)
 
 `git init`, `core.autocrlf=false` (dosyaların karışık satır sonları
 olduğu gibi kalsın), başlangıç etiketi `f1-oncesi`. `.gitignore` kodu
@@ -10188,9 +10189,8 @@ alır, veriyi almaz: canlı defter her tur değişir ve tutarlı kopyası ancak
 sqlite yedek API'siyle alınır → o YEDEĞİN işi.
 
 Kullanıcı "GitHub'a mı yüklüyorsun, yanlış hesaba yükleme" diye sordu.
-**Hayır:** `git remote` sayısı 0 (ölçüldü). Bilgisayardaki `gh` aracı
-`owmerk-code` hesabına girişli; **izinsiz push yok**, istenirse yalnız o
-hesaba, önce sorularak.
+O an: `git remote` sayısı 0 (ölçüldü). Sonra kullanıcı her şeyin gizli
+GitHub deposunda durmasını istedi ve kararı bana bıraktı → §3.
 
 ### 2. `ofis/yedek.py` — alınır, ÖLÇÜLÜR, geri yüklenir
 
@@ -10266,4 +10266,73 @@ bozuk ayar boş sayılsın · ulaşılamayan hedef patlatsın.
   getirir, tek bir ajan turunun yaptığını geri almaz. Sıradaki iş.
 - Diğer test dosyalarının `%TEMP%` artığı sayılmıyor (E05'in kalanı).
 - Faz sonu yedeği elle: `yedek al --neden faz-F1`.
+
+### 3. GİZLİ GITHUB DEPOSU — kod VE hafıza (26.09.2026)
+
+Kullanıcı: *"herşeyi github depodan yapsak olmaz mı… pc giderse repodan
+agentofisle ilgili herşeye ulaşırım… zaten paylaşmıycam."* Sonra: *"kesin
+kararın… ilerisini de düşün."*
+
+**Karar (benim, kullanıcı bıraktı):**
+
+| Ne | Nereye | Neden |
+|---|---|---|
+| Kod, hafıza, kararlar, görevler, ajan çıktıları | **GitHub gizli depo** | her günün hâli okunur, makine gidince tek komutla geri gelir, ücretsiz |
+| Büyük medya | ileride **Drive** | GitHub 100 MB sınırı, depo şişer |
+| Müşteri kişisel verisi (mağaza bağlanınca) | **yalnız bilgisayarda + şifreli yedek** | KVKK: yurtdışı sunucuya düz metin konmaz |
+| Anahtarlar | **hiçbir yere** | kaybı ucuz, sızıntısı pahalı |
+
+Supabase/sunucu yalnız çok kişi/çok cihaz **aynı anda** kullanırsa
+gerekir; planda yok. Obsidian gerekmez (rakip de kullanmıyor: ürün
+sayfasında kelime 0 kez geçiyor; hafıza dosyaları kullanıcının diskinde,
+yalnız görev kartları + elle yükseltilen kurallar kendi bulutuna
+senkron). İstenirse hafıza Obsidian'ın açabileceği biçimde dökülebilir —
+süs, zorunluluk değil.
+
+**Ölçüldü:** defter metin olarak **1,47 MB**, `calisma/` 1 MB. Ham sqlite
+her gün bütünüyle yeni kopya olurdu; metinde git yalnız değişen satırı
+saklar ve "geçen hafta hafızada ne vardı" depoda okunur.
+
+**Üç sert kapı** (`ofis/depo.py`) — kullanıcının "yanlış hesaba
+yükleme" endişesinin cevabı:
+
+1. **Adres:** `origin` yalnız `https://github.com/owmerk-code/AgentOfis.git`.
+2. **Gizlilik:** her gönderimde `gh repo view` → `PRIVATE` değilse ya da
+   ölçülemezse gönderilmez.
+3. **Sır:** değişen her dosyada kasadaki GERÇEK değerler ve bilinen
+   anahtar biçimleri aranır; bulunursa gönderilmez, sahneleme geri
+   alınır, DOSYA söylenir (değer asla). Sınama dosyalarındaki bilerek
+   uydurma anahtarlar (`AIza-SINAMA-…`) biçime uymuyor — ölçüldü.
+   50 MB üstü dosya da reddedilir.
+
+**GERÇEK:** `gh repo create AgentOfis --private` → GitHub'ın kendi cevabı
+`owner: owmerk-code · visibility: PRIVATE`. İlk gönderim ofisin kendi
+komutuyla (`kabuk yedek github`) üç kapıdan geçti: 4 commit, `f1-oncesi`
+etiketi, `veri/disari/ofis.sql` 1.465.501 bayt — GitHub API'sinden
+doğrulandı. Günlük gönderim yedeğin arkasında (`konus`/`hedef`/`devam`
+ve açık panel saatte bir); **yalnız açıkça istenirse** (`depo_gonder=True`)
+— sınamalar `gerekirse_al` çağırıyor ve gerçek depoya gönderememeli.
+
+### İki test kusuru — mutasyon gösterdi
+
+- **Sınama internete çıktı.** "Adres kapısı yok" mutasyonunda yanlış
+  adres `github.com/BASKASI/...` olduğu için gerçek GitHub'a push
+  denendi (depo yoktu, reddedildi, zararsız). Yanlış adres artık yerel
+  ikinci sahte depo ve oraya hiçbir şey gitmediği ölçülüyor.
+- **Git nesneleri Windows'ta salt okunur**; düz `rmtree` onları atlayıp
+  `%TEMP%`'te artık bıraktı. Silmeden önce yazılabilir yapılıyor, artık
+  sayısı sınanıyor.
+
+Yedi mutasyonun yedisi ateş etti (adres · gizlilik · sır · ret sonrası
+sahneleme · boş commit · değerin söylenmesi · defterin metne yazılmaması).
+
+**2162/2162** (28 dosya).
+
+### AÇIK KALAN
+
+- Yeni bilgisayara **geri kurulum provası** yapılmadı (F9, E83):
+  depoyu klonla → `veri/disari/ofis.sql`'den defteri kur → testler.
+- Müşteri kişisel verisi ayrımı mağaza bağlanınca (F3, E79) — bugün
+  defterde müşteri verisi yok.
+- Ajan turu geri alma (E03) sıradaki iş.
 
