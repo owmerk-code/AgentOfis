@@ -10346,3 +10346,20 @@ işlenen sırlı commit REDDEDİLİYOR — sınandı). Eski hata geri konunca
   defterde müşteri verisi yok.
 - Ajan turu geri alma (E03) sıradaki iş.
 
+### 4. DRIVE BAĞLANDI (26.09.2026)
+
+Kullanıcı Google Drive masaüstü uygulamasını kurdu. `G:` sürücüsü;
+DriveFS günlüklerinde görünen tek hesap **omer.cklkk@gmail.com** (doğru
+hesap, ölçüldü). Hedef: `G:\Drive'ım\AgentOfis-yedek`
+(`yedek hedef ekle`). İlk gerçek koşu: 5,3 MB, 353 dosya, 4 defter ok,
+Drive'daki kopya açılıp ölçüldü: SAĞLAM.
+
+Artık üç kopya: **bilgisayar** (tam ZIP) · **Drive** (tam ZIP, medya ve
+ham defter dahil) · **GitHub** (kod + defter metni, günlük geçmişiyle).
+
+Hesap notu: kullanıcı ChatGPT **Plus**'ta kalıyor (Pro alınmadı).
+Ofisin codex evi omerjob34@gmail.com, plan plus — tutarlı.
+
+Kabuk betiklerinde yoldaki kesme işareti (`Drive'ım`) tırnakları
+bozuyor; betik dosyaya yazıldı (bilinen ders).
+
