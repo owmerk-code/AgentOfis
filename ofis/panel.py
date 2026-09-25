@@ -1971,8 +1971,40 @@ def kos(adres: str = "127.0.0.1", kapi: int = 8900, db_yolu=None,
         )
     if adres not in GUVENLI_ADRESLER and not adres.startswith("100."):
         print(f"UYARI: {adres} yerel ya da Tailscale adresi degil.")
-    uvicorn.run(olustur(db_yolu, proje_ad), host=adres, port=kapi,
-                log_level="warning")
+    uygulama = olustur(db_yolu, proje_ad)
+    _gunluk_yedek_arkada(db_yolu)
+    uvicorn.run(uygulama, host=adres, port=kapi, log_level="warning")
+
+
+def _gunluk_yedek_arkada(db_yolu) -> None:
+    """Panel acikken gunluk yedek -- arka planda, paneli bekletmeden.
+
+    Panel gunlerce acik kalabilir; yalniz acilista bakmak, uzun acik bir
+    panelde yedegi gunlerce geciktirirdi. Bu yuzden saatte bir bakar;
+    gercekten alma karari `gerekirse_al` icinde (24 saat).
+    """
+    import threading
+    import time
+    from . import yedek as Y
+    from .db import VARSAYILAN_YOL
+    if not Y.gercek_defter_mi(db_yolu or VARSAYILAN_YOL):
+        return
+
+    def dongu():
+        while True:
+            try:
+                db = Veritabani(db_yolu or VARSAYILAN_YOL)
+                with db.baglanti() as c:
+                    r = c.execute("SELECT id FROM proje WHERE durum='acik' "
+                                  "ORDER BY olusturuldu LIMIT 1").fetchone()
+                pid = r["id"] if r else None
+                Y.gerekirse_al((lambda tur, govde: db.olay_yaz(pid, tur, govde))
+                               if pid else None)
+            except Exception:     # noqa: BLE001 -- panel olmesin
+                pass
+            time.sleep(3600)
+
+    threading.Thread(target=dongu, name="gunluk-yedek", daemon=True).start()
 
 
 if __name__ == "__main__":

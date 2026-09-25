@@ -288,6 +288,7 @@ def komut_devam(a) -> None:
     Yeni hedef vermek, bekleyen isin ustune ikinci bir is yigmak olurdu.
     """
     ofis = ofis_ac(a.db, a.proje)
+    _gunluk_yedek(ofis)
     bekleyen = (len(ofis.postane.insan_bekleyenler())
                 + len(ofis.postane.bekleyen_onaylar()))
     if bekleyen:
@@ -544,6 +545,29 @@ def komut_ekip(a) -> None:
         return
 
 
+def _gunluk_yedek(ofis) -> None:
+    """Gunde bir kez yedek alir -- yalniz GERCEK ofis defterinde.
+
+    Sinamalar ve ornek ofis kendi gecici defterleriyle kosar; onlarda
+    yedek tetiklenseydi her test kosusu gercek yedek klasorune bir arsiv
+    birakir, 30'luk sinirla GERCEK yedekleri budardi.
+    """
+    from ofis import yedek as Y
+    if not Y.gercek_defter_mi(ofis.db.yol):
+        return
+    s = Y.gerekirse_al(lambda tur, govde: ofis.db.olay_yaz(
+        ofis.proje_id, tur, govde))
+    if s.get("hata"):
+        yaz(f"[!] Gunluk yedek ALINAMADI: {s['hata']}")
+        yaz("")
+    elif s:
+        yaz(f"Gunluk yedek alindi: {Path(s['arsiv']).name}")
+        for h in s["hedefler"]:
+            if h["durum"] != "tamam":
+                yaz(f"  [!] {h['klasor']}: {h['hata']}")
+        yaz("")
+
+
 def _guncelleme_bildir(ofis) -> None:
     """Gunde bir kez yeni model/CLI denetler; bekleyen varsa TEK SATIR soyler.
 
@@ -551,6 +575,7 @@ def _guncelleme_bildir(ofis) -> None:
     Bildirim gorunmezse "yeni model gelince haber versin" istegi kagitta
     kalir.
     """
+    _gunluk_yedek(ofis)
     from ofis import guncelleme as G
     G.kontrol_gerekirse(ofis.db, ofis.proje_id)
     n = len(G.bekleyenler(ofis.db, ofis.proje_id))
@@ -1375,6 +1400,71 @@ def komut_onayla(a) -> None:
     yaz("  python -m ofis.kabuk devam")
 
 
+def komut_yedek(a) -> None:
+    """YEDEK: al, listele, dogrula, geri yukle, hedef yonet.
+
+    Geri yukleme CANLI klasorun uzerine yazmaz -- bos bir klasore acar.
+    Canliyi degistirmek insanin karari ve once yeni klasorde denenir.
+    """
+    from ofis import yedek as Y
+    try:
+        if a.eylem == "al":
+            s = Y.al(a.neden or "elle")
+            yaz(f"Yedek alindi: {s['arsiv']}")
+            yaz(f"  {s['dosya']} dosya · {s['boyut'] / 1e6:.1f} MB · "
+                f"{len(s['db'])} defter (butunluk: "
+                + ", ".join(d["butunluk"] for d in s["db"]) + ")")
+            if s["sirlar_atlandi"]:
+                yaz("  SIR oldugu icin ALINMADI: " + ", ".join(s["sirlar_atlandi"]))
+            for o in s["okunamayan"]:
+                yaz(f"  [!] okunamadi: {o}")
+            for h in s["hedefler"]:
+                yaz(f"  hedef {h['klasor']}: {h['durum']}"
+                    + (f" -- {h['hata']}" if h["hata"] else ""))
+            if not s["hedefler"]:
+                yaz("  ek hedef yok (bulut kopyasi YOK) -- "
+                    "`yedek hedef ekle --hedef <klasor>`")
+            for b in s["budanan"]:
+                yaz(f"  budandi: {b}")
+        elif a.eylem == "liste":
+            ayar = Y.ayar_oku()
+            yaz(f"Yedek klasoru: {Y.yedek_koku()}")
+            for h in ayar["hedefler"]:
+                var = "var" if Path(h).is_dir() else "ULASILAMIYOR"
+                yaz(f"  ek hedef: {h} ({var})")
+            if not ayar["hedefler"]:
+                yaz("  ek hedef yok (bulut kopyasi YOK)")
+            saat = Y.son_yedek_saat()
+            yaz("  son yedek: " + ("hic alinmadi" if saat == float("inf")
+                                  else f"{saat:.1f} saat once"))
+            for p in Y.arsivler():
+                yaz(f"  {p.name}  {p.stat().st_size / 1e6:.1f} MB")
+        elif a.eylem == "dogrula":
+            yol = Path(a.yol) if a.yol else (Y.arsivler() or [None])[-1]
+            if not yol:
+                raise SystemExit("Dogrulanacak yedek yok.")
+            d = Y.dogrula(yol)
+            yaz(f"{yol.name}: " + ("SAGLAM" if d["tamam"] else "BOZUK"))
+            for b in d["bulgular"][:20]:
+                yaz(f"  {b}")
+        elif a.eylem == "geri-yukle":
+            if not a.yol or not a.hedef:
+                raise SystemExit("kullanim: yedek geri-yukle <arsiv> --hedef <bos klasor>")
+            r = Y.geri_yukle(Path(a.yol), Path(a.hedef))
+            yaz(f"{r['dosya']} dosya acildi: {r['hedef']} ({r['zaman']} yedegi)")
+            yaz("  Canli ofis DEGISMEDI. Once bu klasorde dene; sonra "
+                "canliyla degistirmek senin kararin.")
+        elif a.eylem == "hedef":
+            if a.yol == "ekle" and a.hedef:
+                yaz(f"Ek hedef eklendi: {Y.hedef_ekle(a.hedef)}")
+            elif a.yol == "cikar" and a.hedef:
+                yaz("Cikarildi." if Y.hedef_cikar(a.hedef) else "Boyle bir hedef yok.")
+            else:
+                raise SystemExit("kullanim: yedek hedef ekle|cikar --hedef <klasor>")
+    except Y.YedekHatasi as exc:
+        raise SystemExit(f"Yedek: {exc}")
+
+
 def komut_panel(a) -> None:
     from ofis.panel import kos
     yaz(f"Panel: http://{a.adres}:{a.kapi}")
@@ -1816,6 +1906,14 @@ def ayristirici() -> argparse.ArgumentParser:
     o.add_argument("--not", dest="not_", default="",
                    help="ret icin ZORUNLU gerekce")
     o.set_defaults(islev=komut_onayla)
+
+    yd = alt.add_parser("yedek", help="YEDEK -- al / liste / dogrula / geri-yukle / hedef")
+    yd.add_argument("eylem", choices=["al", "liste", "dogrula", "geri-yukle", "hedef"])
+    yd.add_argument("yol", nargs="?", default=None,
+                    help="arsiv yolu (dogrula/geri-yukle) ya da ekle|cikar (hedef)")
+    yd.add_argument("--hedef", default=None, help="klasor")
+    yd.add_argument("--neden", default=None, help="yedegin nedeni (orn. faz-F1)")
+    yd.set_defaults(islev=komut_yedek)
 
     p = alt.add_parser("panel", help="paneli ac")
     p.add_argument("--adres", default="127.0.0.1")

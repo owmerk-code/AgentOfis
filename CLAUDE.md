@@ -136,7 +136,7 @@ Motor bir adaptör, model bir ayar, arayüz bir istemci.
 
 ## Kod durumu
 
-Yazıldı ve **duman testlerinden geçti** (2089/2089, 25.09.2026):
+Yazıldı ve **duman testlerinden geçti** (2136/2136, 26.09.2026):
 
 | Dosya | Ne yapar |
 |---|---|
@@ -185,9 +185,10 @@ Yazıldı ve **duman testlerinden geçti** (2089/2089, 25.09.2026):
 | `ofis/yetenek.py` | **"Bu ofis neyi yapabilir"** — bes kayit defterini tek ekranda toplar. Ana ayrim SAHIPLIK: ofisin sahip oldugunu yonetir, olmadigini yalnizca OLCER ve komutu soyler. |
 | `ofis/sartname.py` | **Sartname kapisi** — fable'in 1 numarali yeri. Olcutu YAZMAZ, DENETLER. Saf yargi isi: araclar KAPALI kosar (olculdu: aracli 3/4 dustu). Son sansta ogretmez, gorunur uyariyla gecirir. |
 | `ofis/kabuk.py` | **Komut satırı** — 26 komut (koddan sayıldı): `kur` · `ise-al` · `konus` · `hedef` · `devam` · `ekip` · `hesap` · `guncelle` · `bilgi` · `kural` · `model` · `plan` · `roller` · `ajan` · `gorsel` · `video` · `iptal` · `anahtar` · `yetenek` · `kullanim` · `saglik` · `durum` · `bekleyen` · `cevapla` · `onayla` · `panel`. |
+| `ofis/yedek.py` | **YEDEK** — kod + defter (sqlite yedek API'siyle, WAL'da tutarlı) + ajan çıktıları tek arşivde. Sır ALINMAZ. Atomik, ölçülür (özet + bütünlük), son 30 budanır, ek hedefe (Drive) kopyalanır. Geri yükleme yalnız BOŞ klasöre. Günlük tetik yalnız gerçek defterde. |
 | `baslat.bat` | Tek tık açılış — bağımlılık yoksa kurar, ilk açılışta örnek ofisi kurar. |
 
-Testler (`testler/`, hepsi jeton yakmadan koşar) — **2089/2089** (26 dosya, 24.09.2026'da tek tek koşturulup SAYILDI):
+Testler (`testler/`, hepsi jeton yakmadan koşar) — **2136/2136** (27 dosya, 26.09.2026'da tek tek koşturulup SAYILDI):
 `duman_cekirdek.py` 78 · `duman_motor.py` 102 · `duman_koltuk.py` 61 ·
 `duman_lider.py` 44 · `duman_mcp.py` 130 · `duman_panel.py` 341 ·
 `duman_orkestra.py` 57 · `duman_zincir.py` 71 · `duman_tavan.py` 27 · `duman_kullanim.py` 55 ·
@@ -196,7 +197,7 @@ Testler (`testler/`, hepsi jeton yakmadan koşar) — **2089/2089** (26 dosya, 2
 `duman_klasor.py` 35 · `duman_roller.py` 37 · `duman_ekip.py` 60 ·
 `duman_zorluk.py` 57 · `duman_hesap.py` 39 · `duman_tarayici.py` 155 ·
 `duman_video.py` 35 · `duman_baglayici.py` 60 · `duman_degisim.py` 101 ·
-`duman_riskli.py` 168 · `duman_hafiza.py` 56
+`duman_riskli.py` 168 · `duman_hafiza.py` 56 · `duman_yedek.py` 47
 JS: `testler/panel_harita.mjs` (harita) · `testler/panel_yerlesim.mjs`
 (pano yerleşimi) — saf işlevler Node'da ÇALIŞTIRILIR; `duman_panel.py`
 koşturur (sayıları 341'in içinde) · `testler/panel_hafiza.mjs` (hafıza çizgesi)
@@ -10172,3 +10173,97 @@ kullanilmaz**. Sayi, kimlik ve etiket iddialari karenin kendisinden
 dogrulanir. Kare vermek videodan belirgin iyi. Gizli model: saglayici
 icerigi saklayabilir -> yalniz herkese acik icerik gonderilir.
 OpenCode motoru (E59) icin not: istemci video eki gecirmiyor.
+
+## F1 BAŞLADI — YEREL GIT + YEDEK (26.09.2026)
+
+Kullanıcı "başla" dedi. Gemini Pro henüz yok; plan ona bağlı olmayan
+kısımlarla ilerliyor (Claude + Codex). İlk iş: **bir şey bozulursa geri
+dönebilmek.** Bundan sonraki her değişiklik bunun üstünde duruyor.
+
+### 1. Yerel git — UZAK DEPO YOK
+
+`git init`, `core.autocrlf=false` (dosyaların karışık satır sonları
+olduğu gibi kalsın), başlangıç etiketi `f1-oncesi`. `.gitignore` kodu
+alır, veriyi almaz: canlı defter her tur değişir ve tutarlı kopyası ancak
+sqlite yedek API'siyle alınır → o YEDEĞİN işi.
+
+Kullanıcı "GitHub'a mı yüklüyorsun, yanlış hesaba yükleme" diye sordu.
+**Hayır:** `git remote` sayısı 0 (ölçüldü). Bilgisayardaki `gh` aracı
+`owmerk-code` hesabına girişli; **izinsiz push yok**, istenirse yalnız o
+hesaba, önce sorularak.
+
+### 2. `ofis/yedek.py` — alınır, ÖLÇÜLÜR, geri yüklenir
+
+- **Defter yedek API'siyle.** Sahne sınandı: WAL kipinde 500 satır
+  yazıldı, düz dosya kopyası onları **kaçırdı**, arşivdeki defter 500
+  satırı taşıdı. Düz kopya, geri yüklenene kadar fark edilmeyen yarım
+  bir yedek olurdu.
+- **Sır ALINMAZ** (`*.env`, `auth.json`, `*.pem`, `*.key`) ve atlandığı
+  söylenir. Arşiv buluta gidecek; kasa zaten kökün dışında.
+- **Atomik** (`.part` → yeniden adlandırma), yazılınca **açılıp
+  ölçülür** (her dosyanın sha256'sı + her defterin `integrity_check`i).
+- **Budama yalnız `AgentOfis-yedek-*.zip`** siler, az önce yazılanı
+  asla silmez; hedef klasördeki başka dosyaya dokunmaz.
+- **Ek hedef** (Drive klasörü) ulaşılamazsa iş durmaz, hangi hedefe
+  yazılamadığı söylenir. Hedef mutlak olmalı, var olmalı, proje kökünün
+  içinde olamaz.
+- **Geri yükleme yalnız BOŞ klasöre.** Canlı kökün üstüne ya da içine
+  yazmaz; zip yol kaçışı (`../`) reddedilir. Canlıyı değiştirmek insanın
+  kararı.
+- **Günlük kapı:** `konus` · `hedef` · `devam` başında ve açık panelde
+  saatte bir bakılır; 24 saat dolduysa alınır. **Yalnız gerçek defterde**
+  (`gercek_defter_mi`): test ve örnek ofis tetikleseydi her koşu gerçek
+  klasöre arşiv bırakır ve 30'luk sınırla GERÇEK yedekleri budardı.
+- Komut: `kabuk yedek al|liste|dogrula|geri-yukle|hedef`.
+
+### GERÇEK ÖLÇÜM
+
+```
+yedek al  : 1,8 sn · 268 dosya · 3,7 MB · 4 defter (butunluk ok x4)
+dogrula   : SAGLAM
+geri yukle: bos klasore -> git gecmisi duruyor, defter canliyla BIREBIR
+            (31 gorev, 3060 olay), orada duman_cekirdek/hafiza/yedek gecti
+```
+
+### Bulut hedefi — kullanıcının kendi Drive'ı
+
+Hedef: kullanıcının kendi Google Drive'ı (omer.cklkk@gmail.com). Bu
+makinede **Google Drive masaüstü uygulaması kurulu değil** (G: yok,
+Drive klasörü yok). Giriş kimlik işi → kullanıcının. Kurulunca:
+`kabuk yedek hedef ekle --hedef "<Drive klasörü>"`. O güne kadar yedek
+**yalnız bu bilgisayarda** ve `yedek liste` bunu "bulut kopyası YOK"
+diye söylüyor.
+
+### BENİM HATAM — mutasyon arşivi GERÇEK projeye açtı
+
+"Canlıya geri yüklensin" mutasyonu, sınama gerçek kökü kullandığı için
+arşivi `calisma/x`'e açtı (yalnız sınamanın sahte dosyaları; silindi,
+gerçek dosyaya dokunulmadı). Daha kötüsü: ikinci koşuda sınama **ateş
+etmedi**, çünkü klasör artık dolu olduğu için başka bir kapı reddetti.
+Sınama artık geçici sahte projeyle koşuyor.
+
+> **Sınama, koruduğu şeyi bozabilecek bir sahnede koşmamalı.** Kapı
+> koparılınca zararı sahneyle sınırlı kalmalı.
+
+### İki test kusuru daha — ikisi de ölçümle
+
+- "Düz kopya" mutasyonu testi **çökertti** (okunamayan defter istisna
+  attı) → çöken test geri kalan sınamaları koşturmaz; artık KALDI sayılıyor.
+- Açık kalan sqlite bağlantısı Windows'ta dosyayı kilitledi, geçici
+  klasör silinemedi: `%TEMP%`'te **29 artık** birikti. Bağlantı
+  `finally`de kapanıyor, artık sayısı sınanıyor (PLAN E05'in ilk adımı).
+
+Sekiz mutasyonun sekizi ateş etti: düz kopya · sır alınsın · budama
+herkesi silsin · canlıya açılsın · özet denetlenmesin · `.part` kalsın ·
+bozuk ayar boş sayılsın · ulaşılamayan hedef patlatsın.
+
+**2136/2136** (27 dosya).
+
+### AÇIK KALAN
+
+- **Bulut kopyası yok** — Drive uygulaması kurulunca bir komut.
+- **Ajan turu geri alma (E03)** henüz yok: yedek bütün ofisi geri
+  getirir, tek bir ajan turunun yaptığını geri almaz. Sıradaki iş.
+- Diğer test dosyalarının `%TEMP%` artığı sayılmıyor (E05'in kalanı).
+- Faz sonu yedeği elle: `yedek al --neden faz-F1`.
+
