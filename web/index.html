@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AgentOfis</title>
+<link rel="stylesheet" href="/varlik/panel.css">
+</head>
+<body>
+
+<!-- ÜST ŞERİT -->
+<header class="serit">
+  <div class="marka">
+    <span class="marka-nokta"></span>
+    <div class="marka-yazi">
+      <div class="marka-ad" id="proje-ad">—</div>
+      <div class="marka-alt" id="proje-amac">yükleniyor…</div>
+    </div>
+  </div>
+
+  <nav class="kanatlar" id="kanatlar"></nav>
+  <div class="ray" id="ray"></div>
+</header>
+
+<main class="govde">
+
+  <!-- ANA ALAN: UC SUTUN, AYNI ANDA.
+       Onceki surumde bunlar UC AYRI SEKMEYDI ve ayni anda yalnizca biri
+       gorunuyordu. Sekmeye bolme gerekcesi "ekran karmasik" geri
+       bildirimiydi; ama o karmasa panel SAYISINDAN degil panellerin BOS
+       ve gurultulu olmasindandi (bos oda kartlari, rozet yigini).
+       Icerik olculmus hale gelince dogru cevap yan yana koymak:
+       ajan ofisi bir IZLEME yuzeyidir, degeri goz ucuyla gormektedir --
+       sekme onu oldurur, yalnizca tikladigini gosterir. -->
+  <section class="ana">
+    <div class="ana-bas">
+      <button class="kip-anahtar" id="okunur-anahtar"
+              title="Okunur kip: araç gürültüsü susar, ajanın sözü kalır.">
+        <span class="kip-nokta"></span><span id="okunur-etiket">terminal kipi</span>
+      </button>
+      <button class="kip-anahtar" id="kabin-anahtar"
+              title="Panelin içinde gerçek tarayıcı aç (ayrı profil, ajanla paylaşılır).">
+        <span class="kip-nokta"></span><span id="kabin-etiket">tarayıcı</span>
+      </button>
+      <!-- EFOR: kullanicinin dugmesi. "Zoruga gore" her is kendi
+           zorluguyla (lider secer, gerekceyle); sabit secenekler BUTUN
+           turlari o seviyeye koyar. `max` bilerek yok. -->
+      <div class="efor-sec" id="efor-sec"
+           title="Ajanlar ne kadar derin düşünsün. 'Zorluğa göre': lider her işe kolay/orta/zor/çok zor der, efor ona göre seçilir.">
+        <span class="efor-etiket">efor</span>
+        <button data-mod="zorluk">zorluğa göre</button>
+        <button data-mod="normal">hepsi medium</button>
+        <button data-mod="yuksek">hepsi high</button>
+      </div>
+      <!-- KADRO: ise alma paneline acilir. Kurallar kadro'da; panel
+           yalniz ona ulasan kapi (rol / ad / tek lider kapilari). -->
+      <!-- ARAMA: gorev, kanit, karar, bilgi ve olay defterinde tek kutu. -->
+      <input class="ara-kutu" id="ara-kutu" type="search" autocomplete="off"
+             placeholder="ara: görev, kanıt, karar…" title="Enter ile ara">
+      <button class="kip-anahtar" id="ajan-ekle"
+              title="Kadroya yeni ajan al (rol kütüphanesinden).">+ ajan</button>
+      <button class="kip-anahtar" id="duzen-sifirla"
+              title="Panoların yerini ve boyutunu varsayılana döndür.">düzeni sıfırla</button>
+      <div class="ana-bosluk"></div>
+      <div class="motor-rozetleri" id="motor-rozetleri"></div>
+    </div>
+
+    <!-- YERLESIM (23.09.2026): sutunlar artik SABIT DEGIL.
+         Kullanici: *"her seyi surukleyip yer degistirebilmeliyim."*
+         Duzen bir VERI modelidir (sutun -> yigin -> sekme) ve
+         panel.js onu burada kurar. Pano ICERIKLERI yeniden cizilmez,
+         asagidaki depodan DUGUM olarak tasinir: akis, kaydirma ve
+         canli durum kaybolmaz. -->
+    <div class="sutunlar" id="sutunlar"></div>
+
+    <!-- PANO DEPOSU: her pano burada dogar, yerlesim onu yerine tasir.
+         Gorunmez; bir pano bir yere konmadiysa (or. tarayici kapali)
+         burada bekler. -->
+    <div id="pano-depo" hidden>
+      <div class="pano-govde" data-pano="ofis">
+        <div class="gorunum" id="gorunum-ofis"></div>
+      </div>
+      <div class="pano-govde" data-pano="terminal">
+        <div class="gorunum" id="gorunum-canli"></div>
+      </div>
+      <!-- KOD: diskte OLCULEN degisiklik. Varsayilan duzende terminalin
+           ALTINDA: ustte ajanin sozu, altta diskin cevabi. Artik ayri bir
+           pano -- insan onu istedigi yere tasiyabilir. -->
+      <!-- SOHBET: lidere yazdiklarin ve liderin TAM cevaplari. Olculdu:
+           cevap panelde hic tam gorunmuyordu (200 harflik olay satiri). -->
+      <div class="pano-govde" data-pano="sohbet">
+        <div class="gorunum sekme-icerik sohbet-akis" id="pano-sohbet"></div>
+      </div>
+      <div class="pano-govde" data-pano="kod">
+        <div class="kod-ray"><span class="kod-not" id="kod-not"></span></div>
+        <div class="gorunum kod-alan" id="gorunum-kod"></div>
+      </div>
+      <!-- KABIN: panelin ICINDE gercek tarayici (CDP kareleri, iframe
+           DEGIL -- olculdu: X-Frame-Options). Kapaliyken yer kaplamaz. -->
+      <div class="pano-govde" data-pano="tarayici">
+        <div class="kabin-ray">
+          <button id="kabin-geri" title="Geri">&#8592;</button>
+          <button id="kabin-yenile" title="Yenile">&#8635;</button>
+          <input id="kabin-adres" type="text" spellcheck="false"
+                 placeholder="adres yaz, Enter">
+          <!-- OGE SEC: sayfadaki bir ogeyi isaret et, lidere giden mesaja
+               eklensin. Secim kipinde tiklama sayfaya GITMEZ. -->
+          <button id="kabin-sec" title="Öğe seç: sayfada bir öğeye tıkla, lidere yazacağın mesaja eklensin (tıklama sayfaya gitmez). Esc ile çık.">&#8982;</button>
+          <button id="kabin-kapat" title="Kabini kapat">&#10005;</button>
+        </div>
+        <div class="gorunum kabin-alan" id="gorunum-kabin">
+          <img id="kabin-kare" alt="">
+          <div id="kabin-vurgu" hidden></div>
+          <div class="bos" id="kabin-bos">tarayıcı kapalı</div>
+        </div>
+      </div>
+      <div class="pano-govde" data-pano="gorevler">
+        <div class="gorunum" id="gorunum-tahta"></div>
+      </div>
+      <div class="pano-govde" data-pano="raporlar">
+        <div class="gorunum sekme-icerik" id="pano-raporlar"></div>
+      </div>
+      <div class="pano-govde" data-pano="hafiza">
+        <div class="gorunum sekme-icerik" id="pano-hafiza"></div>
+      </div>
+      <div class="pano-govde" data-pano="kararlar">
+        <div class="gorunum sekme-icerik" id="pano-kararlar"></div>
+      </div>
+      <!-- YETENEK: bu ofis neyi yapabilir. Ofisin sahip olduklari
+           (hesap, kasa) buradan degisir; olmadiklari yalniz OLCULUR. -->
+      <div class="pano-govde" data-pano="yetenek">
+        <div class="gorunum sekme-icerik" id="pano-yetenek"></div>
+      </div>
+      <div class="pano-govde" data-pano="hesap">
+        <div class="gorunum hesap-bolum" id="hesap-bolum">
+          <div class="kullanim" id="kullanim"></div>
+          <div class="baglam" id="baglam"></div>
+        </div>
+      </div>
+      <!-- SENDEN BEKLENIYOR bir pano DEGIL: insanin eylem kuyrugu hicbir
+           sekmenin arkasina gomulmez. Gorevler panosu hangi yigindaysa o
+           yiginin EN USTUNDE, hangi sekme secili olursa olsun durur. -->
+      <section class="bekleyen-bolum" id="bekleyen-bolum"></section>
+    </div>
+
+    <!-- Surukle-birak sirasinda nereye dusecegini gosteren cerceve. -->
+    <div id="birak-gosterge" hidden></div>
+  </section>
+
+</main>
+
+<!-- ALT: tek satırlık faaliyet + komut -->
+<footer class="alt">
+  <button class="faaliyet-satir" id="faaliyet-satir" title="Faaliyet günlüğünü aç">
+    <span class="canli-nokta"></span>
+    <span class="faaliyet-metin" id="faaliyet-metin">bekleniyor…</span>
+    <span class="faaliyet-ac">günlük &#9650;</span>
+  </button>
+  <div class="komut">
+    <span class="komut-ok">&#10095;</span>
+    <input id="komut-girdi" type="text" autocomplete="off"
+           placeholder="Lidere yaz — ne yapılmasını istiyorsun?">
+    <!-- EYLEM NOTU: panelde yapilan her eylemin SONUCU burada soylenir.
+         Sessiz bir dugme, calisip calismadigini insana sordurur. -->
+    <!-- SECILI OGE: kabinde isaret edilen oge; siradaki mesaja eklenir. -->
+    <span class="komut-oge" id="komut-oge" hidden></span>
+    <span class="eylem-notu" id="eylem-notu"></span>
+    <!-- SURDUR: `kabuk devam`in panel karsiligi. Olculdu: panel onay
+         aldiriyordu ama isi surduren bir dugmesi yoktu. -->
+    <button id="komut-surdur" title="Açık işleri kaldığı yerden sürdür (yeni hedef vermeden). Tur başına tavanlı.">&#9654; Sürdür</button>
+    <button id="komut-ses" title="Sesle söyle">&#127908;</button>
+    <button id="komut-gonder" class="birincil">Gönder</button>
+  </div>
+</footer>
+
+<!-- Açılır günlük -->
+<div class="gunluk gizli" id="gunluk">
+  <div class="gunluk-bas">
+    <span>FAALİYET GÜNLÜĞÜ</span>
+    <button id="gunluk-kapat">&#10005;</button>
+  </div>
+  <div class="gunluk-akis" id="gunluk-akis"></div>
+</div>
+
+<!-- Yan panel: ajan / görev -->
+<div class="perde gizli" id="perde">
+  <aside class="cekmece" id="cekmece"></aside>
+</div>
+
+<script src="/varlik/panel.js"></script>
+</body>
+</html>

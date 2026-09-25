@@ -1,0 +1,1401 @@
+/* AgentOfis paneli — koyu tema, 1600x1000 masaustu.
+
+   Tasarim kurali: PROFESYONEL OLAN, COK SEY GOSTERMEK DEGIL; DOGRU SEYI
+   ONE CIKARMAKTIR. Panelin cevapladigi tek soru: "neye bakmam gerekiyor?"
+
+   Bu yuzden ekranda tek odak (ofis), tek eylem alani (senden bekleniyor)
+   var; gerisi bir tik uzakta. Ilk surumde bes sey ayni anda bagiriyordu
+   ve kullanicinin "karmasik gorunuyor" demesi dogruydu. Yogunluk,
+   anlasilirligin yerine gecmez. */
+
+:root {
+  --zemin:        #0e1116;
+  --zemin-2:      #151a21;
+  --zemin-3:      #1c222b;
+  --cizgi:        #232a34;
+  --cizgi-acik:   #313a47;
+  --metin:        #e4e9f0;
+  --metin-2:      #98a4b4;
+  --metin-3:      #616d7c;
+
+  /* HUE -- ham renkler. Dogrudan KULLANILMAZ; asagidaki roller uzerinden
+     kullanilir. Bir renk adi ne anlama geldigini SOYLEMEZ: `--yesil`
+     nasil gorundugunu soyler, `--iyi` ne demek oldugunu. Yarin "iyi"yi
+     camgobegine cevirirsek her kullanim dogru kalir; hue adi olsaydi
+     kodun her yeri yalan soylemeye baslardi. */
+  --turuncu:      #e0785a;
+  --mavi:         #6ba3c7;
+  --yesil:        #5fb98a;
+  --sari:         #d9a441;
+  --kirmizi:      #d4674f;
+  --mor:          #9b8bd0;
+
+  /* ROL -- anlam. VURGU ile SEMANTIK ayridir: vurgu markanin ve
+     etkilesimin rengi, semantik ise DURUMUN rengi. Ikisini karistirmak,
+     "secili" ile "sorunlu"yu ayni renge boyamaktir. */
+  --vurgu:        var(--turuncu);   /* marka · secim · etkilesim */
+  --iyi:          var(--yesil);     /* calisiyor · kanit · basarili */
+  --uyari:        var(--sari);      /* dikkat · inceleme · fiyatsiz */
+  --kotu:         var(--kirmizi);   /* seni bekliyor · dusen tur */
+  --bekleyen:     var(--mor);       /* soru sordu, cevap bekliyor */
+  --bilgi:        var(--mavi);      /* notr vurgu */
+
+  /* YAZI OLCEGI. Olculdu: panelde 12 FARKLI boyut vardi (10, 10.5, 11,
+     11.5, 12, 12.5, 13, 13.5, 14, 16, 17, 18) -- bu bir olcek degil
+     gurultu; hiyerarsi kuramaz cunku iki komsu boyut arasindaki fark
+     goze carpmaz. Alti basamak, her birinin bir isi var. */
+  --yz-mikro:     10px;   /* buyuk harf etiket, rozet */
+  --yz-kucuk:     11px;   /* ikincil bilgi, aciklama */
+  --yz-alt:       12px;   /* liste, kart alt satiri */
+  --yz-govde:     13px;   /* okunan metin */
+  --yz-one:       15px;   /* ad, baslik */
+  --yz-sayi:      18px;   /* raydaki sayilar */
+
+  --koseli:       7px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  background: var(--zemin);
+  color: var(--metin);
+  font-family: "Segoe UI", Inter, system-ui, sans-serif;
+  font-size: var(--yz-govde);
+  line-height: 1.5;
+  overflow: hidden;
+}
+body { display: grid; grid-template-rows: 58px 1fr 84px; }
+
+button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+::-webkit-scrollbar { width: 9px; height: 9px; }
+::-webkit-scrollbar-thumb { background: var(--cizgi-acik); border-radius: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+.gizli { display: none !important; }
+
+/* ═══════════════════════ ÜST ŞERİT ═══════════════════════ */
+
+.serit {
+  display: flex; align-items: stretch;
+  background: var(--zemin-2); border-bottom: 1px solid var(--cizgi);
+}
+
+.marka {
+  display: flex; align-items: center; gap: 11px;
+  padding: 0 18px; border-right: 1px solid var(--cizgi); flex: none;
+}
+.marka-nokta {
+  width: 9px; height: 9px; border-radius: 50%; flex: none;
+  background: var(--vurgu); box-shadow: 0 0 12px var(--vurgu);
+}
+.marka-yazi { min-width: 0; }
+.marka-ad { font-weight: 650; font-size: var(--yz-one); }
+.marka-alt {
+  font-size: var(--yz-kucuk); color: var(--metin-3); max-width: 210px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+.kanatlar { display: flex; }
+.kanat-sekme {
+  display: flex; align-items: center; gap: 9px; padding: 0 18px;
+  border-right: 1px solid var(--cizgi); color: var(--metin-2);
+  position: relative; white-space: nowrap;
+}
+.kanat-sekme:hover { background: var(--zemin-3); }
+.kanat-sekme.secili { color: var(--metin); background: var(--zemin-3); }
+.kanat-sekme.secili::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: -1px;
+  height: 2px; background: var(--kanat-renk, var(--vurgu));
+}
+.kanat-ad { font-weight: 600; font-size: var(--yz-alt); letter-spacing: .3px; }
+.kanat-sayac {
+  font-size: var(--yz-kucuk); color: var(--metin-3);
+  background: var(--zemin); border: 1px solid var(--cizgi);
+  border-radius: 10px; padding: 1px 8px;
+}
+
+/* Durum rayi: sadece SAYILAR, kutu yok. Vurgu yalnizca INSANI bekleyende. */
+.ray { display: flex; align-items: center; gap: 18px;
+       margin-left: auto; padding: 0 20px; }
+.ray-oge { display: flex; align-items: baseline; gap: 7px; }
+.ray-oge b { font-size: var(--yz-sayi); font-weight: 600; font-variant-numeric: tabular-nums; }
+.ray-oge span { font-size: var(--yz-kucuk); color: var(--metin-3); }
+.ray-ayrac { width: 1px; height: 24px; background: var(--cizgi); }
+.ray-oge.bekliyor b { color: var(--kotu); }
+.ray-oge.bekliyor span { color: var(--kotu); opacity: .8; }
+
+/* ═══════════════════════ GÖVDE ═══════════════════════ */
+
+/* Tek parca: ayri sag kolon KALDIRILDI (22.09.2026), icerigi ucuncu
+   sutunun sekmelerine tasindi. Rakipte ferahligin kaynagi 3 sutundu. */
+.govde { display: grid; grid-template-columns: 1fr; min-height: 0; }
+[hidden] { display: none !important; }
+
+.ana { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+.ana-bas {
+  display: flex; align-items: center; gap: 12px;
+  padding: 9px 18px; border-bottom: 1px solid var(--cizgi);
+}
+.ana-bosluk { flex: 1; }
+.gorunum-sec { display: flex; gap: 3px; }
+.gorunum-sec button {
+  padding: 6px 16px; border-radius: var(--koseli);
+  font-size: var(--yz-alt); color: var(--metin-2);
+}
+.gorunum-sec button:hover { background: var(--zemin-3); color: var(--metin); }
+.gorunum-sec button.secili {
+  background: var(--zemin-3); color: var(--metin); font-weight: 600;
+}
+.motor-rozetleri { display: flex; gap: 7px; }
+.motor-rozet {
+  display: flex; align-items: center; gap: 6px; font-size: var(--yz-kucuk);
+  color: var(--metin-3); padding: 3px 10px;
+  border: 1px solid var(--cizgi); border-radius: 11px;
+}
+.motor-rozet i { width: 5px; height: 5px; border-radius: 50%; background: var(--metin-3); }
+.motor-rozet.acik i { background: var(--iyi); }
+.motor-rozet.acik { color: var(--metin-2); }
+
+.gorunum { flex: 1; overflow-y: auto; overflow-x: hidden; min-height: 0; min-width: 0; }
+
+/* ── OFİS = PİKSEL KAT PLANI ──
+   Oda bir GOSTERGEDIR, dekor degil: ajanin durdugu yer durumunu soyler
+   ve her odanin plakasinda NE ANLAMA GELDIGI yazar. */
+#gorunum-ofis { padding: 16px; }
+
+/* KAT PLANI = TEK PARCA HARITA (23.09.2026).
+
+   Kullanici rakibin ofisini koydu: pencereli duvar, genis calisma
+   salonu, altta renkli zeminli odalar, masasinda oturan karakterler.
+   Bizimki basliklari olan bir KART IZGARASIYDI -- bir pano, bir yer
+   degil. Harita yuzde birimleriyle kurulur (JS: HARITA) ve sutunla
+   birlikte olceklenir; oran sabittir ki odalar icine biri girdi diye
+   sekil degistirmesin.
+
+   `isolation: isolate`: ajanlarin z-index'i (y'ye gore derinlik) harita
+   icinde kalsin, sayfanin geri kalaniyla yarismasin. */
+.ofis-harita {
+  position: relative; width: 100%; aspect-ratio: 10 / 9;
+  isolation: isolate; overflow: hidden; user-select: none;
+  border: 3px solid #13161c; border-radius: 10px;
+  background: #13161c;
+}
+.hr-duvar {
+  position: absolute; left: 0; top: 0; width: 100%; z-index: 1;
+  background: linear-gradient(180deg, #252b36 0 80%, #1b1f27 80% 100%);
+  border-bottom: 3px solid #13161c;
+}
+.hr-oda { position: absolute; }
+/* Salonun halisi: kanadin rengi, serit desen. */
+.hr-oda[data-oda="masa"] {
+  background: repeating-linear-gradient(90deg,
+    var(--hali-a) 0 12px, var(--hali-b) 12px 24px);
+}
+/* Alt odalar: durumun rengi, dama desen. Desen ZAYIF: zemin sahnedir,
+   okunacak sey karakter ve balon. */
+.hr-oda:not([data-oda="masa"]) {
+  background: repeating-conic-gradient(var(--zemin-a) 0 25%,
+    var(--zemin-b) 0 50%) 0 0 / 18px 18px;
+}
+.hr-duvar-yatay, .hr-duvar-dikey { position: absolute; z-index: 3; background: #13161c; }
+.hr-duvar-yatay { height: 4px; margin-top: -2px; }
+.hr-duvar-dikey { width: 4px; margin-left: -2px; }
+
+/* Esya ALT-ORTADAN tutturulur ve TIKLANAMAZ: ajanin tiklama alanini
+   calarsa "ajana tikla, terminali acilsin" yolu sessizce bozulur. */
+.hr-esya { position: absolute; transform: translate(-50%, -100%); pointer-events: none; opacity: .94; }
+
+/* Oda plakasi: ad + OLCULEN sayi. "0" da bilgidir; "bos" yazilmaz.
+   Plaka esyanin USTUNDE, ajanlarin ve balonlarin ALTINDA durur (z 2):
+   balon canli bilgidir, plaka sabit -- ust uste binerlerse okunacak
+   olan balondur. */
+.hr-plaka {
+  position: absolute; left: 5px; top: 5px; z-index: 2;
+  display: flex; align-items: baseline; gap: 5px; max-width: calc(100% - 10px);
+  padding: 2px 6px; border-radius: 4px;
+  background: rgba(10,12,16,.74); border: 1px solid rgba(255,255,255,.08);
+  font-size: var(--yz-mikro); letter-spacing: .4px; color: var(--metin-2);
+}
+.hr-plaka-ad { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hr-plaka-adet { color: var(--metin); font-weight: 700; }
+.hr-plaka-not { color: var(--metin-3); letter-spacing: 0; white-space: nowrap; }
+.hr-plaka.sifir { opacity: .62; }
+.hr-oda[data-oda="masa"]        .hr-plaka { border-left: 3px solid var(--iyi); }
+.hr-oda[data-oda="inceleme"]    .hr-plaka { border-left: 3px solid var(--uyari); }
+.hr-oda[data-oda="bekleme"]     .hr-plaka { border-left: 3px solid var(--bekleyen); }
+.hr-oda[data-oda="onay_kapisi"] .hr-plaka { border-left: 3px solid var(--kotu); }
+.hr-oda[data-oda="mola"]        .hr-plaka { border-left: 3px solid var(--cizgi-acik); }
+
+/* MASA: sahibinin, sahibi yokken de durur. Ad plakasi masanin altinda. */
+.hr-masa {
+  position: absolute; transform: translate(-50%, -100%); pointer-events: none;
+  display: flex; flex-direction: column; align-items: center;
+}
+.hr-masa .masa-kutu { position: relative; }
+.masa-kutu .sprite { position: absolute; left: 0; top: 0; }
+.hr-masa-ad {
+  margin-top: 2px; padding: 0 4px; border-radius: 3px;
+  background: rgba(0,0,0,.38); color: var(--metin-3);
+  font-size: 9px; line-height: 12px; white-space: nowrap;
+}
+.hr-masa.dolu .hr-masa-ad { color: var(--metin); }
+/* Calisan ajanin ekrani parlar -- "su an bir sey akiyor". */
+.hr-masa.dolu .masa-kutu { filter: drop-shadow(0 0 5px rgba(127,216,166,.45)); }
+.hr-masa[data-oda="bekleme"] .masa-kutu,
+.hr-masa[data-oda="onay_kapisi"] .masa-kutu { filter: drop-shadow(0 0 4px rgba(182,168,238,.35)); }
+
+/* AJAN: alt-ortadan tutturulur. Oturuyorsa masanin ARKASINA yukselir
+   (masa onde durur, z-index daha buyuk) ve ad plakasi gizlenir -- ad
+   zaten masanin plakasinda yaziyor. Olculer: masa p=3 ile 42x27px +
+   plaka ~14px; kisinin tabani masa tablasinin hizasina denk gelmeli. */
+.hr-ajan {
+  position: absolute; transform: translate(-50%, -100%);
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  cursor: pointer;
+  transition-property: left, top; transition-timing-function: linear;
+  transition-duration: 0s;
+}
+.hr-ajan.oturuyor { transform: translate(calc(-50% + 9px), calc(-100% - 26px)); }
+.hr-ajan.oturuyor .kat-ad { display: none; }
+.hr-ajan .kat-ad { padding: 0 5px; }
+.hr-ajan .kat-ad-yazi { font-size: 10px; }
+.hr-ajan:hover .kat-ad, .hr-ajan.secili .kat-ad { border-color: var(--vurgu); }
+.hr-ajan.secili .sprite-kutu { filter: drop-shadow(0 0 3px var(--vurgu)); }
+/* Sola yururken yuzu sola doner. Figur 8 piksel x 3 = 24px; ayna
+   ekseni figurun ortasi. */
+.hr-ajan.sola .sprite-kutu .sprite { transform: scaleX(-1); transform-origin: 12px 0; }
+
+.sprite-kutu { position: relative; }
+.sprite { position: absolute; left: 0; top: 0; background: transparent; }
+
+/* ISIM PLAKASI: doseme deseni uzerinde okunurluk icin KONTRAST. */
+.kat-ad {
+  display: flex; align-items: center; gap: 4px; max-width: 100%;
+  background: rgba(0,0,0,.46); border: 1px solid var(--cizgi);
+  border-radius: 4px; padding: 1px 7px;
+}
+.kat-ad-yazi {
+  font-size: var(--yz-kucuk); font-weight: 600; color: var(--metin);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.kat-kilit   { font-size: var(--yz-mikro); filter: saturate(.4); }
+.kat-yazamaz { font-size: var(--yz-mikro); color: var(--bekleyen); }
+
+/* BALON: yalnizca soylenecek bir sey varsa. Haritada YUZER (ajanin
+   ustunde) ama tasmaz: kenardaki ajanin balonu iceri dogru yaslanir.
+   Kirpilmis metin dogru gorunur ama yanlis okunur -- bir kez "#9"
+   "9" diye okunmustu. Uc satir; tam metin `title`da.
+
+   GENISLIK DAR ODADAN OLCULDU: alt odalar ~95-99px. 122px'lik balon
+   odasina sigmayip komsu odaya tasiyordu ve oradaki konusmayi (bir
+   ajanin otekine sordugu soru) gizliyordu. 92px'de tek kisilik komsu
+   odalarin balonlari birbirine degmez; uzun metin ucuncu satira iner. */
+.balon {
+  position: absolute; bottom: calc(100% + 5px); left: 50%;
+  transform: translateX(-50%); z-index: 2;
+  width: max-content; max-width: 92px;
+  background: var(--zemin-3); border: 1px solid var(--cizgi-acik);
+  border-radius: 6px; padding: 4px 6px;
+  font-size: 10px; line-height: 1.4; color: var(--metin-2);
+  text-align: left; overflow-wrap: anywhere;
+  box-shadow: 0 3px 10px rgba(0,0,0,.4); pointer-events: none;
+}
+/* KIRPMA DOLGUSUZ ic ogede. Olculdu (23.09.2026): kirpma balonun
+   kendisindeyken `overflow` DOLGU kutusunda kesiyor ve ucuncu satirin
+   ust yarisi alt dolguda gorunuyordu -- 21.09'da "max-height ile
+   kapatildi" diye kaydedilen dilimin ta kendisi; max-height dolguyu
+   kapatmaz. Satir yuksekligi 1.4: 10px'lik yazinin glif kutusu (~13px)
+   satirin icine sigsin, bir sonraki satirin ucu kenardan sizmasin. */
+.balon-yazi {
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.balon.sola-yasli { left: -6px; transform: none; }
+.balon.saga-yasli { left: auto; right: -6px; transform: none; }
+.hr-ajan:hover .balon { border-color: var(--vurgu); }
+
+/* SUSKUN: yeri kalmayan balon gizlenir (JS: balonlariYerlestir), bilgi
+   KAYBOLMAZ -- basinda kucuk bir "…" kalir, uzerine gelince balon
+   acilir. Uzerine gelinen ajan en uste cikar; yoksa acilan balon
+   komsusunun altinda kalirdi. */
+.hr-ajan.suskun .balon { display: none; }
+.hr-ajan.suskun:hover .balon { display: block; }
+.hr-ajan:hover { z-index: 5000 !important; }
+.hr-ajan.suskun::before {
+  content: "…"; position: absolute; bottom: calc(100% + 2px); left: 50%;
+  transform: translateX(-50%); pointer-events: none;
+  padding: 0 5px; border-radius: 7px; font-size: 11px; line-height: 11px;
+  background: var(--zemin-3); border: 1px solid var(--cizgi-acik);
+  color: var(--metin-2);
+}
+.hr-ajan.suskun:hover::before { display: none; }
+
+.kat-ipucu {
+  margin-top: 12px; padding: 13px 15px; border-radius: 9px;
+  border: 1px dashed var(--cizgi); color: var(--metin-3); font-size: var(--yz-alt);
+}
+/* ── PANO BASLIGI: durum noktasi · motor rozeti · gecmis isareti ──
+   Baslik yogun olmali cunku cevapladigi sorular cok: kim, hangi is,
+   hangi motor, ve EN ONEMLISI canli mi bayat mi. */
+.pano-nokta {
+  width: 7px; height: 7px; border-radius: 50%; flex: none;
+  background: var(--iyi); box-shadow: 0 0 7px var(--iyi);
+}
+.pano-nokta.sonuk { background: var(--metin-3); box-shadow: none; }
+.pano-motor {
+  font-size: var(--yz-mikro); color: var(--metin-3);
+  border: 1px solid var(--cizgi); border-radius: 4px; padding: 0 5px;
+  white-space: nowrap;
+}
+.pano-gecmis {
+  font-size: var(--yz-mikro); color: var(--uyari);
+  border: 1px solid var(--uyari); border-radius: 4px; padding: 0 5px;
+  opacity: .85; white-space: nowrap;
+}
+/* Sutun basindaki not: bosluk degil, boslugun SEBEBI. */
+.canli-not {
+  margin: 0 0 8px; padding: 7px 11px; border-radius: 7px;
+  border: 1px solid var(--cizgi); border-left: 3px solid var(--uyari);
+  background: var(--zemin-2); color: var(--metin-2);
+  font-size: var(--yz-alt);
+}
+
+/* Terminal ofisin ICINDE acilir -- cekmece ofisi orterdi. */
+.kat-terminal { margin-top: 12px; }
+.kat-terminal .pano-ic { max-height: 300px; }
+.pano-bosluk { flex: 1; }
+.pano-dugme {
+  background: var(--zemin); border: 1px solid var(--cizgi-acik);
+  color: var(--metin-2); border-radius: 6px; padding: 2px 9px;
+  font-size: var(--yz-kucuk); cursor: pointer; font-family: inherit;
+}
+.pano-dugme:hover { color: var(--metin); border-color: var(--vurgu); }
+
+/* ── TAHTA ── */
+.tahta {
+  display: grid; grid-template-columns: repeat(5, minmax(0,1fr));
+  gap: 12px; padding: 18px; align-items: start;
+}
+.sutun { min-width: 0; }
+.sutun-bas {
+  display: flex; align-items: baseline; gap: 8px; padding: 0 4px 10px;
+  font-size: var(--yz-kucuk); font-weight: 700; letter-spacing: 1px; color: var(--metin-3);
+}
+.sutun-bas b { margin-left: auto; color: var(--metin-2); font-size: var(--yz-alt); }
+.sutun-govde { display: flex; flex-direction: column; gap: 9px; }
+.gorev-kart {
+  min-width: 0; overflow-wrap: anywhere;
+  background: var(--zemin-2); border: 1px solid var(--cizgi);
+  border-left: 3px solid var(--cizgi-acik);
+  border-radius: 8px; padding: 11px 12px; cursor: pointer;
+  transition: border-color .12s, background .12s;
+}
+.gorev-kart:hover { background: var(--zemin-3); }
+.gorev-no { font-size: var(--yz-mikro); color: var(--metin-3); font-variant-numeric: tabular-nums; }
+.gorev-baslik { font-size: var(--yz-alt); font-weight: 600; margin: 3px 0 7px; line-height: 1.35; }
+.gorev-alt { display: flex; align-items: center; gap: 7px; flex-wrap: wrap;
+             font-size: var(--yz-kucuk); color: var(--metin-3); }
+.kilit { color: var(--uyari); }
+.kanit-say { color: var(--iyi); }
+.sutun[data-sutun="calisiyor"] .gorev-kart { border-left-color: var(--iyi); }
+.sutun[data-sutun="inceleme"]  .gorev-kart { border-left-color: var(--uyari); }
+.sutun[data-sutun="hazir"]     .gorev-kart { border-left-color: var(--bilgi); }
+.sutun[data-sutun="bitti"]     .gorev-kart { opacity: .6; }
+
+/* ═══════════════════════ SAĞ KOLON ═══════════════════════ */
+
+/* `.kolon-sag` KALDIRILDI (22.09.2026): icerigi ucuncu sutunun
+   sekmelerine tasindi. Olu stil birakmak, olmayan bir yapiyi ogretir. */
+
+/* SENDEN BEKLENİYOR: panelin tek eylem alani, en ustte ve sabit.
+   Panel "neye bakmam gerekiyor" sorusunu once burada cevaplar. */
+.bekleyen-bolum { border-bottom: 1px solid var(--cizgi); flex: none;
+                  max-height: 46%; overflow-y: auto; }
+.bekleyen-bas {
+  display: flex; align-items: center; gap: 9px; padding: 13px 16px 9px;
+  font-size: var(--yz-kucuk); font-weight: 700; letter-spacing: 1px; color: var(--metin-2);
+}
+.bekleyen-bas .sayi {
+  background: var(--kotu); color: #0e1116; font-weight: 700;
+  border-radius: 10px; padding: 0 8px; font-size: var(--yz-kucuk);
+}
+.bekleyen-bas.sakin { color: var(--metin-3); }
+.bekleyen-yok { padding: 0 16px 14px; font-size: var(--yz-alt); color: var(--metin-3); }
+
+.istek { margin: 0 12px 10px; border-radius: 8px; padding: 11px 13px;
+         background: var(--zemin-3); border: 1px solid var(--cizgi); }
+.istek.onay { border-color: rgba(212,103,79,.45); }
+.istek.soru { border-color: rgba(155,139,208,.4); }
+
+/* Saglik bulgulari: isi DURDURAN ile SENDE BEKLEYEN ayri renkte.
+   Agirlik sirasi `saglik.py`den gelir; panel kendi sirasini icat
+   etmez -- iki yerde tutulan sira kayar. */
+.istek.saglik.tikali { border-color: rgba(214, 74, 74, .55);
+                       background: rgba(214, 74, 74, .07); }
+.istek.saglik.insan  { border-color: rgba(212, 160, 79, .45); }
+.istek.saglik .istek-kim { letter-spacing: .06em; font-size: var(--yz-kucuk); }
+
+/* Ray: tavana yaklasan butce dikkat ceker ama BAGIRMAZ -- her seye
+   "sorun" diyen gosterge de gostergesizlikten farksizdir. */
+.ray-oge.dikkat b { color: #d4a04f; }
+.istek-bas { display: flex; align-items: center; gap: 7px; margin-bottom: 6px;
+             font-size: var(--yz-kucuk); color: var(--metin-3); }
+.istek-kim { color: var(--metin-2); font-weight: 600; }
+.istek-risk { margin-left: auto; color: var(--kotu); font-weight: 700;
+              letter-spacing: .4px; }
+.istek-govde { font-size: var(--yz-alt); line-height: 1.45; }
+.istek-ayrinti { font-size: var(--yz-kucuk); color: var(--metin-3); margin-top: 5px; }
+.istek-eylem { display: flex; gap: 6px; margin-top: 10px; }
+.istek-eylem input {
+  flex: 1; min-width: 0; background: var(--zemin); color: var(--metin);
+  border: 1px solid var(--cizgi); border-radius: var(--koseli);
+  padding: 6px 10px; font: inherit; font-size: var(--yz-alt);
+}
+.istek-eylem input:focus { outline: none; border-color: var(--cizgi-acik); }
+.dugme { padding: 6px 13px; border-radius: var(--koseli); font-size: var(--yz-alt);
+         border: 1px solid var(--cizgi-acik); color: var(--metin-2); }
+.dugme:hover { background: var(--zemin); color: var(--metin); }
+.dugme.olumlu { border-color: rgba(95,185,138,.55); color: var(--iyi); }
+.dugme.olumsuz { border-color: rgba(212,103,79,.55); color: var(--kotu); }
+
+.sekmeler { display: flex; border-bottom: 1px solid var(--cizgi); flex: none; }
+.sekmeler button {
+  flex: 1; padding: 11px 4px; font-size: var(--yz-alt); color: var(--metin-3);
+  border-bottom: 2px solid transparent;
+}
+.sekmeler button:hover { color: var(--metin-2); }
+.sekmeler button.secili { color: var(--metin); font-weight: 600;
+                          border-bottom-color: var(--vurgu); }
+.sekme-icerik { flex: 1; overflow-y: auto; padding: 12px; min-height: 0; }
+
+.oge { padding: 10px 0 12px; border-bottom: 1px solid var(--cizgi); }
+.oge:last-child { border-bottom: 0; }
+.oge-bas { display: flex; align-items: center; gap: 8px; margin-bottom: 4px;
+           font-size: var(--yz-kucuk); color: var(--metin-3); }
+.oge-govde { font-size: var(--yz-alt); line-height: 1.5; }
+.oge-gerekce { font-size: var(--yz-kucuk); color: var(--metin-2); margin-top: 6px;
+               padding-left: 10px; border-left: 2px solid var(--cizgi-acik); }
+.oge.eski { opacity: .45; }
+.oge.eski .oge-govde { text-decoration: line-through; }
+.bos-yazi { color: var(--metin-3); font-size: var(--yz-alt); padding: 6px 2px; }
+
+/* Bağlam sağlığı: dort sayi, tek cubuk. */
+/* HESAPLAR ve KULLANIM -- baglam blogunun kardesi, ayni dil. */
+.kullanim { border-top: 1px solid var(--cizgi); padding: 12px 16px 4px; flex: none; }
+.kullanim-satir { display: flex; align-items: baseline; gap: 8px;
+                  margin-bottom: 5px; }
+.kullanim-ad { font-size: var(--yz-alt); color: var(--metin-2);
+               min-width: 72px; }
+.kullanim-sayi { font-size: var(--yz-alt); font-variant-numeric: tabular-nums;
+                 margin-left: auto; }
+.kullanim-alt { font-size: var(--yz-mikro); color: var(--metin-3); }
+/* NEYI OLCMEDIGIMIZ, gosterdigimiz kadar onemli. */
+.kullanim-not { font-size: var(--yz-mikro); color: var(--metin-3);
+                line-height: 1.5; margin: 8px 0 4px; }
+.rozet.r-bagli { color: var(--iyi); }
+.rozet.r-kopuk { color: var(--kotu); }
+.rozet.r-bilinmiyor { color: var(--uyari); }
+
+.baglam { border-top: 1px solid var(--cizgi); padding: 12px 16px 14px; flex: none; }
+.baglam-bas { display: flex; justify-content: space-between; align-items: baseline;
+              font-size: var(--yz-kucuk); font-weight: 700; letter-spacing: 1px;
+              color: var(--metin-3); margin-bottom: 10px; }
+.baglam-satir { display: flex; justify-content: space-between; gap: 10px; }
+.baglam-oge b { display: block; font-size: var(--yz-sayi); font-variant-numeric: tabular-nums; }
+.baglam-oge span { font-size: var(--yz-mikro); color: var(--metin-3); }
+.baglam-oge.dikkat b { color: var(--uyari); }
+.baglam-cubuk { height: 3px; background: var(--zemin); border-radius: 2px;
+                margin-top: 11px; overflow: hidden; }
+.baglam-cubuk i { display: block; height: 100%; background: var(--iyi); }
+.baglam-cubuk.dikkat i { background: var(--uyari); }
+
+/* ═══════════════════════ ALT ═══════════════════════ */
+
+.alt { display: flex; flex-direction: column;
+       background: var(--zemin-2); border-top: 1px solid var(--cizgi); }
+
+/* Tek satirlik faaliyet: kenar cubugu DEGIL. Gecmis bir tik uzakta --
+   surekli goz onunde durmasi gerekmiyor, aksine dikkati boluyordu. */
+.faaliyet-satir {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  padding: 7px 18px; border-bottom: 1px solid var(--cizgi);
+  text-align: left; color: var(--metin-3); font-size: var(--yz-alt);
+}
+.faaliyet-satir:hover { background: var(--zemin-3); color: var(--metin-2); }
+.canli-nokta { width: 6px; height: 6px; border-radius: 50%; flex: none;
+               background: var(--iyi); animation: nabiz 1.9s infinite; }
+.canli-nokta.kopuk { background: var(--kotu); animation: none; }
+@keyframes nabiz { 0%,100% { opacity: 1 } 50% { opacity: .25 } }
+.faaliyet-metin { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.faaliyet-metin b { color: var(--metin-2); font-weight: 600; }
+.faaliyet-ac { font-size: var(--yz-kucuk); color: var(--metin-3); flex: none; }
+
+.komut { display: flex; align-items: center; gap: 10px; padding: 0 18px; flex: 1; }
+.komut-ok { color: var(--vurgu); font-weight: 700; }
+.komut input { flex: 1; background: transparent; border: 0; color: var(--metin);
+               font: inherit; font-size: var(--yz-govde); padding: 10px 0; }
+.komut input:focus { outline: none; }
+.komut input::placeholder { color: var(--metin-3); }
+.komut button { padding: 7px 15px; border-radius: var(--koseli);
+                border: 1px solid var(--cizgi-acik); color: var(--metin-2);
+                font-size: var(--yz-alt); }
+.komut button:hover { background: var(--zemin-3); color: var(--metin); }
+.komut button.birincil { background: var(--vurgu); border-color: var(--vurgu);
+                         color: #10141a; font-weight: 650; }
+.komut button.birincil:hover { filter: brightness(1.08); }
+/* Eylem notu: sonucu SOYLER, sonra solar. Hata kirmizi -- sessiz ret,
+   insanin eylemin gittigini sanmasi demektir. */
+.eylem-notu { font-size: var(--yz-kucuk); color: var(--metin-2);
+              max-width: 34%; overflow: hidden; text-overflow: ellipsis;
+              white-space: nowrap; }
+.eylem-notu.iyi { color: var(--iyi); }
+.eylem-notu.kotu { color: var(--kotu); }
+.eylem-notu.uyari { color: var(--uyari); }
+#komut-surdur.kosuyor { color: var(--iyi); border-color: var(--iyi); }
+.ara-kutu { background: var(--zemin); color: var(--metin); width: 190px;
+            border: 1px solid var(--cizgi); border-radius: 6px; padding: 5px 9px;
+            font-size: var(--yz-alt); }
+.ara-kutu:focus { outline: none; border-color: var(--vurgu); }
+.ara-sonuc { padding: 8px 0; border-bottom: 1px solid var(--cizgi); cursor: default; }
+.ara-sonuc.acilir { cursor: pointer; }
+.ara-sonuc.acilir:hover { background: var(--zemin-2); }
+.ara-sonuc mark { background: color-mix(in srgb, var(--vurgu) 35%, transparent);
+                  color: var(--metin); border-radius: 2px; }
+/* Pano basligindaki hesap limiti; %80 ustu dikkat rengine doner. */
+.pano-limit { font-size: var(--yz-mikro); color: var(--metin-3);
+              font-variant-numeric: tabular-nums; white-space: nowrap; }
+.pano-limit.dolu { color: var(--uyari); }
+/* Oneri kartlari: kurulmadan ONCE gorulen kadro / guncelleme. */
+.oneri-uye { font-size: var(--yz-kucuk); color: var(--metin-2);
+             padding: 3px 0 3px 10px; border-left: 2px solid var(--cizgi-acik);
+             margin: 4px 0; }
+.oneri-uye b { color: var(--metin); font-weight: 600; }
+.oneri-uye .uyari { color: var(--uyari); }
+.istek-eylem select { background: var(--zemin); color: var(--metin);
+                      border: 1px solid var(--cizgi); border-radius: 5px;
+                      font-size: var(--yz-kucuk); padding: 4px; }
+.cek-eylem { display: flex; gap: 8px; margin-top: 16px; align-items: center; }
+/* Form: etiket ustte, alan altta; ipucu ALANIN ne yapacagini soyler. */
+.form-alan { margin-top: 12px; }
+.form-alan label { display: block; font-size: var(--yz-mikro);
+                   letter-spacing: .6px; text-transform: uppercase;
+                   color: var(--metin-3); margin-bottom: 4px; }
+.form-alan input, .form-alan select {
+  width: 100%; background: var(--zemin); color: var(--metin);
+  border: 1px solid var(--cizgi); border-radius: 5px; padding: 7px 8px;
+  font-size: var(--yz-alt); }
+.form-alan input[type=checkbox] { width: auto; }
+.form-ipucu { font-size: var(--yz-kucuk); color: var(--metin-3);
+              margin-top: 4px; line-height: 1.45; }
+.form-ipucu.uyari { color: var(--uyari); }
+.form-sira { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+/* YETENEK: durum noktasi bir OLCUMDUR -- yesil hazir, sari dar, gri yok,
+   mor bilinmiyor. "Bilinmiyor" hazir sayilmaz. */
+.ytn-grup { margin-bottom: 14px; }
+.ytn-bas { display: flex; align-items: baseline; gap: 8px;
+           font-size: var(--yz-mikro); letter-spacing: .6px;
+           text-transform: uppercase; color: var(--metin-3); margin-bottom: 4px; }
+.ytn-bas .sahip { font-size: var(--yz-mikro); text-transform: none;
+                  letter-spacing: 0; }
+.ytn-satir { display: grid; grid-template-columns: 10px minmax(90px, 30%) 1fr auto;
+             gap: 8px; align-items: baseline; padding: 4px 0;
+             border-bottom: 1px solid var(--cizgi); font-size: var(--yz-alt); }
+.ytn-nokta { width: 8px; height: 8px; border-radius: 50%; background: var(--metin-3);
+             align-self: center; }
+.ytn-nokta.hazir { background: var(--iyi); }
+.ytn-nokta.dar { background: var(--uyari); }
+.ytn-nokta.bilinmiyor { background: var(--bekleyen); }
+.ytn-not { color: var(--metin-2); font-size: var(--yz-kucuk); }
+.ytn-care { grid-column: 2 / -1; color: var(--metin-3); font-size: var(--yz-kucuk); }
+.ytn-satir button { font-size: var(--yz-kucuk); padding: 2px 8px; }
+.ytn-form { display: flex; gap: 6px; margin-top: 8px; }
+.ytn-form input { flex: 1; min-width: 0; background: var(--zemin); color: var(--metin);
+                  border: 1px solid var(--cizgi); border-radius: 5px; padding: 5px 7px;
+                  font-size: var(--yz-kucuk); }
+.ytn-para { padding: 8px 10px; border: 1px solid var(--cizgi); border-radius: 6px;
+            margin-bottom: 14px; font-size: var(--yz-kucuk); color: var(--metin-2); }
+.ytn-para b { color: var(--metin); }
+.cek-eylem input { flex: 1; background: var(--zemin); color: var(--metin);
+                   border: 1px solid var(--cizgi); border-radius: 5px;
+                   padding: 6px 8px; font-size: var(--yz-alt); }
+
+/* Açılır günlük */
+.gunluk {
+  position: fixed; left: 0; right: 0; bottom: 84px; height: 46vh;
+  background: var(--zemin-2); border-top: 1px solid var(--cizgi-acik);
+  box-shadow: 0 -14px 34px rgba(0,0,0,.5); z-index: 30;
+  display: flex; flex-direction: column;
+}
+.gunluk-bas { display: flex; align-items: center; justify-content: space-between;
+              padding: 11px 18px; border-bottom: 1px solid var(--cizgi);
+              font-size: var(--yz-kucuk); font-weight: 700; letter-spacing: 1px;
+              color: var(--metin-3); }
+.gunluk-akis { flex: 1; overflow-y: auto; padding: 6px 0 12px; }
+.gunluk-satir { display: grid; grid-template-columns: 52px 96px 1fr;
+                gap: 12px; padding: 5px 18px; font-size: var(--yz-alt); align-items: baseline; }
+.gunluk-satir:hover { background: var(--zemin-3); }
+.gunluk-saat { color: var(--metin-3); font-size: var(--yz-kucuk); font-variant-numeric: tabular-nums; }
+.gunluk-kim { color: var(--metin-2); font-weight: 600; overflow: hidden;
+              text-overflow: ellipsis; white-space: nowrap; }
+.gunluk-ne { color: var(--metin-2); }
+.gunluk-satir[data-onem="olumlu"]  .gunluk-ne { color: var(--iyi); }
+.gunluk-satir[data-onem="dikkat"]  .gunluk-ne { color: var(--uyari); }
+.gunluk-satir[data-onem="bekleme"] .gunluk-ne { color: var(--bekleyen); }
+.gunluk-satir[data-onem="kotu"]    .gunluk-ne { color: var(--kotu); }
+
+/* ═══════════════════════ ÇEKMECE ═══════════════════════ */
+
+.perde { position: fixed; inset: 0; background: rgba(6,8,11,.6);
+         z-index: 40; display: flex; justify-content: flex-end; }
+.cekmece {
+  width: 620px; max-width: 92vw; height: 100%; overflow-y: auto;
+  background: var(--zemin-2); border-left: 1px solid var(--cizgi-acik);
+  padding: 20px 24px 28px;
+}
+.cek-bas { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 18px; }
+.cek-baslik { font-size: var(--yz-sayi); font-weight: 650; line-height: 1.3; }
+.cek-ust { font-size: var(--yz-kucuk); color: var(--metin-3); }
+.cek-kapat { margin-left: auto; color: var(--metin-3); font-size: var(--yz-sayi); }
+.cek-alan { margin-bottom: 14px; }
+.cek-etiket { font-size: var(--yz-mikro); font-weight: 700; letter-spacing: .9px;
+              color: var(--metin-3); margin-bottom: 4px; }
+.cek-deger { font-size: var(--yz-govde); line-height: 1.5; }
+.cek-kutu { background: var(--zemin-3); border: 1px solid var(--cizgi);
+            border-radius: 8px; padding: 11px 13px; margin-bottom: 9px; }
+.cek-kutu pre, .cek-terminal {
+  font: 11.5px/1.6 "Cascadia Mono", Consolas, monospace;
+  color: #b8c4d0; white-space: pre-wrap; word-break: break-word;
+}
+.cek-kutu pre { margin-top: 6px; max-height: 190px; overflow: auto; }
+.cek-terminal { background: #0a0d11; border: 1px solid var(--cizgi);
+                border-radius: 8px; padding: 12px 14px; max-height: 340px;
+                overflow-y: auto; }
+.cek-terminal .brifing { color: var(--bilgi); }
+.cek-terminal .arac    { color: var(--uyari); }
+.cek-terminal .kanit   { color: var(--iyi); }
+.cek-terminal .kotu    { color: var(--kotu); }
+.cek-terminal .bekleme { color: var(--bekleyen); }
+.cek-terminal .sonuk   { color: var(--metin-3); }
+.etiketler { display: flex; gap: 7px; flex-wrap: wrap; margin-top: 6px; }
+.etiket { font-size: var(--yz-mikro); padding: 2px 8px; border-radius: 5px;
+          border: 1px solid var(--cizgi); color: var(--metin-3); }
+.etiket.lider { color: var(--vurgu); border-color: rgba(224,120,90,.45); }
+.etiket.yazamaz { color: var(--bekleyen); border-color: rgba(155,139,208,.45); }
+.etiket.ders { color: var(--uyari); border-color: rgba(217,164,65,.45); }
+
+/* ═══════════════════════ DAR PENCERE ═══════════════════════
+   Sirayla feda edilir: once tahtanin genisligi, sonra sag kolonun
+   genisligi, EN SON eylem alani -- onay/soru kuyrugu insanin isidir. */
+
+@media (max-width: 1320px) {
+
+  .gorunum#gorunum-tahta { overflow-x: auto; }
+  .tahta { min-width: 920px; }
+  .marka-alt { display: none; }
+}
+
+@media (max-width: 1000px) {
+  body { grid-template-rows: auto 1fr 84px; }
+  .serit { flex-wrap: wrap; }
+  .ray { width: 100%; padding: 8px 16px; gap: 14px;
+         border-top: 1px solid var(--cizgi); overflow-x: auto; }
+  .ray-ayrac { display: none; }
+
+}
+
+/* ═══════════════════ CANLI IZLE ═══════════════════
+   Ayri bir gorunum olmasinin sebebi: surekli ekranda duran terminaller
+   paneli dagitiyordu (kullanici: "karmasik gorunuyor"). Ama izleme
+   ihtiyaci gercek. Cozum terminalleri SILMEK degil, YERINI vermek --
+   varsayilan sade kalir, izlemek isteyen buraya gelir. */
+.canli-izle {
+  padding: 16px; display: grid; gap: 12px; align-content: start;
+  /* 420px'te iki pano 852px isterdi ve sutun hicbir zaman o kadar
+     genis olmadi -- yani "dosenmis terminal panolari" kagit uzerinde
+     kaldi. Esik OLCULEN pano genisligine cekildi. */
+  grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+}
+.pano {
+  background: #0a0d11; border: 1px solid var(--cizgi); border-radius: 9px;
+  display: flex; flex-direction: column; overflow: hidden;
+  min-width: 0;
+}
+.pano-bas {
+  display: flex; align-items: center; gap: 9px; flex: none;
+  padding: 9px 13px; background: var(--zemin-2);
+  border-bottom: 1px solid var(--cizgi);
+}
+.pano-ad { font-weight: 650; font-size: var(--yz-govde); }
+.pano-meslek { font-size: var(--yz-kucuk); color: var(--metin-3); }
+.pano-gorev { font-size: var(--yz-kucuk); color: var(--metin-2); background: var(--zemin);
+              border-radius: 5px; padding: 1px 7px; }
+.pano-oda { margin-left: auto; font-size: var(--yz-kucuk); color: var(--metin-3); }
+.pano-oda.masa    { color: var(--iyi); }
+.pano-oda.inceleme{ color: var(--uyari); }
+.pano-oda.bekleme { color: var(--bekleyen); }
+.pano-oda.onay_kapisi { color: var(--kotu); }
+.pano-ic {
+  flex: 1; overflow-y: auto; padding: 10px 13px;
+  font: 11.5px/1.65 "Cascadia Mono", Consolas, monospace; color: #b8c4d0;
+}
+.pano-ic .brifing { color: var(--bilgi); }
+.pano-ic .arac    { color: var(--uyari); }
+.pano-ic .kanit   { color: var(--iyi); }
+.pano-ic .kotu    { color: var(--kotu); }
+.pano-ic .bekleme { color: var(--bekleyen); }
+.pano-ic .sonuk   { color: var(--metin-3); }
+.pano-ic .yeni    { animation: belir .5s; }
+@keyframes belir { from { opacity: 0; transform: translateY(3px) } }
+.canli-bos { padding: 40px 18px; color: var(--metin-3); font-size: var(--yz-govde); }
+
+@media (max-width: 1100px) {
+  .canli-izle { grid-template-columns: 1fr; }
+}
+
+/* ── Pano ozeti: ajanin OLCULMUS sicili ─────────────────────────
+   Olculmus tasarim hatasi (21.09.2026): panel gercek veriyle bakildiginda
+   "bos . bos . bos . bos" diyordu; 9 is bitmis bir ofis hic kullanilmamis
+   gibi gorunuyordu. Bu serit, ana alanin HER ZAMAN dolu olmasini saglar.
+   Icerigi bize ozgu: yazma kilidi, kanit sayisi, turun maliyeti. */
+.pano-ozet { display: flex; flex-wrap: wrap; gap: 5px 8px;
+             padding: 7px 11px; border-bottom: 1px solid var(--cizgi);
+             background: rgba(255,255,255,.015); }
+.ozet-oge { display: inline-flex; align-items: baseline; gap: 5px;
+            font-size: var(--yz-kucuk); color: var(--metin-3); }
+.ozet-oge b { color: var(--metin-2); font-weight: 600; font-size: var(--yz-alt); }
+.ozet-oge i { font-style: normal; }
+.ozet-oge.sonuk, .ozet-oge.sonuk b { color: var(--metin-3); opacity: .65; }
+
+/* Yazma kilidi: Yasa 1'in ekrandaki hali. Ayirt edici renk, cunku
+   cakisan bir talebin neden reddedildigini aciklayan sey budur. */
+.ozet-oge.kilit b { color: #d4a04f; }
+.ozet-oge.kilit i { color: #d4a04f; opacity: .8; }
+/* Kanit: kanit kapisinin ekrandaki hali. */
+.ozet-oge.kanit b { color: #5fb98a; }
+/* Basarisiz tur GIZLENMEZ -- kacagin oldugu yeri olcmemek, olcmemenin
+   en pahali hali. */
+.ozet-oge.dustu b { color: #d64a4a; }
+.ozet-oge.is.bitti b { color: #5fb98a; }
+.ozet-oge.is.iptal b, .ozet-oge.is.iptal i { opacity: .55; }
+
+/* Dinlenen ajan SOLGUN ama GORUNUR: gozun once calisana bakmasi
+   gerekir, ama dinlenen de bir bilgidir (ne yapmis, ne tutuyor). */
+.pano.dinleniyor { opacity: .82; }
+.pano.dinleniyor .pano-ic { max-height: 120px; }
+
+
+/* Sabit 300px yukseklik KALKTI: pano icerigi kadar buyur.
+   Olculdu -- ciktisi olmayan panolar ekranin yarisini yiyordu ve
+   hicbir sey soylemiyorlardi. Ciktisi olan pano yine sinirli
+   (terminal duvar kagidi degil, penceredir). */
+.pano .pano-ic { max-height: 260px; min-height: 90px; }
+.pano.dinleniyor .pano-ic { max-height: 140px; }
+.pano.cikti-yok .pano-ozet { border-bottom: none; }
+
+/* ── NE YAPILDI ─────────────────────────────────────────────────
+   Dinlenen ofis ile hic kullanilmamis ofis ayni gorunmesin.
+   Her kartta KANIT SAYISI var: kanitsiz is kapanmaz, yani o sayi
+   isin neden kapandiginin cevabidir. Rakipte boyle bir sey yok
+   cunku kanit kapisi da yok. */
+.yapilanlar { padding: 4px 16px 18px; }
+.yapilanlar-bas { display: flex; align-items: center; gap: 8px;
+                  font-size: var(--yz-kucuk); letter-spacing: .08em;
+                  color: var(--metin-3); margin: 10px 2px 9px; }
+.yapilanlar-bas .sayi { background: var(--zemin-3); border-radius: 20px;
+                        padding: 1px 8px; color: var(--metin-2); }
+.yapilanlar-izgara { display: grid; gap: 8px;
+                     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+.yapilan { text-align: left; background: var(--zemin-2); cursor: pointer;
+           border: 1px solid var(--cizgi); border-left: 2px solid #5fb98a;
+           border-radius: 8px; padding: 9px 11px; color: inherit; font: inherit; }
+.yapilan:hover { background: var(--zemin-3); }
+.yapilan-no { font-size: var(--yz-kucuk); color: var(--metin-3); margin-right: 6px; }
+.yapilan-ad { font-size: var(--yz-alt); }
+.yapilan-alt { display: flex; flex-wrap: wrap; gap: 4px 8px; margin-top: 6px;
+               font-size: var(--yz-kucuk); color: var(--metin-3); }
+.yapilan-kanit { color: #5fb98a; }
+.yapilan-alan { background: var(--zemin); border-radius: 4px; padding: 0 5px;
+                font-family: "Cascadia Mono", Consolas, monospace;
+                font-size: var(--yz-mikro); }
+
+
+/* Ciktisi olmayan panonun ICI gizlenir ama DOM'da KALIR.
+   Olculdu (21.09.2026): `ic` hic eklenmeyince canli akis gorunmeyen
+   bir dugume yaziyordu ve ajan KOSARKEN pano bos kaliyordu -- bosta
+   dogru calisip is sirasinda sessizce bozulan sinif. */
+.pano.cikti-yok .pano-ic { display: none; }
+.pano.cikti-yok .pano-ozet { border-bottom: none; }
+
+/* ── KULLANIM KARTI (pano ustu) ──
+   Jeton + API karsiligi. "fiyatsiz" etiketi bilerek GORUNUR bir renkte:
+   sahte bir $0 sessizce dogru gorunurdu, fiyatsiz ise soruyu sordurur. */
+.kullanim {
+  display: flex; flex-wrap: wrap; gap: 8px 18px;
+  padding: 7px 13px; background: var(--zemin);
+  border-bottom: 1px solid var(--cizgi); flex: none;
+}
+.kullanim-blok { display: flex; align-items: baseline; gap: 7px; min-width: 0; }
+.kullanim-etiket {
+  font-size: var(--yz-mikro); letter-spacing: .6px; text-transform: uppercase;
+  color: var(--metin-3);
+}
+.kullanim-jeton { font-size: var(--yz-alt); color: var(--metin); font-weight: 600; }
+.kullanim-para { font-size: var(--yz-kucuk); color: var(--iyi); }
+.kullanim-para.fiyatsiz { color: var(--uyari); font-style: italic; }
+.kullanim-eksik { font-size: var(--yz-mikro); color: var(--uyari); }
+
+/* Rakamlar sutun halinde okundugu her yerde sabit genislik. */
+.kullanim-jeton, .kullanim-para, .ozet-oge b, .hr-plaka-adet,
+.sutun-adet, .kanat-sayac { font-variant-numeric: tabular-nums; }
+
+/* ── OKUNUR KİP ──
+   Terminal kipi "ne YAPTI" sorusunu cevaplar (arac, izin, jeton);
+   okunur kip "ne SOYLEDI" sorusunu. Ayni akis ikisini birden kotu
+   cevapliyordu. Susturulan satirlar SILINMEZ -- anahtar geri
+   cevrildiginde hepsi yerinde. */
+.kip-anahtar {
+  display: flex; align-items: center; gap: 7px;
+  padding: 5px 12px; border-radius: var(--koseli);
+  border: 1px solid var(--cizgi); color: var(--metin-3);
+  font-size: var(--yz-alt);
+}
+.kip-anahtar:hover { border-color: var(--cizgi-acik); color: var(--metin-2); }
+.kip-nokta {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--metin-3); flex: none;
+}
+.kip-anahtar.acik { color: var(--metin); border-color: var(--vurgu); }
+
+/* EFOR SECICI -- uc dugme, biri secili. Secili olan vurgu rengiyle
+   cerceveli; sabit bir mod secildiginde ("hepsi ...") butun ofis o
+   seviyede calisir, bu yuzden secim goz ucuyla gorunmeli. */
+.efor-sec {
+  display: flex; align-items: center; gap: 2px;
+  padding: 2px; border: 1px solid var(--cizgi); border-radius: var(--koseli);
+}
+.efor-etiket {
+  font-size: var(--yz-mikro); text-transform: uppercase; letter-spacing: .06em;
+  color: var(--metin-3); padding: 0 6px 0 4px;
+}
+.efor-sec button {
+  padding: 3px 9px; border-radius: calc(var(--koseli) - 2px);
+  font-size: var(--yz-alt); color: var(--metin-3);
+  border: 1px solid transparent; background: none; cursor: pointer;
+}
+.efor-sec button:hover { color: var(--metin-2); }
+.efor-sec button.secili {
+  color: var(--metin); border-color: var(--vurgu);
+}
+.efor-sec .efor-diger {
+  font-size: var(--yz-kucuk); color: var(--uyari); padding: 0 6px;
+}
+.kip-anahtar.acik .kip-nokta { background: var(--vurgu); }
+
+/* Okunur kipte tipografi de degisir: bu artik bir terminal dokumu
+   degil, OKUNAN bir metin. Tek aralikli yazi tipi hizalama icindir;
+   burada hizalanacak bir sey yok, okunacak bir sey var. */
+.pano-ic.okunur {
+  font-family: "Segoe UI", Inter, system-ui, sans-serif;
+  font-size: var(--yz-govde);
+  line-height: 1.7;
+  color: var(--metin-2);
+  padding: 14px 18px;
+}
+/* Satirlar paragrafa donusur: 65 karakterlik okuma genisligi ve
+   aralarinda nefes. */
+.pano-ic.okunur > div {
+  max-width: 68ch; margin-bottom: 9px; white-space: pre-wrap;
+}
+.pano-ic.okunur > div:last-child { margin-bottom: 0; }
+.pano-ic.okunur .kanit { color: var(--iyi); font-size: var(--yz-alt); }
+
+/* ── SPRITE HAREKETİ ──
+   Rakipte ajanlar ofiste geziniyor ve bu hos duruyor; ama gezinme
+   HICBIR SEY soylemez -- ajan gercekte bir yere yurumuyor.
+
+   Burada hareket ajanin HALINE bagli, yani bir gostergedir:
+
+     masa         -> hafif nefes   "su an bir tur kosuyor"
+     bekleme      -> yavas nabiz   "soru sordu, cevap bekliyor"
+     onay_kapisi  -> yavas nabiz   "senin onayini bekliyor"
+     inceleme     -> hareketsiz    (lider bakiyor, ajan beklemede degil)
+     mola         -> HAREKETSIZ    "bosta"
+
+   Hepsi ayni sekilde oynasaydi hareket bilgi tasimazdi; hicbiri
+   oynamasaydi calisan ile bosta duran ayni gorunurdu -- panelin
+   dondurulma sebebinin ta kendisi. */
+@keyframes nefes {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-2px); }
+}
+@keyframes bekleyis {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: .55; }
+}
+.hr-ajan[data-oda="masa"] .sprite-kutu {
+  animation: nefes 2.4s ease-in-out infinite;
+}
+.hr-ajan[data-oda="bekleme"] .sprite-kutu,
+.hr-ajan[data-oda="onay_kapisi"] .sprite-kutu {
+  animation: bekleyis 2.8s ease-in-out infinite;
+}
+/* Mola ve inceleme bilerek HAREKETSIZ -- durgunluk da bir bilgidir. */
+
+/* ── YÜRÜYÜŞ: yalnızca YER değişince ──
+   Ajan yeni yerine KAPIDAN gecerek yurur (JS: yolBul). Adim hissi icin
+   dikey zipla: piksel oyunlarda yuruyusu okutan sey budur, ve tek kare
+   sprite ile ikinci bir figur cizmeden elde edilir. Yurumeyen ajan
+   yerinde durur -- surekli gezinme gurultudur, gecis bilgidir. */
+@keyframes adim {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-3px); }
+}
+.hr-ajan.yuruyor .sprite-kutu { animation: adim .32s steps(2) infinite !important; }
+
+/* Hareketten rahatsiz olan icin KAPALI -- yurume de nefes de. Bilgi
+   kaybolmaz: ajan yine DOGRU yerde durur (isinlanir), oda plakasi ve
+   balon ayni seyi soyluyor -- hareket onlarin USTUNE bir kat, tek
+   tasiyicisi degil. */
+@media (prefers-reduced-motion: reduce) {
+  .hr-ajan { transition: none !important; }
+  .hr-ajan .sprite-kutu { animation: none !important; }
+  .pano-ic .yeni { animation: none !important; }
+}
+
+/* ── "HQ CANLI" ŞERİDİ ──
+   Cok kanatli bir ofiste hangi kanadin sahnesine baktigini bir bakista
+   soyler. Sayilar olculur (kadro + masada olan), uydurulmaz. */
+/* SOHBET: insan sagda, lider solda. Cevap satir sonlarini KORUR --
+   liderin raporu liste ve "Defterden" blogu tasir. */
+.sohbet-akis { display: flex; flex-direction: column; gap: 10px; }
+.sohbet-balon { max-width: 88%; padding: 8px 11px; border-radius: 9px;
+                font-size: var(--yz-govde); line-height: 1.5;
+                white-space: pre-wrap; word-break: break-word; }
+.sohbet-balon.insan { align-self: flex-end; background: color-mix(in srgb, var(--vurgu) 18%, var(--zemin-2));
+                      border: 1px solid color-mix(in srgb, var(--vurgu) 40%, transparent); }
+.sohbet-balon.lider { align-self: flex-start; background: var(--zemin-2);
+                      border: 1px solid var(--cizgi); }
+.sohbet-balon.bekliyor { color: var(--metin-3); font-style: italic; }
+.sohbet-ust { font-size: var(--yz-mikro); color: var(--metin-3); margin-bottom: 3px;
+              letter-spacing: .3px; }
+.kanat-sekme.kanat-ekle { color: var(--metin-3); flex: none; min-width: 0;
+                          padding-left: 14px; padding-right: 14px; font-size: var(--yz-one); }
+/* Raydaki sayac etiketleri kirilmaz: iki satira dusen "seni / bekliyor"
+   okunmaz (olculdu, + takim sekmesi eklenince). */
+.ray-oge span { white-space: nowrap; }
+.form-alan input[type=color] { height: 32px; padding: 2px; }
+/* Kadro seridi: cipler yatay kayar, kart uzerine gelince acilir. */
+.kadro-serit { display: flex; gap: 6px; overflow-x: auto; padding: 6px 2px 8px;
+               scrollbar-width: thin; }
+.kadro-cip { position: relative; display: inline-flex; align-items: center;
+             gap: 6px; flex: none; padding: 4px 10px; border-radius: 12px;
+             border: 1px solid var(--cizgi); background: var(--zemin-2);
+             color: var(--metin-2); font-size: var(--yz-kucuk); cursor: pointer; }
+.kadro-cip:hover, .kadro-cip.secili { color: var(--metin); border-color: var(--vurgu); }
+.kadro-nokta { width: 7px; height: 7px; border-radius: 50%; background: var(--metin-3); }
+.kadro-nokta.oda-masa { background: var(--iyi); }
+.kadro-nokta.oda-bekleme { background: var(--bekleyen); }
+.kadro-nokta.oda-onay_kapisi { background: var(--kotu); }
+.kadro-nokta.oda-inceleme { background: var(--uyari); }
+.kadro-kart { display: none; position: fixed; z-index: 40; width: 240px;
+              margin-top: 34px; padding: 9px 11px; text-align: left;
+              background: var(--zemin-3); border: 1px solid var(--cizgi-acik);
+              border-radius: 7px; box-shadow: 0 6px 18px rgba(0,0,0,.35);
+              white-space: normal; pointer-events: none; }
+.kadro-cip:hover .kadro-kart { display: block; }
+.kadro-kart b { font-size: var(--yz-alt); color: var(--metin); }
+.kadro-kart-alt { font-size: var(--yz-kucuk); color: var(--metin-3); margin-top: 2px; }
+.kadro-kart-is { font-size: var(--yz-kucuk); color: var(--metin-2); margin-top: 6px;
+                 line-height: 1.4; }
+.hq-serit {
+  display: flex; align-items: center; gap: 10px;
+  margin-top: 10px; padding: 9px 14px;
+  background: var(--zemin-2);
+  border: 1px solid var(--cizgi);
+  border-left: 3px solid var(--oda-tema, var(--vurgu));
+  border-radius: 9px;
+}
+.hq-nokta {
+  width: 7px; height: 7px; border-radius: 50%; flex: none;
+  background: var(--iyi); box-shadow: 0 0 8px var(--iyi);
+}
+.hq-ad {
+  font-size: var(--yz-alt); font-weight: 600; letter-spacing: .4px;
+  color: var(--metin);
+}
+.hq-alt { font-size: var(--yz-kucuk); color: var(--metin-3); margin-left: auto; }
+
+/* ═══════════ ÜÇ SÜTUN — AYNI ANDA ═══════════
+   Onceki surumde bunlar sekmeydi ve ayni anda yalnizca biri
+   goruluyordu. Ajan ofisi bir IZLEME yuzeyidir: degeri goz ucuyla
+   gormekte. Sekme peripheral farkindaligi oldurur.
+
+   Genislikler esit DEGIL: orta sutun (terminal) en genis, cunku okunan
+   sey orada akiyor. Duzen bir onceliklendirmedir. */
+.sutunlar {
+  /* YERLESIM (23.09.2026): sutunlar artik SABIT izgara degil; panel.js
+     duzeni kurar ve her sutunun genisligi `flex-grow` agirligidir.
+     Asagidaki oran yorumlari varsayilan duzenin GEREKCESIDIR ve
+     `yerlesimVarsayilan()` o oranlari tasir. */
+  flex: 1; min-height: 0; display: flex; overflow-x: auto;
+  /* OFIS SUTUNU GENISLETILDI (22.09.2026) -- olcumle zorunlu oldu.
+     Eski oranlarda ofis 375px'e dusuyordu; kat planinin iki oda
+     sutunu icin hucre ici 146px kaliyor ve ajan karti 152px. Yani
+     iki sutunlu bir kat plani FIZIKSEL olarak sigmiyordu ve panel
+     bunu sessizce dikey listeye cevirmisti.
+     Terminal hala en genis kalir (okunan sey orada akiyor); ofis
+     ikinci sirada, cunku tasidigi sey UZAMSAL. */
+  /* GENISLIK YENIDEN DAGITILDI (22.09.2026) -- olcumle.
+     Kullanici: *"terminaller gelmiyor."* Iki sebebi vardi; ikincisi
+     genislikti: terminal sutunu 480px ve pano izgarasi
+     `minmax(420px,1fr)` -- yani IKI pano hicbir zaman yan yana
+     gelemiyordu. Rakipte terminal alani ~675px ve iki pano dosenmis.
+     Ofis ve gorev sutunlarindan olculmus pay alindi: ofis 425 -> ~390
+     (iki oda sutunu icin hucre ici hala 152px'lik karti tasiyor),
+     gorevler 333 -> ~300. */
+  background: var(--cizgi);
+}
+.sutun {
+  /* Alt sinir: sifira ezilen bir pano, kaybolmus bir panodur. */
+  display: flex; flex-direction: column; min-width: 220px; min-height: 0;
+  background: var(--zemin);
+}
+.sutun-bas {
+  display: flex; align-items: center; gap: 8px; flex: none;
+  padding: 8px 12px; border-bottom: 1px solid var(--cizgi);
+  background: var(--zemin-2);
+}
+.sutun-ad {
+  font-size: var(--yz-alt); font-weight: 600; letter-spacing: .3px;
+  color: var(--metin);
+}
+.sutun-sayac {
+  font-size: var(--yz-mikro); color: var(--metin-3);
+  border: 1px solid var(--cizgi); border-radius: 9px; padding: 1px 7px;
+  font-variant-numeric: tabular-nums;
+}
+/* Bos sayac cizilmez: kenarlikli bos halka "0" gibi okunur. */
+.sutun-sayac:empty { display: none; }
+.sutun-kat {
+  margin-left: auto; color: var(--metin-3); font-size: var(--yz-alt);
+  width: 20px; height: 20px; border-radius: 5px; line-height: 1;
+}
+.sutun-kat:hover { background: var(--zemin-3); color: var(--metin); }
+
+/* KAPALI SUTUN: yalnizca basligi kalir. Sayac durdugu icin kapali
+   panel bile "orada bir sey var mi" sorusunu cevaplar. */
+.sutun.kapali { flex: 0 0 150px; min-width: 150px; }
+.sutun.kapali .yigin-govde { display: none; }
+.sutun.kapali .gorunum { display: none; }
+/* Daraltilmis sutunda bekleyen kuyrugu da gizlenir -- insan bilerek
+   daralttI. Kuyruk sayisi ustteki RAYDA kirmizi durmaya devam eder. */
+.sutun.kapali .bekleyen-bolum { display: none; }
+.sutun.kapali .sekmeler button:not(.secili) { display: none; }
+
+.sutun-bas-sekme { padding: 0 8px 0 0; gap: 0; }
+.sutun-bas-sekme .sekmeler { border-bottom: 0; flex: 1; min-width: 0;
+                             overflow-x: auto; }
+.sutun-bas-sekme .sekmeler button { white-space: nowrap; }
+.yigin > .bekleyen-bolum { max-height: 38%; flex: none; overflow-y: auto; }
+.hesap-bolum { overflow-y: auto; }
+.hesap-bolum .kullanim, .hesap-bolum .baglam { border-top: 0; }
+/* AD CAKISMASI: `.kullanim` iki ayri seydir -- pano ustundeki kullanim
+   karti (flex-wrap, yatay) ve Hesap blogu (dikey). Sonraki kural ilkini
+   eziyordu ve Hesap basligi "HESAPLARyenilenme" diye bitisik okunuyordu
+   (yerlesimden ONCE de vardi, yedekte olculdu). Hesap blogu burada geri
+   alinir. */
+.hesap-bolum .kullanim {
+  display: block; padding: 12px 16px 4px; background: none; border-bottom: 0;
+}
+
+/* ── YIGIN · SEKME · AYIRICI ── */
+.yigin { display: flex; flex-direction: column; min-height: 80px; min-width: 0; }
+.yigin-bas { padding: 0 8px 0 0; gap: 0; }
+.yigin-bas .sekmeler { border-bottom: 0; flex: 1; min-width: 0; overflow-x: auto; }
+.yigin-bas .sekmeler button { white-space: nowrap; cursor: grab; }
+.yigin-bas .sekmeler button:active { cursor: grabbing; }
+.yigin-govde { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+/* BUYUT / BOL dugmeleri: sekmelerin sagi, daraltma dugmesinin solu. */
+.yigin-arac { margin-left: auto; display: flex; gap: 2px; flex: none; }
+.yigin-arac + .sutun-kat { margin-left: 2px; }
+.yigin-dugme { color: var(--metin-3); font-size: var(--yz-alt); width: 22px; height: 20px;
+  border-radius: 5px; line-height: 1; }
+.yigin-dugme:hover { background: var(--zemin-3); color: var(--metin); }
+/* Buyutulen yigin calisma alaninin USTUNE yayilir; konumu olculur
+   (buyukKonumla), burada yalniz katman ve zemin. */
+.yigin.buyuk { position: fixed; z-index: 40; background: var(--zemin);
+  box-shadow: 0 0 0 1px var(--cizgi), 0 12px 40px rgba(0,0,0,.45); }
+.pano-govde { flex: 1; min-height: 0; min-width: 0; display: flex; flex-direction: column; }
+.pano-govde[hidden] { display: none; }
+.ayirici-dikey, .ayirici-yatay, .ayirici-bos { flex: 0 0 5px; background: var(--cizgi); }
+.ayirici-bos { flex-basis: 1px; }
+.ayirici-dikey { cursor: col-resize; }
+.ayirici-yatay { cursor: row-resize; }
+.ayirici-dikey:hover, .ayirici-yatay:hover { background: var(--vurgu); }
+body.boyutlaniyor { user-select: none; }
+body.boyutlaniyor .yigin-govde { pointer-events: none; }
+/* Birakma gostergesi: nereye dusecegini ONCEDEN gosterir -- birakinca
+   neyin olacagini tahmin ettirmek yanlis birakma demektir. */
+#birak-gosterge {
+  position: fixed; z-index: 60; pointer-events: none; border-radius: 6px;
+  border: 2px solid var(--vurgu);
+  background: color-mix(in srgb, var(--vurgu) 16%, transparent);
+}
+body.surukleniyor .yigin-govde { pointer-events: none; }
+
+/* Sutun ici gorunumler artik dar: iç dolgular kuculur. */
+.sutun #gorunum-ofis { padding: 12px; }
+/* `.sutun .kat-plani { grid-template-columns: 1fr }` KALDIRILDI
+   (22.09.2026). Kat planini sutun icinde tek kolona zorluyordu, yani
+   "kat plani" dedigimiz sey pratikte dikey bir LISTEYDI. Genislik
+   sorunu vardi ve dogru cozum plani duzlestirmek degil ofis sutununa
+   gercek genislik vermekti -- asagida. */
+/* `.sutun .canli-izle { grid-template-columns: 1fr }` KALDIRILDI
+   (22.09.2026) -- kat planindaki gecersiz kilmanin BIREBIR aynisi,
+   ayni dosyada. Panolari sutun icinde tek kolona zorluyordu; yani
+   "dosenmis panolar" dedigimiz sey pratikte dikey bir yigindi.
+   Iki kopyadan biri duzeltilip oteki unutuluyor -- bu projede
+   kacinci kez. */
+.sutun .tahta { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+
+/* ─────────────── KOD: diskte OLCULEN degisiklik ───────────────
+   Terminalin altinda yasar, ayri bir sekmede degil. Sekme "ne akti"
+   ile "diskte ne degisti" arasindaki karsilastirmayi bir tiklamanin
+   arkasina koyardi -- oysa bakilmasi gereken sey tam olarak o fark.
+
+   Oturumlar arasi acik kalmasi bir arayuz numarasi degil: veri
+   `degisim` tablosunda yasar, bellekte degil. Tarayiciyi kapatmak dun
+   gece kosan bir isin degisikligini kaybettirmez. */
+.kod-ray {
+  display: flex; align-items: center; gap: 8px; flex: none;
+  padding: 4px 12px; border-bottom: 1px solid var(--cizgi);
+  background: var(--zemin-2);
+}
+.kod-ray:has(.kod-not:empty) { display: none; }
+.kod-not {
+  font-size: var(--yz-mikro); color: var(--metin-3);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.kod-alan { flex: 1; min-height: 0; padding: 8px 10px; }
+
+/* CANLI IZLEME: tur surerken olculen ara fark. Yesil sol cizgi "su an
+   yaziliyor" der; asagidaki kesin kayittan AYIRT edilebilmeli. */
+.kod-canli:empty { display: none; }
+.kod-canli { margin-bottom: 10px; }
+.kod-canli-bas {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  font-size: var(--yz-mikro); letter-spacing: .06em; text-transform: uppercase;
+  color: var(--iyi); margin: 2px 0 6px;
+}
+.kod-canli-ad { font-weight: 700; }
+.kod-canli-not { color: var(--metin-3); text-transform: none; letter-spacing: 0; }
+.kod-canli-nokta {
+  width: 8px; height: 8px; border-radius: 50%; background: var(--iyi);
+  animation: canli-nabiz 1.4s ease-in-out infinite;
+}
+@keyframes canli-nabiz { 50% { opacity: .35; } }
+@media (prefers-reduced-motion: reduce) {
+  .kod-canli-nokta { animation: none; }
+}
+.kod-satir.canli { border-left: 3px solid var(--iyi); }
+.kod-ara {
+  font-size: var(--yz-mikro); letter-spacing: .06em; color: var(--metin-3);
+  border-top: 1px solid var(--cizgi); padding-top: 6px; margin: 4px 0 6px;
+}
+
+.kod-satir {
+  border: 1px solid var(--cizgi); border-radius: 6px;
+  margin-bottom: 6px; overflow: hidden; background: var(--zemin-2);
+}
+.kod-ust {
+  display: flex; align-items: center; gap: 8px; width: 100%;
+  padding: 6px 9px; text-align: left; font-size: var(--yz-alt);
+  color: var(--metin);
+}
+.kod-ust:hover { background: var(--zemin-3); }
+.kod-yol {
+  font-family: ui-monospace, Consolas, monospace; font-size: var(--yz-kucuk);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.kod-hal {
+  font-size: var(--yz-mikro); text-transform: uppercase; letter-spacing: .4px;
+  border: 1px solid var(--cizgi); border-radius: 9px; padding: 0 6px;
+  color: var(--metin-3); flex: none;
+}
+.kod-satir[data-hal="eklendi"] .kod-hal { color: var(--iyi); border-color: var(--iyi); }
+.kod-satir[data-hal="silindi"] .kod-hal { color: var(--kotu); border-color: var(--kotu); }
+.kod-satir[data-hal="degisti"] .kod-hal { color: var(--uyari); border-color: var(--uyari); }
+.kod-sayi {
+  margin-left: auto; flex: none; font-size: var(--yz-mikro);
+  font-variant-numeric: tabular-nums; color: var(--metin-3);
+}
+.kod-sayi .art { color: var(--iyi); }
+.kod-sayi .eks { color: var(--kotu); }
+
+/* BEYAN DISI: kilit bir beyandir ve bu satir beyanin GERCEKLE
+   uyusmadigini soyluyor. Kirmizi cunku Yasa 1'in konusu. */
+.kod-satir.beyan-disi { border-color: var(--kotu); }
+.kod-bayrak {
+  font-size: var(--yz-mikro); border-radius: 9px; padding: 0 6px; flex: none;
+  color: var(--kotu); border: 1px solid var(--kotu);
+}
+/* ATIF BELIRSIZ: paralel tur vardi, "kim yazdi" bilinmiyor. Suclama
+   yok, ama sessizlik de yok -- olcemedigimize hukum vermeyiz. */
+.kod-bayrak.belirsiz { color: var(--metin-3); border-color: var(--cizgi); }
+.kod-bayrak.olculemedi { color: var(--uyari); border-color: var(--uyari); }
+
+.kod-yama {
+  margin: 0; padding: 8px 10px; border-top: 1px solid var(--cizgi);
+  font-family: ui-monospace, Consolas, monospace; font-size: var(--yz-mikro);
+  line-height: 1.45; white-space: pre; overflow-x: auto;
+  background: var(--zemin); color: var(--metin-2); max-height: 320px;
+}
+.kod-yama .y-art { color: var(--iyi); }
+.kod-yama .y-eks { color: var(--kotu); }
+.kod-yama .y-bas { color: var(--bilgi); }
+
+/* ─────────────── KABIN: panelin İÇİNDE gerçek tarayıcı ───────────────
+   `iframe` DEGIL. Olculdu: admin.shopify.com · mail.google.com ·
+   www.google.com hepsi `X-Frame-Options: SAMEORIGIN` -- yani tam
+   kullanicinin calistigi yerler cerceveye girmiyor. Burada gorunen sey
+   uzaktaki Chrome'un KARELERI (CDP screencast); tiklama ve tuslar geri
+   tasiniyor. ChatGPT'nin ajan tarayicisi da boyle calisir.
+
+   ACILMADIKCA HIC YER KAPLAMAZ: CDP yerel bir arka kapidir ve
+   varsayilan dar olmali (`0.0.0.0` reddiyle ayni siniftan karar). */
+/* Kapaliyken pano yerlesime HIC konmaz (panel.js `panoGorunur`). */
+
+.kabin-ray {
+  display: flex; align-items: center; gap: 6px; flex: none;
+  padding: 6px 8px; border-bottom: 1px solid var(--cizgi);
+  background: var(--zemin-2);
+}
+.kabin-ray button {
+  width: 24px; height: 24px; border-radius: 5px; flex: none;
+  color: var(--metin-2); font-size: var(--yz-alt);
+}
+.kabin-ray button:hover { background: var(--zemin-3); color: var(--metin); }
+.kabin-ray input {
+  flex: 1; min-width: 0; background: var(--zemin); color: var(--metin);
+  border: 1px solid var(--cizgi); border-radius: 5px;
+  padding: 4px 8px; font-size: var(--yz-kucuk);
+  font-family: ui-monospace, Consolas, monospace;
+}
+.kabin-ray input:focus { outline: none; border-color: var(--vurgu); }
+
+.kabin-alan {
+  padding: 0; background: #0b0b0d; position: relative;
+  display: flex; align-items: flex-start; justify-content: center;
+  overflow: auto;
+}
+#kabin-kare {
+  display: block; width: 100%; height: auto;
+  /* Tarayici bir yazi degil bir YUZEY: secim ve suruklemeyi kapatiyoruz,
+     yoksa tiklama yerine metin secilir ve girdi kabine hic ulasmaz. */
+  user-select: none; -webkit-user-drag: none; cursor: default;
+}
+#kabin-kare[hidden] { display: none; }
+#kabin-bos {
+  position: absolute; top: 50%; left: 0; right: 0; transform: translateY(-50%);
+  text-align: center; color: var(--metin-3); font-size: var(--yz-alt);
+}
+/* Klavye odagi GORUNUR olmali: insan nereye yazdigini bilmeli. */
+.kabin-alan.odakli { box-shadow: inset 0 0 0 2px var(--vurgu); }
+/* OGE SECICI. Secim kipi GORUNUR olmali: tiklamanin sayfaya gitmedigini
+   insan bilmeli, yoksa "tikladim, olmadi" sanir. */
+.kabin-ray #kabin-sec.acik { background: var(--vurgu); color: #fff; }
+.kabin-alan.sec-kipi #kabin-kare { cursor: crosshair; }
+.kabin-alan.sec-kipi { box-shadow: inset 0 0 0 2px var(--uyari); }
+#kabin-vurgu {
+  position: absolute; pointer-events: none; z-index: 2;
+  border: 2px solid var(--uyari); background: color-mix(in srgb, var(--uyari) 14%, transparent);
+  border-radius: 2px;
+}
+#kabin-vurgu.secili { border-color: var(--vurgu); background: color-mix(in srgb, var(--vurgu) 16%, transparent); }
+#kabin-vurgu[hidden] { display: none; }
+.komut-oge {
+  display: inline-flex; align-items: center; gap: 6px; flex: none; max-width: 280px;
+  padding: 3px 8px; border-radius: 12px; font-size: var(--yz-kucuk);
+  background: color-mix(in srgb, var(--vurgu) 16%, var(--zemin-2));
+  border: 1px solid color-mix(in srgb, var(--vurgu) 45%, transparent);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.komut-oge[hidden] { display: none; }
+.komut-oge button { color: var(--metin-2); font-size: var(--yz-kucuk); }
+
+/* ─────────────── SABLONDAN EKIP ─────────────── */
+.sablon-liste { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 6px; margin: 4px 0 10px; }
+.sablon-kart { text-align: left; background: var(--zemin); border: 1px solid var(--cizgi);
+  border-radius: var(--koseli); padding: 8px 10px; cursor: pointer; color: var(--metin); }
+.sablon-kart:hover { border-color: var(--vurgu); }
+.sablon-ad { font-weight: 600; font-size: var(--yz-alt); }
+.sablon-aciklama { font-size: var(--yz-kucuk); color: var(--metin-2); margin-top: 3px;
+  line-height: 1.4; }
+.sablon-roller { font-size: var(--yz-mikro); color: var(--metin-3); margin-top: 5px; }
+
+/* ─────────────── HAFIZA: bilgi · bag · kural ─────────────── */
+.hf-ust { display: flex; justify-content: flex-end; margin-bottom: 6px; }
+.hf-kip { display: inline-flex; border: 1px solid var(--cizgi); border-radius: var(--koseli); overflow: hidden; }
+.hf-kip-d { background: transparent; border: 0; color: var(--metin-2); padding: 3px 10px;
+  font-size: var(--yz-kucuk); cursor: pointer; }
+.hf-kip-d.secili { background: var(--zemin-3); color: var(--metin); }
+.hf-bolum { padding: 8px 0 10px; border-bottom: 1px solid var(--cizgi); }
+.hf-bas { display: flex; align-items: center; gap: 8px; font-size: var(--yz-mikro);
+  letter-spacing: .06em; color: var(--metin-2); margin-bottom: 6px; cursor: default; }
+details > summary.hf-bas { cursor: pointer; }
+.hf-yuk { color: var(--metin-3); letter-spacing: 0; }
+.hf-yuk.uyari { color: var(--uyari); }
+.hf-not { font-size: var(--yz-kucuk); color: var(--metin-3); line-height: 1.5; margin: 4px 0; }
+.hf-kural { display: flex; align-items: flex-start; gap: 6px; padding: 5px 0;
+  border-left: 3px solid var(--vurgu); padding-left: 8px; margin: 4px 0; flex-wrap: wrap; }
+.hf-kural-metin { flex: 1 1 180px; font-size: var(--yz-alt); line-height: 1.45; }
+.hf-rozet { font-size: var(--yz-mikro); color: var(--metin-2); border: 1px solid var(--cizgi);
+  border-radius: 999px; padding: 0 7px; white-space: nowrap; }
+.hf-mini { background: transparent; border: 1px solid var(--cizgi); color: var(--metin-2);
+  border-radius: var(--koseli); font-size: var(--yz-mikro); padding: 2px 8px; cursor: pointer; }
+.hf-mini:hover { color: var(--metin); background: var(--zemin-3); }
+.hf-form { display: flex; gap: 6px; flex-wrap: wrap; margin: 6px 0; }
+.hf-form input { flex: 1 1 140px; min-width: 0; background: var(--zemin); color: var(--metin);
+  border: 1px solid var(--cizgi); border-radius: var(--koseli); padding: 5px 8px;
+  font-size: var(--yz-alt); }
+.hf-konu { font-weight: 600; }
+.hf-eylem { display: flex; gap: 6px; margin-top: 6px; }
+.hf-bilgi.vurgu { background: rgba(107,163,199,.10); transition: background .3s; }
+.bag-cip { background: rgba(107,163,199,.12); border: 1px solid rgba(107,163,199,.45);
+  color: var(--bilgi); border-radius: 999px; padding: 0 7px; font-size: var(--yz-kucuk);
+  cursor: pointer; margin: 0 2px; }
+.bag-cip.kirik { background: transparent; border-style: dashed; border-color: var(--kotu);
+  color: var(--kotu); }
+.hf-gecmis { margin-top: 6px; border-left: 2px solid var(--cizgi); padding-left: 8px; }
+.hf-gecmis-satir { display: flex; gap: 6px; flex-wrap: wrap; font-size: var(--yz-kucuk);
+  padding: 2px 0; }
+.hf-gecmis-satir.eski { opacity: .6; }
+.hf-kaynak { color: var(--metin-3); }
+.hf-ders { display: flex; gap: 6px; align-items: flex-start; flex-wrap: wrap; padding: 5px 0;
+  font-size: var(--yz-alt); }
+.hf-ders.aday { border-left: 3px solid var(--uyari); padding-left: 8px; }
+.hf-ders-metin { flex: 1 1 180px; line-height: 1.45; }
+.hf-cizge { width: 100%; height: auto; display: block; }
+.hf-kenar { stroke: var(--metin-3); stroke-width: 1.2; opacity: .55; }
+.hf-kenar.kirik { stroke: var(--kotu); stroke-dasharray: 4 3; }
+.hf-kenar.secili { stroke: var(--vurgu); opacity: 1; stroke-width: 2; }
+.hf-ok { fill: var(--metin-3); }
+.hf-dugum { cursor: pointer; }
+.hf-dugum circle { fill: var(--iyi); stroke: var(--zemin); stroke-width: 2; }
+.hf-dugum.insan circle { fill: var(--bilgi); }
+.hf-dugum.kirik circle { fill: transparent; stroke: var(--kotu); stroke-dasharray: 3 2; }
+.hf-dugum text { fill: var(--metin-2); font-size: 11px; paint-order: stroke;
+  stroke: var(--zemin); stroke-width: 3px; }
+.hf-dugum.secili circle { stroke: var(--vurgu); stroke-width: 3; }
+.hf-dugum.secili text { fill: var(--metin); font-weight: 700; }
+.hf-cizge-ayrinti { font-size: var(--yz-kucuk); color: var(--metin-2); margin-top: 6px;
+  line-height: 1.5; }
+
+/* Buyutulmus terminal: panolar alani DOLDURUR. Sabit yukseklikte kalsaydi
+   buyutmenin kazanci yalniz genislik olurdu ve altta bos alan kalirdi
+   (olculdu, 24.09.2026). Satirlar esit paylasir, akis kendi icinde kayar. */
+.yigin.buyuk .canli-izle { height: 100%; align-content: stretch; grid-auto-rows: minmax(260px, 1fr); }
+.yigin.buyuk .canli-izle .pano-ic { max-height: none; flex: 1; min-height: 0; }
+.sablon-kart:disabled { opacity: .45; cursor: not-allowed; }
+.sablon-kart:disabled:hover { border-color: var(--cizgi); }

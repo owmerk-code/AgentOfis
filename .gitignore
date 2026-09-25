@@ -1,0 +1,15 @@
+# Kod git'te; veri YEDEKTE (ofis/yedek.py). Canli veritabani git'e girmez:
+# her tur degisir, gecmisi sisirir ve tutarli kopyasi ancak sqlite
+# yedek API'siyle alinir.
+__pycache__/
+*.pyc
+.pytest_cache/
+.playwright-mcp/
+.claude/
+veri/*.sqlite3
+veri/*.sqlite3-*
+veri/*.sqlite3.yedek-*
+veri/ornek-calisma/
+calisma/
+clewase-review/
+*.tar.gz
