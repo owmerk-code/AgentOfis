@@ -11776,6 +11776,20 @@ CREATE TABLE proje (
 );
 INSERT INTO "proje" VALUES('915d303e41ee4cb59fa908401d277926','Ofisim','Gunluk islerin buyuk kismini ajan ekibiyle yurutmek','Verilen hedef kanitla kapaniyor','','Yerel makine, Python 3.12, Turkce','','C:/Users/pc/Desktop/AgentOfis/calisma','acik',1,'2026-09-18T17:01:47+00:00','2026-09-18T17:01:47+00:00');
 INSERT INTO "proje" VALUES('ada28da59be143d795b1346bd25b4f34','GuvenKart','GuvenKart 3D vitrin projesini yarim kalan yerden tamamlamak','npm test ve npm run test:ui hatasiz geciyor','Gercek odeme, kargo, SMS entegrasyonlari; yeni ozellik eklemek','Node.js CommonJS, Playwright QA, uretilen HTML scripts/pages.cjs''ten gelir - public/*.html ELLE duzenlenmez','','C:/Users/pc/Desktop/GuvenKart-3D','acik',1,'2026-09-18T17:52:07+00:00','2026-09-18T17:52:07+00:00');
+CREATE TABLE tur_anlik (
+    id              TEXT PRIMARY KEY,
+    proje_id        TEXT NOT NULL,
+    gorev_id        TEXT,
+    ajan_ad         TEXT NOT NULL DEFAULT '',
+    kok             TEXT NOT NULL,
+    once            TEXT NOT NULL,
+    sonra           TEXT NOT NULL,
+    dosya           INTEGER NOT NULL DEFAULT 0,
+    atif_belirsiz   INTEGER NOT NULL DEFAULT 0,
+    not_            TEXT NOT NULL DEFAULT '',
+    geri_alindi     TEXT NOT NULL DEFAULT '',
+    olusturuldu     TEXT NOT NULL
+);
 CREATE TABLE yazma_kilidi (
     id              TEXT PRIMARY KEY,
     proje_id        TEXT NOT NULL REFERENCES proje(id),
@@ -11795,6 +11809,8 @@ CREATE INDEX ix_mesaj_alici ON mesaj (proje_id, alici, okundu);
 CREATE INDEX ix_olay_proje ON olay (proje_id, id DESC);
 CREATE INDEX ix_degisim_proje
     ON degisim (proje_id, olusturuldu DESC);
+CREATE INDEX ix_tur_anlik_proje
+    ON tur_anlik (proje_id, olusturuldu DESC);
 DELETE FROM "sqlite_sequence";
 INSERT INTO "sqlite_sequence" VALUES('olay',3060);
 COMMIT;
