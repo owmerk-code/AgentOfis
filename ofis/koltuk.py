@@ -51,7 +51,9 @@ import sqlite3
 import time
 from pathlib import Path
 
-from . import baglayici, degisim, hesap, kullanim, roller, tarayici, tavan
+import subprocess
+
+from . import baglayici, degisim, geri_al, hesap, kullanim, roller, tarayici, tavan
 from .roller import RolHatasi
 from .db import simdi
 from .mcp_sunucu import (yapilandirma as mcp_yapilandirmasi,
@@ -110,6 +112,9 @@ class Koltuk:
         # bir hesap/model duzenine sahip her kullaniciyi kodu degistirmeye
         # zorlar. None ise zincir.VARSAYILAN_ZINCIR kullanilir.
         self.zincir = zincir
+        # Gorev kimligi -> turdan ONCEKI golge commit'i (geri_al.py).
+        # Gorev basina anahtar: paralel turlar ayri iplikte, ayri gorevde.
+        self._golge_once: dict = {}
 
     # -- ana akis ----------------------------------------------------------
 
@@ -236,6 +241,22 @@ class Koltuk:
                              f"Degisim olcumu baslayamadi: {exc}",
                              {"degisim": False}, ajan_ad=ajan_ad,
                              gorev_id=gorev["id"])
+
+        # 2c -- GOLGE ANLIK (geri alma icin, geri_al.py). Olcumun
+        # gosterdigi dosyalarin ICERIGI de saklanir; ikili/buyuk dahil.
+        # Dusse tur yine kosar ama geri alinamayacagi SOYLENIR.
+        self._golge_once.pop(gorev["id"], None)
+        if once_anlik is not None and kok_klasor:
+            try:
+                self._golge_once[gorev["id"]] = geri_al.Golge(
+                    kok_klasor, degisim.ofis_dosyalari(self.db.yol)).anlik(
+                        f"once #{no} {ajan_ad}")
+            except (geri_al.GeriAlHatasi, OSError,
+                    subprocess.SubprocessError) as exc:
+                yield self._olay("uyari",
+                                 f"Geri alma kaydi alinamadi (bu tur geri "
+                                 f"ALINAMAZ): {exc}", {"geri_al": False},
+                                 ajan_ad=ajan_ad, gorev_id=gorev["id"])
 
         # 3 -- MOTOR (nobet zinciriyle)
         #
@@ -1153,6 +1174,20 @@ class Koltuk:
             return
         degisim.yaz(self.db, self.proje_id, gorev["id"], ajan_ad, kayitlar)
         o = degisim.ozet(kayitlar)
+        once_sha = self._golge_once.pop(gorev["id"], None)
+        if once_sha:
+            try:
+                g = geri_al.Golge(kok_klasor, degisim.ofis_dosyalari(self.db.yol))
+                geri_al.kaydet(self.db, self.proje_id, gorev["id"], ajan_ad,
+                               kok_klasor, once_sha,
+                               g.anlik(f"sonra #{no} {ajan_ad}"),
+                               len(kayitlar), atif_belirsiz=belirsiz)
+            except (geri_al.GeriAlHatasi, OSError,
+                    subprocess.SubprocessError) as exc:
+                yield self._olay("uyari",
+                                 f"Geri alma kaydi yazilamadi: {exc}",
+                                 {"geri_al": False}, ajan_ad=ajan_ad,
+                                 gorev_id=gorev["id"])
 
         parcalar = [f"{o['dosya']} dosya", f"+{o['eklenen']}/-{o['silinen']}"]
         if o["beyan_disi"]:

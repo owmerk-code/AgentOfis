@@ -136,7 +136,7 @@ Motor bir adaptör, model bir ayar, arayüz bir istemci.
 
 ## Kod durumu
 
-Yazıldı ve **duman testlerinden geçti** (2166/2166, 26.09.2026):
+Yazıldı ve **duman testlerinden geçti** (2195/2195, 26.09.2026):
 
 | Dosya | Ne yapar |
 |---|---|
@@ -187,9 +187,10 @@ Yazıldı ve **duman testlerinden geçti** (2166/2166, 26.09.2026):
 | `ofis/kabuk.py` | **Komut satırı** — 26 komut (koddan sayıldı): `kur` · `ise-al` · `konus` · `hedef` · `devam` · `ekip` · `hesap` · `guncelle` · `bilgi` · `kural` · `model` · `plan` · `roller` · `ajan` · `gorsel` · `video` · `iptal` · `anahtar` · `yetenek` · `kullanim` · `saglik` · `durum` · `bekleyen` · `cevapla` · `onayla` · `panel`. |
 | `ofis/yedek.py` | **YEDEK** — kod + defter (sqlite yedek API'siyle, WAL'da tutarlı) + ajan çıktıları tek arşivde. Sır ALINMAZ. Atomik, ölçülür (özet + bütünlük), son 30 budanır, ek hedefe (Drive) kopyalanır. Geri yükleme yalnız BOŞ klasöre. Günlük tetik yalnız gerçek defterde. |
 | `ofis/depo.py` | **GİZLİ GITHUB DEPOSU** (`owmerk-code/AgentOfis`, PRIVATE) — kod + defterin METİN hâli (`veri/disari/ofis.sql`) + ajan çıktıları (medya hariç). Üç sert kapı: beklenen adres · PRIVATE · sır taraması (kasa değerleri + anahtar biçimleri). Günlük yedeğin arkasında. |
+| `ofis/geri_al.py` | **TUR GERİ ALMA** — her turun öncesi/sonrası proje kökünün dışındaki gölge git deposuna işlenir; `geri-al` YALNIZ o turun dosyalarını (ikili dahil) döndürür. Sonradan değişen dosyayı ve koşan işi ezmez (`--zorla` hariç), sebep zorunlu, geri alma da geri alınabilir. |
 | `baslat.bat` | Tek tık açılış — bağımlılık yoksa kurar, ilk açılışta örnek ofisi kurar. |
 
-Testler (`testler/`, hepsi jeton yakmadan koşar) — **2166/2166** (28 dosya, 26.09.2026'da tek tek koşturulup SAYILDI):
+Testler (`testler/`, hepsi jeton yakmadan koşar) — **2195/2195** (29 dosya, 26.09.2026'da tek tek koşturulup SAYILDI):
 `duman_cekirdek.py` 78 · `duman_motor.py` 102 · `duman_koltuk.py` 61 ·
 `duman_lider.py` 44 · `duman_mcp.py` 130 · `duman_panel.py` 341 ·
 `duman_orkestra.py` 57 · `duman_zincir.py` 71 · `duman_tavan.py` 27 · `duman_kullanim.py` 55 ·
@@ -198,7 +199,7 @@ Testler (`testler/`, hepsi jeton yakmadan koşar) — **2166/2166** (28 dosya, 2
 `duman_klasor.py` 35 · `duman_roller.py` 37 · `duman_ekip.py` 60 ·
 `duman_zorluk.py` 57 · `duman_hesap.py` 39 · `duman_tarayici.py` 155 ·
 `duman_video.py` 35 · `duman_baglayici.py` 60 · `duman_degisim.py` 101 ·
-`duman_riskli.py` 168 · `duman_hafiza.py` 56 · `duman_yedek.py` 47 · `duman_depo.py` 30
+`duman_riskli.py` 168 · `duman_hafiza.py` 56 · `duman_yedek.py` 47 · `duman_depo.py` 30 · `duman_geri_al.py` 29
 JS: `testler/panel_harita.mjs` (harita) · `testler/panel_yerlesim.mjs`
 (pano yerleşimi) — saf işlevler Node'da ÇALIŞTIRILIR; `duman_panel.py`
 koşturur (sayıları 341'in içinde) · `testler/panel_hafiza.mjs` (hafıza çizgesi)
@@ -10362,4 +10363,68 @@ Ofisin codex evi omerjob34@gmail.com, plan plus — tutarlı.
 
 Kabuk betiklerinde yoldaki kesme işareti (`Drive'ım`) tırnakları
 bozuyor; betik dosyaya yazıldı (bilinen ders).
+
+## TUR GERİ ALMA (26.09.2026) — PLAN E03
+
+Yedek bütün ofisi bir güne döndürür; aradaki her şey gider. Bir ajan tek
+dosyayı bozduğunda gereken şey **yalnız o turun dokunduğu dosyalar**.
+
+**Neden `degisim.py` yetmedi:** onun anlık görüntüsü büyük/ikili dosyanın
+İÇERİĞİNİ tutmuyor (yalnız özet) — ölçmek için yeter, geri koymak için
+yetmez.
+
+**Gölge depo** (`ofis/geri_al.py`): turun ÖNCESİ (brifingten sonra, ölçümle
+aynı an) ve SONRASI ayrı bir git deposuna işlenir
+(`~/.agentofis/golge/<kök özeti>.git`, `--work-tree` = proje kökü).
+Proje kökünün DIŞINDA: ajan kaydı silemez, projenin kendi git'ine
+karışmaz. İzlenen dosyalar ölçümle AYNI (`degisim.ATLANAN_*` + ofis
+defteri hariç) — iki ayrı kural, ölçümün göstermediği bir dosyayı geri
+almaya yol açardı. `tur_anlik` tablosu (şemaya eklendi, göç gerekmedi).
+
+**Kurallar** (hepsi sınanıyor):
+- Turdan SONRA yeniden değişen dosya varsa **ret** + hangi dosya.
+- Koşan iş varken **ret** (yazılan dosyanın altından çekmemek).
+- Paralel turda (`atif_belirsiz`) **ret** — komşunun dosyası da dönebilir.
+- **Sebep zorunlu**, karar günlüğüne ve olaya yazılır.
+- `--zorla` hepsini geçer ama ezileni SÖYLER.
+- Geri alma da yeni bir kayıttır → **geri alma da geri alınır**.
+- Dosya değiştirmeyen tur kayıt açmaz.
+
+Komut: `kabuk geri-al liste` · `geri-al <kimlik> --goster` ·
+`geri-al <kimlik> --sebep "..." [--zorla]`. Uçtan uca denendi (geçici
+ofiste): liste → göster → sebepsiz ret → geri al → geri alma listede.
+
+**Ölçülen maliyet:** anlık görüntü ~0,1 sn (ilki 0,4–0,8 sn), tur başına
+iki kez — ihmal edilebilir.
+
+### Yol boyunca üç bulgu
+
+- **Testler GERÇEK ev klasörüne gölge depo bıraktı** (4 depo, ilk
+  koşuda). Geçici klasördeki proje artık gölgesini de geçici klasöre
+  yazıyor; her depo kökünü not ediyor ve kökü silinmiş depo
+  kendiliğinden temizleniyor (sahibi bilinmeyene DOKUNULMUYOR).
+- **"Sebep zorunlu" kapısı koparılınca** dosyalar geri alındı ve SONRA
+  `karar_yaz` reddetti: disk değişti, kayıt düşmedi. İlk kapı sağlam
+  olduğu için bugün sorun değil; ama sınama artık "retten sonra disk
+  DEĞİŞMEDİ" de diyor.
+- **Mutasyonlar testi çökertti** (çıplak `[0]`, `unlink`, okuma). Hepsi
+  korumaya alındı; sekiz mutasyonun sekizi çökmeden ateş ediyor
+  (sonradan değişen ezilsin · koşan iş umursanmasın · sebep · eklenen
+  silinmesin · geri alma kaydı açılmasın · iki kez geri alınsın ·
+  sahibi bilinmeyen silinsin · koltuk öncesini almasın).
+
+### Test artığı — E05'in kalanı
+
+Tam takım bir kez koşunca `%TEMP%`'te **302 `ofis-*` klasörü (~60 MB)**
+kaldı; çoğu eski dosyalardan (`ofis-para`, `ofis-kota`, `ofis-gorsel`…).
+Temizlendi. Yeni üç dosya (yedek · depo · geri_al) artık bırakmıyor ve
+bunu sınıyor. **Eskilerin düzeltilmesi sıradaki iş.**
+
+**2195/2195** (29 dosya).
+
+### AÇIK KALAN
+- Panelde **tek tıkla** geri alma düğmesi yok (bugün komut). F8'de Kod
+  panosuna.
+- `--klasor` ile açılan DIŞ klasörler gölgelenmiyor (ölçümle aynı sınır).
+- Eski test dosyalarının `%TEMP%` artığı.
 

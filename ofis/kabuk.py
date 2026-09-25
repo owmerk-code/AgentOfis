@@ -1476,6 +1476,53 @@ def komut_yedek(a) -> None:
         raise SystemExit(f"Yedek: {exc}")
 
 
+def komut_geri_al(a) -> None:
+    """Bir ajan TURUNUN diskte yaptigini -- yalniz onu -- geri alir.
+
+    Yedek butun ofisi bir gune dondurur; bu yalniz o turun dokundugu
+    dosyalari. Geri alma da yeni bir kayit olur, o da geri alinabilir.
+    """
+    from ofis import geri_al as G
+    from ofis import degisim
+    ofis = ofis_ac(a.db, a.proje)
+    if a.kimlik in (None, "liste"):
+        kayitlar = G.liste(ofis.db, ofis.proje_id, limit=a.limit)
+        if not kayitlar:
+            yaz("Geri alinabilir tur yok (dosya degistiren tur olmadi).")
+            return
+        for k in kayitlar:
+            is_ = (f"#{k['gorev_no']} {k['gorev_baslik'][:40]}"
+                   if k.get("gorev_no") else "-")
+            durum = f"  [GERI ALINDI {k['geri_alindi']}]" if k["geri_alindi"] else ""
+            belirsiz = "  (paralel tur)" if k["atif_belirsiz"] else ""
+            yaz(f"{k['id'][:8]}  {k['olusturuldu'][:16]}  {k['ajan_ad']:<18} "
+                f"{k['dosya']} dosya  {is_}{belirsiz}{durum}")
+        yaz("")
+        yaz("Geri almak: geri-al <kimlik> --sebep \"...\"   (once: --goster)")
+        return
+    try:
+        k = G.bul(ofis.db, ofis.proje_id, a.kimlik)
+        golge = G.Golge(k["kok"], degisim.ofis_dosyalari(ofis.db.yol))
+        if a.goster:
+            yaz(f"{k['id'][:8]} -- {k['ajan_ad']} -- {k['olusturuldu'][:16]}")
+            ad = {"A": "EKLEDI (geri alinca SILINIR)",
+                  "M": "DEGISTIRDI (eski haline doner)",
+                  "D": "SILDI (geri gelir)"}
+            for hal, yol in golge.fark(k["once"], k["sonra"]):
+                yaz(f"  {ad.get(hal, hal):32s} {yol}")
+            return
+        r = G.geri_al(ofis, a.kimlik, sebep=a.sebep or "", zorla=a.zorla,
+                      haric=degisim.ofis_dosyalari(ofis.db.yol))
+    except G.GeriAlHatasi as exc:
+        raise SystemExit(f"Geri alinmadi: {exc}")
+    yaz(f"{len(r['dosyalar'])} dosya geri alindi:")
+    for hal, yol in r["dosyalar"]:
+        yaz(f"  {hal:18s} {yol}")
+    for y in r["sonradan_ezilen"]:
+        yaz(f"  DIKKAT: turdan sonraki degisiklik de gitti: {y}")
+    yaz(f"Bunu da geri almak icin: geri-al {r['yeni_kayit'][:8]} --sebep \"...\"")
+
+
 def komut_panel(a) -> None:
     from ofis.panel import kos
     yaz(f"Panel: http://{a.adres}:{a.kapi}")
@@ -1926,6 +1973,15 @@ def ayristirici() -> argparse.ArgumentParser:
     yd.add_argument("--hedef", default=None, help="klasor")
     yd.add_argument("--neden", default=None, help="yedegin nedeni (orn. faz-F1)")
     yd.set_defaults(islev=komut_yedek)
+
+    ga = alt.add_parser("geri-al", help="bir ajan TURUNU geri al (yalniz o turun dosyalari)")
+    ga.add_argument("kimlik", nargs="?", default=None, help="liste ya da tur kimligi")
+    ga.add_argument("--sebep", default=None, help="neden geri aliniyor (zorunlu)")
+    ga.add_argument("--zorla", action="store_true",
+                    help="turdan sonraki degisiklikleri / kosan isi bilerek ez")
+    ga.add_argument("--goster", action="store_true", help="geri almadan once neyin donecegini goster")
+    ga.add_argument("--limit", type=int, default=20)
+    ga.set_defaults(islev=komut_geri_al)
 
     p = alt.add_parser("panel", help="paneli ac")
     p.add_argument("--adres", default="127.0.0.1")

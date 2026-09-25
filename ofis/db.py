@@ -460,6 +460,32 @@ CREATE INDEX IF NOT EXISTS ix_degisim_proje
     ON degisim (proje_id, olusturuldu DESC);
 
 -- ---------------------------------------------------------------------------
+-- TUR_ANLIK: bir turun ONCESI ve SONRASI -- golge depodaki commit kimlikleri.
+--
+-- `geri_al.py` bununla YALNIZ o turun dokundugu dosyalari geri alir.
+-- Geri almanin kendisi de yeni bir satirdir (ajan_ad 'insan (geri alma)'),
+-- yani geri alma da geri alinabilir. Silinmez; `geri_alindi` ne zaman ve
+-- hangi kayitla geri alindigini yazar.
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS tur_anlik (
+    id              TEXT PRIMARY KEY,
+    proje_id        TEXT NOT NULL,
+    gorev_id        TEXT,
+    ajan_ad         TEXT NOT NULL DEFAULT '',
+    kok             TEXT NOT NULL,
+    once            TEXT NOT NULL,
+    sonra           TEXT NOT NULL,
+    dosya           INTEGER NOT NULL DEFAULT 0,
+    atif_belirsiz   INTEGER NOT NULL DEFAULT 0,
+    not_            TEXT NOT NULL DEFAULT '',
+    geri_alindi     TEXT NOT NULL DEFAULT '',
+    olusturuldu     TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS ix_tur_anlik_proje
+    ON tur_anlik (proje_id, olusturuldu DESC);
+
+-- ---------------------------------------------------------------------------
 -- KURAL: HER brifinge KOSULSUZ giren, INSAN onayli ofis kurali.
 --
 -- Olgu goreve gore SECILIR (ve gorevle ortak kelimesi yoksa elenir);
