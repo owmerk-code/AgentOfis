@@ -136,7 +136,7 @@ Motor bir adaptör, model bir ayar, arayüz bir istemci.
 
 ## Kod durumu
 
-Yazıldı ve **duman testlerinden geçti** (2162/2162, 26.09.2026):
+Yazıldı ve **duman testlerinden geçti** (2166/2166, 26.09.2026):
 
 | Dosya | Ne yapar |
 |---|---|
@@ -189,7 +189,7 @@ Yazıldı ve **duman testlerinden geçti** (2162/2162, 26.09.2026):
 | `ofis/depo.py` | **GİZLİ GITHUB DEPOSU** (`owmerk-code/AgentOfis`, PRIVATE) — kod + defterin METİN hâli (`veri/disari/ofis.sql`) + ajan çıktıları (medya hariç). Üç sert kapı: beklenen adres · PRIVATE · sır taraması (kasa değerleri + anahtar biçimleri). Günlük yedeğin arkasında. |
 | `baslat.bat` | Tek tık açılış — bağımlılık yoksa kurar, ilk açılışta örnek ofisi kurar. |
 
-Testler (`testler/`, hepsi jeton yakmadan koşar) — **2162/2162** (28 dosya, 26.09.2026'da tek tek koşturulup SAYILDI):
+Testler (`testler/`, hepsi jeton yakmadan koşar) — **2166/2166** (28 dosya, 26.09.2026'da tek tek koşturulup SAYILDI):
 `duman_cekirdek.py` 78 · `duman_motor.py` 102 · `duman_koltuk.py` 61 ·
 `duman_lider.py` 44 · `duman_mcp.py` 130 · `duman_panel.py` 341 ·
 `duman_orkestra.py` 57 · `duman_zincir.py` 71 · `duman_tavan.py` 27 · `duman_kullanim.py` 55 ·
@@ -198,7 +198,7 @@ Testler (`testler/`, hepsi jeton yakmadan koşar) — **2162/2162** (28 dosya, 2
 `duman_klasor.py` 35 · `duman_roller.py` 37 · `duman_ekip.py` 60 ·
 `duman_zorluk.py` 57 · `duman_hesap.py` 39 · `duman_tarayici.py` 155 ·
 `duman_video.py` 35 · `duman_baglayici.py` 60 · `duman_degisim.py` 101 ·
-`duman_riskli.py` 168 · `duman_hafiza.py` 56 · `duman_yedek.py` 47 · `duman_depo.py` 26
+`duman_riskli.py` 168 · `duman_hafiza.py` 56 · `duman_yedek.py` 47 · `duman_depo.py` 30
 JS: `testler/panel_harita.mjs` (harita) · `testler/panel_yerlesim.mjs`
 (pano yerleşimi) — saf işlevler Node'da ÇALIŞTIRILIR; `duman_panel.py`
 koşturur (sayıları 341'in içinde) · `testler/panel_hafiza.mjs` (hafıza çizgesi)
@@ -10326,7 +10326,17 @@ ve açık panel saatte bir); **yalnız açıkça istenirse** (`depo_gonder=True`
 Yedi mutasyonun yedisi ateş etti (adres · gizlilik · sır · ret sonrası
 sahneleme · boş commit · değerin söylenmesi · defterin metne yazılmaması).
 
-**2162/2162** (28 dosya).
+### GERÇEK KOŞUDA ÇIKAN HATA — elle işlenen commit GİTMİYORDU
+
+İlk gerçek gönderimden sonra kaydı elle işledim ve `yedek github`
+**"degisiklik_yok"** dedi; commit GitHub'a hiç gitmedi. Gönderim yalnız
+sahnelenmiş değişikliğe bakıyordu, **yerelde işlenmiş ama gönderilmemiş**
+commit'leri görmüyordu. Düzeltildi: `origin/<dal>..HEAD` aralığı da
+gönderilir ve o aralıktaki dosyalar da sır taramasından geçer (elle
+işlenen sırlı commit REDDEDİLİYOR — sınandı). Eski hata geri konunca
+3 sınama ateş etti.
+
+**2166/2166** (28 dosya).
 
 ### AÇIK KALAN
 

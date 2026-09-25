@@ -143,6 +143,26 @@ try:
     fark = git(kok, "show", "--stat", "HEAD").stdout
     sina("yalniz defter metni degisti", "ofis.sql" in fark and "a.py" not in fark)
 
+    # --------------------------------- 4b. ELLE ISLENEN COMMIT
+    print("\n4b. ELLE ISLENMIS ama GONDERILMEMIS commit de gider")
+    (kok / "c.py").write_text("print(3)\n", encoding="utf-8")
+    git(kok, "add", "-A")
+    git(kok, "commit", "-q", "-m", "elle")
+    once = uzakta_commit()
+    r = gonder()
+    sina("elle islenen commit GONDERILDI", r["durum"] == "gonderildi", str(r))
+    sina("uzakta bir commit daha var", int(uzakta_commit()) == int(once) + 1,
+         f"{once} -> {uzakta_commit()}")
+    (kok / "d.md").write_text(f"{GIZLI}\n", encoding="utf-8")
+    git(kok, "add", "-A")
+    git(kok, "commit", "-q", "-m", "elle sirli")
+    once = uzakta_commit()
+    r = gonder()
+    sina("elle islenen SIRLI commit REDDEDILDI", r["durum"] == "reddedildi"
+         and "d.md" in r["sebep"], str(r))
+    sina("sirli commit uzaga GITMEDI", uzakta_commit() == once)
+    git(kok, "reset", "-q", "--hard", "HEAD~1")
+
     # ------------------------------------------------ 5. KAPALI + BUYUK
     print("\n5. KAPALI AYAR ve BUYUK DOSYA")
     a = D.ayar_oku()

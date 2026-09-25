@@ -157,6 +157,31 @@ def gorunurluk_gh(uzak: str) -> str:
         return ""
 
 
+def _gonderilmemis_dosyalar(kok: Path):
+    """(commit sayisi, dosyalar) -- uzakta olmayan yerel commit'ler.
+
+    Uzak dal hic yoksa (ilk gonderim) butun gecmis gonderilmemistir.
+    Olculemezse None: o zaman gonderim yine denenir, git kendisi karar verir.
+    """
+    dal = _git(kok, "rev-parse", "--abbrev-ref", "HEAD").stdout.strip()
+    uzak_dal = f"origin/{dal}"
+    if _git(kok, "rev-parse", "--verify", "-q", uzak_dal).returncode != 0:
+        aralik = ["HEAD"]
+    else:
+        aralik = [f"{uzak_dal}..HEAD"]
+    r = _git(kok, "rev-list", "--count", *aralik)
+    if r.returncode != 0:
+        return None
+    sayi = int(r.stdout.strip() or 0)
+    if not sayi:
+        return (0, [])
+    if aralik == ["HEAD"]:
+        d = _git(kok, "ls-files", "-z")
+    else:
+        d = _git(kok, "diff", "--name-only", "-z", aralik[0])
+    return (sayi, [x for x in d.stdout.split("\0") if x])
+
+
 def gonder(neden: str = "elle", *, kok: Path = None, db_yolu: Path = None,
            gorunurluk=gorunurluk_gh, degerler: list = None) -> dict:
     """Defteri metne doker, isler, UC KAPIDAN gecerse gonderir.
@@ -193,13 +218,18 @@ def gonder(neden: str = "elle", *, kok: Path = None, db_yolu: Path = None,
         return {"durum": "hata", "sebep": "git add dustu"}
     r = _git(kok, "diff", "--cached", "--name-only", "-z")
     degisen = [d for d in r.stdout.split("\0") if d]
-    if not degisen:
+    # Yerelde islenmis ama GONDERILMEMIS commit'ler de gider. Ilk surum
+    # yalniz sahnelenmis degisikligi goruyordu: elle islenen bir commit
+    # "degisiklik yok" denip GitHub'a HIC gitmiyordu (gercek kosuda cikti).
+    gonderilmemis = _gonderilmemis_dosyalar(kok)
+    if not degisen and gonderilmemis is not None and not gonderilmemis[0]:
         return {"durum": "degisiklik_yok", "sebep": ""}
+    taranacak = sorted(set(degisen) | set((gonderilmemis or ([], []))[1]))
 
     # 3. SIR ve BOYUT -- islemeden ONCE; reddedilirse sahneleme geri alinir.
-    buyuk = [d for d in degisen if (kok / d).exists()
+    buyuk = [d for d in taranacak if (kok / d).exists()
              and (kok / d).stat().st_size > AZAMI_DOSYA_MB * 1e6]
-    sirli = sir_tara(kok, [d for d in degisen if (kok / d).exists()], degerler)
+    sirli = sir_tara(kok, [d for d in taranacak if (kok / d).exists()], degerler)
     if buyuk or sirli:
         _git(kok, "reset", "-q")
         neden_ = []
@@ -210,10 +240,11 @@ def gonder(neden: str = "elle", *, kok: Path = None, db_yolu: Path = None,
         return {"durum": "reddedildi", "sebep": " · ".join(neden_)}
 
     zaman = _dt.datetime.now().isoformat(timespec="seconds")
-    c = _git(kok, "commit", "-q", "-m", f"Otomatik yedek: {neden} ({zaman})\n\n"
-             f"{len(degisen)} dosya.")
-    if c.returncode != 0:
-        return {"durum": "hata", "sebep": f"commit dustu: {c.stderr.strip()[:200]}"}
+    if degisen:
+        c = _git(kok, "commit", "-q", "-m", f"Otomatik yedek: {neden} ({zaman})\n\n"
+                 f"{len(degisen)} dosya.")
+        if c.returncode != 0:
+            return {"durum": "hata", "sebep": f"commit dustu: {c.stderr.strip()[:200]}"}
     # Faz etiketleri de gider: "F1 bittiginde kod neydi" depoda da okunabilsin.
     p = _git(kok, "push", "-q", "origin", "HEAD", "--tags", zaman_asimi=300)
     if p.returncode != 0:
@@ -221,5 +252,5 @@ def gonder(neden: str = "elle", *, kok: Path = None, db_yolu: Path = None,
         return {"durum": "hata", "sebep": f"push dustu: {p.stderr.strip()[:200]}"}
     ayar["son"] = zaman
     ayar_yaz(ayar)
-    return {"durum": "gonderildi", "sebep": "", "dosya": len(degisen),
+    return {"durum": "gonderildi", "sebep": "", "dosya": len(taranacak),
             "commit": _git(kok, "rev-parse", "--short", "HEAD").stdout.strip()}
