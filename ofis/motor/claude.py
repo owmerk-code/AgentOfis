@@ -326,6 +326,8 @@ class ClaudeMotoru(Motor):
     butce_destegi = True   # --max-budget-usd
     araclar_kapatilabilir = True
     izin_kancasi = True   # --tools ""
+    #: claude.ai baglayicilarini YALNIZ claude CLI yukler (koltuk buna bakar).
+    baglayici_tasir = True
 
     def __init__(self, *, calistirilabilir: str = "",
                  zaman_asimi: float = VARSAYILAN_ZAMAN_ASIMI) -> None:

@@ -277,6 +277,37 @@ class Brifing:
             return ""
         return "\n".join(satirlar + kurallar)
 
+    def _alan_satiri(self, yol: str) -> str:
+        """Yazma alanini TURUYLE yazar -- uydurmadan.
+
+        OLCULEN HATA (26.09.2026, deneme D05, codex isci): burada her alanin
+        sonuna KOSULSUZ `/` ekleniyordu; `fiyatlar.csv` alani ajana
+        `fiyatlar.csv/` diye, yani KLASOR olarak gosteriliyordu. Claude bunu
+        gormezden geldi; codex (luna) kelimesi kelimesine uydu, `fiyatlar.csv`
+        adinda KLASOR acip dosyayi icine yazdi -- iki kosuda iki. Hata ajanda
+        degil brifingdeydi: yanlis bilgi veren brifing, yanlis is urettirir.
+
+        Tur diskten OLCULUR; olculemiyorsa ada bakilir ve bu SOYLENIR.
+        """
+        ham = str(yol or "")
+        ad = ham.rstrip("/\\")
+        kok = self.tahta.kok_klasor()
+        tam = (Path(kok) / ad) if kok and not Path(ad).is_absolute() else Path(ad)
+        try:
+            if tam.is_dir():
+                return f"  - `{ad}/` (klasor -- icine yazabilirsin)"
+            if tam.is_file():
+                return f"  - `{ad}` (DOSYA -- bu dosyayi yaz, klasor ACMA)"
+        except OSError:
+            pass
+        if ham.endswith(("/", "\\")):
+            return f"  - `{ad}/` (klasor -- henuz yok, acabilirsin)"
+        if Path(ad).suffix:
+            return (f"  - `{ad}` (DOSYA -- henuz yok; bu ADLA bir dosya yaz, "
+                    "klasor ACMA)")
+        return (f"  - `{ad}` (henuz yok; dosya mi klasor mu adindan belli degil "
+                "-- isin tanimina bak)")
+
     def k4_gorev(self, no: int, *, olcut: bool = True) -> str:
         """Isin kendisi -- ve nicin var oldugu.
 
@@ -290,7 +321,8 @@ class Brifing:
         "devam metni tam brifingden cok daha kisa" sinamasi kaldi.
         """
         g = self.tahta.gorev(no)
-        alan = "\n".join(f"  - `{y}/`" for y in g["yazma_alani"]) or "  - (belirtilmemis)"
+        alan = ("\n".join(self._alan_satiri(y) for y in g["yazma_alani"])
+                or "  - (belirtilmemis)")
         satirlar = [
             "## K4 — GOREVIN",
             "",

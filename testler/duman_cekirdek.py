@@ -604,6 +604,25 @@ sina("klasor agaci kokun adinin yola YAZILMADIGINI soyluyor",
      "yola YAZILMAZ" in _duzen, _duzen[:120])
 sina("ogeler ./ ile gosteriliyor", "./calisma/" in _duzen, _duzen[:160])
 
+print("\nBRIFING yazma alaninin TURUNU dogru soyluyor (26.09.2026, D05)")
+# Olculdu: her alana kosulsuz `/` ekleniyordu; `fiyatlar.csv` ajana
+# `fiyatlar.csv/` (KLASOR) diye gidiyordu ve codex isci klasor acti.
+(_kok2 / "proje" / "mevcut.txt").write_text("x", encoding="utf-8")
+_gb = _o2.tahta.gorev_ac("tur", neden="n", ana_hedef="h", kabul_olcutu="k",
+                         yazma_alani=["kaynak", "mevcut.txt", "fiyatlar.csv", "yeni/"])
+_k4 = _o2.brifing.k4_gorev(_gb["no"])
+sina("dosya alanina `/` EKLENMIYOR", "`fiyatlar.csv/`" not in _k4, _k4[-400:])
+sina("yeni dosya DOSYA diye soyleniyor",
+     "`fiyatlar.csv` (DOSYA" in _k4 and "klasor ACMA" in _k4)
+sina("var olan dosya DOSYA diye soyleniyor", "`mevcut.txt` (DOSYA" in _k4)
+sina("var olan klasor klasor diye soyleniyor", "`kaynak/` (klasor" in _k4)
+# Tahta alani kaydederken sondaki `/`i siler (kilit karsilastirmasi tek
+# bicim ister, `api/` ile `api` ayni alan). Niyet kaybolur -- brifing de
+# UYDURMAZ: "belli degil" der, DOSYA ya da klasor iddia etmez.
+sina("adindan belli olmayan yeni alan: 'belli degil' (uydurmaz)",
+     "`yeni` (henuz yok; dosya mi klasor mu adindan belli degil" in _k4,
+     _k4[-300:])
+
 print(f"\n== sonuc: {GECEN} gecti, {KALAN} kaldi ==")
 print(f"veritabani: {gecici}")
 sys.exit(1 if KALAN else 0)

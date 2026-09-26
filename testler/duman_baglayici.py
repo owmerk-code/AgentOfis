@@ -135,6 +135,10 @@ class _K(SahteMotor):
 
     son: dict = {}
     izin_kancasi = True
+    # Baglayiciyi YALNIZ claude yukler (26.09.2026): kancali ama yukleyemeyen
+    # motor (codex app-server) baglayici ALMAZ. Bu sahte motor claude'u
+    # taklit ediyor -- ikisini de tasimali.
+    baglayici_tasir = True
 
     def tur_kos(self, metin, **ayar):
         _K.son = dict(ayar)
@@ -172,6 +176,28 @@ try:
     sina("yerine IZIN KANCASI verildi",
          (_K.son.get("izin_araci") or "").endswith("__izin_sor"),
          str(_K.son.get("izin_araci")))
+
+    # KANCALI AMA BAGLAYICI YUKLEYEMEYEN MOTOR (26.09.2026: codex
+    # app-server). "Acildi" denirse ajan araci bulamaz ve "yok" der --
+    # yanlis gosteren gosterge. Verilmemeli ve bu GORUNUR olmali.
+    class _KancaliTasiyamaz(_K):
+        baglayici_tasir = False
+    _K.son = {}
+    g_cx = ofis.tahta.gorev_ac("codex baglayici", neden="n", ana_hedef="h",
+                               kabul_olcutu="k", baglayicilar=["Shopify"])
+    Koltuk(ofis, motor_fabrikasi=lambda ad, **kw: _KancaliTasiyamaz(
+        cevap="Bitti.\nKANIT dosya: x -> y", mcp_konusur=True)).kos(g_cx["no"], "cinar")
+    sina("tasiyamayan motora baglayici ORTAMI verilmedi",
+         "ENABLE_CLAUDEAI_MCP_SERVERS" not in (_K.son.get("ek_ortam") or {}),
+         str(_K.son.get("ek_ortam")))
+    with ofis.db.baglanti() as _c:
+        _ol = [(r["tur"], r["govde"]) for r in _c.execute(
+            "SELECT tur, govde FROM olay WHERE gorev_id=?", (g_cx["id"],))]
+    sina("'acildi' YAZILMADI", not any(t == "baglayici_acildi" for t, _ in _ol), str(_ol)[:200])
+    sina("vazgecme GORUNUR (uyari + sebep)",
+         any(t == "uyari" and "yukleyemez" in g for t, g in _ol), str(_ol)[:200])
+    sina("kanca yine VERILDI (kapi baglayicidan bagimsiz)",
+         (_K.son.get("izin_araci") or "").endswith("__izin_sor"))
 
     # DAR PENCERE KAPISI -- olculdu: katalog 225.765 jeton, haiku'nun
     # penceresi 200.000. Sessizce baglayicisiz kosturmak daha kotu

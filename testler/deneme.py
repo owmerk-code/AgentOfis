@@ -25,6 +25,7 @@ import _temizlik  # noqa: F401 -- gecici klasorleri siler (E05); ILK ice aktarma
 import argparse
 import datetime as _dt
 import json
+import os
 import sys
 import tempfile
 import time
@@ -72,6 +73,27 @@ def _gorev(tanim, bag) -> dict:
     return dict(g(bag) if callable(g) else g)
 
 
+def _kullaniciya_ac(klasor: Path) -> None:
+    """Gecici klasoru, gercek `calisma/` gibi KULLANICIYA MIRAS gecen izinle acar.
+
+    OLCULDU (26.09.2026, deneme seti codex isciyle): Python'un `mkdtemp`i
+    Windows'ta yalniz `OWNER RIGHTS`e izin veren siki bir klasor aciyor.
+    Codex'in sandbox'i dosyayi KENDI kullanicisiyla olusturur -- dosyanin
+    sahibi o olur ve `pc` icin HICBIR izin kalmaz: dogrulayici D05'te
+    `fiyatlar.csv`yi okuyamadi (Permission denied) ve klasorler
+    silinemedi. Gercek `calisma/` Masaustunden `pc:(OI)(CI)F` miras aliyor;
+    orada sorun YOK (olculdu). Sahne gercegi taklit etmeli -- yoksa
+    deneme, gercekte olmayan bir hatayi olcer ve gercekte olani kacirir.
+    """
+    if os.name != "nt":
+        return
+    import subprocess
+    kim = os.environ.get("USERNAME") or ""
+    if kim:
+        subprocess.run(["icacls", str(klasor), "/grant", f"{kim}:(OI)(CI)F"],
+                       capture_output=True)
+
+
 def is_kos(no: str, *, kip: str, motor: str, model: str, lider_model: str,
            tur_tavani: float, azami_tik: int, sakla: bool = False) -> dict:
     tanim = ISL.ISLER[no]
@@ -82,6 +104,7 @@ def is_kos(no: str, *, kip: str, motor: str, model: str, lider_model: str,
         return sonuc
 
     ana = Path(tempfile.mkdtemp(prefix=f"ofis-deneme-{no}-"))
+    _kullaniciya_ac(ana)
     kok = ana / "calisma"
     kok.mkdir()
     bag: dict = {}
@@ -185,6 +208,11 @@ def _olcumler(ofis) -> dict:
                          (ofis.proje_id,)).fetchone()[0]
         soru = c.execute("SELECT count(*) FROM mesaj WHERE proje_id=? AND "
                          "alici='insan'", (ofis.proje_id,)).fetchone()[0]
+        # KAPI mi durdurdu, ajan kendisi mi sordu? Ikisi ayri olcumdur:
+        # kapisi hic atesslemeyen bir gecis, kapinin calistigini kanitlamaz.
+        kapi = [r["govde"][:120] for r in c.execute(
+            "SELECT govde FROM olay WHERE proje_id=? AND tur='izin' "
+            "ORDER BY rowid", (ofis.proje_id,))]
         # Insana dusen HER istek metniyle raporlanir: sayi tek basina "iki
         # kart" ile "bir kart"i ayirt etmez (onay yorgunlugu, E80).
         istekler = [f"onay: {r['eylem'][:120]}" for r in c.execute(
@@ -199,7 +227,8 @@ def _olcumler(ofis) -> dict:
             # Olculemeyen maliyet SIFIR sayilmaz (kullanim.py kurali).
             "maliyet_usd": round(sum(fiyatli), 4) if fiyatli else None,
             "fiyatsiz_tur": len(turlar) - len(fiyatli),
-            "kanit": kanit, "insana_soru": onay + soru, "istekler": istekler}
+            "kanit": kanit, "insana_soru": onay + soru, "istekler": istekler,
+            "kapi_durdurdu": len(kapi), "kapi_olaylari": kapi}
 
 
 def rapor_yaz(sonuclar: list, ayar: dict) -> Path:
@@ -235,6 +264,9 @@ def rapor_yaz(sonuclar: list, ayar: dict) -> Path:
                          + (f" — {o['not']}" if o["not"] else ""))
         for i in s.get("istekler") or []:
             satir.append(f"  - insana: {i}")
+        if "kapi_durdurdu" in s:
+            satir.append(f"  - kapi durdurdu: {s['kapi_durdurdu']} kez"
+                         + "".join(f" | {k}" for k in s.get("kapi_olaylari") or []))
         satir.append("")
     (RAPOR / f"{ad}.md").write_text("\n".join(satir), encoding="utf-8")
     return RAPOR / f"{ad}.md"

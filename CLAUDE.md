@@ -136,7 +136,7 @@ Motor bir adaptör, model bir ayar, arayüz bir istemci.
 
 ## Kod durumu
 
-Yazıldı ve **duman testlerinden geçti** (2308/2308, 26.09.2026):
+Yazıldı ve **duman testlerinden geçti** (2382/2382, 26.09.2026):
 
 | Dosya | Ne yapar |
 |---|---|
@@ -147,7 +147,7 @@ Yazıldı ve **duman testlerinden geçti** (2308/2308, 26.09.2026):
 | `ofis/brifing.py` | **Dört katmanlı brifing** — sistemin kalbi. K3 her dağıtımda taze üretilir. Geçmişi olan işte **devir paketi** (`devir_blogu`) ekler. |
 | `ofis/motor/tip.py` | Motor arayüzü: `MotorOlayi` akışı, `OLAY_TURLERI`, hata sınıfları. Çekirdeğin motora bakan tek yüzü. |
 | `ofis/motor/claude.py` | Claude CLI adaptörü — `stream-json`, izin kapıları, süreç ağacı kesme. |
-| `ofis/motor/codex.py` | **Codex CLI adaptörü — OFİSİN KENDİ YAZDIĞI.** `codex exec --json`, stdin'den brifing, sandbox kipleri. |
+| `ofis/motor/codex.py` | **Codex CLI adaptörü — OFİSİN KENDİ YAZDIĞI.** İki kip: **`app-server` (varsayılan, 26.09)** — onay kapısı (`izin_sor`'a codex'in kendi MCP bağlantısıyla sorar), ret gerekçesi `turn/steer` ile ajana, MCP hazır olmadan tur başlamaz; `exec` (açıkça seçilir, görsel üretimi bunu kullanır). |
 | `ofis/motor/gemini.py` | **DEFTERDE DEĞİL (24.09.2026, kullanıcı kararı: ücretsiz hesapla iş olmuyor).** Dosya duruyor; geri takmak tek satır. **Gemini CLI adaptörü — OFİSİN YAZDIĞI, insan inceleyip kurdu.** `--output-format stream-json`, `--approval-mode plan` ile salt-okunur, `--skip-trust` şart. Bütçe tavanı YOK → kapalı kalarak reddeder. |
 | `ofis/motor/sahte.py` | Senaryolu sahte motor: jeton yakmadan koltuk/panel testi, kenar durumu üretimi. |
 | `ofis/motor/__init__.py` | Kayıt defteri — `motor_ac` · `motor_kaydet` · `musait_motorlar`. |
@@ -190,16 +190,19 @@ Yazıldı ve **duman testlerinden geçti** (2308/2308, 26.09.2026):
 | `ofis/geri_al.py` | **TUR GERİ ALMA** — her turun öncesi/sonrası proje kökünün dışındaki gölge git deposuna işlenir; `geri-al` YALNIZ o turun dosyalarını (ikili dahil) döndürür. Sonradan değişen dosyayı ve koşan işi ezmez (`--zorla` hariç), sebep zorunlu, geri alma da geri alınabilir. |
 | `baslat.bat` | Tek tık açılış — bağımlılık yoksa kurar, ilk açılışta örnek ofisi kurar. |
 
-Testler (`testler/`, hepsi jeton yakmadan koşar) — **2308/2308** (31 dosya, 26.09.2026'da tek tek koşturulup SAYILDI):
-`duman_cekirdek.py` 78 · `duman_motor.py` 102 · `duman_koltuk.py` 61 ·
-`duman_lider.py` 44 · `duman_mcp.py` 130 · `duman_panel.py` 341 ·
-`duman_orkestra.py` 57 · `duman_zincir.py` 71 · `duman_tavan.py` 27 · `duman_kullanim.py` 55 ·
-`duman_sohbet.py` 94 · `duman_guncelleme.py` 66 ·
-`duman_danisma.py` 36 · `duman_saglik.py` 37 · `duman_gorsel.py` 87 ·
-`duman_klasor.py` 35 · `duman_roller.py` 37 · `duman_ekip.py` 60 ·
-`duman_zorluk.py` 57 · `duman_hesap.py` 39 · `duman_tarayici.py` 155 ·
-`duman_video.py` 35 · `duman_baglayici.py` 60 · `duman_degisim.py` 101 ·
-`duman_riskli.py` 168 · `duman_hafiza.py` 56 · `duman_yedek.py` 47 · `duman_depo.py` 30 · `duman_geri_al.py` 29 · `duman_deneme.py` 47 · `duman_riskli.py` 183 · `duman_panel_senaryo.py` 20
+Testler (`testler/`, hepsi jeton yakmadan koşar) — **2382/2382** (32 dosya, 26.09.2026'da tek tek koşturulup SAYILDI):
+`duman_baglayici.py` 64 · `duman_cekirdek.py` 90 ·
+`duman_codex_app.py` 59 · `duman_danisma.py` 36 ·
+`duman_degisim.py` 105 · `duman_deneme.py` 47 · `duman_depo.py` 31 ·
+`duman_ekip.py` 60 · `duman_geri_al.py` 29 · `duman_gorsel.py` 87 ·
+`duman_guncelleme.py` 66 · `duman_hafiza.py` 56 · `duman_hesap.py` 39 ·
+`duman_klasor.py` 35 · `duman_koltuk.py` 61 · `duman_kullanim.py` 62 ·
+`duman_lider.py` 44 · `duman_mcp.py` 137 · `duman_motor.py` 113 ·
+`duman_orkestra.py` 57 · `duman_panel.py` 341 ·
+`duman_panel_senaryo.py` 20 · `duman_riskli.py` 183 ·
+`duman_roller.py` 37 · `duman_saglik.py` 37 · `duman_sohbet.py` 94 ·
+`duman_tarayici.py` 155 · `duman_tavan.py` 27 · `duman_video.py` 35 ·
+`duman_yedek.py` 47 · `duman_zincir.py` 71 · `duman_zorluk.py` 57
 JS: `testler/panel_harita.mjs` (harita) · `testler/panel_yerlesim.mjs`
 (pano yerleşimi) — saf işlevler Node'da ÇALIŞTIRILIR; `duman_panel.py`
 koşturur (sayıları 341'in içinde) · `testler/panel_hafiza.mjs` (hafıza çizgesi)
@@ -10807,3 +10810,131 @@ kuruldu — projeye ve sistem Python'una dokunulmadı:
 **Mimari sonucu:** gerçek terminal için masaüstü uygulaması ŞART DEĞİL —
 panelin kendisi (xterm.js + sunucuda ConPTY) aynı şeyi yapabilir. Tauri
 yalnız "uygulama olarak paketleme" sorusu olarak kalıyor (F9).
+
+## F2 — CODEX APP-SERVER'A GEÇTİ: onay kapısı artık Codex'te de var (26.09.2026)
+
+Kullanıcı: *"F9'a kadar beklesin, sıradaki işe geç."* (Tauri kurulumu
+F9'a ertelendi.) Sıradaki iş F2'nin Gemini'siz ilk maddesi: Codex'te
+onay kapısı (E15) ve tur sürerken mesajın altyapısı (E17).
+
+### Kurulan şey — `ofis/motor/codex.py`, iki kip
+
+| | `app-server` (VARSAYILAN) | `exec` (açıkça seçilir) |
+|---|---|---|
+| Onay kapısı | **VAR** — her komut ofise sorulur | yok (kanca istenirse RET) |
+| Ret gerekçesi ajana | `turn/steer` ile | — |
+| Limit/oturum hatası | yapısal kod (`usageLimitExceeded`, `unauthorized`) + metin | metin |
+| Kullanım penceresi | tur SÜRERKEN (`account/rateLimits/updated`) | tur sonu oturum kaydından |
+| Kim kullanıyor | işçi, lider, danışma | görsel üretimi (yalnız bu yolda ölçüldü) |
+
+**Karar TEK yerde kalır:** adaptör onay sorusunu kendisi cevaplamaz;
+ofisin MCP sunucusundaki `izin_sor`'a — Claude'un
+`--permission-prompt-tool`uyla AYNI araç — Codex'in KENDİ MCP bağlantısı
+üzerinden (`mcpServer/tool/call`) sorar. Motor katmanı ofisin iç
+modüllerini hiç bilmez. Codex'in komutu kapıya `Bash`, dosya yazımı
+`Write`, MCP çağrısı `mcp__<sunucu>__<araç>` olarak gider; yani aynı `rm`
+hangi motordan gelirse gelsin aynı kararı alır.
+
+Sessiz geri düşme YOK: `OFIS_CODEX_KIP=exec` ile açıkça seçilir. Düşmek,
+onay kapısının sessizce kalkması olurdu.
+
+### GERÇEK CODEX TURUYLA ÖLÇÜLDÜ (adaptör üzerinden, gpt-6-luna)
+
+```
+Set-Content gecici.tmp     -> kapi: serbest, calisti
+ofis.kanit_ekle            -> tahtaya KANIT DUSTU
+Remove-Item gecici.tmp     -> KAPIDA DURDU, onay defterinde "bekliyor"
+dosya                      -> YERINDE
+ajan                       -> "Silme islemi onay kapisinda durduruldu;
+                               tekrar denenmedi."   (steer ulasti)
+```
+
+Deneme seti (hızlı) **Codex işçiyle 5/5** (D01 D02 D05 D09 D10), aynı gün
+**Claude işçiyle 5/5**. D09/D10'da iki motorda da ajan riskli adımı
+KENDİSİ fark edip onay istedi (kapı hiç ateşlemedi, `kapi_durdurdu: 0`);
+kapının gerçek Codex turunda ateşlediği yukarıdaki ayrı ölçümde görüldü.
+Rapor artık ikisini ayırıyor (`kapi_durdurdu`): kapısı hiç ateşlemeyen
+bir geçiş, kapının çalıştığını kanıtlamaz.
+
+### Yol boyunca çıkan kusurlar — hepsi ölçümle
+
+1. **MCP YARIŞI (sessiz, ağır).** Adaptör `turn/start`ı `thread/start`ın
+   hemen ardından gönderiyordu; ofis MCP'si hâlâ "starting"di ve ajan
+   *"`ofis` aracı bu oturumda yok"* dedi — kanıt ekleyemedi. Artık tur,
+   bağlanan sunucuların hepsi `ready`/`failed` olana dek başlamaz
+   (ölçülen bekleme 0,3–0,7 sn, üst sınır 30 sn; düşen ve geciken sunucu
+   GÖRÜNÜR olay).
+2. **BRİFİNG YAZMA ALANINI YANLIŞ SÖYLÜYORDU (bizim kodumuz).** Her alana
+   koşulsuz `/` ekleniyordu: `fiyatlar.csv` ajana `fiyatlar.csv/` —
+   KLASÖR — diye gidiyordu. Claude görmezden geldi; Codex (luna) kelimesi
+   kelimesine uydu ve `fiyatlar.csv` adında klasör açtı (2 koşuda 2).
+   Artık tür diskten ölçülür, ölçülemezse addan söylenir, bilinmiyorsa
+   "belli değil" denir (tahta sondaki `/`i sildiği için niyet kaybolur —
+   brifing uydurmaz). **Hata ajanda değil brifingdeydi.**
+3. **Bağlayıcı "açıldı" diye yalan söyleyecekti.** Koltuk bağlayıcıyı
+   "kancası olan motora" veriyordu; Codex kancalı oldu ama claude.ai
+   bağlayıcılarını hiç yükleyemez. Motor sözleşmesine `baglayici_tasir`
+   yetenek bayrağı eklendi (yalnız claude); taşıyamayan motora bağlayıcı
+   verilmez ve bu görünür `uyari` olur (başlangıçta ve devirde).
+4. **Benim ilk teşhisim yanlıştı.** D05 `Permission denied` verince
+   "Codex sandbox'ı dosya izinlerini bozuyor" dedim ve deneme kurulumuna
+   izin düzeltmesi yazdım. Ölçünce: `fiyatlar.csv` bir KLASÖRDÜ (Windows
+   klasörü dosya gibi açınca da errno 13 veriyor). İzin düzeltmesi yine
+   doğru (sahne gerçek `calisma/` gibi kullanıcıya miras izin vermeli)
+   ama o vakanın sebebi değildi. *Çıkarım yapma, kayda bak.*
+
+### Ölçülen iki "korkutucu ama zararsız" bulgu
+
+- **`CodexSandboxUsers` bütün Masaüstünde değiştirme izni taşıyor**
+  (açık, miras değil; kim koydu bilinmiyor) ve oradan `AgentOfis/ofis`
+  koduna, GuvenKart-3D'ye, QUANTBOT'a miras geçiyor. Kaçış yolu mu diye
+  ÖLÇÜLDÜ: geçici klasörde başlayan Codex, `calisma/`ya yazmayı denedi →
+  **"erişim reddedildi"**. Sandbox yalnız grupla değil çalışma alanına
+  özel kimlikle kısıtlıyor; sınır TUTUYOR.
+- **`codex_apps` (ChatGPT uygulamaları) kendiliğinden yükleniyor** ama tur
+  başına yalnız **~1.350 jeton** (43.278 / 41.928, `--disable apps`
+  karşılaştırması) — Claude bağlayıcılarının 225 bininin benzeri değil.
+  Kapatılmadı.
+
+### YAZILI SINIR — Codex'in pytest önbelleği senin kullanıcına kapalı
+
+Python 3.12 `mkdir(mode=0o700)` ile açılan klasöre Windows'ta YALNIZ
+sahibine açık, mirası KAPALI izin koyuyor. Codex sandbox'ında pytest
+`.pytest_cache`'i böyle açıyor → sahibi sandbox kullanıcısı → `pc` o
+klasörü ne okuyabilir ne silebilir (yönetici izni gerekir). Yedek, disk
+ölçümü, geri alma ve GitHub gönderimi bu klasörü ZATEN atlıyor (ölçüldü)
+— hiçbir işlem düşmüyor. Gerçek `calisma/` şu an temiz (0 erişilemeyen).
+
+### Sınamalar
+
+`testler/duman_codex_app.py` (**59**) — gerçek Codex KOŞMAZ: app-server
+protokolünü konuşan sahte bir sunucu adaptörün gönderdiği her şeyi
+kaydeder, sınamalar o KAYDA bakar. On üç mutasyonun on üçü ateş etti
+(kapı yok sayılsın · gerekçe gitmesin · kapı çökünce açık kalsın ·
+tanınmayan istek cevapsız · kancasız onay kabul · yapısal kod yok
+sayılsın · eski cevap biçimi · başka jeton formülü · interrupt yok ·
+devam hep yeni thread · politika hep never · MCP beklenmesin · düşen
+sunucu sessiz). **Biri önce ateş ETMEDİ** (MCP beklenmesin): sahte sunucu
+"hazır" sinyalinden önce uyurken erken gelen isteği okumuyordu, sıra hep
+doğru görünüyordu — sinyaller ayrı ipliğe alındı, sonra ateş etti.
+*Testin kurduğu sahne ölçmek istediği sınıra ULAŞMALI.*
+
+Ayrıca: `duman_baglayici` +4 (taşıyamayan motor; mutasyon 3 ateş) ·
+`duman_cekirdek` +5 (brifing alan türü; mutasyon 5 ateş) · `duman_motor`
+kanca sınaması kipe bağlandı (sınıf düzeyi kapalı, app-server açık,
+exec reddeder). **2382/2382** (32 dosya).
+
+### AÇIK KALAN
+
+- **Tur sürerken İNSANDAN mesaj (E17)** — altyapı hazır (`turn/steer`
+  ölçüldü ve kapı gerekçesi için kullanılıyor) ama panelden/koltuktan
+  ajana mesaj yolu motor sözleşmesine henüz eklenmedi; Claude tarafı
+  ayrıca ölçülecek (`--input-format stream-json`).
+- **Tam deneme seti Codex işçiyle koşulmadı** (yalnız hızlı set).
+- Codex **lider** olarak app-server'da gerçek turda ölçülmedi (zincirde
+  ikinci basamak).
+- `untrusted` politikasında her komut bir soru-cevap; kapı gecikmesi
+  0,1–0,2 sn ölçüldü, uzun işte toplam etkisi ölçülmedi.
+- Codex yönetici izni isteyen 5 küçük artık bıraktı (`%TEMP%` altında,
+  ölçüm koşularımdan): elevated PowerShell'de
+  `takeown /f "$env:TEMP\ofis-deneme-*" /r /d y` sonra silinebilir.

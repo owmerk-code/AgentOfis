@@ -150,6 +150,14 @@ class Motor(ABC):
     #: gerceklestirmiyor.
     izin_kancasi: bool = False
 
+    #: claude.ai BAGLAYICILARINI (Shopify, Meta, Gmail...) tasiyabilir mi.
+    #: Baglayicilar HESABIN claude.ai tarafinda yasar; yalniz claude CLI
+    #: onlari yukler. Izin kancasi olmak yetmez: codex app-server kancali
+    #: (26.09.2026) ama bu baglayicilari hic yuklemez. Bayrak olmasaydi
+    #: koltuk codex'e 'baglayici acildi' yazardi -- yanlis gosteren gosterge,
+    #: ajan araci bulamaz ve 'yok' der.
+    baglayici_tasir: bool = False
+
     @abstractmethod
     def musait_mi(self) -> bool:
         """Motor bu makinede calistirilabilir mi.

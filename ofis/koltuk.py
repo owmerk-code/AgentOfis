@@ -423,6 +423,18 @@ class Koltuk:
                 "gecemezdi.",
                 ajan_ad=ajan_ad, gorev_id=gorev["id"])
             bag = []
+        if bag and not getattr(motor, "baglayici_tasir", False):
+            # BAGLAYICIYI YUKLEYEMEYEN MOTORA "ACILDI" DENMEZ (26.09.2026).
+            # claude.ai baglayicilari yalniz claude CLI'da yasar; codex
+            # app-server kancali ama onlari hic yuklemez. "Acildi" yazmak
+            # yanlis gosteren gosterge olurdu -- ajan araci bulamaz.
+            self.db.olay_yaz(
+                self.proje_id, "uyari",
+                f"#{no} baglayici VERILMEDI: {basamak['motor']} claude.ai "
+                "baglayicilarini yukleyemez (yalniz claude). Isi claude'lu "
+                "bir ajana ver ya da tarayiciyla yap.",
+                ajan_ad=ajan_ad, gorev_id=gorev["id"])
+            bag = []
         if bag:
             bag_ortam = baglayici.ortam(bag)
             self.db.olay_yaz(
@@ -840,7 +852,8 @@ class Koltuk:
                           if getattr(motor, "izin_kancasi", False) else "")
             _dar = any(d in str(basamak.get("model") or "")
                        for d in baglayici.DAR_PENCERELI_MODELLER)
-            if bag and (not izin_araci or _dar):
+            _tasir = getattr(motor, "baglayici_tasir", False)
+            if bag and (not izin_araci or _dar or not _tasir):
                 # Baslangicta KAPALI KALARAK reddediyorduk; devirin
                 # ortasinda reddetmek isi oldururdu. Baglayici birakilir
                 # ve bu GORUNUR olur -- sessizce kapisiz vermek yok.
@@ -848,6 +861,7 @@ class Koltuk:
                     "uyari",
                     f"#{no} devirde baglayici BIRAKILDI: {basamak['motor']}"
                     + (" izin kancasini uygulayamiyor" if not izin_araci
+                       else " claude.ai baglayicilarini yukleyemez" if not _tasir
                        else " modelinin penceresi katalogu tasimaz") + ".",
                     {"gorev_no": no}, ajan_ad=ajan_ad, gorev_id=gorev["id"])
                 bag, bag_ortam = [], {}

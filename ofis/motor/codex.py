@@ -1,5 +1,35 @@
 # -*- coding: utf-8 -*-
-"""Codex CLI adaptoru: `codex exec` komutunu JSONL modunda kosturur.
+"""Codex CLI adaptoru -- iki kip: `app-server` (VARSAYILAN) ve `exec`.
+
+APP-SERVER KIPI (26.09.2026, PLAN F0 A2 -- olculdu, CLAUDE.md "A2"):
+`codex app-server` stdio uzerinden JSON-RPC konusur. `exec` tek yonludur:
+tur basladiktan sonra ne onay ne mesaj gecebilir. App-server ikisini de
+verir ve ikisi de gercek turla olculdu:
+
+* HER KOMUT ISTEMCIYE SORULUR (`approvalPolicy: untrusted`) ->
+  `item/commandExecution/requestApproval`, `mcpServer/elicitation/request`.
+  Adaptor soruyu KENDISI cevaplamaz: ofisin TEK kapisina -- claude'un
+  `--permission-prompt-tool`u ile AYNI arac, `izin_sor` -- codex'in KENDI
+  MCP baglantisi uzerinden (`mcpServer/tool/call`) sorar (olculdu: onay
+  beklerken cagri 0,1-0,2 sn'de dondu). Karar tek yerde kalir ve motor
+  katmani ofisin ic modullerini hic bilmez.
+* Reddedilen eylemin SEBEBI ajana `turn/steer` ile iletilir: `decline`
+  modele yalniz "rejected by user" der; ofisin "SIMDI DUR, soyle yap"
+  mesaji olmadan ajan ayni seyi baska bicimde tekrar dener.
+* Limit ve oturum hatalari YAPISAL gelir (`codexErrorInfo`:
+  `usageLimitExceeded`, `unauthorized`) -- metin taramasina yedek olarak.
+* Hesabin kullanim penceresi tur SURERKEN bildirilir
+  (`account/rateLimits/updated`); oturum kaydini taramaya gerek kalmaz.
+
+`exec` KIPI korunur ve ACIKCA secilir (`kip="exec"` ya da
+`OFIS_CODEX_KIP=exec`): app-server semasi `[experimental]` etiketli ve bir
+CLI surumunde bozulabilir (PLAN §8 kacis yolu). Sessiz geri dusme YOK --
+dusmek, onay kapisinin sessizce kalkmasi olurdu. Gorsel uretimi `exec`te
+kalir: o yol gercek turla olculdu, app-server'da olculmedi.
+
+Asagidaki notlar `exec` kipinin olcumleridir.
+
+Codex CLI adaptoru: `codex exec` komutunu JSONL modunda kosturur.
 
 Yapi `claude.py`den alindi (Popen + okuyucu iplik + nabiz +
 surec agacini kesme); degisen sey motorun SOZLUGUDUR, akisin sekli degil.
@@ -118,6 +148,47 @@ ARAC_ADLARI = {
     "web_search": "WebSearch",
     "todo_list": "TodoWrite",
 }
+
+#: Iki kip; varsayilan app-server. Bilinmeyen kip REDDEDILIR (sessizce
+#: varsayilana dusmek, istenen kipin hic kullanilmamasi olurdu).
+KIPLER = ("app-server", "exec")
+VARSAYILAN_KIP = "app-server"
+
+#: app-server `ThreadItem` turlerinden bizim `arac` olayimiza (semadan).
+APP_ARAC_ADLARI = {
+    "commandExecution": "Bash",
+    "fileChange": "Edit",
+    "mcpToolCall": "MCP",
+    "dynamicToolCall": "Arac",
+    "webSearch": "WebSearch",
+    "imageGeneration": "Gorsel",
+    "collabAgentToolCall": "AltAjan",
+}
+
+#: Yapisal hata kodlari (`codexErrorInfo`, sema). Metin imzalarinin YEDEGI
+#: degil ONCULU: kod varsa ona bakilir, yoksa metin taranir.
+LIMIT_KODLARI = ("usageLimitExceeded", "rateLimitExceeded")
+OTURUM_KODLARI = ("unauthorized",)
+
+#: Adaptorun TANIMADIGI sunucu istegine verilen JSON-RPC hatasi. Her istek
+#: CEVAPLANIR: cevapsiz istegin turu ne kadar bekletecegi olculmedi ve
+#: olculmemis bir bekleme kilidi rehin tutabilir. (Olculen: yanlis BICIMDE
+#: cevap -- `action` alani eksik -- sunucuda "failed to deserialize" ile
+#: dustu ve cagri REDDEDILMIS sayildi; tur surdu.)
+DESTEKSIZ_ISTEK_KODU = -32601
+
+#: Tur, bagli MCP sunuculari HAZIR olmadan BASLATILMAZ.
+#:
+#: OLCULDU (26.09.2026): adaptor `turn/start`i `thread/start`in hemen
+#: ardindan gonderiyordu; ofis MCP'si o an hala "starting" durumundaydi ve
+#: ajan *"`ofis` araci bu oturumda kullanilabilir araclar arasinda yok"*
+#: dedi -- kanit ekleyemedi, is hic kapanamazdi. Ayni tur, sunucular
+#: "ready" olana dek beklenince (0,3-0,7 sn) kaniti DUSURDU (iki kosuda iki).
+#: Sistem saglikli gorunur, yanlis calisir: tipik bir yaris.
+#:
+#: Ust sinir: sunucu hic cevap vermezse tur sonsuza kadar bekletilmez;
+#: sure dolunca tur baslar ve bu GORUNUR bir olay olur.
+MCP_HAZIR_SN = 30.0
 
 SISTEM_EKI_ORTAK = (
     "AgentOfis'te bir ajansin. Baglamin klasorundeki BRIFING.md dosyasidir; "
@@ -372,10 +443,24 @@ class CodexMotoru(Motor):
     #: bunu yalnizca gercek tur soyler.
     mcp_konusur = True
 
+    #: SINIF duzeyinde KAPALI: yetenek kipe baglidir ve ornekte kurulur.
+    #: Sinifa bakan biri (ornek kurmadan) "kanca var" sanmasin -- yanlis
+    #: yonde yanilmanin bedeli kapisiz bir tur olurdu.
+    izin_kancasi = False
+
     def __init__(self, *, calistirilabilir: str = "",
-                 zaman_asimi: float = VARSAYILAN_ZAMAN_ASIMI) -> None:
+                 zaman_asimi: float = VARSAYILAN_ZAMAN_ASIMI,
+                 kip: str = "") -> None:
         self.calistirilabilir = calistirilabilir or self._calistirilabilir_bul()
         self.zaman_asimi = zaman_asimi
+        kip = str(kip or os.environ.get("OFIS_CODEX_KIP", "")
+                  or VARSAYILAN_KIP).strip().lower()
+        if kip not in KIPLER:
+            raise MotorHatasi(
+                f"Bilinmeyen codex kipi: {kip!r}. Secenekler: {', '.join(KIPLER)}")
+        self.kip = kip
+        # Onay kancasi yalniz app-server'da VAR (olculdu, A2/A3).
+        self.izin_kancasi = kip == "app-server"
 
     # -- kurulum -----------------------------------------------------------
 
@@ -547,11 +632,15 @@ class CodexMotoru(Motor):
         # soruldugunu SANIRDI -- oysa hicbiri sorulmazdi. Para ve yayin
         # kontrolleri bu projede her zaman fail-closed olur (codex'in
         # butce tavanini reddetmesiyle ayni ilke).
-        if izin_araci:
+        if izin_araci and not self.izin_kancasi:
             raise MotorHatasi(
-                f"{self.ad} izin kancasini uygulayamiyor "
-                "(`--permission-prompt-tool` karsiligi yok); riskli "
-                "cagrilar ofise sorulamazdi.")
+                f"{self.ad} ({self.kip} kipi) izin kancasini uygulayamiyor "
+                "(`exec` etkilesimsizdir, onay soracak kanal yok); riskli "
+                "cagrilar ofise sorulamazdi. Kancali kip: app-server.")
+        # Kanca adi bir SOZLESMEDIR: `mcp__<sunucu>__<arac>`. Bozuk ad tur
+        # BASLAMADAN reddedilir -- tur ortasinda anlasilsaydi her onay
+        # sorusu kapali kalarak reddedilir ve ajan hic ilerleyemezdi.
+        izin_hedefi = self._izin_hedefi(izin_araci) if izin_araci else None
         metin = str(metin or "").strip()
         if not metin:
             raise MotorHatasi("Bos brifing kosulamaz.")
@@ -595,7 +684,11 @@ class CodexMotoru(Motor):
         # turun hic baslayamamasidir. Akis bir kere basladiktan SONRA
         # istisna atilmaz, cunku o noktadan sonra tek cikis `bitti`dir.
         komut = []
-        if self.calistirilabilir:
+        if self.calistirilabilir and self.kip == "app-server":
+            komut = self._app_komutu(ek_klasorler=ek_klasorler,
+                                     mcp_yapilandirma=mcp_yapilandirma)
+            self._arguman_dogrula(komut)
+        elif self.calistirilabilir:
             komut = self._komut_kur(
                 oturum, devam=devam, model=model, efor=efor,
                 yazabilir=yazabilir, ek_klasorler=ek_klasorler,
@@ -669,9 +762,17 @@ class CodexMotoru(Motor):
             if surec is not None:
                 # KAFES: turun baslattigi HER SEY tur bitince biter.
                 kafes = SurecKafesi(surec)
-                yield from self._akisi_tuket(
-                    surec, istek, durum, hata_parcalari, basladi, sinir,
-                )
+                if self.kip == "app-server":
+                    yield from self._app_akisi(
+                        surec, istek, durum, hata_parcalari, basladi, sinir,
+                        kok=str(kok), oturum=oturum, devam=devam, model=model,
+                        efor=efor, yazabilir=yazabilir, izin_hedefi=izin_hedefi,
+                        mcp_adlari=self._mcp_adlari(mcp_yapilandirma),
+                    )
+                else:
+                    yield from self._akisi_tuket(
+                        surec, istek, durum, hata_parcalari, basladi, sinir,
+                    )
                 zaman_asti = durum["zaman_asimi"]
                 cikis = durum["cikis"]
         finally:
@@ -745,7 +846,10 @@ class CodexMotoru(Motor):
                 "limit": durum["limit"],
                 "zaman_asimi": zaman_asti,
                 "sebep": durum["hata_notu"],
-                "limit_pencere": codex_pencereleri(ev, durum["oturum_id"]),
+                # app-server pencereyi TUR SURERKEN bildirir; yoksa (exec
+                # ya da bildirim gelmediyse) oturum kaydi okunur.
+                "limit_pencere": (durum.get("pencere")
+                                  or codex_pencereleri(ev, durum["oturum_id"])),
                 "butce_usd": butce_usd,
                 "izinli_araclar": tuple(izinli_araclar or ()),
             },
@@ -825,6 +929,446 @@ class CodexMotoru(Motor):
             okuyucu.join(timeout=1)
             hata_okuyucu.join(timeout=1)
 
+    # -- app-server --------------------------------------------------------
+
+    @staticmethod
+    def _izin_hedefi(izin_araci: str) -> tuple:
+        """`mcp__<sunucu>__<arac>` -> (sunucu, arac); bozuksa istisna."""
+        parca = str(izin_araci or "").split("__")
+        if len(parca) != 3 or parca[0] != "mcp" or not parca[1] or not parca[2]:
+            raise MotorHatasi(
+                f"izin araci adi `mcp__<sunucu>__<arac>` bicimde olmali: {izin_araci!r}")
+        return parca[1], parca[2]
+
+    def _app_komutu(self, *, ek_klasorler: tuple, mcp_yapilandirma: str) -> list:
+        """app-server sureci. Tur ayarlari (model, efor, sandbox) JSON-RPC ile
+        gider; burada yalniz surec BASINDA sabitlenmesi gerekenler var."""
+        komut = [self.calistirilabilir, "app-server",
+                 "--strict-config"]   # sessizce dusen ayar olmasin (exec ile ayni)
+        if ek_klasorler:
+            komut += ["-c", "sandbox_workspace_write.writable_roots="
+                      + json.dumps([str(ek) for ek in ek_klasorler])]
+        for parca in self._mcp_ayarlari(mcp_yapilandirma):
+            komut += ["-c", parca]
+        return komut
+
+    @staticmethod
+    def _onay_cevir(yontem: str, prm: dict):
+        """Bir sunucu istegini ofis kapisinin diline cevirir.
+
+        Doner: (arac_adi, girdi, bicim) -- bicim cevabin sekli -- ya da
+        None (onay istegi degil). Kapi (`riskli.arac_degerlendir`) claude'un
+        arac adlarini konusur; codex'in komutu `Bash`, dosya yazimi
+        `Write`, MCP cagrisi `mcp__<sunucu>__<arac>` olur. Boylece KURAL
+        TEK YERDE kalir: ayni `rm`, hangi motordan gelirse gelsin ayni
+        karari alir.
+
+        TANINAMAYAN onay turu kapiya KENDI ADIYLA gider: kapi bilmedigi
+        araci SORAR (polarite) -- yarin eklenen bir onay turu sessizce
+        serbest gecemez.
+        """
+        prm = prm if isinstance(prm, dict) else {}
+        if yontem in ("item/commandExecution/requestApproval", "execCommandApproval"):
+            komut = prm.get("command")
+            if isinstance(komut, list):
+                komut = " ".join(str(k) for k in komut)
+            bicim = "karar" if yontem.startswith("item/") else "eski"
+            return "Bash", {"command": str(komut or "")}, bicim
+        if yontem in ("item/fileChange/requestApproval", "applyPatchApproval"):
+            bicim = "karar" if yontem.startswith("item/") else "eski"
+            return "Write", {"file_path": str(prm.get("grantRoot") or ""),
+                             "sebep": str(prm.get("reason") or "")}, bicim
+        if yontem == "mcpServer/elicitation/request":
+            meta = prm.get("_meta") or {}
+            sunucu = str(prm.get("serverName") or "")
+            # Arac adi YAPISAL bir alanda DEGIL, yalniz mesajda (olculdu):
+            #   'Allow the ofis MCP server to run tool "kanit_ekle"?'
+            # Cikarilamazsa ad bos kalir -> kapi taninmayan arac olarak SORAR.
+            import re
+            m = re.search(r'run tool "([^"]+)"', str(prm.get("message") or ""))
+            if meta.get("codex_approval_kind") == "mcp_tool_call" and sunucu and m:
+                arac = f"mcp__{sunucu}__{m.group(1)}"
+            else:
+                arac = f"mcp_istegi__{sunucu or 'bilinmeyen'}"
+            girdi = meta.get("tool_params")
+            return arac, (girdi if isinstance(girdi, dict) else {}), "eylem"
+        if yontem == "item/permissions/requestApproval":
+            return "izin_genisletme", {"izinler": prm.get("permissions"),
+                                       "sebep": prm.get("reason")}, "izinler"
+        return None
+
+    @staticmethod
+    def _onay_cevabi(bicim: str, izin: bool, prm: dict) -> dict:
+        """Kararin, istegin kendi semasindaki bicimi (her biri olculdu/semada)."""
+        if bicim == "karar":
+            return {"decision": "accept" if izin else "decline"}
+        if bicim == "eski":
+            return {"decision": "approved" if izin else "denied"}
+        if bicim == "eylem":
+            return ({"action": "accept", "content": {}} if izin
+                    else {"action": "decline"})
+        if bicim == "izinler":
+            return {"permissions": (prm.get("permissions") or {}) if izin else {}}
+        return {"decision": "decline"}
+
+    @staticmethod
+    def _app_pencere(rl: dict):
+        """`account/rateLimits/updated` -> ortak pencere bicimi (`tip.py`)."""
+        if not isinstance(rl, dict):
+            return None
+        pencereler = {}
+        for anahtar in ("primary", "secondary"):
+            p = rl.get(anahtar)
+            if not isinstance(p, dict) or not isinstance(p.get("usedPercent"), (int, float)):
+                continue
+            dk = p.get("windowDurationMins")
+            pencereler[PENCERE_DAKIKA_ADI.get(dk, f"{dk}dk")] = {
+                "kullanim": p["usedPercent"] / 100.0, "yenilenme": p.get("resetsAt")}
+        return limit_penceresi(pencereler, kaynak="codex app-server (account/rateLimits)",
+                               hal=str(rl.get("rateLimitReachedType") or ""),
+                               plan=str(rl.get("planType") or ""))
+
+    def _app_akisi(self, surec, istek: str, durum: dict, hata_parcalari: list,
+                   basladi: float, sinir: float, *, kok: str, oturum: str,
+                   devam: bool, model: str, efor: str, yazabilir: bool,
+                   izin_hedefi, mcp_adlari: tuple = ()) -> Iterator[MotorOlayi]:
+        """app-server ile TEK turluk konusma; `_akisi_tuket` ile ayni sozlesme.
+
+        TEK IPLIK, ENGELLEMEYEN: onay sorusu kapiya gider ve cevabi AYNI
+        boru uzerinden gelir; soruyu bekleyerek donguyu durdurmak cevabi
+        hic okuyamamak olurdu. Istekler kimlikle eslenir (`bekleyen`,
+        `kararlar`), dongu hic durmaz.
+
+        ISTISNA SIZDIRMAZ: sonuc `durum` uzerinden doner (`zaman_asimi`,
+        `cikis`); akis `bitti` ile kapanacagi icin buradan istisna cikmamali.
+        """
+        satirlar = queue.Queue()
+        okuyucu = threading.Thread(target=self._satir_oku, args=(surec.stdout, satirlar),
+                                   name="ofis-codex-app-stdout", daemon=True)
+        hata_okuyucu = threading.Thread(target=self._hata_oku,
+                                        args=(surec.stderr, hata_parcalari),
+                                        name="ofis-codex-app-stderr", daemon=True)
+        okuyucu.start()
+        hata_okuyucu.start()
+        durum["zaman_asimi"] = False
+        durum["cikis"] = -1
+        sayac = [0]
+        bekleyen = {}     # bizim istek kimligi -> amac
+        kararlar = {}     # bizim tool/call kimligi -> bekleyen onay istegi
+        baglam = {"thread": "", "tur": "", "bitti": False, "durum": "",
+                  # Beklenen MCP sunuculari -> son bildirilen durum.
+                  "mcp": {ad: "" for ad in mcp_adlari}, "tur_bekliyor": False,
+                  "mcp_son": 0.0}
+
+        def yaz(paket: dict) -> None:
+            surec.stdin.write(json.dumps(paket, ensure_ascii=False) + "\n")
+            surec.stdin.flush()
+
+        def iste(yontem: str, prm: dict, amac: str) -> int:
+            sayac[0] += 1
+            bekleyen[sayac[0]] = amac
+            yaz({"jsonrpc": "2.0", "id": sayac[0], "method": yontem, "params": prm})
+            return sayac[0]
+
+        # Yazabilirlik SUREC duzeyinde: sandbox (exec ile ayni kural).
+        politika = "untrusted" if izin_hedefi else "never"
+        thread_ayari = {"cwd": kok, "approvalPolicy": politika,
+                        "sandbox": SANDBOX_YAZAR if yazabilir else SANDBOX_OKUR}
+        model = str(model or "").strip()
+        if model:
+            thread_ayari["model"] = model
+        tur_ayari = {"input": [{"type": "text", "text": istek}]}
+        kademe = EFOR_CEVRIMI.get(str(efor or "").strip().lower(), "")
+        if kademe:
+            tur_ayari["effort"] = kademe
+
+        try:
+            iste("initialize", {"clientInfo": {"name": "agentofis", "version": "1"}},
+                 "init")
+            biter = time.monotonic() + sinir
+            while True:
+                kalan = biter - time.monotonic()
+                if kalan <= 0:
+                    durum["zaman_asimi"] = True
+                    if baglam["tur"]:
+                        try:   # nazikce dur; surec zaten sonra kesilir
+                            iste("turn/interrupt", {"threadId": baglam["thread"],
+                                                    "turnId": baglam["tur"]}, "kes")
+                        except OSError:
+                            pass
+                    break
+                if baglam["tur_bekliyor"]:
+                    hazir = all(d in ("ready", "failed") for d in baglam["mcp"].values())
+                    if hazir or time.monotonic() >= baglam["mcp_son"]:
+                        if not hazir:
+                            bekleyenler = [a for a, d in baglam["mcp"].items()
+                                           if d not in ("ready", "failed")]
+                            yield MotorOlayi(
+                                "hata", f"MCP sunucusu {MCP_HAZIR_SN:.0f} sn'de hazir "
+                                f"olmadi: {', '.join(bekleyenler)} -- tur yine basliyor, "
+                                "araclari eksik olabilir.",
+                                {"sebep": "mcp_gecikti", "sunucular": bekleyenler})
+                        baglam["tur_bekliyor"] = False
+                        iste("turn/start", {**tur_ayari, "threadId": baglam["thread"]},
+                             "tur")
+                try:
+                    oge = satirlar.get(timeout=min(NABIZ_ARALIGI, kalan))
+                except queue.Empty:
+                    if surec.poll() is not None and not okuyucu.is_alive():
+                        break
+                    yield MotorOlayi("nabiz", "", {"gecen_s": round(time.monotonic() - basladi, 1)})
+                    continue
+                if oge is _SON:
+                    break
+                try:
+                    mesaj = json.loads(str(oge))
+                except (json.JSONDecodeError, TypeError):
+                    continue
+                if not isinstance(mesaj, dict):
+                    continue
+
+                yontem = mesaj.get("method")
+                kimlik = mesaj.get("id")
+                # 1) BIZIM isteklerimize cevap
+                if yontem is None and kimlik is not None:
+                    if kimlik in kararlar:
+                        bekleyen.pop(kimlik, None)
+                        yield from self._karari_uygula(kararlar.pop(kimlik), mesaj,
+                                                       yaz, iste, baglam)
+                        continue
+                    amac = bekleyen.pop(kimlik, "")
+                    hata = mesaj.get("error")
+                    if hata and amac in ("init", "thread", "tur"):
+                        ileti = str((hata or {}).get("message") or hata)
+                        for olay in self._hata_siniflandir(
+                                f"app-server {amac}: {ileti}", "", durum):
+                            yield olay
+                        break
+                    sonuc = mesaj.get("result") or {}
+                    if amac == "init":
+                        yaz({"jsonrpc": "2.0", "method": "initialized"})
+                        if devam:
+                            iste("thread/resume", {**thread_ayari, "threadId": oturum},
+                                 "thread")
+                        else:
+                            iste("thread/start", thread_ayari, "thread")
+                    elif amac == "thread":
+                        baglam["thread"] = str((sonuc.get("thread") or {}).get("id") or "")
+                        durum["oturum_id"] = baglam["thread"]
+                        durum["model"] = str(sonuc.get("model") or durum["model"])
+                        yield MotorOlayi("oturum", durum["model"],
+                                         {"oturum_id": durum["oturum_id"],
+                                          "model": durum["model"]})
+                        # Tur MCP HAZIR olunca baslar (bkz. MCP_HAZIR_SN).
+                        baglam["tur_bekliyor"] = True
+                        baglam["mcp_son"] = time.monotonic() + MCP_HAZIR_SN
+                    elif amac == "tur":
+                        baglam["tur"] = str((sonuc.get("turn") or {}).get("id") or "")
+                    continue
+                # 2) SUNUCUNUN bize istegi (onay vb.) -- HER ZAMAN cevaplanir
+                if yontem and kimlik is not None:
+                    yield from self._sunucu_istegi(mesaj, yaz, iste, kararlar,
+                                                   izin_hedefi, baglam)
+                    continue
+                # 3) Bildirim
+                if yontem:
+                    prm = mesaj.get("params") or {}
+                    if yontem == "mcpServer/startupStatus/updated":
+                        ad = str(prm.get("name") or "")
+                        if ad in baglam["mcp"]:
+                            baglam["mcp"][ad] = str(prm.get("status") or "")
+                            if baglam["mcp"][ad] == "failed":
+                                # Sessizce dusen sunucu: ajan araci bulamaz ve
+                                # "yok" der; sebebi burada gorunur olmali.
+                                yield MotorOlayi(
+                                    "hata", f"MCP sunucusu acilamadi: {ad} -- "
+                                    f"{prm.get('failureReason') or prm.get('error') or ''}"[:600],
+                                    {"sebep": "mcp_acilamadi", "sunucu": ad})
+                    for olay in self._app_bildirim(yontem, prm, durum, baglam):
+                        yield olay
+                    if baglam["bitti"]:
+                        break
+
+            if not durum["zaman_asimi"] and baglam["bitti"]:
+                # app-server tur bitince KENDILIGINDEN kapanmaz; cikisi biz
+                # turun durumundan yazariz (surec sonra kesilir).
+                durum["cikis"] = 0 if baglam["durum"] == "completed" else 1
+            elif not durum["zaman_asimi"] and not durum["hatali"]:
+                durum["hatali"] = True
+                durum["hata_notu"] = durum["hata_notu"] or "surec"
+                durum["sonuc"] = durum["sonuc"] or "app-server tur bitmeden kapandi"
+        except Exception as exc:
+            durum["hatali"] = True
+            durum["hata_notu"] = durum["hata_notu"] or "surec"
+            durum["sonuc"] = durum["sonuc"] or f"{type(exc).__name__}: {exc}"
+            yield MotorOlayi("hata", f"Surec hatasi: {exc}"[:1200], {"sebep": "surec"})
+        finally:
+            try:
+                surec.stdin.close()
+            except Exception:
+                pass
+            okuyucu.join(timeout=1)
+            hata_okuyucu.join(timeout=1)
+
+    def _sunucu_istegi(self, mesaj: dict, yaz, iste, kararlar: dict,
+                       izin_hedefi, baglam: dict) -> Iterator[MotorOlayi]:
+        yontem = str(mesaj.get("method"))
+        kimlik = mesaj.get("id")
+        prm = mesaj.get("params") or {}
+        ceviri = self._onay_cevir(yontem, prm)
+        if ceviri is None:
+            # Onay degil (kullanicidan girdi, jeton yenileme, ...): ofis bu
+            # istekleri karsilamaz. CEVAPSIZ birakilmaz, hata ile cevaplanir.
+            yaz({"jsonrpc": "2.0", "id": kimlik,
+                 "error": {"code": DESTEKSIZ_ISTEK_KODU,
+                           "message": f"agentofis bu istegi karsilamiyor: {yontem}"}})
+            yield MotorOlayi("izin", f"desteklenmeyen istek reddedildi: {yontem}",
+                             {"hatali": True, "arac": yontem, "girdi": ""})
+            return
+        arac, girdi, bicim = ceviri
+        if not izin_hedefi:
+            # Kanca yok ama onay soruldu: KAPALI KALIR. (politika "never"
+            # iken gelmemeli; gelirse sessizce kabul etmek kapisiz tur olur.)
+            yaz({"jsonrpc": "2.0", "id": kimlik,
+                 "result": self._onay_cevabi(bicim, False, prm)})
+            yield MotorOlayi("izin", f"{arac} reddedildi: ofis kapisi bu turda bagli degil",
+                             {"hatali": True, "arac": arac, "girdi": str(girdi)[:160]})
+            return
+        sunucu, kapi_araci = izin_hedefi
+        cid = iste("mcpServer/tool/call",
+                   {"threadId": str(prm.get("threadId") or baglam["thread"]),
+                    "server": sunucu, "tool": kapi_araci,
+                    "arguments": {"tool_name": arac, "input": girdi}}, "kapi")
+        kararlar[cid] = {"kimlik": kimlik, "bicim": bicim, "arac": arac,
+                         "girdi": girdi, "prm": prm}
+
+    def _karari_uygula(self, bekleyen: dict, cevap: dict, yaz, iste,
+                       baglam: dict) -> Iterator[MotorOlayi]:
+        """Kapinin cevabini okur ve codex'e iletir. OKUNAMAZSA KAPALI KALIR."""
+        izin, gerekce = False, ""
+        try:
+            metin = cevap["result"]["content"][0]["text"]
+            karar = json.loads(metin)
+            izin = karar.get("behavior") == "allow"
+            gerekce = str(karar.get("message") or "")
+        except Exception:
+            ham = cevap.get("error") or cevap.get("result")
+            gerekce = (f"Ofis kapisi cevap veremedi ({str(ham)[:200]}). Guvenli "
+                       "tarafta kaliyoruz: bu eylem YAPILMADI.")
+        yaz({"jsonrpc": "2.0", "id": bekleyen["kimlik"],
+             "result": self._onay_cevabi(bekleyen["bicim"], izin, bekleyen["prm"])})
+        if izin:
+            return
+        girdi = str(bekleyen["girdi"])[:160]
+        yield MotorOlayi("izin", f"{bekleyen['arac']} reddedildi: {girdi}",
+                         {"hatali": True, "arac": bekleyen["arac"], "girdi": girdi,
+                          "gerekce": gerekce[:600]})
+        # `decline` modele yalniz "rejected by user" der. Ofisin gerekcesi
+        # (SIMDI DUR, onay istendi, baska yol dene) ajana ULASMALI; yoksa ayni
+        # seyi baska bicimde tekrar dener. Tur bittiyse steer reddedilir --
+        # zararsiz, cevap `bekleyen`de yutulur.
+        if gerekce and baglam["tur"] and not baglam["bitti"]:
+            try:
+                iste("turn/steer", {"threadId": baglam["thread"],
+                                    "expectedTurnId": baglam["tur"],
+                                    "input": [{"type": "text",
+                                               "text": "OFIS KAPISI: " + gerekce}]},
+                     "steer")
+            except OSError:
+                pass
+
+    def _app_bildirim(self, yontem: str, prm: dict, durum: dict,
+                      baglam: dict) -> list:
+        """Bildirimi olaya cevirir. Tanimadigini YOK SAYAR (CLI yeni tur
+        eklediginde tur patlamasin)."""
+        olaylar = []
+        if yontem == "turn/started":
+            baglam["tur"] = str((prm.get("turn") or {}).get("id") or baglam["tur"])
+            return olaylar
+        if yontem == "turn/completed":
+            tur = prm.get("turn") or {}
+            # Alt ajanlarin (collab) turlari da bildirilebilir: yalniz BIZIM
+            # turumuz donguyu bitirir.
+            if baglam["tur"] and str(tur.get("id") or "") not in ("", baglam["tur"]):
+                return olaylar
+            baglam["bitti"] = True
+            baglam["durum"] = str(tur.get("status") or "")
+            hata = tur.get("error")
+            if baglam["durum"] == "failed" and isinstance(hata, dict):
+                olaylar += self._hata_siniflandir(hata.get("message"),
+                                                  hata.get("codexErrorInfo"), durum)
+            elif baglam["durum"] == "interrupted" and not durum["zaman_asimi"]:
+                durum["hatali"] = True
+                durum["hata_notu"] = durum["hata_notu"] or "kesildi"
+            return olaylar
+        if yontem == "error":
+            if prm.get("willRetry"):
+                return olaylar          # motor kendisi yeniden deneyecek
+            hata = prm.get("error") or {}
+            return self._hata_siniflandir(hata.get("message"),
+                                          hata.get("codexErrorInfo"), durum)
+        if yontem == "thread/tokenUsage/updated":
+            toplam = (prm.get("tokenUsage") or {}).get("total") or {}
+            # exec kipiyle AYNI hesap (girdi + cikti + onbellek): iki kipin
+            # jetonu ayni defterde toplaniyor, farkli formul tavani kaydirir.
+            durum["jeton"] = int((toplam.get("inputTokens") or 0)
+                                 + (toplam.get("outputTokens") or 0)
+                                 + (toplam.get("cachedInputTokens") or 0))
+            return olaylar
+        if yontem == "account/rateLimits/updated":
+            pencere = self._app_pencere(prm.get("rateLimits"))
+            if pencere:
+                durum["pencere"] = pencere
+            return olaylar
+        if yontem not in ("item/started", "item/completed"):
+            return olaylar
+        oge = prm.get("item") or {}
+        cins = str(oge.get("type") or "")
+        tamam = yontem == "item/completed"
+        if cins == "agentMessage":
+            if tamam:
+                parca = str(oge.get("text") or "")
+                durum["metin"].append(parca)
+                olaylar.append(MotorOlayi("metin", parca))
+            return olaylar
+        if cins == "reasoning":
+            if tamam:
+                ozet = oge.get("summary") or []
+                metin = " ".join(str(s) for s in ozet) if isinstance(ozet, list) else str(ozet)
+                if metin.strip():
+                    olaylar.append(MotorOlayi("dusunce", metin))
+            return olaylar
+        if cins not in APP_ARAC_ADLARI:
+            return olaylar
+        ad = APP_ARAC_ADLARI[cins]
+        if cins == "mcpToolCall":
+            ad = f"{oge.get('server', '')}.{oge.get('tool', '')}".strip(".") or ad
+        cagri = str(oge.get("id") or "")
+        if not tamam:
+            durum["arac_sayisi"] += 1
+            olaylar.append(MotorOlayi("arac", ad, {"ozet": self._app_oge_ozeti(oge),
+                                                  "cagri_id": cagri}))
+            return olaylar
+        cikis = oge.get("exitCode")
+        durum_ = str(oge.get("status") or "")
+        hatali = (bool(oge.get("error")) or cikis not in (None, 0)
+                  or durum_ in ("failed", "declined"))
+        olaylar.append(MotorOlayi("arac_sonuc", self._app_oge_ozeti(oge, sonuc=True),
+                                  {"hatali": hatali, "cagri_id": cagri, "cikis": cikis}))
+        return olaylar
+
+    @staticmethod
+    def _app_oge_ozeti(oge: dict, *, sonuc: bool = False) -> str:
+        anahtarlar = (("aggregatedOutput", "error", "result", "status") if sonuc
+                      else ("command", "query", "tool", "changes", "arguments", "status"))
+        for anahtar in anahtarlar:
+            deger = oge.get(anahtar)
+            if deger:
+                if isinstance(deger, (dict, list)):
+                    deger = json.dumps(deger, ensure_ascii=False)
+                return str(deger).strip()[:300]
+        return ""
+
     # -- komut -------------------------------------------------------------
 
     def _istek_metni(self, metin: str, mcp_yapilandirma: str) -> str:
@@ -883,6 +1427,16 @@ class CodexMotoru(Motor):
         # arguman hic olusmaz (bkz. .CMD tuzagi).
         komut.append("-")
         return komut
+
+    @staticmethod
+    def _mcp_adlari(mcp_yapilandirma: str) -> tuple:
+        """Bu turda baglanan MCP sunucularinin adlari (hazir olmalari beklenir)."""
+        adlar = []
+        for satir in CodexMotoru._mcp_ayarlari(mcp_yapilandirma):
+            ad = satir.split(".", 2)[1] if satir.startswith("mcp_servers.") else ""
+            if ad and ad not in adlar:
+                adlar.append(ad)
+        return tuple(adlar)
 
     @staticmethod
     def _mcp_ayarlari(mcp_yapilandirma: str) -> list:
@@ -1007,23 +1561,34 @@ class CodexMotoru(Motor):
         if tur in ("error", "turn.failed"):
             hata = mesaj.get("error") or {}
             ileti = str(mesaj.get("message") or hata.get("message") or "")
-            durum["hatali"] = True
-            durum["sonuc"] = ileti or durum["sonuc"]
-            dusuk = ileti.lower()
-            if any(imza in dusuk for imza in OTURUM_OLU_IMZALARI):
-                # Limit DEGIL: beklemek ise yaramaz, giris gerekir. Limit
-                # sayilsaydi zincir devreder ve sebep hic gorunmezdi.
-                durum["hata_notu"] = "oturum_kapandi"
-                olaylar.append(MotorOlayi("hata", ileti[:1200],
-                                          {"sebep": "oturum_kapandi"}))
-            elif any(imza in dusuk for imza in LIMIT_IMZALARI):
-                durum["limit"] = True
-                durum["hata_notu"] = "limit"
-                olaylar.append(MotorOlayi("limit", ileti[:300], {"ham": ileti[:1200]}))
-            else:
-                durum["hata_notu"] = durum["hata_notu"] or "motor"
-                olaylar.append(MotorOlayi("hata", ileti[:1200], {"sebep": "motor"}))
+            olaylar += self._hata_siniflandir(ileti, "", durum)
         return olaylar
+
+    @staticmethod
+    def _hata_siniflandir(ileti: str, kod, durum: dict) -> list:
+        """Bir motor hatasini SINIFINA gore olaya cevirir -- iki kipin TEK yeri.
+
+        Sira bilincli: once OTURUM, sonra LIMIT. Olu oturum limit sayilsaydi
+        zincir sessizce devreder ve sebep (yeniden giris gerekiyor) hic
+        gorunmezdi -- beklemek ise yaramaz, giris gerekir.
+
+        `kod` app-server'in YAPISAL hata kodudur (`codexErrorInfo`); varsa
+        metinden once ona bakilir. exec kipinde bos gelir, metin taranir.
+        """
+        ileti = str(ileti or "")
+        kod = kod if isinstance(kod, str) else ""
+        durum["hatali"] = True
+        durum["sonuc"] = ileti or durum["sonuc"]
+        dusuk = ileti.lower()
+        if kod in OTURUM_KODLARI or any(i in dusuk for i in OTURUM_OLU_IMZALARI):
+            durum["hata_notu"] = "oturum_kapandi"
+            return [MotorOlayi("hata", ileti[:1200], {"sebep": "oturum_kapandi"})]
+        if kod in LIMIT_KODLARI or any(i in dusuk for i in LIMIT_IMZALARI):
+            durum["limit"] = True
+            durum["hata_notu"] = "limit"
+            return [MotorOlayi("limit", ileti[:300], {"ham": ileti[:1200]})]
+        durum["hata_notu"] = durum["hata_notu"] or "motor"
+        return [MotorOlayi("hata", ileti[:1200], {"sebep": "motor"})]
 
     def _ogeyi_cevir(self, mesaj: dict, durum: dict, *, tamamlandi: bool) -> list:
         """`item.*` satirlarini olaya cevirir.

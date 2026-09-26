@@ -1,0 +1,43 @@
+{
+ "zaman": "20260926-065052",
+ "ayar": {
+  "kip": "gercek",
+  "motor": "codex",
+  "model": "gpt-6-luna",
+  "lider_model": "sonnet",
+  "tur_tavani": 0.6
+ },
+ "sonuclar": [
+  {
+   "no": "D05",
+   "ad": "Tarayiciyla fiyat tablosu cek",
+   "kip": "gercek",
+   "motor": "codex",
+   "model": "gpt-6-luna",
+   "olcutler": [
+    {
+     "olcut": "fiyatlar.csv var",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "degerler BIREBIR",
+     "gecti": true,
+     "not": "okunan={'Kalem': 12.5, 'Defter': 34.9, 'Silgi': 7.25}"
+    }
+   ],
+   "halka": "Butun isler kapandi.",
+   "durum": "gecti",
+   "tur": 6,
+   "jeton": 1325165,
+   "maliyet_usd": 0.0791,
+   "fiyatsiz_tur": 3,
+   "kanit": 4,
+   "insana_soru": 0,
+   "istekler": [],
+   "kapi_durdurdu": 0,
+   "kapi_olaylari": [],
+   "sure_sn": 117.5
+  }
+ ]
+}

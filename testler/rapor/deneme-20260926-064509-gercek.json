@@ -1,0 +1,26 @@
+{
+ "zaman": "20260926-064509",
+ "ayar": {
+  "kip": "gercek",
+  "motor": "codex",
+  "model": "gpt-6-luna",
+  "lider_model": "sonnet",
+  "tur_tavani": 0.6
+ },
+ "sonuclar": [
+  {
+   "no": "D05",
+   "ad": "Tarayiciyla fiyat tablosu cek",
+   "kip": "gercek",
+   "motor": "codex",
+   "model": "gpt-6-luna",
+   "olcutler": [],
+   "halka": "Insan cevabi bekleniyor.",
+   "durum": "hata",
+   "hata": "PermissionError: [Errno 13] Permission denied: 'C:\\\\Users\\\\pc\\\\AppData\\\\Local\\\\Temp\\\\ofis-deneme-D05-93c7jh7p\\\\calisma\\\\fiyatlar.csv'",
+   "iz": "Traceback (most recent call last):\n  File \"C:\\Users\\pc\\Desktop\\AgentOfis\\testler\\deneme.py\", line 175, in is_kos\n    for o, gc, n in tanim[\"dogrula\"](kok, ofis, bag)]\n                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\pc\\Desktop\\AgentOfis\\testler\\deneme_isler.py\", line 290, in d05_dogrula\n    for satir in yol.read_text(encoding=\"utf-8-sig\").splitlines()[1:]:\n                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\pc\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\pathlib.py\", line 1027, in read_text\n    with self.open(mode='r', encoding=encoding, errors=errors) as f:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\pc\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\pathlib.py\", line 1013, in open\n    return io.open(self, mode, buffering, encoding, errors, newline)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nPermissionError: [Errno 13] Permission denied: 'C:\\\\Users\\\\pc\\\\AppData\\\\Local\\\\Temp\\\\ofis-deneme-D05-93c7jh7p\\\\calisma\\\\fiyatlar.csv'\n",
+   "sure_sn": 86.6,
+   "saklandi": "C:\\Users\\pc\\AppData\\Local\\Temp\\ofis-deneme-D05-93c7jh7p"
+  }
+ ]
+}

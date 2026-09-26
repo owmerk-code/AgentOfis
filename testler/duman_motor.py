@@ -495,7 +495,22 @@ from ofis.motor.gemini import GeminiMotoru as _Gem          # noqa: E402
 
 # Gemini defterden cikti (24.09.2026) ama dosyasi duruyor; geri takilirsa
 # kanca sozlesmesi yine tutmali, o yuzden sinifi dogrudan sinaniyor.
-for _ad, _mm in (("codex", _ac("codex")), ("gemini", _Gem()),
+# codex: kanca KIPE bagli (A2/A3, 26.09.2026). exec'te kanal yok ->
+# reddetmeli; app-server'da var -> bildirmeli. Sinif duzeyi KAPALI (ornek
+# kurmadan bakan "kanca var" sanmasin).
+from ofis.motor.codex import CodexMotoru as _CxK                # noqa: E402
+sina("codex: SINIF duzeyinde izin_kancasi=False (temkinli taraf)",
+     _CxK.izin_kancasi is False)
+sina("codex app-server: izin_kancasi=True bildiriyor",
+     _CxK(calistirilabilir="codex", kip="app-server").izin_kancasi is True)
+sina("codex: VARSAYILAN kip app-server",
+     _CxK(calistirilabilir="codex").kip == "app-server")
+try:
+    _CxK(calistirilabilir="codex", kip="uydurma")
+    sina("codex: bilinmeyen kip REDDEDILIYOR", False, "-- kabul etti!")
+except Exception as _exc:
+    sina("codex: bilinmeyen kip REDDEDILIYOR", "kip" in str(_exc).lower())
+for _ad, _mm in (("codex exec", _CxK(kip="exec")), ("gemini", _Gem()),
                  ("sahte", _ac("sahte"))):
     sina(f"{_ad}: izin_kancasi=False bildiriyor",
          getattr(_mm, "izin_kancasi", False) is False)
@@ -532,9 +547,12 @@ sina("claude: uyari limit SAYILMIYOR (bosuna devir olmaz)", _d3["limit"] is Fals
 sina("claude: `bitti` olcumu TASIYOR",
      '"limit_pencere": claude_pencereleri(durum["limit_bilgi"])'
      in _ins.getsource(_cl_mod.ClaudeMotoru.tur_kos))
+_cx_tur = _ins.getsource(_cx_mod.CodexMotoru.tur_kos)
 sina("codex: `bitti` olcumu TASIYOR (bu turun oturumu, bu hesabin evi)",
-     '"limit_pencere": codex_pencereleri(ev, durum["oturum_id"])'
-     in _ins.getsource(_cx_mod.CodexMotoru.tur_kos))
+     'codex_pencereleri(ev, durum["oturum_id"])' in _cx_tur
+     and '"limit_pencere"' in _cx_tur)
+sina("codex app-server: tur SURERKEN gelen pencere oncelikli",
+     'durum.get("pencere")' in _cx_tur)
 
 # codex DOLAR BILDIRMEZ. 0.0 "olculmus sifir" demektir ve hic
 # guncellenmiyordu: gercek lider devri olcumunde her codex turu defterde

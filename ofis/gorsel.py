@@ -676,7 +676,11 @@ class CodexUretici(Uretici):
     @staticmethod
     def _motor():
         from .motor.codex import CodexMotoru
-        return CodexMotoru()
+        # `exec` KIPI -- bilerek. Gorsel yolu gercek turla YALNIZ exec'te
+        # olculdu (25.09.2026); app-server'da olculmedi ve olcmek ~220k
+        # jeton yakar. Olculmemis yola sessizce gecmek yerine olculeni
+        # acikca seciyoruz (codex.py dosya basi, kip notu).
+        return CodexMotoru(kip="exec")
 
     def musait_mi(self) -> bool:
         try:
