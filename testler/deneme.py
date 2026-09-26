@@ -20,7 +20,17 @@ Rapor: `testler/rapor/deneme-<zaman>.json` ve `.md`.
 
 from __future__ import annotations
 
-import _temizlik  # noqa: F401 -- gecici klasorleri siler (E05); ILK ice aktarma
+import os as _os
+from pathlib import Path as _Path
+
+# Deneme seti GERCEK hesaplarla kosar (codex girisi `~/.agentofis/codex`te):
+# ofisin koku gercek kalir. Duman sinamalari ise `_temizlik` ile kokunu
+# gecici klasore cevirir -- kuru kip (`duman_deneme`) onu once ice aktardigi
+# icin burada `setdefault` dokunmaz. Gercek kosunun yazdigi kota/oturum
+# hafizasi GERCEK bir olcumdur; kirlilik degil.
+_os.environ.setdefault("OFIS_EV", str(_Path.home() / ".agentofis"))
+
+import _temizlik  # noqa: F401,E402 -- gecici klasorleri siler (E05)
 
 import argparse
 import datetime as _dt

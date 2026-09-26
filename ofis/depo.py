@@ -37,11 +37,12 @@ import sqlite3
 import subprocess
 import tempfile
 from pathlib import Path
+from .yollar import OFIS_EVI
 
 PROJE_KOKU = Path(__file__).resolve().parent.parent
 DISARI = Path("veri") / "disari" / "ofis.sql"
 BEKLENEN_UZAK = "https://github.com/owmerk-code/AgentOfis.git"
-VARSAYILAN_AYAR = Path.home() / ".agentofis" / "depo.json"
+VARSAYILAN_AYAR = OFIS_EVI / "depo.json"
 AZAMI_DOSYA_MB = 50
 
 #: Bilinen anahtar bicimleri. Sinama dosyalarindaki bilerek uydurma

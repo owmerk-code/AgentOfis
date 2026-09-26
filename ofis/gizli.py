@@ -50,10 +50,11 @@ import shutil
 import stat
 import tempfile
 from pathlib import Path
+from .yollar import OFIS_EVI
 
 #: Depo, proje kokunun DISINDA. `OFIS_GIZLI_YOLU` ile degistirilebilir --
 #: farkli makinede farkli yer isteyen olabilir, ama varsayilan guvenli.
-VARSAYILAN_DEPO = Path.home() / ".agentofis" / "gizli.env"
+VARSAYILAN_DEPO = OFIS_EVI / "gizli.env"
 
 
 class GizliHatasi(RuntimeError):

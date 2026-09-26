@@ -56,7 +56,7 @@ Her eksik bir faza bağlı; hiçbiri sahipsiz değil.
 | E13 | Gemini'de ofis araçları (MCP) ve tarayıcı yok | F2 |
 | E14 | Gemini rol izinlerini reddediyor, 19 rolün 9'unda koşamıyor | F2 |
 | E15 | Codex ve Gemini'de onay kapısı yok (`rm`, `git push` sorulmuyor) | F2 |
-| E16 | Motorlarda "anahtar var ≠ çalışıyor" körlüğü: kota ve oturum hafızası yalnız codex ve görselde var | F2 |
+| E16 | Motorlarda "anahtar var ≠ çalışıyor" körlüğü: kota ve oturum hafızası yalnız codex ve görselde var | F2 — **Claude + Codex BİTTİ (27.09):** tek hafıza (`motor_saglik`), Claude girişi ölçülüyor, hesap hatası hatırlanıyor, oturum düşünce aynı turda devir; Gemini Pro'yu bekliyor |
 | E17 | Tur sürerken mesaj yazma yalnız Claude'da ölçüldü; Codex ve Gemini'de yok | F2 — **Claude + Codex BİTTİ (27.09)**; Gemini Pro'yu bekliyor |
 | E18 | Terminal görünümlü canlı pano, yazma satırı ve Devral yok | F2 |
 | E19 | Gemini limit pencereleri ölçülmüyor | F2 |
@@ -373,7 +373,7 @@ yedek geri yüklendi · geri alma çalıştı · test sonrası `%TEMP%`'te artı
 1. Gemini'yi defterden geri tak, Pro girişiyle (E21).
 2. Gemini: ofis MCP, tarayıcı, rol izinleri Policy Engine ile (E13, E14).
 3. Codex ve Gemini onay kapısı (A3'e göre) (E15). — **Codex BİTTİ (26.09):** app-server kipi, `izin_sor`'a codex'in kendi MCP bağlantısıyla sorar; gerçek turda `Remove-Item` kapıda durdu.
-4. Motor sağlık hafızası: kota, oturum düşmesi, "çalışıyor mu" üç motorda tek desenle (E16).
+4. Motor sağlık hafızası: kota, oturum düşmesi, "çalışıyor mu" üç motorda tek desenle (E16). — **Claude + Codex BİTTİ (27.09):** `motor_saglik` tek hafıza + `durum_notu()` tek yüz; gerçek CLI'da (boş yapılandırma, $0) `authentication_failed` ölçüldü. Yan iş: sınamalar gerçek `~/.agentofis`'e yazıyordu → tek kök (`ofis/yollar.py`) + bekçi.
 5. Çift yönlü akış: üç motorda tur sürerken mesaj (A1/A2) (E17). — **Claude + Codex BİTTİ (27.09):** not tur sürerken ulaşır (Claude 6 sn, Codex anında), Durdur koşan turu gerçekten keser, Sürdür kaldığı yerden devam eder; D14 ve D17 iki motorda gerçek turla geçti. Gemini Pro'yu bekliyor.
 6. Panel: terminal görünümlü pano (renk, araç, diff), yazma satırı, Devral / Ofise geri ver (E18).
 7. Gemini limit pencereleri (E19); lider turuna kaçak freni ve hesap ortamı sınaması (E08); boş zincir tuzağı (E09); rollout tarama maliyeti (E10); kabin ölüm kaydı (E12).

@@ -82,6 +82,16 @@ def _musait_mi(motor_ad: str, fabrika) -> bool:
         return False
 
 
+def _neden(motor_ad: str, fabrika) -> str:
+    try:
+        notu = fabrika(motor_ad).durum_notu()
+    except AttributeError:
+        notu = ""
+    except Exception as exc:          # noqa: BLE001
+        notu = f"acilamadi: {exc}"
+    return notu or "bu makinede kurulu degil"
+
+
 def _butce_kaldirir_mi(motor_ad: str, fabrika) -> bool:
     try:
         return bool(getattr(fabrika(motor_ad), "butce_destegi", False))
@@ -239,8 +249,11 @@ def elenenler(ajan: dict, *, butce_usd=None, zincir=None,
             continue
         gorulen.add(anahtar)
         if not _musait_mi(motor_ad, fabrika):
+            # Sebep MOTORUN kendi teshisi (E16): kurulu degil / giris yok /
+            # oturum sunucuda dustu. Hepsine "kurulu degil" demek, girissiz
+            # bir motoru kurmaya calistirirdi.
             sonuc.append({"motor": motor_ad, "model": model,
-                          "sebep": "bu makinede kurulu degil"})
+                          "sebep": _neden(motor_ad, fabrika)})
         # NOT: "butce uygulayamiyor" ARTIK ELEME SEBEBI DEGIL. Basamak
         # kosar, ofis freni uygulanir. Eleme listesi yalnizca GERCEKTEN
         # kosamayacak basamaklari sayar; yoksa insana calisan bir
@@ -430,10 +443,16 @@ def limitte_devret(basamaklar: list, kostur, *, devir) -> tuple:
     for i, b in enumerate(basamaklar):
         ek, parcalar = kostur(b)
         son = (b, ek or {}, parcalar)
-        if not (ek or {}).get("limit"):
+        # Devir: limit (kaynak tukendi) YA DA hesap kullanilamaz (oturum
+        # sunucuda dustu -- E16). Ikisinde de bu hesap SU AN is yapamaz.
+        oturum_dustu = (ek or {}).get("sebep") == "oturum_kapandi"
+        if not ((ek or {}).get("limit") or oturum_dustu):
             return son
         if i + 1 < len(basamaklar):
-            devir(b, basamaklar[i + 1])
+            devir(dict(b, devir_nedeni=("hesabi KULLANILAMIYOR (oturum/hesap "
+                                        "sorunu)" if oturum_dustu else
+                                        "kullanim limitine ulasti")),
+                  basamaklar[i + 1])
     return son
 
 
@@ -444,15 +463,16 @@ def lider_devri(ofis, lider: dict, eski: dict, yeni: dict, gorev_id=None) -> Non
     codex'te yapilmis" sorusu alti ay sonra da cevaplanabilmeli. Ayrica
     `limit` olayi -- panel ve saglik limitin nerede dolduguna bakar.
     """
+    neden = eski.get("devir_nedeni") or "kullanim limitine ulasti"
     ad = lambda b: b["motor"] + (f"/{b['model']}" if b.get("model") else "") \
         + (f" [{b['hesap']}]" if b.get("hesap") else "")
     ofis.db.olay_yaz(ofis.proje_id, "limit",
-                     f"Lider {lider['ad']}: {ad(eski)} kullanim limitine ulasti "
+                     f"Lider {lider['ad']}: {ad(eski)} {neden} "
                      f"-> {ad(yeni)} ile devam.",
                      ajan_ad=lider["ad"], gorev_id=gorev_id)
     ofis.bellek.karar_yaz(
         f"Lider {lider['ad']} {ad(eski)} yerine {ad(yeni)} ile kosuldu.",
-        "Onceki basamak kullanim limitine ulasti. Lider durursa butun ofis "
+        f"Onceki basamagin {neden}. Lider durursa butun ofis "
         "durur; liderin turu temiz oturumdur ve baglamini defterden alir, "
         "devirde kaybolan bir sey yoktur.",
         lider["ad"], tur="teknik", gorev_id=gorev_id)

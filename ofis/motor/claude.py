@@ -60,6 +60,7 @@ import uuid
 from pathlib import Path
 from typing import Iterator
 
+from .. import motor_saglik
 from .tip import (ortam_hazirla, limit_penceresi, Motor, MotorOlayi,
                   MotorHatasi, MotorYokHatasi, SurecKafesi)
 
@@ -384,8 +385,81 @@ class ClaudeMotoru(Motor):
                     "ayarlanmali."
                 )
 
+    #: Yeniden giris -- CLI'in kendi yardimindan (`claude auth --help`).
+    GIRIS_CARESI = ("Yeniden giris: bir terminalde `claude auth login` "
+                    "(ya da claude'u acip /login).")
+
+    #: `claude auth status` onbellegi: yapilandirma dizini -> (an, sonuc).
+    #: Olcum bedava ama 0,4-0,5 sn (olculdu); musaitlik bir tikte birden cok
+    #: kez sorulur. Bes dakikada bir yeter -- giris, dakikalar icinde
+    #: degisen bir sey degil.
+    GIRIS_ONBELLEK_SN = 300.0
+    _giris_onbellek: dict = {}
+
+    @staticmethod
+    def _yapilandirma_dizini(ek_ortam: dict = None) -> str:
+        d = ((ek_ortam or {}).get("CLAUDE_CONFIG_DIR")
+             or os.environ.get("CLAUDE_CONFIG_DIR")
+             or str(Path.home() / ".claude"))
+        return str(Path(d).expanduser().resolve())
+
+    def _kimlik(self, ek_ortam: dict = None) -> tuple:
+        """-> (kimlik, parmak izi). API anahtari varsa anahtarin OZETI, yoksa
+        abonelik girisinin dosyasi (yeniden giris onu yeniden yazar)."""
+        anahtar = (ek_ortam or {}).get("ANTHROPIC_API_KEY")
+        if anahtar:
+            pi = motor_saglik.parmak_izi_anahtar(anahtar)
+            return "api:" + pi, pi
+        dizin = self._yapilandirma_dizini(ek_ortam)
+        return dizin, motor_saglik.parmak_izi_dosya(Path(dizin) / ".credentials.json")
+
+    def giris_durumu(self, *, tazele: bool = False) -> dict:
+        """Yerel giris OLCULUR (`claude auth status`, jeton yakmaz).
+
+        Donus: `{"girisli": True/False/None, "eposta", "plan"}`. `None` =
+        olculemedi -- bilinmeyene "giris yok" DENMEZ (musaitligi keserdi).
+        """
+        if not self.calistirilabilir:
+            return {"girisli": None, "eposta": "", "plan": ""}
+        dizin = self._yapilandirma_dizini()
+        an = time.monotonic()
+        eski = self._giris_onbellek.get(dizin)
+        if eski and not tazele and an - eski[0] < self.GIRIS_ONBELLEK_SN:
+            return eski[1]
+        try:
+            p = subprocess.run([self.calistirilabilir, "auth", "status"],
+                               capture_output=True, text=True, encoding="utf-8",
+                               errors="replace", timeout=20,
+                               creationflags=_PENCERE_YOK)
+            d = json.loads(p.stdout or "{}")
+            sonuc = {"girisli": bool(d.get("loggedIn")),
+                     "eposta": str(d.get("email") or ""),
+                     "plan": str(d.get("subscriptionType") or "")}
+        except (OSError, ValueError, subprocess.SubprocessError):
+            sonuc = {"girisli": None, "eposta": "", "plan": ""}
+        self._giris_onbellek[dizin] = (an, sonuc)
+        return sonuc
+
+    def durum_notu(self) -> str:
+        """Musait DEGILSE sebebi + caresi; musaitse (ya da bilinmiyorsa) bos."""
+        if not self.calistirilabilir:
+            return "claude CLI kurulu degil."
+        kimlik, parmak = self._kimlik()
+        kayit = motor_saglik.olu_kaydi("claude", kimlik, parmak)
+        if kayit:
+            return motor_saglik.kayit_metni("claude", kayit, self.GIRIS_CARESI)
+        if self.giris_durumu()["girisli"] is False:
+            return "claude'a giris YOK (`claude auth status`). " + self.GIRIS_CARESI
+        return ""
+
     def musait_mi(self) -> bool:
-        return bool(self.calistirilabilir)
+        """Kurulu MU, girisli MI ve hesabi son gercek turda REDDEDILMEDI mi.
+
+        27.09.2026'ya kadar yalniz kurulu olmasina bakiyordu: girissiz ya
+        da oturumu sunucuda dusmus bir claude "HAZIR" gorunur, zincir onu
+        ilk basamakta dener ve her tur dusardi (E16).
+        """
+        return bool(self.calistirilabilir) and not self.durum_notu()
 
     # -- tur ---------------------------------------------------------------
 
@@ -490,6 +564,10 @@ class ClaudeMotoru(Motor):
             # "izin reddedildi" deyip neyin reddedildigini soylememek,
             # kullaniciya "bir sey oldu" demekten ibarettir.
             "arac_adlari": {},
+            # HESAP SORUNU (E16): assistant mesajinin `error` alani
+            # (`authentication_failed`, `billing_error`, ...). Limit gibi
+            # gecici degildir -- insan eylemi ister ve HATIRLANIR.
+            "hesap_hatasi": "",
         }
         zaman_asti = False
         cikis = -1
@@ -600,7 +678,19 @@ class ClaudeMotoru(Motor):
         sure_ms = round((time.monotonic() - basladi) * 1000, 1)
         cevap = "".join(durum["metin"]).strip() or durum["sonuc"].strip()
 
-        if zaman_asti:
+        if durum["hesap_hatasi"]:
+            # Hatirlanir: sonraki turlar bu hesabi DENEMEZ (zincir atlar),
+            # gostergeler "hazir" demez. Kullanici yeniden giris yapinca
+            # parmak izi degisir ve kayit kendiliginden duser.
+            kimlik, parmak = self._kimlik(ek_ortam)
+            motor_saglik.olu_yaz("claude", kimlik, parmak, durum["hesap_hatasi"])
+            yield MotorOlayi(
+                "hata", motor_saglik.kayit_metni(
+                    "claude", {"kategori": durum["hesap_hatasi"], "an": time.time()},
+                    self.GIRIS_CARESI),
+                {"sebep": "oturum_kapandi", "kategori": durum["hesap_hatasi"]},
+            )
+        elif zaman_asti:
             yield MotorOlayi(
                 "hata", f"Tur {sinir:.0f} saniyede bitmedi, surec kesildi.",
                 {"sebep": "zaman_asimi"},
@@ -624,7 +714,7 @@ class ClaudeMotoru(Motor):
         basarili = (
             not zaman_asti and not durum["limit"]
             and cikis == 0 and not durum["hatali"]
-            and not durum.get("durduruldu")
+            and not durum.get("durduruldu") and not durum["hesap_hatasi"]
         )
         yield MotorOlayi(
             "bitti",
@@ -642,6 +732,7 @@ class ClaudeMotoru(Motor):
                 "zaman_asimi": zaman_asti,
                 "limit_pencere": claude_pencereleri(durum["limit_bilgi"]),
                 "sebep": ("" if basarili else
+                          "oturum_kapandi" if durum["hesap_hatasi"] else
                           "zaman_asimi" if zaman_asti else
                           "limit" if durum["limit"] else
                           "durduruldu" if durum.get("durduruldu") else
@@ -889,6 +980,14 @@ class ClaudeMotoru(Motor):
             return olaylar
 
         if tur == "assistant":
+            # CLI hesap sorununu AYRI bir alanla bildirir (semasi CLI'in
+            # kendi kodundan okundu, 27.09.2026). Okunmasaydi dusen oturum
+            # siradan bir "basarisiz tur" gibi gorunur ve hatirlanmazdi.
+            hata = str(mesaj.get("error") or "")
+            if hata in motor_saglik.HESAP_SORUNLARI:
+                durum["hesap_hatasi"] = hata
+            elif hata == "rate_limit":
+                durum["limit"] = True
             for blok in self._icerik_bloklari(mesaj):
                 if isinstance(blok, dict) and blok.get("type") == "tool_use":
                     durum["arac_sayisi"] += 1

@@ -47,10 +47,11 @@ import tempfile
 import threading
 import uuid
 from pathlib import Path
+from .yollar import OFIS_EVI
 
 from .db import simdi
 
-VARSAYILAN_GOLGE_KOK = Path.home() / ".agentofis" / "golge"
+VARSAYILAN_GOLGE_KOK = OFIS_EVI / "golge"
 _KILITLER: dict = {}
 _KILITLER_KILIDI = threading.Lock()
 

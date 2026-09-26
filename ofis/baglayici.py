@@ -280,11 +280,12 @@ def _anahtarla(ad: str) -> str:
 import json as _json
 import os as _os
 from pathlib import Path as _Path
+from .yollar import OFIS_EVI as _OFIS_EVI
 
 #: Defter proje kokunun DISINDA -- kasa ve kota defteriyle ayni yerde.
 #: Bu bir CALISMA DURUMU, proje verisi degil; ayrica ofis kurulmadan da
 #: okunabilmeli.
-SORUN_DEFTERI = _Path(_os.path.expanduser("~")) / ".agentofis" / "baglayici_sorun.json"
+SORUN_DEFTERI = _OFIS_EVI / "baglayici_sorun.json"
 
 #: Bayat kayit yok sayilir. Yetki yenilenir, sunucu duzelir -- dunku bir
 #: arizayi bugun gostermek, calisan bir baglayiciyi bozuk gostermek

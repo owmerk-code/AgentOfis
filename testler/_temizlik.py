@@ -45,6 +45,36 @@ tempfile.mkdtemp = _kaydeden_mkdtemp
 if not os.environ.get("OFIS_GOLGE_KOK"):
     os.environ["OFIS_GOLGE_KOK"] = tempfile.mkdtemp(prefix="ofis-golge-sinama-")
 
+# GERCEK HAFIZAYA YAZILMAZ (27.09.2026). Ofisin butun calisma durumu
+# (`ofis/yollar.py`: kasa, kota ve motor saglik defterleri, codex evi,
+# kabin profili, yedekler) tek bir kokte ve o kok sinamada gecici bir
+# klasore cevrilir. Olculdu: `duman_gorsel.py` her kosuda kullanicinin
+# gercek kota defterine "Gemini kotasi doldu" yaziyordu -- sabiti
+# yonlendirmeyi bir bolumde UNUTMUSTU. Tek kokle unutmak mumkun degil.
+if not os.environ.get("OFIS_EV"):
+    os.environ["OFIS_EV"] = tempfile.mkdtemp(prefix="ofis-ev-sinama-")
+
+#: Gercek kokteki hafiza dosyalari: sinama bunlara DOKUNMAMALI. Surec
+#: basinda damgalari alinir, sonunda karsilastirilir (bekci).
+_GERCEK_EV = os.path.join(os.path.expanduser("~"), ".agentofis")
+_BEKCI_DOSYALAR = ("kota.json", "baglayici_sorun.json", "motor_saglik.json",
+                   "codex_oturum.json", "ayar.json", "gizli.env")
+
+
+def _damgalar() -> dict:
+    d = {}
+    for ad in _BEKCI_DOSYALAR:
+        try:
+            s = os.stat(os.path.join(_GERCEK_EV, ad))
+            d[ad] = (s.st_mtime_ns, s.st_size)
+        except OSError:
+            d[ad] = None
+    return d
+
+
+_BASTAKI_DAMGALAR = _damgalar()
+
+
 
 def _yazilabilir_yap(islev, yol, _hata):
     try:
@@ -73,6 +103,16 @@ def temizle() -> list:
 
 def _cikista():
     kalan = temizle()
+    # BEKCI: sinama gercek hafizaya yazdiysa SESSIZ kalinmaz. Gercek ofis
+    # (panel, kabuk) ayni anda calisiyorsa yanlis alarm olabilir -- bu
+    # yuzden hangi dosyanin degistigi soylenir, karar okuyanin.
+    degisen = [ad for ad, d in _damgalar().items() if d != _BASTAKI_DAMGALAR.get(ad)]
+    if degisen and os.environ.get("OFIS_EV", "") != _GERCEK_EV:
+        print("\n[GERCEK HAFIZA] sinama sirasinda kullanicinin gercek "
+              f"~/.agentofis dosyalari DEGISTI: {', '.join(degisen)} "
+              "(gercek ofis ayni anda calismiyorsa bu bir SIZINTIDIR).",
+              file=sys.stderr)
+        os._exit(3)
     if kalan:
         print(f"\n[ARTIK] {len(kalan)} gecici klasor SILINEMEDI:", file=sys.stderr)
         for y in kalan:

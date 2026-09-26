@@ -250,9 +250,12 @@ def kullanilabilir_mi(h: dict) -> dict:
                 "plan": kim.get("plan", "")}
     if h["tur"] == "abonelik":
         try:
-            if not m.musait_mi():
-                return {"olur": False,
-                        "sebep": f"{h['motor']} motoru kurulu/girisli degil"}
+            # Motor KENDI sebebini soyler (giris yok, oturum dustu, hesap
+            # askida -- E16). "kurulu/girisli degil" hangisi oldugunu
+            # soylemiyordu; insan neyi duzeltecegini bilemiyordu.
+            notu = m.durum_notu()
+            if notu:
+                return {"olur": False, "sebep": notu}
         except Exception as exc:
             return {"olur": False, "sebep": f"musaitlik olculemedi: {exc}"}
     return {"olur": True, "sebep": ""}

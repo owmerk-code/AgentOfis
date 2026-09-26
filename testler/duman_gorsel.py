@@ -315,6 +315,11 @@ gorsel.KOTA_DEFTERI.write_text(_kqjson.dumps(
                 "gunluk": True}}), encoding="utf-8")
 sina("BAYAT kayit yok sayiliyor", gorsel.kota_notu("gemini") == "")
 
+# Anahtar SINAMANIN KENDISININ: gercek kasa bir sinamanin sonucunu
+# degistirmemeli (27.09: kok gecici klasore cevrilince bu bolum kaldi --
+# kullanicinin kasasinda GEMINI anahtari oldugunu VARSAYIYORMUS).
+_kq_eski_anahtar = os.environ.get("GEMINI_API_KEY")
+os.environ["GEMINI_API_KEY"] = "AIza-sinama-kota"
 # `musait_ureticiler()` notu TASIYOR mu -- gostergeler oradan okuyor.
 gorsel.kota_yaz("gemini", gunluk=True)
 _kqd = gorsel.musait_ureticiler()
@@ -341,6 +346,10 @@ _kqg2 = [s for s in _kqyet._uretici_grubu(gorsel, "gorsel")
          if s["ad"] == "gemini"][0]
 sina("kota kaydi yokken HAZIR diyor", _kqg2["durum"] == _kqyet.HAZIR,
      f"({_kqg2['durum']})")
+if _kq_eski_anahtar is None:
+    os.environ.pop("GEMINI_API_KEY", None)
+else:
+    os.environ["GEMINI_API_KEY"] = _kq_eski_anahtar
 
 # GERCEK YOL: 429 gelince kayit KENDILIGINDEN dusuyor mu. Modulu
 # yazmak yetmez -- cagrildigi ayrica olculmeli (bugun `video.py` tam
@@ -580,6 +589,16 @@ if _keski is not None:
 # `os.environ`da anahtar YOKKEN kasada varsa motor MUSAIT olmali --
 # kullanicinin `kabuk anahtar ekle` ile yaptigi tam budur.
 _kortam = os.environ.pop("GEMINI_API_KEY", None)
+# Kasa SINAMANIN KENDISININ (kok gecici klasorde): anahtar oraya yazilir.
+# Once kullanicinin GERCEK kasasina bakiliyordu -- kasada anahtar yoksa
+# sinama hic olcmeden ATLANIYORDU, varsa sonucu gercek kasa belirliyordu.
+# Kok gercekse (bir sekilde) ASLA yazilmaz.
+from ofis.yollar import gercek_ev_mi as _gercek_ev_mi
+_kg_eklendi = False
+if (not _gercek_ev_mi() and not os.environ.get("OFIS_GIZLI_YOLU")
+        and not _kg.oku("GEMINI_API_KEY")):
+    _kg.ekle("GEMINI_API_KEY", "AIza-sinama-kasa")
+    _kg_eklendi = True
 _kkasada = bool(_kg.oku("GEMINI_API_KEY"))
 if _kkasada:
     sina("MOTOR kasadaki anahtari GORUYOR (kapali dongu kapandi)",
@@ -590,6 +609,8 @@ else:
     # yapmak yerine atlandigini SOYLERIZ -- sessizce gecen bir sinama,
     # olcmedigi seye "iyi" demis olur.
     print("  [?] kasada GEMINI_API_KEY yok -- motor sinamasi ATLANDI")
+if _kg_eklendi:
+    _kg.sil("GEMINI_API_KEY")
 if _kortam is not None:
     os.environ["GEMINI_API_KEY"] = _kortam
 

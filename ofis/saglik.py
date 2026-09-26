@@ -32,7 +32,8 @@ import re
 
 from .db import simdi
 from . import butce
-from .motor import musait_motorlar
+from . import motor_saglik
+from .motor import motor_ac, musait_motorlar
 from .tahta import KILIT_KIRA_SANIYE, _yas_saniye
 
 #: Bir isin "kimse ilerletmiyor" sayilmasi icin gecmesi gereken sure.
@@ -150,12 +151,51 @@ class Saglik:
                            "Hicbir is kosamaz. `claude` ya da `codex` CLI'ini kur.")]
         kullanilan = {a["motor"] for a in self.ofis.kadro.liste()}
         eksik = sorted(m for m in kullanilan if not musait.get(m))
-        if eksik:
-            return [_bulgu("tikali", f"Ajanlarin motoru kurulu degil: {', '.join(eksik)}",
-                           f"Musait motorlar: {sorted(gercek)}",
-                           "O ajanlarin isleri kosamaz. Motoru kur ya da "
-                           "`ise-al --motor` ile degistir.")]
-        return []
+        bulgular = []
+        # MOTOR SAGLIGI (E16): kurulu ama KULLANILAMAZ (giris yok, oturum
+        # sunucuda dustu, hesap askida). Once yalniz "kurulu degil" denirdi;
+        # girissiz bir motor "sorun yok" gorunuyordu. Motor kendi sebebini
+        # soyler (`durum_notu`) -- burada ikinci bir teshis YAZILMAZ.
+        kurulu_degil, girissiz = [], []
+        for m in eksik:
+            try:
+                motor = motor_ac(m)
+                notu = motor.durum_notu()
+                kurulu = bool(getattr(motor, "calistirilabilir", True))
+            except Exception as exc:          # noqa: BLE001
+                notu, kurulu = f"acilamadi: {exc}", False
+            (girissiz if kurulu else kurulu_degil).append((m, notu))
+        if kurulu_degil:
+            bulgular.append(_bulgu(
+                "tikali", "Ajanlarin motoru kurulu degil: "
+                + ", ".join(m for m, _ in kurulu_degil),
+                f"Musait motorlar: {sorted(gercek)}",
+                "O ajanlarin isleri kosamaz. Motoru kur ya da "
+                "`ise-al --motor` ile degistir."))
+        for m, notu in girissiz:
+            # Tikali DEGIL: zincir o motoru atlar, is sonraki basamakta
+            # kosar. Ama insan eylemi ister (giris) -- yoksa o hesap hic
+            # kullanilmaz ve yuk oteki hesaplara biner.
+            bulgular.append(_bulgu(
+                "insan", f"{m} motoru kurulu ama KULLANILAMIYOR", notu,
+                "Giris yapilana kadar o ajanlarin isleri zincirdeki sonraki "
+                "motorda kosar."))
+        # KOTASI DOLU hesap: saglayicinin kendi bildirimi (pencere %100).
+        try:
+            for d in motor_saglik.dolu_hesaplar(self.db, self.proje_id):
+                if d["motor"] not in kullanilan:
+                    continue
+                ad = d["motor"] + (f" [{d['hesap']}]" if d["hesap"] else "")
+                bulgular.append(_bulgu(
+                    "uyari", f"{ad} hesabi DOLU ({d['pencere']} penceresi)",
+                    f"Yenilenme: {d['yenilenme']:%d.%m %H:%M} UTC "
+                    f"(~{d['kalan_saat']} sa); olcum {d.get('yas_dk')} dk once.",
+                    "Is durmaz: zincir bu hesabi sona alir, sonraki basamak "
+                    "kosar. Yenilenince kendiliginden geri gelir."))
+        except Exception as exc:              # noqa: BLE001
+            bulgular.append(_bulgu("bilgi", "Kota doluluk denetimi BILINMIYOR",
+                                   str(exc), "Denetim patladi; sonucu olculemedi."))
+        return bulgular
 
     def _tikanan_isler(self) -> list:
         """`calisiyor` gorunen ama KIMSENIN ilerletmedigi isler.

@@ -850,15 +850,23 @@ class Koltuk:
                 # tam da kesilen turun son notudur.
                 self._durum_notu_yaz(no, ajan_ad, gorev, tam_metin)
 
-            if not sonuc.get("limit"):
+            # DEVIR SEBEPLERI: kaynak tukenmesi (limit) ve HESABIN
+            # kullanilamaz hale gelmesi (oturum sunucuda dustu, hesap askida
+            # -- E16). Ikisinde de bu hesap bu isi SU AN yapamaz, baska hesap
+            # yapabilir. Oturum dusmesinde once tur biraklip bir sonraki
+            # tikte baska motor seciliyordu: bir tik bosa, sebep dagiliyordu.
+            oturum_dustu = sonuc.get("sebep") == "oturum_kapandi"
+            if not (sonuc.get("limit") or oturum_dustu):
                 break
+            neden = ("hesabi KULLANILAMIYOR (oturum/hesap sorunu)"
+                     if oturum_dustu else "kullanim limitine ulasti")
 
-            # LIMIT: devret. Once kaynagin bittigini gorunur kil.
+            # Devret. Once kaynagin bittigini gorunur kil.
             yield self._olay(
                 "limit",
                 f"{basamak['motor']}"
                 + (f"/{basamak['model']}" if basamak["model"] else "")
-                + " kullanim limitine ulasti.",
+                + f" {neden}.",
                 dict(basamak), ajan_ad=ajan_ad, gorev_id=gorev["id"])
             try:
                 yeni = sonraki(basamaklar, sira)
@@ -876,9 +884,12 @@ class Koltuk:
                 + f" yerine {yeni['motor']}"
                 + (f"/{yeni['model']}" if yeni["model"] else "")
                 + " ile kosuldu.",
-                "Onceki basamak kullanim limitine ulasti; limit bir hata "
-                "degil kaynagin tukenmesidir, caresi baska kaynaga "
-                "gecmektir.",
+                (f"Onceki basamagin {neden}. Hesap kullanilamaz olunca "
+                 "caresi baska hesaba gecmektir; giris insanin isidir."
+                 if oturum_dustu else
+                 "Onceki basamak kullanim limitine ulasti; limit bir hata "
+                 "degil kaynagin tukenmesidir, caresi baska kaynaga "
+                 "gecmektir."),
                 ajan_ad, tur="teknik", gorev_id=gorev["id"])
 
             # DEVIR PAKETI -- yeni motor onceki oturumu GOREMEZ. Kesilen

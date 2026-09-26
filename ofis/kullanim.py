@@ -366,21 +366,20 @@ def hesap_durumu() -> list:
     """
     sonuc = []
 
-    # claude: `auth status` JSON veriyor (kullanim YOK, plan VAR).
+    # claude: giris OLCULUR (`auth status`, motorun kendi olcumu -- tek kopya,
+    # onbellekli). Oturum sunucuda dustuyse `durum_notu` soyler (E16).
     try:
-        import subprocess
         from .motor.claude import ClaudeMotoru
-        yol = ClaudeMotoru()._calistirilabilir_bul()
-        p = subprocess.run([yol, "auth", "status"], capture_output=True,
-                           text=True, encoding="utf-8", errors="replace",
-                           timeout=60)
-        d = json.loads(p.stdout)
+        m = ClaudeMotoru()
+        g = m.giris_durumu()
+        notu = m.durum_notu()
         sonuc.append({
             "motor": "claude",
-            "bagli": bool(d.get("loggedIn")),
-            "kimlik": d.get("email") or "",
-            "plan": d.get("subscriptionType") or "",
-            "limit": "turun akisindan olculur -- bkz. PENCERELER",
+            "bagli": (None if g["girisli"] is None else
+                      bool(g["girisli"]) and not notu),
+            "kimlik": g["eposta"],
+            "plan": g["plan"],
+            "limit": (notu or "turun akisindan olculur -- bkz. PENCERELER"),
         })
     except Exception as exc:
         sonuc.append({"motor": "claude", "bagli": None, "kimlik": "",
@@ -394,12 +393,14 @@ def hesap_durumu() -> list:
         d = json.loads((ev / "auth.json").read_text(encoding="utf-8"))
         # DEGER DEGIL, VARLIK okunuyor: bu dosya kimlik tasiyor.
         bilgi = d.get("tokens") or {}
+        # Dosya duruyor olabilir ama oturum sunucuda dusmus olabilir (E16).
+        notu = CodexMotoru().durum_notu()
         sonuc.append({
             "motor": "codex",
-            "bagli": bool(d.get("OPENAI_API_KEY") or bilgi),
+            "bagli": bool(d.get("OPENAI_API_KEY") or bilgi) and not notu,
             "kimlik": str(bilgi.get("account_id") or "")[:12] or "(kayitli)",
             "plan": "",
-            "limit": "turun akisindan olculur -- bkz. PENCERELER",
+            "limit": notu or "turun akisindan olculur -- bkz. PENCERELER",
         })
     except Exception as exc:
         sonuc.append({"motor": "codex", "bagli": None, "kimlik": "",

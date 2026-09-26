@@ -55,10 +55,11 @@ import sqlite3
 import tempfile
 import zipfile
 from pathlib import Path
+from .yollar import OFIS_EVI
 
 PROJE_KOKU = Path(__file__).resolve().parent.parent
-VARSAYILAN_YEDEK_KOK = Path.home() / ".agentofis" / "yedekler"
-VARSAYILAN_AYAR = Path.home() / ".agentofis" / "yedek.json"
+VARSAYILAN_YEDEK_KOK = OFIS_EVI / "yedekler"
+VARSAYILAN_AYAR = OFIS_EVI / "yedek.json"
 
 AD_ONEKI = "AgentOfis-yedek-"
 SAKLANAN = 30                 # hedef basina son N arsiv

@@ -472,6 +472,11 @@ sina("is acmamasi gerektigi soyleniyor", "IS ACMA" in _myb)
 
 # KOTA NOTU BLOGA ULASIYOR MU -- anahtar var ama uretemiyorsa lider
 # bunu bilmeli, yoksa "hazir" sanip is acar.
+# Anahtar SINAMANIN: kota notu yalniz anahtari olan uretici icin cikar.
+# 27.09'a kadar bu sinama kullanicinin GERCEK kasasindaki Gemini
+# anahtarina yaslaniyordu (kok gecici klasore cevrilince ortaya cikti).
+_myk_eski = os.environ.get("GEMINI_API_KEY")
+os.environ["GEMINI_API_KEY"] = "AIza-sinama-sohbet"
 _myg.para_harca_ayarla(True)      # kilidi ac ki kota notu gorunsun
 _myg.kota_yaz("gemini", gunluk=True)
 _myb2 = _myg.lider_blogu()
@@ -479,6 +484,10 @@ sina("kilit acilinca durum degisiyor", "PARA KILIDI: ACIK" in _myb2)
 sina("KOTA notu lidere ulasiyor",
      "GUNLUK kota doluydu" in _myb2, f"({_myb2[:200]})")
 _myg.para_harca_ayarla(False)
+if _myk_eski is None:
+    os.environ.pop("GEMINI_API_KEY", None)
+else:
+    os.environ["GEMINI_API_KEY"] = _myk_eski
 
 # JETON SINIRI: triyaj HER `konus` mesajinda kosar.
 sina("blok sinirli kaliyor (~350 jetonun altinda)",

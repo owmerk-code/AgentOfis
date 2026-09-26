@@ -102,12 +102,26 @@ def _cliler() -> list:
 
 
 def _motorlar() -> list:
-    from .motor import musait_motorlar
+    """Kurulu mu VE kullanilabilir mi -- motorun KENDI teshisiyle (E16).
+
+    Once yalniz kurulu olup olmadigi soruluyordu: girissiz ya da oturumu
+    sunucuda dusmus bir motor "hazir" gorunuyordu. Kurulu ama
+    kullanilamayan motor DAR'dir (insan eylemi -- giris -- ister).
+    """
+    from .motor import motor_ac, musait_motorlar
     out = []
     for ad, musait in sorted(musait_motorlar().items()):
-        out.append(_satir(ad, HAZIR if musait else YOK,
-                          "motor adaptoru",
-                          "" if musait else f"`{ad}` CLI'i kurulu degil."))
+        if musait:
+            out.append(_satir(ad, HAZIR, "motor adaptoru"))
+            continue
+        try:
+            m = motor_ac(ad)
+            kurulu = bool(getattr(m, "calistirilabilir", True))
+            notu = m.durum_notu()
+        except Exception as exc:          # noqa: BLE001 -- gosterge dusmesin
+            kurulu, notu = False, f"acilamadi: {exc}"
+        out.append(_satir(ad, DAR if kurulu else YOK, "motor adaptoru",
+                          notu or f"`{ad}` CLI'i kurulu degil."))
     return out
 
 
@@ -123,11 +137,14 @@ def _hesaplar(db, proje_id) -> list:
                        "kendi oturumuyla kosuyor (bugunku davranis)",
                        "Coklu hesap icin: `kabuk hesap ekle`")]
     for h in kayitli:
+        # Anahtar `olur` (hesap.kullanilabilir_mi). 27.09.2026'ya kadar
+        # burada `kullanilabilir` okunuyordu -- olmayan anahtar: tanimli
+        # HER hesap, saglam olsa bile hep "dar" gorunuyordu.
         k = hesap.kullanilabilir_mi(h)
         satirlar.append(_satir(
-            h["ad"], HAZIR if k.get("kullanilabilir") else DAR,
+            h["ad"], HAZIR if k.get("olur") else DAR,
             f"{h['motor']} · {h['tur']}" + (f" · {h['plan']}" if h.get("plan") else ""),
-            "" if k.get("kullanilabilir") else k.get("sebep", "")))
+            "" if k.get("olur") else k.get("sebep", "")))
     return satirlar
 
 

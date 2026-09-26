@@ -59,6 +59,12 @@ sina("sifir saniye bile bir saniye sayilir (bedava is yok)",
 
 # --------------------------------------------------- 2. TAVAN KAPISI
 print("\n2. tavan BASLAMADAN mi reddediyor")
+# Anahtar SINAMANIN: Veo 'musait' sayilmazsa tavan kapisina hic gelinmez.
+# 27.09'a kadar kullanicinin GERCEK kasasina yaslaniyordu (kok gecici
+# klasore cevrilince ortaya cikti). Cagri tavanda REDDEDILIR, aga cikmaz.
+import os as _os
+_vk_eski = _os.environ.get("GEMINI_API_KEY")
+_os.environ["GEMINI_API_KEY"] = "AIza-sinama-video"
 try:
     video.uret("x", "/tmp/yok.mp4", saniye=30, tavan_usd=0.01,
                ucretsiz_sadece=False)
@@ -70,6 +76,11 @@ except video.ButceAsimi as exc:
          "$" in str(exc) and "tavan" in str(exc))
 except video.VideoHatasi as exc:
     sina("tavan asimi reddedildi", False, f"-- yanlis sinif: {exc}")
+finally:
+    if _vk_eski is None:
+        _os.environ.pop("GEMINI_API_KEY", None)
+    else:
+        _os.environ["GEMINI_API_KEY"] = _vk_eski
 
 # ButceAsimi AYRI bir siniftir: cagiran bunu gercek bir hatadan ayirt
 # edebilmeli, yoksa "tekrar dene" der ve tavan yavaslatmaya doner.

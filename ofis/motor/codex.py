@@ -99,6 +99,8 @@ import threading
 import time
 import uuid
 from pathlib import Path
+from ..yollar import OFIS_EVI
+from .. import motor_saglik
 from typing import Iterator
 
 #: Duz dosya olarak yuklenen sozlesme modulunun sys.modules'teki adi.
@@ -228,33 +230,22 @@ OTURUM_OLU_IMZALARI = ("token_revoked", "refresh_token_invalidated",
                        "session has ended", "unauthorized (401)",
                        "401 unauthorized")
 
-#: Olu oturum defteri -- proje kokunun DISINDA (kota ve baglayici
-#: hafizasiyla ayni klasor). Codex evinin ICINE yazilmaz: ev codex'in
-#: kendi dizinidir ve kullanicinin `~/.codex`i bir hesap olarak
-#: tanimlanirsa oraya yazmak onun salt-okunur kuralini cigner.
-OTURUM_DEFTERI = Path.home() / ".agentofis" / "codex_oturum.json"
-
-
-def _auth_damga(ev: str) -> int:
-    try:
-        return (Path(ev).expanduser() / "auth.json").stat().st_mtime_ns
-    except OSError:
-        return 0
-
-
-def _oturum_defteri_oku() -> dict:
-    try:
-        d = json.loads(OTURUM_DEFTERI.read_text(encoding="utf-8"))
-        return d if isinstance(d, dict) else {}
-    except (OSError, ValueError):
-        return {}
+#: Olu oturum defteri. 27.09.2026'dan beri TEK motor saglik hafizasi
+#: (`ofis/motor_saglik.py`): Claude'a ikinci bir kopya yazilmadi, bu
+#: hafiza ortaklastirildi. Ad korunuyor -- sinamalar onu gecici bir
+#: dosyaya yonlendiriyor.
+OTURUM_DEFTERI = motor_saglik.DEFTER
 
 
 def _ev_anahtari(ev: str) -> str:
     return str(Path(ev).expanduser().resolve()).lower()
 
 
-def oturum_olu_yaz(ev: str) -> None:
+def _parmak_izi(ev: str) -> str:
+    return motor_saglik.parmak_izi_dosya(Path(ev).expanduser() / "auth.json")
+
+
+def oturum_olu_yaz(ev: str, kategori: str = "token_revoked") -> None:
     """Bu evin oturumunun sunucuda OLDUGUNU hatirlar.
 
     OLCULDU (25.09.2026): ofisin codex evinde `auth.json` DURUYORDU ama
@@ -263,33 +254,19 @@ def oturum_olu_yaz(ev: str) -> None:
     tek satir is yapamiyordu ve bunu ofiste hicbir sey soylemiyordu.
     *Anahtar var != uretebiliyor* dersinin KIMLIK hali.
 
-    Olcmek (bos bir tur kosmak) kotadan yer; o yuzden -- kota ve
-    baglayici hafizasiyla ayni desen -- tahmin etmiyoruz, HATIRLIYORUZ:
-    gercek bir tur 401 aldiginda kaydedilir.
-
-    Kayit `auth.json`in O ANKI damgasini tutar. Kullanici yeniden giris
-    yapinca dosya yeniden yazilir ve kayit KENDILIGINDEN gecersiz olur --
-    ayrica "temizle" diye bir adim yok; unutulabilecek bir adim da yok.
-
-    Yazamamak turu DURDURMAZ (hafiza bir kolaylik, kapi degil).
+    Olcmek (bos bir tur kosmak) kotadan yer; o yuzden tahmin etmiyoruz,
+    HATIRLIYORUZ: gercek bir tur 401 aldiginda kaydedilir. Kayit
+    `auth.json`in O ANKI damgasini tutar; kullanici yeniden giris yapinca
+    kayit KENDILIGINDEN gecersiz olur.
     """
-    try:
-        d = _oturum_defteri_oku()
-        d[_ev_anahtari(ev)] = _auth_damga(ev)
-        OTURUM_DEFTERI.parent.mkdir(parents=True, exist_ok=True)
-        gecici = OTURUM_DEFTERI.with_suffix(".tmp")
-        gecici.write_text(json.dumps(d), encoding="utf-8")
-        gecici.replace(OTURUM_DEFTERI)          # yerinde yazma ATOMIK
-    except OSError:
-        pass
+    motor_saglik.olu_yaz("codex", _ev_anahtari(ev), _parmak_izi(ev), kategori,
+                         defter=OTURUM_DEFTERI)
 
 
 def oturum_olu_mu(ev: str) -> bool:
     """Son gercek turda 401 alinmis VE o zamandan beri giris yapilmamis mi."""
-    kayit = _oturum_defteri_oku().get(_ev_anahtari(ev))
-    if kayit is None:
-        return False
-    return _auth_damga(ev) <= int(kayit)
+    return motor_saglik.olu_kaydi("codex", _ev_anahtari(ev), _parmak_izi(ev),
+                                  defter=OTURUM_DEFTERI) is not None
 
 
 def oturum_olu_metni(ev: str) -> str:
@@ -492,7 +469,7 @@ class CodexMotoru(Motor):
         ozel = os.environ.get("OFIS_CODEX_HOME", "").strip()
         if ozel:
             return str(Path(ozel).expanduser())
-        return str(Path.home() / ".agentofis" / "codex")
+        return str(OFIS_EVI / "codex")
 
     @staticmethod
     def _evi_hazirla(ev: str, klasor: str) -> None:
@@ -582,15 +559,23 @@ class CodexMotoru(Motor):
         olabilir ve onun girisli olmasi BIZIM girisli oldugumuz anlamina
         gelmez.
         """
+        return bool(self.calistirilabilir) and not self.durum_notu()
+
+    def durum_notu(self) -> str:
+        """Musait DEGILSE sebebi + caresi; musaitse bos (tek desen, E16)."""
         if not self.calistirilabilir:
-            return False
+            return "codex CLI kurulu degil."
         ev = self._ev_bul()
         if not (Path(ev) / "auth.json").exists():
-            return False
+            return (f"codex'e bu evde giris YOK: {ev} -- PowerShell: "
+                    f"$env:CODEX_HOME=\"{ev}\"; codex login "
+                    "(--device-auth KULLANMA).")
         # Dosyanin varligi YETMEZ (25.09.2026): sunucuda olmus bir oturum
         # dosyayi silmez. Son gercek tur 401 aldiysa ve o zamandan beri
         # giris yapilmadiysa musait DEGIL.
-        return not oturum_olu_mu(ev)
+        if oturum_olu_mu(ev):
+            return oturum_olu_metni(ev)
+        return ""
 
     def _arguman_dogrula(self, komut: list) -> None:
         """Satir sonlu argumani REDDEDER (`.CMD` sessiz bayrak dusurmesi).

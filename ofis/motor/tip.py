@@ -227,6 +227,19 @@ class Motor(ABC):
         Panel bunu ajan ise almadan ONCE sorar: kurulu olmayan bir motora
         ajan atamak, hatayi ilk gorev dagitilana kadar gizler.
         """
+    def durum_notu(self) -> str:
+        """Musait DEGILSE sebebi + caresi (insana); musaitse bos (E16).
+
+        Saglik, yetenek ve hesap ekranlari motora TEK bicimde sorar:
+        "neden kullanilamiyor, ne yapilmali". Adaptor biliyorsa ayrintiyi
+        verir (giris yok, oturum dustu, hesap askida); bilmiyorsa bu
+        varsayilan en azindan kurulu olmadigini soyler -- "hazir" demez.
+        """
+        try:
+            return "" if self.musait_mi() else f"{self.ad} kurulu ya da girisli degil."
+        except Exception as exc:          # noqa: BLE001 -- gosterge dusmesin
+            return f"{self.ad} musaitligi olculemedi: {exc}"
+
 
     @abstractmethod
     def tur_kos(

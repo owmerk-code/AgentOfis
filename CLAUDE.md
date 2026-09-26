@@ -136,7 +136,7 @@ Motor bir adaptör, model bir ayar, arayüz bir istemci.
 
 ## Kod durumu
 
-Yazıldı ve **duman testlerinden geçti** (2473/2473, 27.09.2026):
+Yazıldı ve **duman testlerinden geçti** (2528/2528, 27.09.2026):
 
 | Dosya | Ne yapar |
 |---|---|
@@ -145,14 +145,16 @@ Yazıldı ve **duman testlerinden geçti** (2473/2473, 27.09.2026):
 | `ofis/tahta.py` | Görev, DAG (döngü reddi), **gerçek yazma kilidi** (kira + nabız), kanıt kapısı, CAS. |
 | `ofis/bellek.py` | Çift-zamanlı olgular, karar günlüğü (gerekçe zorunlu), uyanış özeti. **Bilgi kapısı** (`bilgi_ekle`: insanın yazdığı devrilmez) · `[[bağ]]` (seçim bir adım izler) · **kurallar** (yalnız insandan, her brifinge koşulsuz). |
 | `ofis/brifing.py` | **Dört katmanlı brifing** — sistemin kalbi. K3 her dağıtımda taze üretilir. Geçmişi olan işte **devir paketi** (`devir_blogu`) ekler. |
-| `ofis/motor/tip.py` | Motor arayüzü: `MotorOlayi` akışı, `OLAY_TURLERI`, hata sınıfları. Çekirdeğin motora bakan tek yüzü. **`TurKanali`** (E17): koltuk ile adaptör arasında tur SÜRERKEN not + durdurma kanalı; `tur_ici_mesaj` yetenek bayrağı — taşıyamayan adaptör kanalı REDDEDER. |
-| `ofis/motor/claude.py` | Claude CLI adaptörü — `stream-json`, izin kapıları, süreç ağacı kesme. **Kanal verilince** `--input-format stream-json --replay-user-messages`: not bir sonraki araç sınırında turun içine girer (yankı = ulaştı), `control_request interrupt` turu keser. |
+| `ofis/motor/tip.py` | Motor arayüzü: `MotorOlayi` akışı, `OLAY_TURLERI`, hata sınıfları. Çekirdeğin motora bakan tek yüzü. **`durum_notu()`** (E16): "neden kullanılamıyor + ne yapılmalı", bütün göstergeler motora tek biçimde sorar. **`TurKanali`** (E17): koltuk ile adaptör arasında tur SÜRERKEN not + durdurma kanalı; `tur_ici_mesaj` yetenek bayrağı — taşıyamayan adaptör kanalı REDDEDER. |
+| `ofis/motor/claude.py` | Claude CLI adaptörü — `stream-json`, izin kapıları, süreç ağacı kesme. **Giriş ölçülür** (`auth status`, önbellekli), hesap hatası (`error: authentication_failed` …) `oturum_kapandi` olur ve hatırlanır (E16). **Kanal verilince** `--input-format stream-json --replay-user-messages`: not bir sonraki araç sınırında turun içine girer (yankı = ulaştı), `control_request interrupt` turu keser. |
 | `ofis/motor/codex.py` | **Codex CLI adaptörü — OFİSİN KENDİ YAZDIĞI.** İki kip: **`app-server` (varsayılan, 26.09)** — onay kapısı (`izin_sor`'a codex'in kendi MCP bağlantısıyla sorar), ret gerekçesi `turn/steer` ile ajana, MCP hazır olmadan tur başlamaz; patronun notu `turn/steer` (kabul = ulaştı), durdurma `turn/interrupt`; `exec` (açıkça seçilir, görsel üretimi bunu kullanır; kanal almaz). |
 | `ofis/motor/gemini.py` | **DEFTERDE DEĞİL (24.09.2026, kullanıcı kararı: ücretsiz hesapla iş olmuyor).** Dosya duruyor; geri takmak tek satır. **Gemini CLI adaptörü — OFİSİN YAZDIĞI, insan inceleyip kurdu.** `--output-format stream-json`, `--approval-mode plan` ile salt-okunur, `--skip-trust` şart. Bütçe tavanı YOK → kapalı kalarak reddeder. |
 | `ofis/motor/sahte.py` | Senaryolu sahte motor: jeton yakmadan koltuk/panel testi, kenar durumu üretimi. Kanalı taşır (not iletir, durdurmayı uygular). |
 | `ofis/motor/__init__.py` | Kayıt defteri — `motor_ac` · `motor_kaydet` · `musait_motorlar`. |
 | `ofis/koltuk.py` | **Seat Runner** — kilit al → brifing üret → motoru koştur → çıktıyı olaya çevir → nabız at → kanıt topla → incelemeye ver. Tur sürerken defterden saniyede bir **not ve DURDURMA** okur (`durdurma_iste` · `durdurma_istendi` · `durdurma_temizle`); durdurulan iş arıza değil, `Sürdür` aynı ajan ve oturumdan devam eder. |
 | `ofis/lider.py` | **Üç kapı** — fan-out (gerekçe zorunlu) · ayrık alan (planlamada) · kanıta karşı inceleme (temiz bağlam, salt okunur). |
+| `ofis/motor_saglik.py` | **MOTOR SAĞLIK HAFIZASI** (E16) — motordan bağımsız TEK defter: "bu hesap SU AN kullanılamıyor" kaydı, kimliğin parmak iziyle; yeniden giriş kaydı kendiliğinden düşürür. `dolu_hesaplar`: sağlayıcının bildirdiği %100 pencere. |
+| `ofis/yollar.py` | **TEK KÖK** — ofisin kullanıcıya ait bütün çalışma durumu (`OFIS_EV`, yoksa `~/.agentofis`). Sınamalar bunu geçici klasöre çevirir; hiçbir sınama gerçek hafızaya yazamaz. |
 | `ofis/postane.py` | Ajanlar arası soru-cevap + insan onayı. `mesaj` ve `onay` tabloları artık yaşıyor. **Patronun notu** (`not_birak` · `not_iletildi` · `gorev_notlari`; `mod='yonlendirme'`, `okundu=1` = ULAŞTI) ve tek kural cümlesi `NOT_KURALI` (brifing, tur içi not, inceleme ve danışma aynı sözü söyler). |
 | `ofis/danisma.py` | **Ajana sorulan soruyu TESLİM eden parça** — yaprak, salt okunur, araç kutusuz. Cevaplanamazsa insana yükseltir. İşin ana hedefini ve patronun notlarını görür (27.09: görmediği için incelemeyle çelişiyordu). |
 | `ofis/mcp_sunucu.py` | **Ofis MCP sunucusu** — **on üç araç** (`bilgi_yaz` ve `izin_sor` dahil: CLI'ın izin kancası, ofisin TEK kapısı): `durum` · `kanit_ekle` · `karar_yaz` · `soru_sor` · `onay_iste` · `gorsel_uret` · `gorsel_iste` · **`video_uret` · `video_durum` · `video_iste`** · `gorev_ac`. Bağımlılıksız, elle yazılmış stdio JSON-RPC. |
@@ -177,7 +179,7 @@ Yazıldı ve **duman testlerinden geçti** (2473/2473, 27.09.2026):
 | `ofis/orkestra.py` | **Halkayı döndüren parça** — hedeften plana, plandan kapanışa. Plan kapıları + `tik`/`kos`. |
 | `ofis/sohbet.py` | **LİDERİN ÖN KAPISI** — triyaj (cevap/kendi/dağıt/**kadro**), ofis özeti, tek çıktı raporu. İnsanın tek muhatabı. |
 | `testler/dogrula_teslim.py` | **Teslimin BAĞIMSIZ doğrulaması** — insanın kendi ölçümü. Paketin içinden yükler, testi kendi koşturur, testin boşaltılmadığını sayar. |
-| `ofis/saglik.py` | **Ofis kendi tıkandığını fark etsin** — on denetim, her biri teşhis + çare. Uydurmaz, düzeltmez. |
+| `ofis/saglik.py` | **Ofis kendi tıkandığını fark etsin** — 13 denetim (koddan sayıldı, 27.09), her biri teşhis + çare. Uydurmaz, düzeltmez. Motor denetimi: kurulu değil · kurulu ama kullanılamaz (motorun kendi teşhisi) · hesap DOLU. |
 | `ofis/video.py` | **Video uretimi** — `gorsel.py`nin kardesi ama ESZAMANSIZ (`baslat`/`durum`/`indir`) ve maliyet BASLAMADAN once hesaplanir. Ucretsiz katman yok, siralama saniye basi fiyata gore. Para kilidi `gorsel.py`den ODUNC alinir -- kilit acikken video TAMAMEN kapali. |
 | `ofis/degisim.py` | **Diskte NE DEGISTI** — ajanin anlattigi degil ofisin olctugu. Tur oncesi/sonrasi anlik goruntu farki. Yazma kilidinin BEYANINI gercekle sinar (`beyan_disi`); paralel turda suclamayi bastirir. Panelin Kod bolumunu besler. **Canli izleme** (`CanliIzleyici`): tur SURERKEN ucuz tarama (damga+boyut), ara fark `canli_degisim`de, tur bitince silinir. |
 | `ofis/kabin.py` | **KABIN** — panelin ICINDE yasayan, ajanla PAYLASILAN Chrome. CDP ile kare akitilir; `iframe` DEGIL (olculdu: X-Frame-Options). Ayri profil ZORUNLU, `--kabin` varsayilan KAPALI. **Oge secici** (`oge_ifadesi` · `oge_ozeti` · `oge_metni`): secmek tiklamak degil, ifade sunucuda, secici sir tasimaz. |
@@ -190,7 +192,7 @@ Yazıldı ve **duman testlerinden geçti** (2473/2473, 27.09.2026):
 | `ofis/geri_al.py` | **TUR GERİ ALMA** — her turun öncesi/sonrası proje kökünün dışındaki gölge git deposuna işlenir; `geri-al` YALNIZ o turun dosyalarını (ikili dahil) döndürür. Sonradan değişen dosyayı ve koşan işi ezmez (`--zorla` hariç), sebep zorunlu, geri alma da geri alınabilir. |
 | `baslat.bat` | Tek tık açılış — bağımlılık yoksa kurar, ilk açılışta örnek ofisi kurar. |
 
-Testler (`testler/`, hepsi jeton yakmadan koşar) — **2473/2473** (33 dosya, 27.09.2026'da tek tek koşturulup SAYILDI):
+Testler (`testler/`, hepsi jeton yakmadan koşar) — **2528/2528** (34 dosya, 27.09.2026'da tek tek koşturulup SAYILDI; hepsi GEÇİCİ kökte, gerçek `~/.agentofis`e dokunmadan):
 `duman_baglayici.py` 64 · `duman_cekirdek.py` 90 ·
 `duman_codex_app.py` 68 · `duman_danisma.py` 36 ·
 `duman_degisim.py` 105 · `duman_deneme.py` 53 · `duman_depo.py` 31 ·
@@ -198,6 +200,7 @@ Testler (`testler/`, hepsi jeton yakmadan koşar) — **2473/2473** (33 dosya, 2
 `duman_guncelleme.py` 66 · `duman_hafiza.py` 56 · `duman_hesap.py` 39 ·
 `duman_klasor.py` 35 · `duman_koltuk.py` 61 · `duman_kullanim.py` 62 ·
 `duman_lider.py` 44 · `duman_mcp.py` 137 · `duman_motor.py` 113 ·
+`duman_motor_saglik.py` 55 ·
 `duman_not.py` 76 ·
 `duman_orkestra.py` 57 · `duman_panel.py` 341 ·
 `duman_panel_senaryo.py` 20 · `duman_riskli.py` 183 ·
@@ -11098,3 +11101,152 @@ Tam takım: **2473/2473** (33 dosya), takımın bıraktığı geçici klasör 0.
 - **Mutasyon koşusundan kalan artık:** panel mutasyonunun başlattığı arka
   plan halkası bir geçici defteri açık tuttu (`ofis-not-*`); silindi.
   Sınama takımının kendisi artık bırakmıyor (ölçüldü).
+
+## MOTOR SAĞLIK HAFIZASI — E16 (27.09.2026)
+
+PLAN'daki madde: *"anahtar var ≠ çalışıyor körlüğü: kota ve oturum
+hafızası yalnız Codex'te ve görselde var."* Ölçünce durum şuydu:
+
+| | Kurulu mu | Giriş var mı | Oturum sunucuda düştü mü | Kota dolu mu |
+|---|---|---|---|---|
+| Codex | ölçülüyordu | ölçülüyordu (`auth.json`) | **hatırlanıyordu** (401) | pencereden ölçülüyordu |
+| Claude | ölçülüyordu | **hiç sorulmuyordu** | **hiç okunmuyordu** | pencereden ölçülüyordu |
+
+Claude'un `musait_mi`'si yalnız programın kurulu olduğuna bakıyordu:
+girişsiz ya da oturumu sunucuda düşmüş bir Claude "HAZIR" görünür, zincir
+onu ilk basamakta dener ve her tur düşerdi. Düşen tur "başarısız tur"
+diye kaydedilir, **sebebi hatırlanmazdı**.
+
+### ÖNCE ÖLÇÜLDÜ
+
+- **`claude auth status` bedava:** 0,4–0,5 sn, jeton yok. Yani Claude'un
+  yerel girişi **ölçülebilir**, tahmin gerekmez.
+- **CLI hesap sorununu ayrı bir alanla bildiriyor.** Aracın kendi
+  şemasından okundu (ikili dosyadaki sabit metinler): assistant mesajının
+  `error` alanı → `authentication_failed` · `oauth_org_not_allowed` ·
+  `account_on_hold` · `verification_required` · `billing_error` ·
+  `rate_limit` · `overloaded` … Adaptör bu alanı **hiç okumuyordu**.
+- **Gerçek CLI ile doğrulandı, $0:** `CLAUDE_CONFIG_DIR` boş bir geçici
+  klasöre çevrildi — gerçek girişe dokunulmadı, istek gitmedi. `auth
+  status` "giriş yok" dedi; tur 1 saniyede düştü ve akışta gerçekten
+  `error: "authentication_failed"` geldi.
+- **Yeniden giriş komutu** aracın kendi yardımından: `claude auth login`.
+
+### Kurulan — TEK desen, iki motor
+
+- **`ofis/motor_saglik.py`**: motordan bağımsız TEK hafıza. Codex'e özel
+  yazılmış olan (`codex_oturum.json`) buraya taşındı; Claude'a ikinci bir
+  kopya yazılmadı. Kayıt `motor + kimlik` anahtarıyla, kimliğin o anki
+  **parmak iziyle** tutulur (giriş dosyasının damgası ya da anahtarın
+  özeti — anahtarın kendisi değil). Kullanıcı yeniden giriş yapınca parmak
+  izi değişir ve kayıt **kendiliğinden düşer**; unutulabilecek bir
+  "temizle" adımı yok.
+- **Motor sözleşmesine `durum_notu()`**: "neden kullanılamıyor + ne
+  yapılmalı". Sağlık, yetenek, hesap ve zincir ekranları motora TEK
+  biçimde soruyor; teşhis motorda, ikinci bir kopyası yok.
+- **Claude:**
+  - `giris_durumu()` → `auth status` (5 dakikalık önbellek). Ölçülemezse
+    `None`; bilinmeyene "giriş yok" denmez, çünkü o motoru keserdi.
+  - Hesap hatası gelince tur `oturum_kapandi` ile biter ve kategorisiyle
+    hatırlanır.
+  - `rate_limit` limit sayılır, hatırlanmaz (kaynak tükenmesi, pencere
+    ölçümüyle yönetiliyor).
+  - `overloaded` gibi geçici hatalar hatırlanmaz.
+- **Oturum düşünce AYNI turda devir.** Önce yalnız limitte devrediliyordu;
+  oturum düşünce tur bırakılıyor, bir sonraki tikte başka motor
+  seçiliyordu. Bir tik boşa gidiyordu, sebep dağılıyordu. Artık iki
+  durumda da devrediliyor: işçide `koltuk`, liderde `limitte_devret`.
+  Karar günlüğüne doğru sebep yazılıyor.
+- **Kota:** `motor_saglik.dolu_hesaplar` sağlayıcının kendi bildirdiği
+  pencereden okur. %100 ise hesap **dolu** sayılır; yenilenmiş pencere
+  sayılmaz.
+
+### Göstergeler — üç yerde "yanlış gösteren gösterge" kapandı
+
+| Nerede | Önce | Şimdi |
+|---|---|---|
+| Sağlık | yalnız "kurulu değil" | kurulu ama kullanılamayan motor **insan** bulgusu (motorun kendi teşhisi + çare) · **DOLU** hesap **uyarı** (yenilenme saati ile) |
+| Zincir (elenen basamak) | her sebebe "bu makinede kurulu değil" | motorun kendi teşhisi ("giriş YOK", "oturum kapanmış") |
+| Yetenek: hesaplar | `k.get("kullanilabilir")` okunuyordu, işlev `"olur"` döndürüyor — **tanımlı HER hesap sağlam olsa bile hep "dar"** görünüyordu | doğru anahtar; gerçek ofiste `claude` ve `codex` artık **hazır** |
+| Yetenek: motorlar | kurulu değilse YOK, gerisi HAZIR | kurulu ama kullanılamayan **DAR** + çare |
+| Kullanım: hesaplar | Claude girişini kendi ayrı sorgusuyla okuyordu; Codex'te düşmüş oturumu görmüyordu | ikisi de motorun ortak ölçümünü kullanıyor |
+
+### YOL BOYUNCA ÇIKAN — sınamalar kullanıcının gerçek hafızasına yazıyordu
+
+Başlarken gerçek `~/.agentofis/kota.json`'da bu gece 00:16 tarihli bir
+"Gemini kotası doldu" kaydı buldum — ikinci test koşusunun ortası.
+Ölçüldü: `duman_gorsel.py`'nin 7. bölümü bir kota hatasını taklit
+ediyordu, ama kota defteri ancak sonraki bir bölümde geçici dosyaya
+yönlendiriliyordu. Kota hafızası sonradan eklendiği için o bölüm **her
+test koşusunda** gerçek hafızaya yanlış kayıt yazıyordu. Lider bir
+sonraki triyajda bu yanlış bilgiyle karar veriyordu.
+
+Kök sebep: `~/.agentofis` yolu kodda **on ayrı sabitte** kopyaydı. Her
+sınama kendi sabitini ayrı ayrı yönlendirmek zorundaydı ve biri
+unutulunca gerçek hafıza kirleniyordu. Tek dosyayı yamamak yerine sınıf
+kapatıldı:
+
+- **`ofis/yollar.py` — TEK kök:** `OFIS_EV` ortam değişkeni, verilmezse
+  `~/.agentofis`. Kasa, kota ve motor sağlık defterleri, bağlayıcı
+  hafızası, Codex evi, kabin profili, yedekler, gölge depolar — hepsi bu
+  kökten türüyor.
+- **`_temizlik.py`** (sınamaların ilk içe aktardığı modül) kökü geçici bir
+  klasöre çevirir. Hiçbir sınama, bir sabiti unutsa bile, gerçek hafızaya
+  **yazamaz**.
+- **Bekçi:** Test süreci biterken gerçek kökteki hafıza dosyaları
+  değiştiyse `[GERÇEK HAFIZA]` yazılır ve çıkış kodu 3 olur. Gerçek ofis
+  aynı anda çalışıyorsa yanlış alarm olabilir; bu yüzden hangi dosya
+  olduğu söylenir.
+- **Deneme seti gerçek kökle koşar** (bilerek: gerçek hesaplar
+  kullanılıyor). Kök `_temizlik`'ten önce sabitlenir.
+- **Lint:** Kodda ikinci bir `/ ".agentofis"` kurulumu olursa sınama
+  ateş eder.
+- **Yeni sınama gerçek kökte koşmayı REDDEDER.** Sınama Codex evine
+  `auth.json` yazıyor; kök gerçek olsaydı kullanıcının gerçek Codex
+  girişinin üstüne yazardı. Mutasyon "tek kök yok sayılsın" bunu tam
+  olarak kuruyordu; test başlamadan durdu ve gerçek dosya değişmedi
+  (ölçüldü).
+
+Aynı yalıtım gerçek kasaya yaslanan dört sınamayı daha ortaya çıkardı (`duman_gorsel` 2, `duman_sohbet` 1, `duman_video` 1). Hepsi
+kasada Gemini anahtarı olduğunu varsayıyordu: varsa geçiyor, yoksa ya
+kalıyor ya da hiç ölçmeden "ATLANDI" diyordu. Artık kendi geçici
+kasaları ya da sahte anahtarlarıyla koşuyorlar; gerçek kasa bir sınamanın sonucunu
+değiştiremiyor.
+
+Tam takım: **2528/2528** (34 dosya); takım boyunca gerçek `~/.agentofis` dosyalarının özetleri önce/sonra aynı, geride geçici klasör 0.
+
+Testin yazdığı sahte kayıt gerçek `kota.json`'dan silindi. Dosyada başka
+kayıt yoktu; gerçek bir kota dolunca yeniden oluşur.
+
+### Sınamalar ve mutasyon
+
+`testler/duman_motor_saglik.py` (yeni, **55**): tek kök ve lint, bekçi
+(sahte bir ev klasörüyle alt süreçte), hafıza, Claude adaptörü sahte bir
+`claude` sürecine karşı, Codex ortak hafıza, zincir sebebi, koltuk ve
+lider devri, sağlık, yetenek ve hesap.
+
+**Mutasyon: 20/20 ateş etti; koşu boyunca gerçek `~/.agentofis`'te
+değişen dosya: YOK** (koşucu bunu ayrıca ölçtü). İki kendi kusurum çıktı:
+
+- "`rate_limit` limit sayılır" sınamasında sahte metin "rate limited"
+  idi. Adaptör bu kelimeyi sonuç metninde de arıyor; `error` alanını
+  okuyan kod koparılsa bile sınama geçerdi. Metin değiştirildi, mutasyon
+  ateş etti.
+- Bir sınama `devirler[0]` ile boş listeye bakıyordu ve mutasyonda testi
+  **çökertti** (çöken test geri kalan sınamaları koşturmaz). Korundu.
+- Yazarken bir sınamayı `or True` ile bitirmiştim — **hiçbir şey
+  ölçmüyordu**. Çalıştırmadan fark edildi, anlamlı bir karşılaştırmaya
+  çevrildi.
+
+### AÇIK KALAN
+
+- **Gemini** defterde değil; `durum_notu` sözleşmedeki varsayılanla
+  çalışır ("kurulu/girişli değil"). Pro gelince kendi teşhisi yazılacak.
+- **Claude'da sunucuda düşen ama yerelde "girişli" görünen oturum**
+  ancak bir tur düşünce öğrenilir (ölçmek bir tur demek). Codex'teki
+  kararın aynısı: tahmin etmiyoruz, hatırlıyoruz.
+- **Panelde motor sağlığı** yalnız Yetenek ve Sağlık üzerinden görünüyor;
+  terminal başlığında hesap adı ve durumu (E63) ayrı iş.
+- Gerçek bir hesap düşmesi yaşanmadı. Boş yapılandırmayla ölçülen tur,
+  "hiç girilmemiş" hâlidir. "Sunucuda iptal edilmiş oturum" hâli şemaya
+  göre aynı alanla geliyor, ama canlı görülmedi.

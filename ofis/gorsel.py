@@ -57,6 +57,7 @@ import time
 import urllib.error
 import urllib.request
 from pathlib import Path
+from .yollar import OFIS_EVI
 
 #: Tek bir uretim denemesinin ust siniri. Gorsel uretimi saniyeler surer;
 #: dakikalarca bekleyen bir cagri, cagiran ajani da bekletir.
@@ -121,7 +122,7 @@ def anahtar_oku(ad: str) -> str:
 #: Kota hafizasi. Proje kokunun DISINDA, kasayla ayni klasorde: bu bir
 #: calisma durumu, proje verisi degil -- ve ofis kurulmadan da (`kabuk
 #: gorsel durum`) okunabilmeli.
-KOTA_DEFTERI = Path.home() / ".agentofis" / "kota.json"
+KOTA_DEFTERI = OFIS_EVI / "kota.json"
 
 #: Kota kaydinin "taze" sayildigi sure. Ucretsiz kotalar gunluk
 #: yenilenir; 12 saatten eski bir kayit bugunku hali SOYLEMEZ ve
@@ -188,7 +189,7 @@ def kota_notu(uretici: str) -> str:
 #: Ofis ayarlari. Kotayla ayni klasorde ve ayni sebeple: bu bir calisma
 #: durumu, proje verisi degil -- ve `gorsel.py` bilerek ofisten
 #: BAGIMSIZDIR (veritabanina baglamak onu ofise baglardi).
-AYAR_DEFTERI = Path.home() / ".agentofis" / "ayar.json"
+AYAR_DEFTERI = OFIS_EVI / "ayar.json"
 
 
 def ucretsiz_sadece_mi() -> bool:
@@ -665,7 +666,7 @@ class CodexUretici(Uretici):
     #: Proje kokunun DISINDA sabit bir klasor. Her uretimde yeni gecici
     #: klasor acsaydik `_evi_hazirla` her biri icin config.toml'a ayri
     #: bir guven satiri eklerdi ve dosya sisip giderdi.
-    CALISMA = Path.home() / ".agentofis" / "gorsel-codex"
+    CALISMA = OFIS_EVI / "gorsel-codex"
     ISTEM = (
         "Yerlesik gorsel uretme aracini (image_gen) kullanarak ASAGIDAKI "
         "tarif icin TEK bir gorsel uret. Kod yazma, betik calistirma, API "
