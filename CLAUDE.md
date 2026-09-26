@@ -136,7 +136,7 @@ Motor bir adaptör, model bir ayar, arayüz bir istemci.
 
 ## Kod durumu
 
-Yazıldı ve **duman testlerinden geçti** (2238/2238, 26.09.2026):
+Yazıldı ve **duman testlerinden geçti** (2304/2304, 26.09.2026):
 
 | Dosya | Ne yapar |
 |---|---|
@@ -190,7 +190,7 @@ Yazıldı ve **duman testlerinden geçti** (2238/2238, 26.09.2026):
 | `ofis/geri_al.py` | **TUR GERİ ALMA** — her turun öncesi/sonrası proje kökünün dışındaki gölge git deposuna işlenir; `geri-al` YALNIZ o turun dosyalarını (ikili dahil) döndürür. Sonradan değişen dosyayı ve koşan işi ezmez (`--zorla` hariç), sebep zorunlu, geri alma da geri alınabilir. |
 | `baslat.bat` | Tek tık açılış — bağımlılık yoksa kurar, ilk açılışta örnek ofisi kurar. |
 
-Testler (`testler/`, hepsi jeton yakmadan koşar) — **2238/2238** (30 dosya, 26.09.2026'da tek tek koşturulup SAYILDI):
+Testler (`testler/`, hepsi jeton yakmadan koşar) — **2304/2304** (31 dosya, 26.09.2026'da tek tek koşturulup SAYILDI):
 `duman_cekirdek.py` 78 · `duman_motor.py` 102 · `duman_koltuk.py` 61 ·
 `duman_lider.py` 44 · `duman_mcp.py` 130 · `duman_panel.py` 341 ·
 `duman_orkestra.py` 57 · `duman_zincir.py` 71 · `duman_tavan.py` 27 · `duman_kullanim.py` 55 ·
@@ -199,7 +199,7 @@ Testler (`testler/`, hepsi jeton yakmadan koşar) — **2238/2238** (30 dosya, 2
 `duman_klasor.py` 35 · `duman_roller.py` 37 · `duman_ekip.py` 60 ·
 `duman_zorluk.py` 57 · `duman_hesap.py` 39 · `duman_tarayici.py` 155 ·
 `duman_video.py` 35 · `duman_baglayici.py` 60 · `duman_degisim.py` 101 ·
-`duman_riskli.py` 168 · `duman_hafiza.py` 56 · `duman_yedek.py` 47 · `duman_depo.py` 30 · `duman_geri_al.py` 29 · `duman_deneme.py` 21 · `duman_riskli.py` 183
+`duman_riskli.py` 168 · `duman_hafiza.py` 56 · `duman_yedek.py` 47 · `duman_depo.py` 30 · `duman_geri_al.py` 29 · `duman_deneme.py` 47 · `duman_riskli.py` 183 · `duman_panel_senaryo.py` 20
 JS: `testler/panel_harita.mjs` (harita) · `testler/panel_yerlesim.mjs`
 (pano yerleşimi) — saf işlevler Node'da ÇALIŞTIRILIR; `duman_panel.py`
 koşturur (sayıları 341'in içinde) · `testler/panel_hafiza.mjs` (hafıza çizgesi)
@@ -10553,4 +10553,96 @@ Açık (not): gerçek Playwright koşan sınamadan sonra `%TEMP%`'te bir
 kendi Chrome'u da aynı yere aynı türü yazıyor ve kilitli `.tmp`'yi o
 tutuyor). Bizim `ofis-*` klasörlerimiz sıfır. Emin olunmayan artık
 "testin" diye yazılmadı.
+
+## TAM SET + PANEL SENARYOLARI + ÜÇ GERÇEK KUSUR (26.09.2026)
+
+### Deneme seti tamamlandı — 13 iş (`deneme_isler_tam.py`)
+
+D03 web sayfası · D04 kaynaklı araştırma · D06 ürün metni (3 varyant) ·
+D07 README (doğrulayıcı komutları KENDİSİ koşturur) · D08 kapak görseli ·
+D11 lider böler + paralel + birleştirme · D12 eksik bilgi (sorar, uydurmaz)
+· D13 tur ortasında limit (enjekte) → başka motor devralır. Koşturucu
+yeni yetenekler aldı: `mod="hedef"` (bölme LİDERİN), `insan_cevabi` (insan
+yerine cevaplar, halkayı sürdürür), `fabrika_sar` (limit enjekte),
+`isci_sayisi`. Kuru koşu **47/47** (her işin iyisi GEÇER, kötüsü DOĞRU
+SEBEPLE kalır).
+
+**Doğrulayıcıların kendi iki kusuru** kuru koşuda çıktı: D03 mobil ölçümü
+`file://` sayfada `cssRules` okurken çöktü; düzeltilince bu kez 1400 px'lik
+şerit "taşma yok" geçti — mobil öykünmede Chrome içeriği sığdırmak için
+`innerWidth`'i BÜYÜTÜYOR; kıyas sabit 375 px'e bağlandı. *Ölçüm aracının
+kendisi de ölçülmeli* — yine.
+
+### İlk gerçek tam koşu — 6/8
+
+| İş | Sonuç | Maliyet |
+|---|---|---|
+| D03 sayfa | geçti | $0,25 |
+| D04 araştırma (tarihler python.org'la birebir) | geçti | $0,18 |
+| D06 3 varyant | geçti | $0,14 |
+| D07 README | geçti | $0,11 |
+| D08 görsel | **hata** | — |
+| D11 bölme | **hata** | — |
+| D12 eksik bilgi | geçti | $0,23 |
+| D13 limit devri | geçti | $0,18 |
+
+### Kusur 1 — LİDER yollara KÖKÜN KENDİ ADINI ekliyordu (D11)
+
+Lider `calisma/sayilar.py` yazdı (kök `calisma`); iki denemede de. Sebep:
+plan istemindeki klasör ağacının başlığı `calisma/  (calisma koku)` idi.
+Kapı doğru reddetti ama **yanlış teşhisle** ("kökün DIŞINI kastettin") —
+bu yüzden ikinci deneme de düzelmedi. Gerçek ofisin kökü de `calisma`:
+gerçek kullanımda da olurdu. Düzeltme: ağaç "yollar BURADAN başlar,
+'calisma/' yola YAZILMAZ" diyor ve öğeleri `./` ile gösteriyor; ret bu
+hâli ayrı tanıyıp **doğru çareyi** söylüyor (`Doğrusu: sayilar.py`). Kökte
+gerçekten aynı adlı bir alt klasör varsa geçer. `duman_cekirdek` +7.
+
+### Kusur 2 — GÖRSEL ARACI dosya alanını KLASÖR sayıyordu (D08)
+
+Alan `kapak.png` idi; görsel `kapak.png/kapak.png` içine yazıldı,
+`kapak.png` KLASÖR oldu. Aynı satır **dört yerde** kopyaydı (MCP
+gorsel/video, kabuk gorsel/video ekle). Tek işlev: `tahta.medya_hedefi` —
+alan dosyaysa tam oraya, klasörse içine, uzantısı uyan dosya önce; bütün
+alanlar başka türde dosyaysa (`rapor.md`) **üzerine yazmak yerine RET**
+(ajana HATA olarak anlatılır). `duman_mcp` +8; eski davranış geri konunca
+4 ateş. D08 doğrulayıcısı da klasörü dosya sanıp ÇÖKÜYORDU → artık KALDI.
+
+### Kusur 3 — TUR SÜREÇLERİ SIZIYORDU: `psutil` YOK, ağaç kesme hiç çalışmıyordu
+
+Tam set bittikten sonra makinede `python -m http.server 8000` çalışıyordu
+(port + klasör kilidi). **Kaynağı KESİN DEĞİL**: tam seti başlatan kabuğun
+süreç ağacındaydı, ama ajanın bıraktığı yeniden üretilemedi — Claude'un
+kabuk aracı `&` ile başlayan işi komut dönünce zaten kapatıyor (3 gerçek
+denemede, $0,01'er).
+
+Bu arada KESİN bir şey çıktı: `_surec_agacini_kes` `psutil` ile
+çalışıyordu ve bu makinede `psutil` **kurulu değil** — `except` yutuyordu,
+yani zaman aşımında bile YALNIZ ana süreç kapanıyor, alt süreçler
+(node, MCP sunucuları, tarayıcı) sızıyordu. Sessizce yok sayılan kural.
+
+Çözüm: **`tip.SurecKafesi`** — Windows iş nesnesi (Job Object,
+KILL_ON_JOB_CLOSE). Tur süreci başlar başlamaz kafese girer; başlattığı
+her şey aynı kafese doğar; tur bitince (başarılı, düşen, kesilen) kafes
+kapanır ve **yetimler dahil** hepsi biter. Kurulamazsa iş durmaz ama
+`kuruldu=False` + sebep. Claude ve codex adaptörlerine bağlı. Ölçüldü:
+kafes yokken ebeveyni ölmüş torun yaşıyor, kafesle bitiyor
+(`duman_motor` +6).
+
+### Panel senaryoları — gerçek tarayıcı, gerçek tıklama (E55)
+
+`testler/duman_panel_senaryo.py`: örnek ofisin geçici kopyası gerçek
+sunucuda, başsız Chrome ile: **Sürdür** (halka döner, yeni tur ölçülür) ·
+**gerekçesiz Reddet** (istek GİTMEZ, panel kendi uyarır) · **Bir kez**
+(onay `eylem` kapsamında) · **Cevapla** · **Ajana sor** (çip → terminal →
+"ayrıntı" → çekmece → cevap). Sonuç DOM'dan değil DEFTERDEN. Gerçek motor
+yasak. **20/20.** Mutasyonlar (panel.js'te "Bir kez" geniş kapsam
+göndersin · reddet gerekçe sormasın) ateş etti. Bir kez ateş ETMEDİ: iki
+kapı var (panel + sunucu), test yalnız "onay hâlâ bekliyor"a bakıyordu;
+isteğin HİÇ gitmediği ölçülecek şekilde daraltıldı.
+
+Yol boyunca: Chrome yalnız ana süreci kapatılınca alt süreçleri geçici
+klasörü tuttu → `taskkill /T`; senaryo bitmeden arka plan halkası
+yorumlayıcı kapanışında yarıda kesiliyordu → bitmesi bekleniyor.
+
+**2304/2304** (31 dosya, artık 0).
 

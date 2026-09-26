@@ -61,7 +61,7 @@ from pathlib import Path
 from typing import Iterator
 
 from .tip import (ortam_hazirla, limit_penceresi, Motor, MotorOlayi,
-                  MotorHatasi, MotorYokHatasi)
+                  MotorHatasi, MotorYokHatasi, SurecKafesi)
 
 _PENCERE_YOK = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
 _SON = object()
@@ -447,6 +447,8 @@ class ClaudeMotoru(Motor):
             )
         except OSError as exc:
             raise MotorYokHatasi(f"claude baslatilamadi: {exc}") from exc
+        # KAFES: turun baslattigi HER SEY tur bitince biter (yetimler dahil).
+        kafes = SurecKafesi(surec)
 
         yield MotorOlayi("basladi", f"{self.ad} turu basladi",
                          {"oturum_id": oturum, "devam": devam, "klasor": str(kok)})
@@ -528,6 +530,7 @@ class ClaudeMotoru(Motor):
                         boru.close()
                     except OSError:
                         pass
+            kafes.kapat()
             okuyucu.join(timeout=1)
             hata_okuyucu.join(timeout=1)
 

@@ -811,6 +811,63 @@ sina("betik sunucu iki arac cagrisina da cevap verdi",
 sina("betik sunucuda medya araclari ice aktarma hatasi VERMIYOR",
      "relative import" not in _rel_r.stdout, f"({_rel_r.stdout[-300:]})")
 
+print("\n-- 13. MEDYA HEDEFI: yazma alani DOSYA ise tam oraya --")
+# Olculdu (26.09.2026, deneme D08): alan `kapak.png` idi, gorsel
+# `kapak.png/kapak.png` icine yazildi -- `kapak.png` bir KLASOR oldu. Karar
+# dort yerde kopyaydi (MCP gorsel/video, kabuk gorsel/video ekle); simdi
+# `tahta.medya_hedefi` TEK yer.
+from ofis import gorsel as _gor              # noqa: E402
+from ofis.tahta import medya_hedefi as _mh, TahtaHatasi as _TH  # noqa: E402
+
+
+class _SahteGorselUretici(_gor.Uretici):
+    ad = "sahtegorsel"
+    ucretli = False
+
+    def musait_mi(self):
+        return True
+
+    def uret(self, istem, hedef, *, model="", kalite=""):
+        _h = Path(hedef)
+        _h.parent.mkdir(parents=True, exist_ok=True)
+        _h.write_bytes(b"\x89PNG\r\n\x1a\nsahte")
+        return {"yol": str(_h), "bayt": 13, "uretici": self.ad, "model": "s",
+                "maliyet_usd": None}
+
+
+_gor.uretici_kaydet(_SahteGorselUretici)
+_mk = Path(tempfile.mkdtemp(prefix="ofis-medya-"))
+(_mk / "web").mkdir()
+sina("dosya alani -> tam o dosya", _mh(_mk, ["kapak.png"], "g-1.png") == _mk / "kapak.png")
+sina("klasor alani -> icine", _mh(_mk, ["web"], "x.png") == _mk / "web" / "x.png")
+sina("uzantisi uyan dosya secilir",
+     _mh(_mk, ["rapor.md", "kapak.png"], "g.png") == _mk / "kapak.png")
+try:
+    _mh(_mk, ["rapor.md"], "g.png")
+    sina("baska turde dosyanin USTUNE yazilmaz (ret)", False)
+except _TH:
+    sina("baska turde dosyanin USTUNE yazilmaz (ret)", True)
+
+_gm = ofis.tahta.gorev_ac("Kapak", neden="n", ana_hedef="h", kabul_olcutu="k",
+                          yazma_alani=["kapak.png"], sahip="cinar")
+_mo = _SahteOturum(ofis, "cinar", _gm["no"])
+_mc = _ms.arac_gorsel_uret(_mo, {"istem": "kahve", "dosya_adi": "kapak.png",
+                                 "uretici": "sahtegorsel"})
+_kok_c = Path(ofis.kadro.ajan("cinar")["klasor"])
+sina("gorsel_uret alan DOSYA iken dosyaya yazdi (klasor ACMADI)",
+     (_kok_c / "kapak.png").is_file(), _mc[:120])
+_gm2 = ofis.tahta.gorev_ac("Rapor", neden="n", ana_hedef="h", kabul_olcutu="k",
+                           yazma_alani=["rapor.md"], sahip="cinar")
+(_kok_c / "rapor.md").write_text("metin", encoding="utf-8")
+try:
+    _mc2 = _ms.arac_gorsel_uret(_SahteOturum(ofis, "cinar", _gm2["no"]),
+                                {"istem": "x", "uretici": "sahtegorsel"})
+except Exception as _exc:                     # noqa: BLE001 -- cokme degil KALDI
+    _mc2 = f"COKTU: {_exc}"
+sina("uygun alan yoksa ajana HATA ANLATILIR", _mc2.startswith("HATA"), _mc2[:120])
+sina("rapor.md'nin ustune YAZILMADI",
+     (_kok_c / "rapor.md").read_text(encoding="utf-8") == "metin")
+
 print(f"\n== sonuc: {GECEN} gecti, {KALAN} kaldi ==")
 print(f"klasor: {kok}")
 sys.exit(1 if KALAN else 0)

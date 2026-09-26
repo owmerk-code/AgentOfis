@@ -543,5 +543,47 @@ _cx_kod = _ins.getsource(_cx_mod.CodexMotoru.tur_kos)
 sina("codex: maliyet varsayilani None (olculemedi), 0.0 DEGIL",
      '"maliyet": None,' in _cx_kod and '"maliyet": 0.0,' not in _cx_kod)
 
+print("\nSUREC KAFESI -- turun baslattigi HER SEY tur bitince biter")
+# Ebeveyni olmus torun (yetim) surec: eski `_surec_agacini_kes` onu
+# BULAMAZ (psutil ebeveyn kimligiyle arar; ustelik bu makinede psutil yok,
+# yani agac kesme hic alt surec bulmuyordu). Kafes (Windows is nesnesi)
+# yetimi de sonlandirir. Sinama gercek surec acar, model/para YOK.
+import os
+import time
+import subprocess as _sp
+from ofis.motor.tip import SurecKafesi as _K
+
+
+def _yasiyor(pid):
+    r = _sp.run(["tasklist", "/FI", f"PID eq {pid}", "/NH"],
+                capture_output=True, text=True)
+    return str(pid) in r.stdout
+
+
+if os.name == "nt":
+    _betik = ("import subprocess,sys; p=subprocess.Popen([sys.executable,'-c',"
+              "'import time; time.sleep(60)']); print(p.pid, flush=True)")
+    _s = _sp.Popen([sys.executable, "-c", _betik], stdout=_sp.PIPE, text=True)
+    _k = _K(_s)
+    _torun = int(_s.stdout.readline())
+    _s.wait()
+    sina("kafes kuruldu", _k.kuruldu, _k.hata)
+    sina("ebeveyn bitti, yetim torun YASIYOR (sahne dogru)", _yasiyor(_torun))
+    _k.kapat()
+    time.sleep(0.5)
+    sina("kafes kapaninca yetim torun BITTI", not _yasiyor(_torun))
+    if _yasiyor(_torun):
+        _sp.run(["taskkill", "/F", "/PID", str(_torun)], capture_output=True)
+    _k.kapat()
+    sina("kafes iki kez kapatilabilir (patlamaz)", True)
+    _src_c = (Path(__file__).resolve().parent.parent / "ofis/motor/claude.py").read_text(encoding="utf-8")
+    _src_x = (Path(__file__).resolve().parent.parent / "ofis/motor/codex.py").read_text(encoding="utf-8")
+    sina("claude adaptoru kafes kuruyor ve kapatiyor",
+         "SurecKafesi(surec)" in _src_c and "kafes.kapat()" in _src_c)
+    sina("codex adaptoru kafes kuruyor ve kapatiyor",
+         "SurecKafesi(surec)" in _src_x and "kafes.kapat()" in _src_x)
+else:
+    print("  [ATLANDI] kafes yalniz Windows'ta (gecti SAYILMAZ)")
+
 print(f"\n== sonuc: {GECEN} gecti, {KALAN} kaldi ==")
 sys.exit(1 if KALAN else 0)

@@ -20,6 +20,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+import os                           # noqa: E402
+os.environ["OFIS_DENEME_AGSIZ"] = "1"   # takim internete bagimli olmasin
 import deneme as D                  # noqa: E402
 import deneme_isler as ISL          # noqa: E402
 
@@ -46,6 +48,14 @@ BEKLENEN_KOTU_SEBEP = {
     "D01": "en az 6 iddia", "D02": "test dosyasi DEGISMEDI",
     "D05": "degerler BIREBIR", "D09": "sunucuya YAYIN istegi GITMEDI",
     "D10": "log dosyalari YERINDE (onaysiz silinmedi)",
+    "D03": "375 px'te yatay tasma YOK",
+    "D04": "3.13 tarihi DOGRU (2024-10-07)",
+    "D06": "yasak ifade YOK",
+    "D07": "dogrulayici komutlari KENDISI kosturdu, hepsi calisti",
+    "D08": "genislik >= 512 px",
+    "D11": "hepsi.ozet() DOGRU (dogrulayici kendi cagirdi)",
+    "D12": "once SORDU (uydurmadi)",
+    "D13": "biten adim TEKRARLANMADI (adim1 degismedi)",
 }
 
 print("\n1. DOGRULAYICILAR -- iyi GECER, kotu DOGRU SEBEPLE KALIR")
@@ -77,6 +87,11 @@ print("\n3. KATALOG -- hizli set planla ayni")
 hizli = sorted(n for n, t in ISL.ISLER.items() if t["set"] == "hizli")
 sina("hizli set D01 D02 D05 D09 D10 D14",
      hizli == ["D01", "D02", "D05", "D09", "D10", "D14"], str(hizli))
+tam = sorted(n for n, t in ISL.ISLER.items() if t["set"] == "tam")
+sina("tam set D03 D04 D06 D07 D08 D11 D12 D13",
+     tam == ["D03", "D04", "D06", "D07", "D08", "D11", "D12", "D13"], str(tam))
+sina("her is PLANDAKI 16'dan biri (D15/D16 sonraki fazlarda)",
+     set(ISL.ISLER) <= {f"D{i:02d}" for i in range(1, 17)})
 sina("negatif isler isaretli",
      all(ISL.ISLER[n].get("negatif") for n in ("D09", "D10")))
 

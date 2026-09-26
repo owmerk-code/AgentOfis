@@ -333,6 +333,13 @@ def arac_gorev_ac(oturum: Oturum, args: dict) -> str:
     return f"Gorev acildi: #{g['no']} {g['baslik']}"
 
 
+def _medya_hedefi(kok, alanlar, ad):
+    """Tek kaynak `tahta.medya_hedefi`; burada yalniz ice aktarma (betik
+    kipinde mutlak -- goreli ice aktarma bu sunucuda bir kez patladi)."""
+    from ofis.tahta import medya_hedefi
+    return medya_hedefi(kok, alanlar, ad)
+
+
 def arac_gorsel_uret(oturum: Oturum, args: dict) -> str:
     """Istemi gorsele cevirir ve dosyayi KANIT olarak tahtaya yazar.
 
@@ -376,7 +383,10 @@ def arac_gorsel_uret(oturum: Oturum, args: dict) -> str:
         return f"HATA: ajan okunamadi: {exc}"
     kok = _Path(ajan["klasor"])
     alanlar = g.get("yazma_alani") or []
-    hedef = (kok / alanlar[0] / ad) if alanlar else (kok / ad)
+    try:
+        hedef = _medya_hedefi(kok, alanlar, ad)
+    except Exception as exc:                     # noqa: BLE001 -- ajana ANLATILIR
+        return f"HATA: {exc}"
 
     try:
         sonuc = _gorsel.uret(istem, hedef,
@@ -476,7 +486,11 @@ def _video_hedef(oturum: Oturum, g: dict, ad_arg, varsayilan: str):
     ad = _Path(str(ad_arg or "").strip() or varsayilan).name
     kok = _Path(oturum.ajan()["klasor"])
     alanlar = g.get("yazma_alani") or []
-    return (kok / alanlar[0] / ad) if alanlar else (kok / ad)
+    try:
+        return _medya_hedefi(kok, alanlar, ad)
+    except Exception as exc:                     # noqa: BLE001
+        from ofis import video as _v
+        raise _v.VideoHatasi(str(exc))
 
 
 def _video_kanit(oturum: Oturum, g: dict, sonuc: dict,
@@ -695,8 +709,11 @@ def arac_video_durum(oturum: Oturum, args: dict) -> str:
     if not hal["basarili"]:
         return f"Is BASARISIZ: {hal['hata']}"
 
-    hedef = _video_hedef(oturum, g, args.get("dosya_adi"),
-                         f"video-{g['no']}.mp4")
+    try:
+        hedef = _video_hedef(oturum, g, args.get("dosya_adi"),
+                             f"video-{g['no']}.mp4")
+    except _video.VideoHatasi as exc:
+        return f"HATA: {exc}"
     try:
         sonuc = u.indir(is_id, hedef)
     except _video.VideoHatasi as exc:

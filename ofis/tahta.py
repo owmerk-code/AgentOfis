@@ -57,6 +57,44 @@ MAKS_GOREV = 512
 ZORLUKLAR = ("kolay", "orta", "zor", "cok_zor")
 
 
+def medya_hedefi(kok, alanlar, ad: str) -> Path:
+    """Uretilen dosyanin (gorsel/video) yazilacagi yer -- yazma alaninin ICI.
+
+    TEK YERDE. Bu karar dort yerde kopyaydi (MCP gorsel/video, kabuk
+    gorsel/video ekle) ve dordu de alanin ilk ogesini KLASOR sayiyordu.
+    Olculdu (26.09.2026, deneme D08): alan `kapak.png` idi; gorsel
+    `kapak.png/kapak.png` icine yazildi, `kapak.png` bir KLASOR oldu.
+
+    Kural: alan bir DOSYA yoluysa (uzantisi var, klasor degil) tam oraya;
+    klasorse icine `ad` ile. Birden cok alan varsa uzantisi `ad`inkine
+    uyan dosya once secilir. Alan yoksa kokun kendisine.
+    """
+    kok = Path(kok)
+    ad = Path(ad).name
+    alanlar = [str(a).strip().rstrip("/\\") for a in (alanlar or []) if str(a).strip()]
+    if not alanlar:
+        return kok / ad
+
+    def dosya_mi(a):
+        return bool(Path(a).suffix) and not (kok / a).is_dir()
+
+    uzanti = Path(ad).suffix.lower()
+    for a in alanlar:
+        if dosya_mi(a) and Path(a).suffix.lower() == uzanti:
+            return kok / a
+    for a in alanlar:
+        if not dosya_mi(a):
+            return kok / a / ad
+    # Butun alanlar DOSYA ve hicbiri bu turde degil: `rapor.md`nin uzerine
+    # bir PNG yazmak sessizce veri yok etmek olurdu. Reddedilir, sebep
+    # soylenir -- alani genisletmek lider/insanin karari.
+    raise TahtaHatasi(
+        f"Yazma alaninda '{uzanti or ad}' turunde bir dosya ya da bir klasor "
+        f"yok ({', '.join(alanlar)}). Uretilen dosya baska bir dosyanin "
+        "uzerine yazilmaz; yazma alanina bir klasor ya da bu adda bir dosya "
+        "eklenmeli.")
+
+
 class TahtaHatasi(RuntimeError):
     pass
 
@@ -239,7 +277,7 @@ class Tahta:
             except (OSError, ValueError):
                 continue
 
-        disarida, supheli = [], []
+        disarida, supheli, kok_adli = [], [], []
         ust = kokp.parent
         for alan in alanlar:
             # MUTLAK YOL KOK DENETIMINI TAMAMEN ATLIYORDU.
@@ -262,7 +300,9 @@ class Tahta:
                    for d in aciklar):
                 continue
             ilk = alan.split("/")[0]
-            if ilk and (ust / ilk).exists():
+            if ilk and ilk == kokp.name:
+                kok_adli.append(alan)
+            elif ilk and (ust / ilk).exists():
                 disarida.append(alan)
             else:
                 supheli.append(alan)
@@ -271,6 +311,16 @@ class Tahta:
                 self.proje_id, "uyari",
                 f"Yazma alani '{alan}' proje kokunde yok -- yeni aciliyorsa "
                 "sorun degil, yazim hatasiysa is bos yere kosar.")
+        if kok_adli:
+            # KOKUN KENDI ADI YOLA EKLENMIS -- ayri teshis. Genel mesaj
+            # "kokun disini kastettin" diyordu; yanlis teshis, yanlis care:
+            # lider ikinci denemede ayni hatayi yapti (D11, 26.09.2026).
+            duzgun = [a.split("/", 1)[1] if "/" in a else a for a in kok_adli]
+            raise TahtaHatasi(
+                "Yazma alaninin basinda KOKUN KENDI ADI var: "
+                + ", ".join(kok_adli)
+                + f"\n  '{kokp.name}/' proje kokunun adi; yollar kokun ICINDEN "
+                "yazilir. Dogrusu: " + ", ".join(duzgun))
         if not disarida:
             return
         mevcut = sorted(p.name for p in kokp.iterdir() if p.is_dir())[:12]

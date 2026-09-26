@@ -399,8 +399,16 @@ class Orkestra:
                 satirlar.append(f"{onek}{o.name}{'/' if o.is_dir() else ''}")
                 if o.is_dir():
                     gez(o, seviye + 1, onek + "  ")
-        satirlar.append(f"{kok.name}/  (calisma koku)")
-        gez(kok, 1, "  ")
+        # KOKUN ADI YOLA GIRMEZ. Olculdu (26.09.2026, deneme D11): baslik
+        # `calisma/  (calisma koku)` diye yaziliyordu ve lider yollari
+        # `calisma/sayilar.py` diye yazdi -- iki denemede de. Yollar KOKUN
+        # ICINDEN baslar; baslik bunu SOYLER, ogeler `./` ile gosterilir.
+        satirlar.append(f"(kok: {kok.name} -- yollar BURADAN baslar; "
+                        f"'{kok.name}/' yola YAZILMAZ)")
+        gez(kok, 1, "  ./")
+        if len(satirlar) == 1:
+            satirlar.append("  (kok bos -- yeni dosyalar dogrudan ad ile: "
+                            "'ornek.py')")
         return chr(10).join(satirlar[:60])
 
     def _plani_dogrula(self, plan, kanat_id: str, ek_klasorler=None) -> str:

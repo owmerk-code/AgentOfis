@@ -43,6 +43,10 @@ from ofis.motor import motor_ac                     # noqa: E402
 from ofis.motor.sahte import SahteMotor             # noqa: E402
 from ofis.orkestra import Orkestra                  # noqa: E402
 import deneme_isler as ISL                          # noqa: E402
+import deneme_isler_tam as ISL_TAM                  # noqa: E402
+
+#: Tek katalog: hizli + tam. Iki ayri liste ayrisirdi.
+ISL.ISLER.update(ISL_TAM.ISLER)
 
 RAPOR = Path(__file__).resolve().parent / "rapor"
 
@@ -84,32 +88,63 @@ def is_kos(no: str, *, kip: str, motor: str, model: str, lider_model: str,
     t0 = time.time()
     try:
         tanim["fikstur"](kok, bag)
-        g = _gorev(tanim, bag)
-        rol = g.pop("rol")
+        hedef_kipi = tanim.get("mod") == "hedef"
+        g = {} if hedef_kipi else _gorev(tanim, bag)
+        rol = tanim.get("rol") if hedef_kipi else g.pop("rol")
         db = Veritabani(ana / "o.sqlite3")
         ofis = Ofis.proje_ac(db, f"Deneme {no}", amac="deneme seti",
                              basari_olcutu="dogrulayici gecer", kok_klasor=str(kok))
         kanat = ofis.kanat_ac("DENEME", "DN")
-        if kip == "gercek":
-            ofis.kadro.ise_al("lale", "lider", lider_mi=True, kanat_id=kanat,
-                              klasor=str(kok), motor="claude", model=lider_model)
-            ofis.kadro.ise_al("isci", rol, klasor=str(kok), motor=motor,
-                              model=model, kanat_id=kanat)
+        iscler = ["isci"] + [f"isci{i}" for i in range(2, tanim.get("isci_sayisi", 1) + 1)]
+        gercek = kip == "gercek"
+        ofis.kadro.ise_al("lale", "lider", lider_mi=True, kanat_id=kanat,
+                          klasor=str(kok), motor="claude" if gercek else "sahte",
+                          model=lider_model if gercek else "")
+        for ad in iscler:
+            isci_motor = tanim.get("isci_motor") or (motor if gercek else "sahte")
+            ofis.kadro.ise_al(ad, rol, klasor=str(kok), motor=isci_motor,
+                              model=model if (gercek and isci_motor == motor) else "",
+                              kanat_id=kanat)
+        if gercek:
             fabrika = motor_ac
         else:
-            ofis.kadro.ise_al("lale", "lider", lider_mi=True, kanat_id=kanat,
-                              klasor=str(kok), motor="sahte")
-            ofis.kadro.ise_al("isci", rol, klasor=str(kok), motor="sahte",
-                              kanat_id=kanat)
             davranis = tanim["kuru_iyi" if kip == "kuru_iyi" else "kuru_kotu"]
 
             def fabrika(ad, **a):
                 return KuruMotor(davranis, kok, ofis, bag)
-        ofis.tahta.gorev_ac(g.pop("baslik"), neden="deneme seti",
-                            kanat_id=kanat, **g)
-        adimlar = list(Orkestra(ofis, motor_fabrikasi=fabrika).kos(
-            azami_tik=azami_tik, butce_usd=tur_tavani, zaman_asimi=900,
-            paralel=1))
+        if tanim.get("fabrika_sar"):
+            fabrika = tanim["fabrika_sar"](fabrika, bag, kok)
+
+        ork = Orkestra(ofis, motor_fabrikasi=fabrika)
+        if hedef_kipi and gercek:
+            # Bolme karari LIDERIN: hedef verilir, plan onun.
+            ork.hedef_ver(tanim["hedef"], kanat_id=kanat, butce_usd=tur_tavani,
+                          zaman_asimi=900)
+        elif hedef_kipi:
+            # Kuru kipte lider yok: plan elle kurulur (dogrulayici sinanir).
+            tanim["kuru_gorevler"](ofis, kanat)
+        else:
+            ofis.tahta.gorev_ac(g.pop("baslik"), neden="deneme seti",
+                                kanat_id=kanat, **g)
+
+        def halka():
+            adimlar = list(ork.kos(azami_tik=azami_tik, butce_usd=tur_tavani,
+                                   zaman_asimi=900,
+                                   paralel=max(1, len(iscler))))
+            bag["paralel_en"] = max([bag.get("paralel_en", 1)] + [
+                len(a.get("baslatilan") or []) for a in adimlar])
+            return adimlar
+
+        adimlar = halka()
+        # INSAN CEVABI (D12): ajan insana sorduysa kosturucu insan yerine
+        # cevaplar ve halkayi BIR KEZ daha dondurur.
+        if tanim.get("insan_cevabi"):
+            bekleyen = ofis.postane.insan_bekleyenler()
+            for m in bekleyen:
+                ofis.postane.cevapla(m["id"], tanim["insan_cevabi"])
+            bag["soruldu"] = len(bekleyen)
+            if bekleyen:
+                adimlar += halka()
         son = adimlar[-1] if adimlar else {}
         sonuc["halka"] = son.get("sebep", "")
         sonuc["olcutler"] = [

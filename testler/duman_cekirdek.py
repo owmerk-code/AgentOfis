@@ -572,6 +572,38 @@ sina("kokun disindaki alan MUTLAK birakiliyor",
      _mP(_mg4["yazma_alani"][0]).is_absolute(), f"({_mg4['yazma_alani']})")
 
 
+print("\nKOKUN KENDI ADI yola eklenmis -- dogru teshis, dogru care")
+# Olculdu (26.09.2026, deneme seti D11): lider `calisma/sayilar.py` yazdi
+# (kok 'calisma'). Genel mesaj "kokun disini kastettin" diyordu; lider
+# ikinci denemede AYNI hatayi yapti.
+_ka = Path(tempfile.mkdtemp(prefix="ofis-kokadi-"))
+(_ka / "calisma").mkdir()
+_oka = Ofis.proje_ac(Veritabani(_ka / "o.sqlite3"), "KokAdi",
+                     kok_klasor=str(_ka / "calisma"))
+try:
+    _oka.tahta.gorev_ac("x", neden="n", ana_hedef="h", kabul_olcutu="k",
+                        yazma_alani=["calisma/sayilar.py"])
+    _ret = ""
+except TahtaHatasi as exc:
+    _ret = str(exc)
+sina("kok adiyla baslayan alan REDDEDILDI", bool(_ret))
+sina("ret DOGRU teshis: kokun kendi adi", "KOKUN KENDI ADI" in _ret, _ret[:120])
+sina("ret DOGRU care: 'sayilar.py'", "Dogrusu: sayilar.py" in _ret)
+sina("yanlis teshis YOK ('disinda')", "DISINDA" not in _ret)
+(_ka / "calisma" / "calisma").mkdir()
+try:
+    _oka.tahta.gorev_ac("y", neden="n", ana_hedef="h", kabul_olcutu="k",
+                        yazma_alani=["calisma/alt.py"])
+    _gecti = True
+except TahtaHatasi:
+    _gecti = False
+sina("kokte GERCEKTEN ayni adli klasor varsa gecer", _gecti)
+from ofis.orkestra import Orkestra as _Ork   # noqa: E402
+_duzen = _Ork(_oka)._klasor_duzeni()
+sina("klasor agaci kokun adinin yola YAZILMADIGINI soyluyor",
+     "yola YAZILMAZ" in _duzen, _duzen[:120])
+sina("ogeler ./ ile gosteriliyor", "./calisma/" in _duzen, _duzen[:160])
+
 print(f"\n== sonuc: {GECEN} gecti, {KALAN} kaldi ==")
 print(f"veritabani: {gecici}")
 sys.exit(1 if KALAN else 0)

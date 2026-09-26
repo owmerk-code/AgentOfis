@@ -43,6 +43,7 @@ from ofis.orkestra import OrkestraHatasi     # noqa: E402
 from ofis.postane import PostaneHatasi       # noqa: E402
 from ofis.sohbet import SohbetHatasi         # noqa: E402
 from ofis import gizli                       # noqa: E402
+from ofis.tahta import medya_hedefi, TahtaHatasi  # noqa: E402
 from ofis.gizli import GizliHatasi           # noqa: E402
 from ofis.roller import RolHatasi            # noqa: E402
 from ofis.ekip import EkipHatasi             # noqa: E402
@@ -931,7 +932,10 @@ def komut_gorsel(a) -> None:
         sahip = g["sahip"] or "insan"
         kok = _P(ofis.kadro.ajan(sahip)["klasor"]) if g["sahip"] else _P(_kok_klasor(ofis))
         alanlar = g["yazma_alani"] or []
-        hedef = (kok / alanlar[0] / (a.ad or kaynak.name)) if alanlar else (kok / (a.ad or kaynak.name))
+        try:
+            hedef = medya_hedefi(kok, alanlar, a.ad or kaynak.name)
+        except TahtaHatasi as exc:
+            raise SystemExit(f"Eklenmedi: {exc}")
         hedef.parent.mkdir(parents=True, exist_ok=True)
         _sh.copy2(kaynak, hedef)
         ofis.tahta.kanit_ekle(
@@ -1156,7 +1160,10 @@ def komut_video(a) -> None:
         sahip = g["sahip"] or "insan"
         kok = _P(ofis.kadro.ajan(sahip)["klasor"]) if g["sahip"] else _P(_kok_klasor(ofis))
         alanlar = g["yazma_alani"] or []
-        hedef = (kok / alanlar[0] / (a.ad or kaynak.name)) if alanlar else (kok / (a.ad or kaynak.name))
+        try:
+            hedef = medya_hedefi(kok, alanlar, a.ad or kaynak.name)
+        except TahtaHatasi as exc:
+            raise SystemExit(f"Eklenmedi: {exc}")
         hedef.parent.mkdir(parents=True, exist_ok=True)
         _sh.copy2(kaynak, hedef)
         ofis.tahta.kanit_ekle(

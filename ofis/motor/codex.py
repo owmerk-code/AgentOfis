@@ -83,7 +83,7 @@ from typing import Iterator
 # `issubclass(CodexMotoru, Motor)` yanlis yere False doner. Paket icinde
 # tek kopya garanti oldugu icin sorun ortadan kalkar.
 from .tip import (ortam_hazirla, limit_penceresi, PENCERE_DAKIKA_ADI, Motor,
-                  MotorOlayi, MotorHatasi, MotorYokHatasi)
+                  MotorOlayi, MotorHatasi, MotorYokHatasi, SurecKafesi)
 
 _PENCERE_YOK = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
 _SON = object()
@@ -615,6 +615,7 @@ class CodexMotoru(Motor):
         zaman_asti = False
         cikis = -1
         surec = None
+        kafes = None
         okuyucu = hata_okuyucu = None
         hata_parcalari = []
 
@@ -666,6 +667,8 @@ class CodexMotoru(Motor):
                     )
 
             if surec is not None:
+                # KAFES: turun baslattigi HER SEY tur bitince biter.
+                kafes = SurecKafesi(surec)
                 yield from self._akisi_tuket(
                     surec, istek, durum, hata_parcalari, basladi, sinir,
                 )
@@ -677,6 +680,8 @@ class CodexMotoru(Motor):
             if surec is not None:
                 if surec.poll() is None:
                     self._surec_agacini_kes(surec)
+                if kafes is not None:
+                    kafes.kapat()
                 for boru in (surec.stdin, surec.stdout, surec.stderr):
                     if boru is None:
                         continue

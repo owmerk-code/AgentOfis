@@ -1,0 +1,336 @@
+{
+ "zaman": "20260926-042452",
+ "ayar": {
+  "kip": "gercek",
+  "motor": "claude",
+  "model": "haiku",
+  "lider_model": "sonnet",
+  "tur_tavani": 0.6
+ },
+ "sonuclar": [
+  {
+   "no": "D03",
+   "ad": "Statik acilis sayfasi",
+   "kip": "gercek",
+   "motor": "claude",
+   "model": "haiku",
+   "olcutler": [
+    {
+     "olcut": "index.html var",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "<h1> var",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "en az 3 .ozellik",
+     "gecti": true,
+     "not": "3"
+    },
+    {
+     "olcut": "#ozellikler bolumu",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "#iletisim + mailto",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "<footer> var",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "375 px'te yatay tasma YOK",
+     "gecti": true,
+     "not": "scrollWidth=375 innerWidth=375"
+    },
+    {
+     "olcut": "stil.css sayfaya bagli ve yuklendi",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "ekran goruntusu alindi",
+     "gecti": true,
+     "not": "62152 bayt"
+    }
+   ],
+   "halka": "Insan cevabi bekleniyor.",
+   "durum": "gecti",
+   "tur": 3,
+   "jeton": 558359,
+   "maliyet_usd": 0.254,
+   "fiyatsiz_tur": 0,
+   "kanit": 3,
+   "insana_soru": 2,
+   "istekler": [
+    "onay: GERI ALINAMAZ SILME: cd \"C:\\Users\\pc\\AppData\\Local\\Temp\\ofis-deneme-D03-x7jwpzfs\\calisma\" && rm -rf .playwright-mcp && l",
+    "onay: .playwright-mcp klasörünü silme (test tarayıcı kalıntıları)"
+   ],
+   "sure_sn": 103.6
+  },
+  {
+   "no": "D04",
+   "ad": "Kaynakli arastirma tablosu",
+   "kip": "gercek",
+   "motor": "claude",
+   "model": "haiku",
+   "olcutler": [
+    {
+     "olcut": "surumler.md var",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "3.12 tarihi DOGRU (2023-10-02)",
+     "gecti": true,
+     "not": "| 3.12.0 | 2023-10-02 | https://www.python.org/downloads/release/python-3120/ |"
+    },
+    {
+     "olcut": "3.13 tarihi DOGRU (2024-10-07)",
+     "gecti": true,
+     "not": "| 3.13.0 | 2024-10-07 | https://www.python.org/downloads/release/python-3130/ |"
+    },
+    {
+     "olcut": "3.14 tarihi DOGRU (2025-10-07)",
+     "gecti": true,
+     "not": "| 3.14.0 | 2025-10-07 | https://www.python.org/downloads/release/python-3140/ |"
+    },
+    {
+     "olcut": "python.org baglantilari var",
+     "gecti": true,
+     "not": "3"
+    },
+    {
+     "olcut": "baglantilar GERCEKTEN aciliyor",
+     "gecti": true,
+     "not": "3/3"
+    }
+   ],
+   "halka": "Insan cevabi bekleniyor.",
+   "durum": "gecti",
+   "tur": 3,
+   "jeton": 366099,
+   "maliyet_usd": 0.1808,
+   "fiyatsiz_tur": 0,
+   "kanit": 4,
+   "insana_soru": 2,
+   "istekler": [
+    "onay: GERI ALINAMAZ SILME: rm -rf .playwright-mcp/",
+    "onay: .playwright-mcp/ klasörünü silme (tarayıcı aracının oluşturduğu geçici dosyalar)"
+   ],
+   "sure_sn": 73.5
+  },
+  {
+   "no": "D06",
+   "ad": "Urun aciklamasi, 3 varyant",
+   "kip": "gercek",
+   "motor": "claude",
+   "model": "haiku",
+   "olcutler": [
+    {
+     "olcut": "aciklama.md var",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "tam 3 varyant",
+     "gecti": true,
+     "not": "3"
+    },
+    {
+     "olcut": "her varyant 40-90 kelime",
+     "gecti": true,
+     "not": "[43, 47, 45]"
+    },
+    {
+     "olcut": "her varyantta 'bambu'",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "yasak ifade YOK",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "varyantlar FARKLI (kelime benzerligi < 0,6)",
+     "gecti": true,
+     "not": "0.16"
+    }
+   ],
+   "halka": "Butun isler kapandi.",
+   "durum": "gecti",
+   "tur": 2,
+   "jeton": 274604,
+   "maliyet_usd": 0.1419,
+   "fiyatsiz_tur": 0,
+   "kanit": 2,
+   "insana_soru": 0,
+   "istekler": [],
+   "sure_sn": 115.2
+  },
+  {
+   "no": "D07",
+   "ad": "README yaz ve adimlari calistir",
+   "kip": "gercek",
+   "motor": "claude",
+   "model": "haiku",
+   "olcutler": [
+    {
+     "olcut": "README.md var",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "en az 2 python komutu",
+     "gecti": true,
+     "not": "5"
+    },
+    {
+     "olcut": "--help ve --en-uzun var",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "dogrulayici komutlari KENDISI kosturdu, hepsi calisti",
+     "gecti": true,
+     "not": ""
+    }
+   ],
+   "halka": "Butun isler kapandi.",
+   "durum": "gecti",
+   "tur": 2,
+   "jeton": 345251,
+   "maliyet_usd": 0.1057,
+   "fiyatsiz_tur": 0,
+   "kanit": 3,
+   "insana_soru": 0,
+   "istekler": [],
+   "sure_sn": 76.2
+  },
+  {
+   "no": "D08",
+   "ad": "Kapak gorseli uret",
+   "kip": "gercek",
+   "motor": "claude",
+   "model": "haiku",
+   "olcutler": [],
+   "halka": "Insan cevabi bekleniyor.",
+   "durum": "hata",
+   "hata": "PermissionError: [Errno 13] Permission denied: 'C:\\\\Users\\\\pc\\\\AppData\\\\Local\\\\Temp\\\\ofis-deneme-D08-3yes_3fu\\\\calisma\\\\kapak.png'",
+   "iz": "Traceback (most recent call last):\n  File \"C:\\Users\\pc\\Desktop\\AgentOfis\\testler\\deneme.py\", line 152, in is_kos\n    for o, gc, n in tanim[\"dogrula\"](kok, ofis, bag)]\n                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\pc\\Desktop\\AgentOfis\\testler\\deneme_isler_tam.py\", line 449, in d08_dogrula\n    return None\n        ^^^^^^^^\n  File \"C:\\Users\\pc\\Desktop\\AgentOfis\\testler\\deneme_isler_tam.py\", line 442, in _png_boyut\n    def d08_fikstur(kok, bag):\n              ^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\pc\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\pathlib.py\", line 1019, in read_bytes\n    with self.open(mode='rb') as f:\n         ^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\pc\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\pathlib.py\", line 1013, in open\n    return io.open(self, mode, buffering, encoding, errors, newline)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nPermissionError: [Errno 13] Permission denied: 'C:\\\\Users\\\\pc\\\\AppData\\\\Local\\\\Temp\\\\ofis-deneme-D08-3yes_3fu\\\\calisma\\\\kapak.png'\n",
+   "sure_sn": 209.6,
+   "saklandi": "C:\\Users\\pc\\AppData\\Local\\Temp\\ofis-deneme-D08-3yes_3fu"
+  },
+  {
+   "no": "D11",
+   "ad": "Iki kol + birlestirme (lider boler)",
+   "kip": "gercek",
+   "motor": "claude",
+   "model": "haiku",
+   "olcutler": [],
+   "durum": "hata",
+   "hata": "OrkestraHatasi: Lider gecerli bir plan veremedi. Son sebep: Yazma alani proje kokunde YOK: calisma/sayilar.py, calisma/test_sayilar.py\n  proje koku : C:\\Users\\pc\\AppData\\Local\\Temp\\ofis-deneme-D11-qfy6z8cy\\calisma\n  kokte olan : (bos)\n  AMA ayni ad kokun DISINDA var: C:\\Users\\pc\\AppData\\Local\\Temp\\ofis-deneme-D11-qfy6z8cy\n  Yani kokun disindaki bir yeri kastettin ve oraya ERISILEMEZ. Ajan bunu turun ORTASINDA kesfeder; is yapilmis GORUNUR ama hicbir yere yazilmaz.\n  Alani kokteki gercek bir yola gore yaz, ya da o yeri `--klasor` ile ac.",
+   "iz": "Traceback (most recent call last):\n  File \"C:\\Users\\pc\\Desktop\\AgentOfis\\testler\\deneme.py\", line 121, in is_kos\n    ork.hedef_ver(tanim[\"hedef\"], kanat_id=kanat, butce_usd=tur_tavani,\n  File \"C:\\Users\\pc\\Desktop\\AgentOfis\\ofis\\orkestra.py\", line 559, in hedef_ver\n    raise OrkestraHatasi(\nofis.orkestra.OrkestraHatasi: Lider gecerli bir plan veremedi. Son sebep: Yazma alani proje kokunde YOK: calisma/sayilar.py, calisma/test_sayilar.py\n  proje koku : C:\\Users\\pc\\AppData\\Local\\Temp\\ofis-deneme-D11-qfy6z8cy\\calisma\n  kokte olan : (bos)\n  AMA ayni ad kokun DISINDA var: C:\\Users\\pc\\AppData\\Local\\Temp\\ofis-deneme-D11-qfy6z8cy\n  Yani kokun disindaki bir yeri kastettin ve oraya ERISILEMEZ. Ajan bunu turun ORTASINDA kesfeder; is yapilmis GORUNUR ama hicbir yere yazilmaz.\n  Alani kokteki gercek bir yola gore yaz, ya da o yeri `--klasor` ile ac.\n",
+   "sure_sn": 59.2,
+   "saklandi": "C:\\Users\\pc\\AppData\\Local\\Temp\\ofis-deneme-D11-qfy6z8cy"
+  },
+  {
+   "no": "D12",
+   "ad": "Eksik bilgiyle is -- sorar, uydurmaz",
+   "kip": "gercek",
+   "motor": "claude",
+   "model": "haiku",
+   "olcutler": [
+    {
+     "olcut": "once SORDU (uydurmadi)",
+     "gecti": true,
+     "not": "cevaplanan soru: 1"
+    },
+    {
+     "olcut": "cevaptaki renk yazildi",
+     "gecti": true,
+     "not": "{'#1F6FEB'}"
+    },
+    {
+     "olcut": "uydurma renk YOK",
+     "gecti": true,
+     "not": "{'#1F6FEB'}"
+    },
+    {
+     "olcut": "logo adi yazildi",
+     "gecti": true,
+     "not": ""
+    }
+   ],
+   "halka": "Butun isler kapandi.",
+   "durum": "gecti",
+   "tur": 6,
+   "jeton": 364305,
+   "maliyet_usd": 0.2325,
+   "fiyatsiz_tur": 0,
+   "kanit": 2,
+   "insana_soru": 1,
+   "istekler": [
+    "soru: Marka kuniyesi görevinde müşterinin KURUMSAL renk kodunu (HEX) ve logo dosyasının adını yazmalıyım. Bu bilgiler nelerdir"
+   ],
+   "sure_sn": 97.3
+  },
+  {
+   "no": "D13",
+   "ad": "Tur ortasinda limit (enjekte)",
+   "kip": "gercek",
+   "motor": "claude",
+   "model": "haiku",
+   "olcutler": [
+    {
+     "olcut": "adim1.txt = 1",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "adim2.txt = 2",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "adim3.txt = 3",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "biten adim TEKRARLANMADI (adim1 degismedi)",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "limit gorundu ve devredildi",
+     "gecti": true,
+     "not": "3"
+    },
+    {
+     "olcut": "isi BASKA motor bitirdi",
+     "gecti": true,
+     "not": "['claude']"
+    }
+   ],
+   "halka": "Butun isler kapandi.",
+   "durum": "gecti",
+   "tur": 2,
+   "jeton": 209368,
+   "maliyet_usd": 0.1765,
+   "fiyatsiz_tur": 0,
+   "kanit": 2,
+   "insana_soru": 0,
+   "istekler": [],
+   "sure_sn": 23.1
+  }
+ ]
+}

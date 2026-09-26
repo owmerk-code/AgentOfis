@@ -332,3 +332,104 @@ def ortam_hazirla(temel: dict = None, *, ek: dict = None,
     if ek:
         ortam.update(ek)
     return ortam
+
+
+class SurecKafesi:
+    """Bir turun sureci ve ONUN BASLATTIGI HER SEY -- tur bitince hepsi biter.
+
+    OLCULDU (26.09.2026, deneme seti D03): ajan sayfasini denemek icin
+    arkada `python -m http.server 8000` baslatti. Tur bitti, deneme seti
+    bitti -- sunucu CALISMAYA DEVAM ETTI: port tutuyor, klasoru kilitliyor.
+    `_surec_agacini_kes` yalniz tur zaman asimina ugrarsa kosuyordu ve o
+    anda bile ebeveyni olmus bir sureci BULAMAZ (psutil `children` ebeveyn
+    kimligiyle arar). Uzun kosan bir ofiste her turun biraktigi yetim
+    surecler birikir; belirtisi "bilgisayar agirlasti"dan ibaret kalir.
+
+    Windows'ta IS NESNESI (Job Object): surec baslar baslamaz kafese
+    girer; baslattigi alt surecler kendiliginden ayni kafese dogar.
+    `kapat()` kafesi kapatir ve icindeki HER SEY sonlanir (yetimler dahil).
+    Kafes kurulamazsa is DURMAZ (eski davranis) ama `kuruldu` False kalir
+    ve sebebi `hata`da durur -- sessizce kurulmus sayilmaz.
+
+    POSIX'te bugun etkisiz (proje Windows'ta kosuyor); `kuruldu` False der.
+    """
+
+    _KILL_ON_JOB_CLOSE = 0x2000
+    _EXTENDED_LIMIT = 9
+
+    def __init__(self, surec=None) -> None:
+        self._is = None
+        self.kuruldu = False
+        self.hata = ""
+        if os.name != "nt":
+            self.hata = "POSIX: is nesnesi yok"
+            return
+        try:
+            import ctypes
+            from ctypes import wintypes
+            k32 = ctypes.WinDLL("kernel32", use_last_error=True)
+
+            class _Temel(ctypes.Structure):
+                _fields_ = [("PerProcessUserTimeLimit", ctypes.c_int64),
+                            ("PerJobUserTimeLimit", ctypes.c_int64),
+                            ("LimitFlags", wintypes.DWORD),
+                            ("MinimumWorkingSetSize", ctypes.c_size_t),
+                            ("MaximumWorkingSetSize", ctypes.c_size_t),
+                            ("ActiveProcessLimit", wintypes.DWORD),
+                            ("Affinity", ctypes.c_size_t),
+                            ("PriorityClass", wintypes.DWORD),
+                            ("SchedulingClass", wintypes.DWORD)]
+
+            class _GS(ctypes.Structure):
+                _fields_ = [(ad, ctypes.c_uint64) for ad in (
+                    "ReadOperationCount", "WriteOperationCount",
+                    "OtherOperationCount", "ReadTransferCount",
+                    "WriteTransferCount", "OtherTransferCount")]
+
+            class _Genis(ctypes.Structure):
+                _fields_ = [("BasicLimitInformation", _Temel),
+                            ("IoInfo", _GS),
+                            ("ProcessMemoryLimit", ctypes.c_size_t),
+                            ("JobMemoryLimit", ctypes.c_size_t),
+                            ("PeakProcessMemoryUsed", ctypes.c_size_t),
+                            ("PeakJobMemoryUsed", ctypes.c_size_t)]
+
+            k32.CreateJobObjectW.restype = wintypes.HANDLE
+            is_ = k32.CreateJobObjectW(None, None)
+            if not is_:
+                raise OSError(ctypes.get_last_error(), "CreateJobObject")
+            bilgi = _Genis()
+            bilgi.BasicLimitInformation.LimitFlags = self._KILL_ON_JOB_CLOSE
+            if not k32.SetInformationJobObject(
+                    wintypes.HANDLE(is_), self._EXTENDED_LIMIT,
+                    ctypes.byref(bilgi), ctypes.sizeof(bilgi)):
+                k32.CloseHandle(wintypes.HANDLE(is_))
+                raise OSError(ctypes.get_last_error(), "SetInformationJobObject")
+            self._k32, self._is = k32, is_
+            if surec is not None:
+                self.ekle(surec)
+        except Exception as exc:          # noqa: BLE001 -- is durmasin, ama soylensin
+            self.hata = f"{exc.__class__.__name__}: {exc}"
+
+    def ekle(self, surec) -> bool:
+        if not self._is:
+            return False
+        from ctypes import wintypes
+        tutamac = getattr(surec, "_handle", None)
+        if tutamac is None or not self._k32.AssignProcessToJobObject(
+                wintypes.HANDLE(self._is), wintypes.HANDLE(int(tutamac))):
+            self.hata = "surec kafese eklenemedi"
+            return False
+        self.kuruldu = True
+        return True
+
+    def kapat(self) -> None:
+        """Kafesi kapatir: icindeki butun surecler sonlanir."""
+        if not self._is:
+            return
+        from ctypes import wintypes
+        try:
+            self._k32.TerminateJobObject(wintypes.HANDLE(self._is), 1)
+        finally:
+            self._k32.CloseHandle(wintypes.HANDLE(self._is))
+            self._is = None
