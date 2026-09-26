@@ -300,7 +300,7 @@ def _kod_metni(argumanlar: dict) -> str:
 
 
 def degerlendir(arac: str, argumanlar: dict, *, url: str = "",
-                baglam: str = "") -> dict | None:
+                baglam: str = "", sayfa_metni: str = "") -> dict | None:
     """Bu eylem insan onayi ister mi?
 
     `None` -> serbest, aynen gecer.
@@ -316,6 +316,13 @@ def degerlendir(arac: str, argumanlar: dict, *, url: str = "",
         return None
 
     hedef = _eylem_metni(arac, argumanlar)
+    # SAYFANIN KENDI SOYLEDIGI: hedef ogenin erisilebilirlik adi (vekil
+    # anlik goruntuden okur). Ajanin yazdigi `element` bir BEYANDIR;
+    # olculdu (26.09.2026, deneme seti D09): 13 kosuda 1 kez ajan genel
+    # bir aciklama yazdi ve "Yayinla" tiklamasi kapidan GECTI. Karar
+    # artik sayfanin metnine de bakar.
+    if sayfa_metni:
+        hedef = " | ".join(x for x in (hedef, f"sayfada: {sayfa_metni}") if x)
     kod = _kod_metni(argumanlar)
     # Onay kutusunun yazisi yalniz onu KABUL ederken anlamli; reddetmek
     # (accept=False) zaten guvenli taraftir ve durdurulmaz.
@@ -328,7 +335,10 @@ def degerlendir(arac: str, argumanlar: dict, *, url: str = "",
     # Eslestirme kimligi: turlar arasi DEGISMEYEN parca. `target`
     # (Playwright `ref`i) bilerek disarida -- her anlik goruntude
     # yeniden uretilir.
-    kimlik = ((argumanlar or {}).get("element") or "").strip() or baglam
+    # Sayfanin metni varsa KIMLIK odur: ajanin aciklamasi turdan tura
+    # degisir ("Yayinla dugmesi" / "button"), sayfadaki ad degismez.
+    kimlik = (sayfa_metni.strip()
+              or ((argumanlar or {}).get("element") or "").strip() or baglam)
 
     for sinif, kaliplar in (("para", PARA), ("silme", SILME),
                             ("yayin", YAYIN), ("gonderim", GONDERIM)):

@@ -929,6 +929,12 @@ class Koltuk:
                 {"gorev_no": no, **bekleme}, ajan_ad=ajan_ad,
                 gorev_id=gorev["id"],
             )
+            # BEKLEYEN tur da OLCULUR. Olculdu (26.09.2026, deneme seti):
+            # bu dal `tur_ozeti` yazmadan donuyordu -- ajan soru sorup ya
+            # da onay isteyip durdugunda turun jetonu ve maliyeti kullanim
+            # ekranina ve haftalik butceye HIC girmiyordu. Basarisiz tur
+            # icin bir kez odenen dersin ucuncu yolu.
+            self._olcum_yaz(ajan_ad, gorev, sonuc)
             yield self._olay("tur_bitti", cevap,
                              {"basarili": bool(sonuc.get("basarili")),
                               "gorev_no": no, "bekliyor": bekleme["tur"],

@@ -109,6 +109,46 @@ _DIALOG_KALIBI = re.compile(
     r"dialog with message[:\s]*[\"'](.*?)[\"']", re.S)
 
 
+_REF_SATIRI = re.compile(r"\[ref=(e\d+)\]")
+_REF_KIMLIGI = re.compile(r"^e\d+$")
+#: Hedef tasiyan arguman adlari (browser_drag iki uclu).
+HEDEF_ALANLARI = ("target", "startTarget", "endTarget")
+
+
+def _satir_metni(satir: str) -> str:
+    """Anlik goruntu satirindan insan okunur metin: rol, ad, metin."""
+    s = satir.strip().lstrip("-").strip().strip("'")
+    s = re.sub(r"\[[^\]]*\]", " ", s)            # [ref=e4] [level=1] ...
+    s = s.replace('\\"', '"').replace('"', " ")
+    return re.sub(r"\s+", " ", s).strip(" :")
+
+
+def ref_haritasi(metin: str, azami: int = 300) -> dict:
+    """Anlik goruntu YAML'inden `ref -> ogenin metni` (alt ogeleri dahil).
+
+    Ad dugmenin kendi satirinda olmayabilir (`- button [ref=e7]:` ve
+    altinda `- text: Sil`); o yuzden alt satirlar da eklenir.
+    """
+    satirlar = (metin or "").splitlines()
+    harita = {}
+    for i, satir in enumerate(satirlar):
+        m = _REF_SATIRI.search(satir)
+        if not m:
+            continue
+        girinti = len(satir) - len(satir.lstrip())
+        parca = [_satir_metni(satir)]
+        for alt in satirlar[i + 1:]:
+            if not alt.strip():
+                continue
+            if len(alt) - len(alt.lstrip()) <= girinti:
+                break
+            parca.append(_satir_metni(alt))
+            if sum(len(p) for p in parca) > azami:
+                break
+        harita[m.group(1)] = " ".join(p for p in parca if p)[:azami]
+    return harita
+
+
 class Durum:
     """Vekilin hafizasi: son gorulen sayfa ve acik onay kutusu."""
 
@@ -446,6 +486,11 @@ class Vekil:
         # bir kopya tutulmaz (iki liste ayrisirsa kapi yanlis sorar).
         self.izinli = izinli_kaynaklar(cocuk_argv)
         self.yaz_kilidi = threading.Lock()
+        # Vekilin KENDI istekleri (sayfanin anlik goruntusu). Kimlikleri
+        # "vekil-" onekli; pompa onlari ajana iletmez, burada bekletir.
+        self._kendi_sayac = 0
+        self._kendi_bekleyen: dict = {}
+        self._kendi_kilit = threading.Lock()
         self.cocuk = subprocess.Popen(
             cocuk_argv, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
             stderr=None, text=True, encoding="utf-8", errors="replace",
@@ -477,6 +522,14 @@ class Vekil:
                 nesne = json.loads(satir)
             except json.JSONDecodeError:
                 continue
+            kimlik = nesne.get("id")
+            if isinstance(kimlik, str) and kimlik.startswith("vekil-"):
+                with self._kendi_kilit:
+                    bekleyen = self._kendi_bekleyen.get(kimlik)
+                if bekleyen is not None:
+                    bekleyen["yanit"] = nesne
+                    bekleyen["olay"].set()
+                continue                        # ajana GITMEZ
             self.durum.sonuctan_ogren(self._metin(nesne))
             nesne = self._araclari_suz(nesne)
             self._ajana(nesne)
@@ -506,6 +559,46 @@ class Vekil:
             sonuc["tools"] = [t for t in sonuc["tools"]
                               if t.get("name") not in SUNULMAYAN]
         return nesne
+
+    def sayfa_haritasi(self, zaman_asimi: float = 20.0):
+        """Sayfanin SU ANKI anlik goruntusu -> `ref -> metin`.
+
+        Vekil kendisi ister; yanit modele GITMEZ (jeton yakmaz). Basarisiz
+        olursa None -- cagiran kapali kalir.
+        """
+        with self._kendi_kilit:
+            self._kendi_sayac += 1
+            kimlik = f"vekil-{self._kendi_sayac}"
+            bekleyen = {"olay": threading.Event(), "yanit": None}
+            self._kendi_bekleyen[kimlik] = bekleyen
+        try:
+            self._cocuga(json.dumps({"jsonrpc": "2.0", "id": kimlik,
+                                     "method": "tools/call",
+                                     "params": {"name": "browser_snapshot",
+                                                "arguments": {}}}))
+            if not bekleyen["olay"].wait(zaman_asimi):
+                return None
+            yanit = bekleyen["yanit"] or {}
+            if "error" in yanit or (yanit.get("result") or {}).get("isError"):
+                return None
+            return ref_haritasi(self._metin(yanit))
+        finally:
+            with self._kendi_kilit:
+                self._kendi_bekleyen.pop(kimlik, None)
+
+    def _sayfa_metni(self, arac: str, argumanlar: dict):
+        """Hedef ref'lerin SAYFADAKI metni. '' = soracak bir sey yok ya da
+        ref sayfada yok (Playwright zaten reddeder); None = okunamadi."""
+        if arac not in riskli.DENETLENEN:
+            return ""
+        refler = [str(argumanlar.get(a) or "").strip() for a in HEDEF_ALANLARI]
+        refler = [r for r in refler if _REF_KIMLIGI.match(r)]
+        if not refler:
+            return ""
+        harita = self.sayfa_haritasi()
+        if harita is None:
+            return None
+        return " | ".join(harita.get(r, "") for r in refler if harita.get(r))
 
     # -- ajandan gelen -----------------------------------------------------
 
@@ -552,9 +645,17 @@ class Vekil:
             self._ajana(_hata_sonucu(istek_id, metin))
             return
 
+        # Karar icin SAYFANIN metni: ajanin yazdigi aciklama bir beyandir.
+        sayfa_metni = self._sayfa_metni(arac, argumanlar)
+        if sayfa_metni is None:
+            self._ajana(_hata_sonucu(istek_id, (
+                "Tarayici kapisi hedef ogenin sayfadaki adini OKUYAMADI. "
+                "Neye tiklandigini bilmeden gecirmeyiz: bu eylem yapilmadi. "
+                "`browser_snapshot` al ve tekrar dene.")))
+            return
         try:
             bulgu = riskli.degerlendir(arac, argumanlar, url=url,
-                                       baglam=dialog)
+                                       baglam=dialog, sayfa_metni=sayfa_metni)
         except Exception as exc:
             # Kapi patlarsa KAPALI kalir. Acik kalsaydi, kapinin
             # bozulmasi sessizce her seyi serbest birakirdi.

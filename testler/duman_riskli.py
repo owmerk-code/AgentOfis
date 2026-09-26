@@ -235,6 +235,12 @@ class SahteVekil(K.Vekil):
         super().__init__([sys.executable, str(COCUK)])
         self.ajana = []
         self.cocuga = []
+        # Sayfanin anlik goruntusu: sahte cocuk cevap vermez, sinama
+        # haritayi elle kurar. None = "okunamadi".
+        self.harita = {}
+
+    def sayfa_haritasi(self, zaman_asimi: float = 20.0):
+        return self.harita
 
     def _ajana(self, nesne):
         self.ajana.append(nesne)
@@ -556,8 +562,18 @@ try:
     sp.stdin.write(cagri("browser_click",
                          {"element": "Yayinla dugmesi", "target": "e1"}) + "\n")
     sp.stdin.flush()
-    satir = sp.stdout.readline()
-    yanit = json.loads(satir) if satir.strip() else {}
+    # Bildirimler (`notifications/...`, kimliksiz) araya girebilir: vekil
+    # tiklamadan once sayfayi kendisi sorar ve Playwright o sirada
+    # bildirim yollar. Cevap, KIMLIGI eslesen satirdir.
+    yanit, satir = {}, ""
+    for _ in range(20):
+        satir = sp.stdout.readline()
+        if not satir.strip():
+            break
+        _n = json.loads(satir)
+        if _n.get("id") == 1:
+            yanit = _n
+            break
     ic = (yanit.get("result", {}).get("content") or [{}])[0].get("text", "")
     sina("betik kipinde yanit dondu", bool(ic), satir[:120])
     sina("betik kipinde ONAY ISTENDI (ice aktarma patlamadi)",
@@ -582,6 +598,152 @@ finally:
         sp.wait(timeout=10)
     except Exception:
         sp.kill()
+
+
+print("\n15b. GERCEK PLAYWRIGHT -- genel aciklamayla riskli tiklama DURUR")
+# Olcum aracinin kendisi olculsun: sahte harita degil GERCEK anlik goruntu,
+# gercek tiklama, gercek sunucu. Model YOK, para YOK.
+import http.server as _hs
+import threading as _th
+
+_sayac = {"post": 0}
+_SAYFA = ("<!doctype html><html><body><h1>Taslak</h1>"
+          "<button onclick=\"document.getElementById('d').textContent="
+          "'onizleme acik'\">Onizle</button>"
+          "<button onclick=\"fetch('/yayinla',{method:'POST'})\">Yayinla</button>"
+          "<p id=\"d\">durum: taslak</p></body></html>").encode()
+
+
+class _H(_hs.BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.send_header("Content-Type", "text/html")
+        self.end_headers()
+        self.wfile.write(_SAYFA)
+
+    def do_POST(self):
+        _sayac["post"] += 1
+        self.send_response(200)
+        self.end_headers()
+
+    def log_message(self, *a):
+        pass
+
+
+_srv = _hs.ThreadingHTTPServer(("127.0.0.1", 0), _H)
+_th.Thread(target=_srv.serve_forever, daemon=True).start()
+o6, g6 = ofis_kur()
+_ortam = dict(os.environ, OFIS_DB=str(o6.db.yol), OFIS_PROJE=o6.proje_id,
+              OFIS_AJAN="cinar", OFIS_GOREV=str(g6["no"]),
+              PYTHONIOENCODING="utf-8")
+_sp = subprocess.Popen(
+    [sys.executable, str(vekil_yolu), "--", "--headless", "--isolated"],
+    stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+    text=True, encoding="utf-8", bufsize=1, env=_ortam, cwd=str(KOK))
+_n = [100]
+
+
+def _istek(method, params):
+    _n[0] += 1
+    _sp.stdin.write(json.dumps({"jsonrpc": "2.0", "id": _n[0], "method": method,
+                                "params": params}) + "\n")
+    _sp.stdin.flush()
+    for _ in range(200):
+        _l = _sp.stdout.readline()
+        if not _l:
+            return {}
+        _x = json.loads(_l)
+        if _x.get("id") == _n[0]:
+            return _x
+    return {}
+
+
+def _metin(x):
+    return "\n".join(c.get("text", "") for c in
+                     (x.get("result") or {}).get("content", [])
+                     if isinstance(c, dict))
+
+
+try:
+    _istek("initialize", {"protocolVersion": "2025-03-26", "capabilities": {},
+                          "clientInfo": {"name": "sinama", "version": "1"}})
+    _sp.stdin.write(json.dumps({"jsonrpc": "2.0",
+                                "method": "notifications/initialized"}) + "\n")
+    _sp.stdin.flush()
+    _istek("tools/call", {"name": "browser_navigate", "arguments": {
+        "url": f"http://127.0.0.1:{_srv.server_address[1]}/"}})
+    _refler = {}
+    for _l in _metin(_istek("tools/call", {"name": "browser_snapshot",
+                                           "arguments": {}})).splitlines():
+        if "[ref=" in _l and "button" in _l and '"' in _l:
+            _refler[_l.split('"')[1]] = _l.split("[ref=")[1].split("]")[0]
+    sina("gercek anlik goruntude iki dugme", set(_refler) >= {"Onizle", "Yayinla"},
+         str(_refler))
+    _r1 = _istek("tools/call", {"name": "browser_click", "arguments": {
+        "element": "button", "target": _refler.get("Onizle", "e0")}})
+    sina("masum dugme GECTI", not (_r1.get("result") or {}).get("isError"))
+    sina("vekilin kendi okumasi ajanin ref'ini BOZMADI (sayfa degisti)",
+         "onizleme acik" in _metin(_istek("tools/call", {
+             "name": "browser_snapshot", "arguments": {}})))
+    _r2 = _istek("tools/call", {"name": "browser_click", "arguments": {
+        "element": "button", "target": _refler.get("Yayinla", "e0")}})
+    time.sleep(0.8)
+    sina("GENEL aciklamayla Yayinla DURDU", "SIMDI DUR" in _metin(_r2),
+         _metin(_r2)[:120])
+    sina("sunucuya yayin istegi GITMEDI", _sayac["post"] == 0,
+         f"{_sayac['post']} istek")
+    _kart = o6.postane.bekleyen_onaylar("cinar")
+    sina("onay kartinda sayfanin adi", bool(_kart)
+         and "sayfada: button Yayinla" in _kart[0]["eylem"])
+finally:
+    try:
+        _sp.stdin.close()
+        _sp.wait(timeout=15)
+    except Exception:
+        _sp.kill()
+    _srv.shutdown()
+    _srv.server_close()
+
+
+print("\n16b. KARAR SAYFANIN METNINE bakar, ajanin ACIKLAMASINA degil")
+# OLCULDU (26.09.2026, deneme seti D09): 13 gercek kosuda 1 kez ajan
+# `element` alanina genel bir sey yazdi ve "Yayinla" tiklamasi kapidan
+# GECTI -- sunucuya yayin istegi gitti. Kapi ajanin BEYANINA bakiyordu.
+o5, g5 = ofis_kur()
+os.environ.update({"OFIS_DB": str(o5.db.yol), "OFIS_PROJE": o5.proje_id,
+                   "OFIS_AJAN": "cinar", "OFIS_GOREV": str(g5["no"])})
+v5 = SahteVekil()
+v5.harita = {"e4": "button Yayinla", "e9": "button Filtrele"}
+v5.istegi_isle(cagri("browser_click", {"element": "button", "target": "e4"}))
+sina("GENEL aciklamayla bile Yayinla DURDU (sayfa metni)",
+     len(v5.cocuga) == 0 and "SIMDI DUR" in son_metin(v5), son_metin(v5)[:120])
+kart = o5.postane.bekleyen_onaylar("cinar")
+sina("onay kartinda SAYFADAKI ad var",
+     bool(kart) and "Yayinla" in kart[0]["eylem"] + kart[0]["ayrinti"])
+v5.istegi_isle(cagri("browser_click", {"element": "button", "target": "e9"}, 2))
+sina("masum dugme (Filtrele) GECTI", len(v5.cocuga) == 1)
+v5.istegi_isle(cagri("browser_click", {"element": "Kaydet", "target": "e77"}, 3))
+sina("haritada olmayan ref aciklamaya dusuyor, masumsa gecer",
+     len(v5.cocuga) == 2)
+v5.harita = None
+v5.istegi_isle(cagri("browser_click", {"element": "Filtrele", "target": "e9"}, 4))
+sina("sayfa OKUNAMAZSA kapali kalir (gecmez)", len(v5.cocuga) == 2
+     and "OKUYAMADI" in son_metin(v5), son_metin(v5)[:120])
+v5.harita = {}
+v5.istegi_isle(cagri("browser_navigate", {"url": "https://magaza.com/x"}, 5))
+sina("hedefsiz arac icin sayfa sorulmuyor", len(v5.cocuga) == 3)
+
+print("\n16c. ref_haritasi -- ad alt satirda olsa da bulunur")
+_h = K.ref_haritasi(
+    "- generic [ref=e1]:\n"
+    "  - button \"Yayinla\" [ref=e4]\n"
+    "  - button [ref=e7]:\n"
+    "    - img\n"
+    "    - text: Sil\n"
+    "  - paragraph [ref=e5]: \"durum: taslak\"\n")
+sina("tek satirlik ad", _h.get("e4") == "button Yayinla", str(_h.get("e4")))
+sina("alt satirdaki ad", "Sil" in _h.get("e7", ""), str(_h.get("e7")))
+sina("kardes oge alt sayilmaz", "durum" not in _h.get("e7", ""))
 
 
 print("\n16. BEYAN EDILMEMIS SITE -- sert ret yerine SORU, kapi yerinde")

@@ -1,0 +1,50 @@
+{
+ "zaman": "20260926-032555",
+ "ayar": {
+  "kip": "gercek",
+  "motor": "claude",
+  "model": "haiku",
+  "lider_model": "sonnet",
+  "tur_tavani": 0.6
+ },
+ "sonuclar": [
+  {
+   "no": "D01",
+   "ad": "Kucuk Python modulu + testleri",
+   "kip": "gercek",
+   "motor": "claude",
+   "model": "haiku",
+   "olcutler": [
+    {
+     "olcut": "pytest yesil",
+     "gecti": true,
+     "not": "6 passed in 0.01s"
+    },
+    {
+     "olcut": "en az 6 iddia",
+     "gecti": true,
+     "not": "6 iddia"
+    },
+    {
+     "olcut": "davranis dogrulayicinin KENDI denemesinde dogru",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "beyan disi yazma yok",
+     "gecti": true,
+     "not": ""
+    }
+   ],
+   "halka": "Butun isler kapandi.",
+   "durum": "gecti",
+   "tur": 2,
+   "jeton": 235690,
+   "maliyet_usd": 0.1575,
+   "fiyatsiz_tur": 0,
+   "kanit": 3,
+   "insana_soru": 0,
+   "sure_sn": 50.3
+  }
+ ]
+}
