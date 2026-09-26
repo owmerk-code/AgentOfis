@@ -16,6 +16,8 @@ klasordur, gorunurluk sorusu sahtedir, ayar gecici dosyadadir.
 
 from __future__ import annotations
 
+import _temizlik  # noqa: F401 -- gecici klasorleri siler (E05); ILK ice aktarma
+
 import os
 import shutil
 import sqlite3

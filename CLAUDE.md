@@ -10426,5 +10426,26 @@ bunu sınıyor. **Eskilerin düzeltilmesi sıradaki iş.**
 - Panelde **tek tıkla** geri alma düğmesi yok (bugün komut). F8'de Kod
   panosuna.
 - `--klasor` ile açılan DIŞ klasörler gölgelenmiyor (ölçümle aynı sınır).
-- Eski test dosyalarının `%TEMP%` artığı.
+
+## TEST ARTIĞI KAPANDI — E05 (26.09.2026)
+
+Ölçüldü: 29 dosyanın **22'si** her koşuda `%TEMP%`'te klasör bırakıyordu
+(tam takım başına ~45). Tek tek 22 dosyada `finally` yazmak, birinde
+unutulmanın garantisiydi. Yerine **`testler/_temizlik.py`**: her sınamanın
+İLK içe aktarması; `tempfile.mkdtemp`'i sarar, açılan her klasörü kaydeder,
+süreç biterken siler (git'in salt okunur nesneleri dahil, birkaç deneme).
+Gölge depolar da o sürecin geçici klasörüne yönlenir.
+
+**Silinemeyen kalırsa sessiz kalmaz:** stderr'e yazar ve çıkış kodunu
+**3** yapar — `sys.exit(0)` çağrılmış olsa bile. Sınandı: açık dosya
+tutulan klasör → `[ARTIK] 1 gecici klasor SILINEMEDI`, kod 3.
+
+Bir artık daha çıktı ve kaynağı bizim kodumuz değildi: gerçek Chrome
+koşan bölümde **Chrome bileşen güncellemesi** `%TEMP%`'e `Cr24` paketi
+(`*.tmp`, ~250 KB) ve `chrome_url_fetcher_*` bırakıyordu. Sınamanın
+açtığı Chrome'un `TEMP`'i sınamanın kendi klasörüne yönlendi. (`%TEMP%`'te
+77 benzeri var; bir kısmı kullanıcının kendi Chrome'una ait olabilir —
+DOKUNULMADI.)
+
+Sonuç: **29/29 dosya, artık 0**, 2195/2195.
 

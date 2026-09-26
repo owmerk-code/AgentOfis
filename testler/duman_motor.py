@@ -11,6 +11,8 @@ Konsol cp1254 oldugu icin cikti ASCII: '->' yazilir, ok isareti degil.
 
 from __future__ import annotations
 
+import _temizlik  # noqa: F401 -- gecici klasorleri siler (E05); ILK ice aktarma
+
 import sys
 from pathlib import Path
 

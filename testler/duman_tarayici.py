@@ -23,6 +23,8 @@ Konsol cp1254 oldugu icin cikti ASCII.
 
 from __future__ import annotations
 
+import _temizlik  # noqa: F401 -- gecici klasorleri siler (E05); ILK ice aktarma
+
 import json
 import sys
 import tempfile
@@ -651,9 +653,15 @@ else:
     _url = f"http://127.0.0.1:{_srv.server_address[1]}/"
     _prof = _tf.mkdtemp(prefix="oge_prof_")
     _kapi = 9357
+    # Chrome bilesen guncellemesi indirir ve %TEMP%'e birakir (olculdu:
+    # her kosuda ~250 KB `*.tmp` + `chrome_url_fetcher_*`). Chrome'un
+    # gecici klasoru SINAMANIN klasorune yonlenir; onunla birlikte silinir.
+    import os as _os
+    _chrome_tmp = _tf.mkdtemp(prefix="ofis-chrome-tmp-")
     _sur = _sp.Popen(T.kabin_komutu(_chrome, profil=_prof, kapi=_kapi,
                                     baslangic=_url),
-                     stdout=_sp.DEVNULL, stderr=_sp.DEVNULL)
+                     stdout=_sp.DEVNULL, stderr=_sp.DEVNULL,
+                     env=dict(_os.environ, TEMP=_chrome_tmp, TMP=_chrome_tmp))
     _sonuc = {}
     try:
         for _ in range(80):

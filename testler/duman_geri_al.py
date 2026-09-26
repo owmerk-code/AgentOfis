@@ -17,6 +17,8 @@ Gercek golge klasorune DOKUNMAZ (`OFIS_GOLGE_KOK` gecici).
 
 from __future__ import annotations
 
+import _temizlik  # noqa: F401 -- gecici klasorleri siler (E05); ILK ice aktarma
+
 import os
 import shutil
 import sys
