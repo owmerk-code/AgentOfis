@@ -115,6 +115,8 @@ class Koltuk:
         # Gorev kimligi -> turdan ONCEKI golge commit'i (geri_al.py).
         # Gorev basina anahtar: paralel turlar ayri iplikte, ayri gorevde.
         self._golge_once: dict = {}
+        # Gorev kimligi -> turun basladigi an (atif belirsizligi icin).
+        self._tur_basi: dict = {}
 
     # -- ana akis ----------------------------------------------------------
 
@@ -246,6 +248,13 @@ class Koltuk:
         # gosterdigi dosyalarin ICERIGI de saklanir; ikili/buyuk dahil.
         # Dusse tur yine kosar ama geri alinamayacagi SOYLENIR.
         self._golge_once.pop(gorev["id"], None)
+        # Turun BASLANGICI: atif penceresi (bkz. `_komsu_kostu_mu`). Zaman
+        # degil defterin SIRA NUMARASI: `simdi()` saniye cozunurluklu ve ayni
+        # saniyedeki onceki bir olay pencereye "girer" (olculdu) -- ayni
+        # beraberlik tuzagi `karar` tablosunda bir kez odendi.
+        with self.db.baglanti() as _c:
+            self._tur_basi[gorev["id"]] = _c.execute(
+                "SELECT COALESCE(MAX(rowid), 0) FROM olay").fetchone()[0]
         if once_anlik is not None and kok_klasor:
             try:
                 self._golge_once[gorev["id"]] = geri_al.Golge(
@@ -1150,6 +1159,35 @@ class Koltuk:
                              {"canli": False}, ajan_ad=ajan_ad,
                              gorev_id=gorev["id"])
 
+    def _komsu_kostu_mu(self, gorev, ajan_ad) -> bool:
+        """Bu turun PENCERESINDE baska bir ajan da kostu mu?
+
+        OLCULDU (26.09.2026, deneme D11 -- gercek paralel is): uc isci ayni
+        anda kostu; isci2'nin turu surerken oteki ikisi kendi dosyalarini
+        yazip BITIRDI. Kural yalniz tur BITTIGI an "baska is calisiyor mu"
+        diye bakiyordu -- o an ikisi coktan incelemedeydi. Fark onlarin
+        dosyalarini isci2'ye yazdi, "BEYAN DISI" dedi, lider isi bu yanlis
+        olcume dayanarak GERI GONDERDI ve isci2 baskalarinin dosyalarini
+        silmeye kalkti (kapi durdurdu). Yanlis suclama, olcmemekten
+        pahalidir: pencere turun BASINDAN SONUNA kadar bakilir.
+        """
+        try:
+            if len(self.ofis.tahta.liste(durum="calisiyor")) > 1:
+                return True
+        except TahtaHatasi:
+            return True
+        bas = self._tur_basi.pop(gorev["id"], None)
+        if bas is None:
+            return True          # pencere bilinmiyor: suclamayiz
+        with self.db.baglanti() as c:
+            n = c.execute(
+                "SELECT count(*) FROM olay WHERE proje_id = ? AND rowid > ?"
+                " AND ajan_ad NOT IN ('', ?) AND tur IN"
+                " ('sahiplenildi', 'basladi', 'tur_ozeti', 'arac', 'degisim')"
+                " AND (gorev_id IS NULL OR gorev_id != ?)",
+                (self.proje_id, bas, ajan_ad, gorev["id"])).fetchone()[0]
+        return n > 0
+
     def _degisimi_olc_ic(self, no, ajan_ad, gorev, once_anlik, kok_klasor):
         if once_anlik is None or not kok_klasor:
             return
@@ -1167,11 +1205,7 @@ class Koltuk:
         # farki "kim yazdi" sorusunu cevaplayamaz. Fark yine yazilir,
         # ama beyan denetimi BASTIRILIR -- yanlis suclama, olcmemekten
         # pahalidir.
-        try:
-            kosan = len([g for g in self.ofis.tahta.liste(durum="calisiyor")])
-        except TahtaHatasi:
-            kosan = 1
-        belirsiz = kosan > 1
+        belirsiz = self._komsu_kostu_mu(gorev, ajan_ad)
 
         kayitlar = degisim.karsilastir(
             once_anlik, sonra, beyan=gorev.get("yazma_alani") or (),

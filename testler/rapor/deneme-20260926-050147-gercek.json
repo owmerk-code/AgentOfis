@@ -1,0 +1,61 @@
+{
+ "zaman": "20260926-050147",
+ "ayar": {
+  "kip": "gercek",
+  "motor": "claude",
+  "model": "haiku",
+  "lider_model": "sonnet",
+  "tur_tavani": 0.6
+ },
+ "sonuclar": [
+  {
+   "no": "D11",
+   "ad": "Iki kol + birlestirme (lider boler)",
+   "kip": "gercek",
+   "motor": "claude",
+   "model": "haiku",
+   "olcutler": [
+    {
+     "olcut": "pytest yesil",
+     "gecti": true,
+     "not": "17 passed in 0.03s"
+    },
+    {
+     "olcut": "hepsi.ozet() DOGRU (dogrulayici kendi cagirdi)",
+     "gecti": true,
+     "not": "{\"gun\": 30, \"ters\": \"cba\", \"toplam\": 5}"
+    },
+    {
+     "olcut": "lider BOLDU (>= 3 gorev)",
+     "gecti": true,
+     "not": "4"
+    },
+    {
+     "olcut": "birlestirme otekileri BEKLEDI (bagimlilik var)",
+     "gecti": true,
+     "not": "3"
+    },
+    {
+     "olcut": "en az 2 isci calisti",
+     "gecti": true,
+     "not": "['isci', 'isci2', 'isci3']"
+    },
+    {
+     "olcut": "PARALEL kostu (ayni tikte >= 2 is)",
+     "gecti": true,
+     "not": "3"
+    }
+   ],
+   "halka": "Butun isler kapandi.",
+   "durum": "gecti",
+   "tur": 9,
+   "jeton": 956467,
+   "maliyet_usd": 0.3982,
+   "fiyatsiz_tur": 0,
+   "kanit": 8,
+   "insana_soru": 0,
+   "istekler": [],
+   "sure_sn": 263.9
+  }
+ ]
+}

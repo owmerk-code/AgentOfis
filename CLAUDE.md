@@ -136,7 +136,7 @@ Motor bir adaptör, model bir ayar, arayüz bir istemci.
 
 ## Kod durumu
 
-Yazıldı ve **duman testlerinden geçti** (2304/2304, 26.09.2026):
+Yazıldı ve **duman testlerinden geçti** (2308/2308, 26.09.2026):
 
 | Dosya | Ne yapar |
 |---|---|
@@ -190,7 +190,7 @@ Yazıldı ve **duman testlerinden geçti** (2304/2304, 26.09.2026):
 | `ofis/geri_al.py` | **TUR GERİ ALMA** — her turun öncesi/sonrası proje kökünün dışındaki gölge git deposuna işlenir; `geri-al` YALNIZ o turun dosyalarını (ikili dahil) döndürür. Sonradan değişen dosyayı ve koşan işi ezmez (`--zorla` hariç), sebep zorunlu, geri alma da geri alınabilir. |
 | `baslat.bat` | Tek tık açılış — bağımlılık yoksa kurar, ilk açılışta örnek ofisi kurar. |
 
-Testler (`testler/`, hepsi jeton yakmadan koşar) — **2304/2304** (31 dosya, 26.09.2026'da tek tek koşturulup SAYILDI):
+Testler (`testler/`, hepsi jeton yakmadan koşar) — **2308/2308** (31 dosya, 26.09.2026'da tek tek koşturulup SAYILDI):
 `duman_cekirdek.py` 78 · `duman_motor.py` 102 · `duman_koltuk.py` 61 ·
 `duman_lider.py` 44 · `duman_mcp.py` 130 · `duman_panel.py` 341 ·
 `duman_orkestra.py` 57 · `duman_zincir.py` 71 · `duman_tavan.py` 27 · `duman_kullanim.py` 55 ·
@@ -10645,4 +10645,35 @@ klasörü tuttu → `taskkill /T`; senaryo bitmeden arka plan halkası
 yorumlayıcı kapanışında yarıda kesiliyordu → bitmesi bekleniyor.
 
 **2304/2304** (31 dosya, artık 0).
+
+### Tekrar koşu — D08 GEÇTİ, D11 dördüncü kusuru gösterdi ve GEÇTİ
+
+**D08** (görsel, `medya_hedefi` düzeltmesinden sonra): geçti, 4 tur, $0,26.
+
+**D11 — PARALEL TURDA HAKSIZ SUÇLAMA (en ağırı).** Lider bu kez yolları
+doğru yazdı ve dörde böldü; üç işçi paralel koştu. `isci2`'nin turu
+sürerken öteki ikisi dosyalarını yazıp BİTİRDİ. Atıf kuralı yalnız tur
+BİTTİĞİ an "başka iş çalışıyor mu" diye bakıyordu — o an ikisi çoktan
+incelemedeydi. Fark komşuların dosyalarını `isci2`'ye yazdı, **"BEYAN
+DIŞI"** dedi; lider bu yanlış ölçüme dayanarak işi GERİ GÖNDERDİ; `isci2`
+başkalarının dosyalarını `rm` ile silmeye kalktı — **kapı durdurdu ve
+insana sordu** (başkalarının işini kurtaran kapıydı). 18.09'da ödenen
+"eksik bağlam kötü niyet gibi görünür" dersinin paralel hâli.
+
+Düzeltme (`koltuk._komsu_kostu_mu`): pencere turun BAŞINDAN SONUNA —
+turun başladığı andaki defter sıra numarasından (rowid) sonra başka bir
+ajanın olayı (sahiplenildi/basladi/tur_ozeti/arac/degisim) varsa atıf
+belirsizdir, suçlama bastırılır (ölçüm yine yazılır). İlk sürüm zamanı
+kullanıyordu: `simdi()` saniye çözünürlüklü, önceki sahnenin aynı saniyedeki
+olayı pencereye "girdi" ve tek başına kaçak yazma YAKALANMADI — sınama
+gösterdi; sıra numarasına çevrildi (`karar` tablosunda ödenen beraberlik
+tuzağının aynısı). Sınama `duman_degisim` +4, iki yön; eski davranış geri
+konunca 2 ateş.
+
+Düzeltmeden sonra D11 gerçek ajanla: **geçti** — 4 görev, 3 işçi paralel,
+birleştirme bekledi, `hepsi.ozet()` doğrulayıcının kendi çağrısıyla doğru,
+insana tek soru düşmedi. 9 tur, $0,40.
+
+**Deneme seti: 13 işin 13'ü gerçek ajanla geçti** (D14 F2'de). Bugünkü
+gerçek koşuların toplamı ≈ $4. **2308/2308.**
 

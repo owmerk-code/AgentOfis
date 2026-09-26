@@ -714,6 +714,58 @@ sina("ofis_dosyalari yan dosyalari da kapsiyor",
 import shutil as _sh16
 _sh16.rmtree(kok16, ignore_errors=True)
 
+# --------------------------------------------------------------------------
+print("\nPENCERE -- komsu tur BU TURUN ICINDE bitirdiyse suclama YOK")
+# Olculdu (26.09.2026, deneme D11): isci2'nin turu surerken oteki iki isci
+# yazip BITIRDI; tur sonunda "baska is calisiyor mu" sorusu HAYIR dedi,
+# fark komsularin dosyalarini isci2'ye yazdi, lider isi haksiz geri
+# gonderdi. Sahne: A'nin turu icinde B dosya yazar ve tur_ozeti'ni yazar.
+_kp = Path(tempfile.mkdtemp(prefix="ofis-pencere-"))
+_op = Ofis.proje_ac(Veritabani(_kp / "o.sqlite3"), "Pencere", amac="a",
+                    basari_olcutu="b", kok_klasor=str(_kp))
+_knp = _op.kanat_ac("U", "U")
+_op.kadro.ise_al("demir", "lider", lider_mi=True, kanat_id=_knp, klasor=str(_kp),
+                 motor="sahte")
+_op.kadro.ise_al("cinar", "backend", klasor=str(_kp), motor="sahte")
+_op.kadro.ise_al("bilge", "backend", klasor=str(_kp), motor="sahte")
+
+
+class _KomsuYazan(SahteMotor):
+    def tur_kos(self, metin, **ayar):
+        (_kp / "a.py").write_text("x = 1\n", encoding="utf-8")        # A'nin kendi isi
+        (_kp / "komsu.py").write_text("y = 2\n", encoding="utf-8")    # B'nin isi
+        _op.db.olay_yaz(_op.proje_id, "tur_ozeti", "{}", ajan_ad="bilge")
+        return super().tur_kos(metin, **ayar)
+
+
+_ga = _op.tahta.gorev_ac("A", neden="n", ana_hedef="h", kabul_olcutu="k",
+                         yazma_alani=["a.py"], kanat_id=_knp)
+list(Koltuk(_op, motor_fabrikasi=lambda ad, **a: _KomsuYazan(
+    cevap="ok\nKANIT dosya: a.py -> x")).akit(_ga["no"], "cinar"))
+_kay = {r["yol"]: r for r in degisim.oku(_op.db, _op.proje_id, gorev_id=_ga["id"])}
+sina("komsunun dosyasi farkta var (olcum dogru)", "komsu.py" in _kay)
+sina("ama BEYAN DISI suclamasi YOK", not _kay.get("komsu.py", {}).get("beyan_disi"),
+     str(_kay.get("komsu.py")))
+sina("atif belirsiz isaretli", bool(_kay.get("komsu.py", {}).get("atif_belirsiz")))
+
+# Ters yon: komsu YOKKEN ayni yazma yine YAKALANIR (kapi gevsemedi).
+_gb = _op.tahta.gorev_ac("B", neden="n", ana_hedef="h", kabul_olcutu="k",
+                         yazma_alani=["b.py"], kanat_id=_knp)
+
+
+class _TekYazan(SahteMotor):
+    def tur_kos(self, metin, **ayar):
+        (_kp / "b.py").write_text("b = 1\n", encoding="utf-8")
+        (_kp / "kacak.py").write_text("k = 1\n", encoding="utf-8")
+        return super().tur_kos(metin, **ayar)
+
+
+list(Koltuk(_op, motor_fabrikasi=lambda ad, **a: _TekYazan(
+    cevap="ok\nKANIT dosya: b.py -> x")).akit(_gb["no"], "cinar"))
+_kb = {r["yol"]: r for r in degisim.oku(_op.db, _op.proje_id, gorev_id=_gb["id"])}
+sina("komsu YOKKEN beyan disi yazma YINE yakalaniyor",
+     bool(_kb.get("kacak.py", {}).get("beyan_disi")), str(_kb.get("kacak.py")))
+
 print(f"\n== sonuc: {GECEN} gecti, {KALAN} kaldi ==")
 print(f"klasor: {kok}")
 sys.exit(1 if KALAN else 0)

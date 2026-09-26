@@ -1,0 +1,99 @@
+{
+ "zaman": "20260926-045408",
+ "ayar": {
+  "kip": "gercek",
+  "motor": "claude",
+  "model": "haiku",
+  "lider_model": "sonnet",
+  "tur_tavani": 0.6
+ },
+ "sonuclar": [
+  {
+   "no": "D08",
+   "ad": "Kapak gorseli uret",
+   "kip": "gercek",
+   "motor": "claude",
+   "model": "haiku",
+   "olcutler": [
+    {
+     "olcut": "kapak.png gecerli PNG",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "genislik >= 512 px",
+     "gecti": true,
+     "not": "(1736, 906)"
+    },
+    {
+     "olcut": "kanit tahtada",
+     "gecti": true,
+     "not": "3"
+    }
+   ],
+   "halka": "Butun isler kapandi.",
+   "durum": "gecti",
+   "tur": 4,
+   "jeton": 341888,
+   "maliyet_usd": 0.262,
+   "fiyatsiz_tur": 0,
+   "kanit": 3,
+   "insana_soru": 0,
+   "istekler": [],
+   "sure_sn": 194.0
+  },
+  {
+   "no": "D11",
+   "ad": "Iki kol + birlestirme (lider boler)",
+   "kip": "gercek",
+   "motor": "claude",
+   "model": "haiku",
+   "olcutler": [
+    {
+     "olcut": "pytest yesil",
+     "gecti": true,
+     "not": "12 passed in 0.02s"
+    },
+    {
+     "olcut": "hepsi.ozet() DOGRU (dogrulayici kendi cagirdi)",
+     "gecti": false,
+     "not": "Traceback (most recent call last):\n  File \"<string>\", line 1, in <module>\nModuleNotFoundError: No module named 'hepsi'"
+    },
+    {
+     "olcut": "lider BOLDU (>= 3 gorev)",
+     "gecti": true,
+     "not": "4"
+    },
+    {
+     "olcut": "birlestirme otekileri BEKLEDI (bagimlilik var)",
+     "gecti": true,
+     "not": "3"
+    },
+    {
+     "olcut": "en az 2 isci calisti",
+     "gecti": true,
+     "not": "['isci', 'isci2', 'isci3']"
+    },
+    {
+     "olcut": "PARALEL kostu (ayni tikte >= 2 is)",
+     "gecti": true,
+     "not": "3"
+    }
+   ],
+   "halka": "Insan cevabi bekleniyor.",
+   "durum": "kaldi",
+   "tur": 8,
+   "jeton": 754234,
+   "maliyet_usd": 0.3503,
+   "fiyatsiz_tur": 0,
+   "kanit": 3,
+   "insana_soru": 2,
+   "istekler": [
+    "onay: GERI ALINAMAZ SILME: rm sayilar.py tarih.py test_sayilar.py test_tarih.py",
+    "onay: sayilar.py, tarih.py, test_sayilar.py, test_tarih.py dosyalarını sil"
+   ],
+   "sure_sn": 153.4,
+   "saklandi": "C:\\Users\\pc\\AppData\\Local\\Temp\\ofis-deneme-D11-cr2381n3"
+  }
+ ]
+}
