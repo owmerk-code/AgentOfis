@@ -128,7 +128,14 @@ while True:
         yaz({"jsonrpc": "2.0", "id": mid,
              "result": {"content": [{"type": "text", "text": json.dumps(karar)}]}})
     elif meth in ("turn/steer",):
-        yaz({"jsonrpc": "2.0", "id": mid, "result": {"turnId": U}})
+        if SEN.get("steer_red"):
+            yaz({"jsonrpc": "2.0", "id": mid,
+                 "error": {"code": -32600, "message": "no active turn"}})
+        else:
+            yaz({"jsonrpc": "2.0", "id": mid, "result": {"turnId": U}})
+        if SEN.get("steer_sonra_bitir"):
+            yaz({"jsonrpc": "2.0", "method": "turn/completed",
+                 "params": {"threadId": T, "turn": {"id": U, "status": "completed"}}})
     elif meth == "turn/interrupt":
         yaz({"jsonrpc": "2.0", "id": mid, "result": {}})
         yaz({"jsonrpc": "2.0", "method": "turn/completed",
@@ -154,6 +161,8 @@ def kos(ad: str, adimlar: list, **kw):
     kayit = ANA / f"{ad}.kayit.jsonl"
     senaryo.write_text(json.dumps({"adimlar": adimlar,
                                    "kapi_bozuk": kw.pop("kapi_bozuk", False),
+                                   "steer_red": kw.pop("steer_red", False),
+                                   "steer_sonra_bitir": kw.pop("steer_sonra_bitir", False),
                                    "mcp": kw.pop("mcp_durum", [])}),
                        encoding="utf-8")
     os.environ["SAHTE_SENARYO"] = str(senaryo)
@@ -385,6 +394,43 @@ try:
          any(o.tur == "hata" and (o.ek or {}).get("sebep") == "mcp_gecikti" for o in ol))
     ol, ek, gelen = kos("mcpsiz", [{"bitir": "completed"}])
     sina("MCP yoksa beklemeden baslar", ek.get("basarili") is True)
+
+    # ------------------------------------------------------------ 11c
+    print("\n11c. TUR ICI KANAL (E17): not steer ile, durdurma interrupt ile")
+    from ofis.motor.tip import TurKanali
+    kn = TurKanali()
+    kn.gonder("n1", "PATRONUN NOTU: b.txt de yaz")   # tur BASLAMADAN once kanalda
+    ol, ek, gelen = kos("kanal_not", [{"asili": True}], kanal=kn,
+                        steer_sonra_bitir=True)
+    st = istekler(gelen, "turn/steer")
+    adlar = [g.get("method") for g in gelen]
+    sina("not turn/steer ile GITTI", len(st) == 1
+         and "b.txt" in json.dumps(st[0], ensure_ascii=False), str(st)[:160])
+    sina("steer tur BASLADIKTAN sonra (turn/start'tan once degil)",
+         "turn/start" in adlar and "turn/steer" in adlar
+         and adlar.index("turn/start") < adlar.index("turn/steer"))
+    sina("steer dogru tura (expectedTurnId)",
+         bool(st) and st[0]["params"].get("expectedTurnId") == "tur-1")
+    mes = [o for o in ol if o.tur == "mesaj"]
+    sina("kabul edilen steer -> 'mesaj' olayi (ulasti)",
+         len(mes) == 1 and mes[0].ek.get("kimlik") == "n1", str([o.tur for o in ol]))
+    sina("tur basarili bitti", ek.get("basarili") is True)
+
+    kn = TurKanali()
+    kn.gonder("n2", "reddedilecek not")
+    ol, ek, gelen = kos("kanal_red", [{"asili": True}], kanal=kn, steer_red=True,
+                        zaman_asimi=4)
+    sina("REDDEDILEN steer ulasti SAYILMAZ", not any(o.tur == "mesaj" for o in ol))
+
+    kn = TurKanali()
+    kn.durdur()
+    ol, ek, gelen = kos("kanal_dur", [{"asili": True}], kanal=kn)
+    sina("durdurma turn/interrupt GONDERDI", len(istekler(gelen, "turn/interrupt")) == 1)
+    sina("durdurulan tur: basarisiz, sebep 'durduruldu' (zaman asimi DEGIL)",
+         ek.get("basarili") is False and ek.get("sebep") == "durduruldu"
+         and ek.get("zaman_asimi") is False, str(ek)[:160])
+    sina("durdurma GORUNUR (hata olayi)",
+         any(o.tur == "hata" and (o.ek or {}).get("sebep") == "durduruldu" for o in ol))
 
     # ------------------------------------------------------------ 12
     print("\n12. SOZLESME: exec kipi kancayi reddeder, bozuk kanca adi reddedilir")

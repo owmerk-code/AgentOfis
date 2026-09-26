@@ -213,7 +213,10 @@ def main() -> int:
     sina("`tur_kos` bulundu", bool(govde_metni))
 
     SOZLESME = ("oturum_id", "model", "efor", "yazabilir", "ek_klasorler",
-                "zaman_asimi", "mcp_yapilandirma", "izinli_araclar")
+                "zaman_asimi", "mcp_yapilandirma", "izinli_araclar",
+                # 26.09.2026: tur ici not/durdurma kanali. Tasiyamayan adaptor
+                # de ONU KULLANIR -- reddetmek icin (asagida davranissal).
+                "kanal")
     yok_sayilan = [p for p in SOZLESME if f"'{p}'" not in govde_metni]
     sina("hicbir sozlesme parametresi SESSIZCE yok sayilmiyor",
          not yok_sayilan, f"(yok sayilanlar: {', '.join(yok_sayilan)})")
@@ -264,6 +267,14 @@ def main() -> int:
              "reddeden motor hicbir turu baslatamaz")
     else:
         sina("mcp_konusur=False (metin koprusu kullanilacak)", True)
+
+    # TUR ICI KANAL: tasiyamayan adaptor kanali REDDETMELI. Tasiyan taraf
+    # burada denenmez -- gercek bir surec baslatirdi; birim sinamasinda.
+    if not getattr(sinif, "tur_ici_mesaj", False):
+        from ofis.motor.tip import TurKanali
+        sina("tur_ici_mesaj=False ise kanal REDDEDILIYOR",
+             _reddediyor_mu(kanal=TurKanali()),
+             "-- insan notunun ulastigini sanirdi")
 
     print("\n4. TEST BOSALTILMAMIS MI")
     if test.exists():

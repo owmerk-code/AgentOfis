@@ -277,7 +277,7 @@ CREATE TABLE IF NOT EXISTS mesaj (
     gonderen        TEXT NOT NULL,
     alici           TEXT NOT NULL,              -- ajan.ad ya da 'insan'
     govde           TEXT NOT NULL,
-    mod             TEXT NOT NULL DEFAULT 'sessiz',  -- sessiz | uyandiran | bekleyen
+    mod             TEXT NOT NULL DEFAULT 'sessiz',  -- sessiz | uyandiran | bekleyen | yonlendirme (patronun notu; okundu=1 ajana ULASTI)
     gorev_id        TEXT REFERENCES gorev(id),
     cevap           TEXT NOT NULL DEFAULT '',
     cevaplandi      TEXT,

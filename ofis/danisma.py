@@ -50,6 +50,8 @@ from __future__ import annotations
 
 from . import kullanim, roller
 from .motor import motor_ac, MotorHatasi
+from .postane import NOT_KURALI, gorev_notlari
+from .tahta import TahtaHatasi
 
 #: Danisilanin cevabinin ustunde durulacak uzunluk. Danisma kisa bir
 #: bilgi alisverisidir; uzayan sey cevap degil, isin kendisidir -- o da
@@ -96,10 +98,22 @@ class Danisma:
                     "",
                     f"Uzerinde calistigi is: **#{g['no']} {g['baslik']}**",
                     f"- neden: {g['neden']}",
+                    f"- ana hedef: {g['ana_hedef']}",
                     f"- kabul olcutu: {g['kabul_olcutu']}",
                     f"- yazma alani: {', '.join(g['yazma_alani']) or 'yok'}",
                 ]
-            except Exception:
+                # PATRONUN NOTLARI danismaya da girer. OLCULDU (27.09, D14
+                # codex): ajan notla is metninin celistigini sordu, danisma
+                # notu gormedigi icin "kullanma" dedi, ayni liderin
+                # incelemesi notu gorup isi geri gonderdi. Akil veren ile
+                # hukum veren AYNI resme bakmali.
+                notlar = gorev_notlari(self.db, self.proje_id, g["id"])
+                if notlar:
+                    satirlar += ["", f"Patronun bu ise notlari ({NOT_KURALI}):"]
+                    satirlar += [f"- {n['govde'][:400]}" for n in notlar]
+            except TahtaHatasi:
+                # Gorev silinmis olabilir: soru yine cevaplanir. DAR tutuldu:
+                # genis `except` notlarin okunamamasini da yutardi.
                 pass
 
         satirlar += ["", "## SORUSU", "", mesaj["govde"], ""]

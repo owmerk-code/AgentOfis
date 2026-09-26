@@ -43,11 +43,133 @@ class PostaneHatasi(RuntimeError):
     pass
 
 
+#: PATRONUN NOTU: insanin CALISAN bir ajana isi hakkinda yazdigi yonlendirme
+#: ("dur, sunu degistir"). Soru degildir (cevap beklenmez, ajani durdurmaz)
+#: ve lidere gonderilmez -- dogrudan o isin sahibine gider. `okundu=1`
+#: notun ajana ULASTIGI andir (tur surerken ya da tur basinda); yazilmis
+#: olmasi ulastigi anlamina gelmez.
+NOT_MODU = "yonlendirme"
+
+#: Notun isin ilk tanimiyla iliskisi -- TEK cumle, her yerde ayni. OLCULDU
+#: (27.09, D14 codex): not isin metniyle celisti, ajan (dogru davranarak)
+#: lidere sordu; liderin DANISMA turu notu hic gormedigi icin "notu
+#: kullanma" dedi, ayni liderin INCELEMESI notu gordugu icin isi "not
+#: uygulanmamis" diye geri gonderdi. Ayni lider iki kanalda iki resme
+#: bakiyordu ve is tik sinirinda oldu. Kural dort yerde ayri cumleyle
+#: yaziliydi (brifing, tur ici not, inceleme, danisma yoktu); tek sabit
+#: hepsine ayni sozu soyletir.
+NOT_KURALI = ("Patronun notu isin ilk tanimindan YENIDIR ve onu DEGISTIRIR: "
+              "ikisi celisirse NOT gecerlidir (is patronundur). Yalniz notun "
+              "kendisi belirsizse ya da isi imkansiz kiliyorsa DUR ve "
+              "`soru_sor` ile sor.")
+
+
+def gorev_notlari(db, proje_id: str, gorev_id: str) -> list:
+    """Bir isin BUTUN patron notlari, yazilis sirasiyla.
+
+    TEK sorgu: brifing (isin tanimina ek), koltuk (iletilecekler) ve lider
+    incelemesi (hangi not ulasti, hangisi ulasmadi) ayni yerden okur. Uc
+    ayri sorgu olsaydi biri `okundu`yu, oteki sirayi farkli yorumlardi.
+    """
+    with db.baglanti() as conn:
+        return [dict(r) for r in conn.execute(
+            "SELECT id, alici, govde, okundu, olusturuldu FROM mesaj "
+            "WHERE proje_id = ? AND gorev_id = ? AND mod = ? "
+            "ORDER BY olusturuldu, rowid",
+            (proje_id, gorev_id, NOT_MODU)).fetchall()]
+
+
 class Postane:
     def __init__(self, ofis) -> None:
         self.ofis = ofis
         self.db = ofis.db
         self.proje_id = ofis.proje_id
+
+    # -- patronun notlari ----------------------------------------------------
+
+    def not_birak(self, alici: str, govde: str, *, gorev_no=None) -> dict:
+        """Insanin CALISAN bir ajana notu. Is aciklamasina EK sayilir.
+
+        Not bir ISE baglidir, ajana degil: ajan baska ise gecince bu isin
+        notu onu izlememeli. Is verilmezse ajanin elindeki is bulunur;
+        elinde is yoksa not REDDEDILIR -- yeni bir is, lidere yazilir
+        (lider insanin tek muhatabidir; not, zaten verilmis bir isin
+        yonunu duzeltir, is DAGITMAZ).
+        """
+        govde = (govde or "").strip()
+        if not govde:
+            raise PostaneHatasi("Bos not birakilamaz.")
+        if alici == "insan":
+            raise PostaneHatasi("Not bir AJANA yazilir.")
+        try:
+            self.ofis.kadro.ajan(alici)
+        except Exception:
+            adlar = ", ".join(a["ad"] for a in self.ofis.kadro.liste())
+            raise PostaneHatasi(f"'{alici}' diye biri yok. Ajanlar: {adlar}")
+        if gorev_no is None:
+            with self.db.baglanti() as conn:
+                row = conn.execute(
+                    "SELECT no FROM gorev WHERE proje_id = ? AND sahip = ? "
+                    "AND durum IN ('calisiyor', 'inceleme') AND silindi = 0 "
+                    "ORDER BY guncellendi DESC, rowid DESC LIMIT 1",
+                    (self.proje_id, alici)).fetchone()
+            if not row:
+                raise PostaneHatasi(
+                    f"{alici} su an bir is uzerinde degil; not ancak VERILMIS "
+                    "bir isin yonunu duzeltir. Yeni is icin lidere yaz.")
+            gorev_no = row["no"]
+        gorev = self.ofis.tahta.gorev(gorev_no)
+        if gorev["durum"] in ("bitti", "iptal"):
+            raise PostaneHatasi(
+                f"#{gorev_no} {gorev['durum']}: kapanmis bir ise not yazilmaz. "
+                "Devam gerekiyorsa lidere yaz.")
+        if (gorev.get("sahip") or "") != alici:
+            raise PostaneHatasi(
+                f"#{gorev_no} {alici}'in isi degil (sahibi: "
+                f"{gorev.get('sahip') or 'yok'}). Not isin SAHIBINE yazilir.")
+        mesaj_id = uuid.uuid4().hex
+        with self.db.baglanti() as conn:
+            conn.execute(
+                "INSERT INTO mesaj (id, proje_id, gonderen, alici, govde, mod, "
+                "gorev_id, cevap, cevaplandi, okundu, olusturuldu) "
+                "VALUES (?, ?, 'insan', ?, ?, ?, ?, '', NULL, 0, ?)",
+                (mesaj_id, self.proje_id, alici, govde, NOT_MODU,
+                 gorev["id"], simdi()),
+            )
+        self.db.olay_yaz(self.proje_id, "not",
+                         f"insan -> {alici} (#{gorev_no}): {govde[:200]}",
+                         ajan_ad=alici, gorev_id=gorev["id"])
+        return {"id": mesaj_id, "alici": alici, "govde": govde,
+                "gorev_no": gorev_no}
+
+    def bekleyen_notlar(self, alici: str, *, gorev_no) -> list:
+        """Bu ise yazilmis, ajana HENUZ ulasmamis notlar."""
+        gorev = self.ofis.tahta.gorev(gorev_no)
+        return [n for n in gorev_notlari(self.db, self.proje_id, gorev["id"])
+                if n["alici"] == alici and not n["okundu"]]
+
+    def not_iletildi(self, mesaj_id: str, *, yol: str) -> bool:
+        """Notun ajana ULASTIGI an. Iki kez isaretlenmez (ilk yol kalir).
+
+        `yol`: 'tur_ici' (motor tur surerken aldi) ya da 'tur_basinda'
+        (bir sonraki turun istemine girdi). Ikisi ayri yazilir: insan notun
+        ne zaman etkili oldugunu bilmeli.
+        """
+        with self.db.baglanti() as conn:
+            row = conn.execute(
+                "SELECT m.alici, m.govde, m.gorev_id, g.no AS gorev_no "
+                "FROM mesaj m LEFT JOIN gorev g ON g.id = m.gorev_id "
+                "WHERE m.id = ? AND m.proje_id = ? AND m.mod = ? AND m.okundu = 0",
+                (mesaj_id, self.proje_id, NOT_MODU)).fetchone()
+            if not row:
+                return False
+            conn.execute("UPDATE mesaj SET okundu = 1 WHERE id = ?", (mesaj_id,))
+        ne = "tur SURERKEN" if yol == "tur_ici" else "tur BASINDA"
+        self.db.olay_yaz(self.proje_id, "not_iletildi",
+                         f"{row['alici']} notu aldi ({ne}, #{row['gorev_no']}): "
+                         f"{row['govde'][:160]}",
+                         ajan_ad=row["alici"], gorev_id=row["gorev_id"])
+        return True
 
     # -- sorular -----------------------------------------------------------
 

@@ -747,6 +747,13 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .pano-ic .yeni    { animation: belir .5s; }
 @keyframes belir { from { opacity: 0; transform: translateY(3px) } }
 .canli-bos { padding: 40px 18px; color: var(--metin-3); font-size: var(--yz-govde); }
+/* Ajana not: pano altindaki yazma satiri (E17). */
+.pano-not { display: flex; border-top: 1px solid var(--cizgi); }
+.pano-not input { flex: 1; min-width: 0; background: transparent; border: 0;
+                  padding: 7px 13px; color: var(--metin); font: inherit;
+                  font-size: var(--yz-alt); outline: none; }
+.pano-not input::placeholder { color: var(--metin-3); }
+.pano-not input:focus { background: var(--zemin); }
 
 @media (max-width: 1100px) {
   .canli-izle { grid-template-columns: 1fr; }

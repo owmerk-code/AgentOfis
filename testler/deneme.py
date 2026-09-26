@@ -118,6 +118,9 @@ def is_kos(no: str, *, kip: str, motor: str, model: str, lider_model: str,
         ofis = Ofis.proje_ac(db, f"Deneme {no}", amac="deneme seti",
                              basari_olcutu="dogrulayici gecer", kok_klasor=str(kok))
         kanat = ofis.kanat_ac("DENEME", "DN")
+        # Insan yerine davranan kancalar (D14 not birakir, D17 durdurur)
+        # ofise buradan ulasir -- fikstur ofisten ONCE kurulur.
+        bag["ofis"] = ofis
         iscler = ["isci"] + [f"isci{i}" for i in range(2, tanim.get("isci_sayisi", 1) + 1)]
         gercek = kip == "gercek"
         ofis.kadro.ise_al("lale", "lider", lider_mi=True, kanat_id=kanat,
@@ -159,6 +162,13 @@ def is_kos(no: str, *, kip: str, motor: str, model: str, lider_model: str,
             return adimlar
 
         adimlar = halka()
+        # DURDUR -> SURDUR (D17): insan durdurdu, halka durdu; kosturucu
+        # insan yerine "Surdur"e basar (istek kalkar, halka yeniden doner).
+        if tanim.get("durdur_sonra_surdur"):
+            from ofis.koltuk import durdurma_temizle
+            bag["ilk_halka"] = (adimlar[-1] if adimlar else {}).get("sebep", "")
+            durdurma_temizle(ofis.db, ofis.proje_id)
+            adimlar += halka()
         # INSAN CEVABI (D12): ajan insana sorduysa kosturucu insan yerine
         # cevaplar ve halkayi BIR KEZ daha dondurur.
         if tanim.get("insan_cevabi"):
@@ -182,6 +192,7 @@ def is_kos(no: str, *, kip: str, motor: str, model: str, lider_model: str,
         sonuc["hata"] = f"{exc.__class__.__name__}: {exc}"
         sonuc["iz"] = traceback.format_exc()[-1500:]
     finally:
+        bag.pop("ofis", None)
         if tanim.get("kapat") and bag:
             try:
                 tanim["kapat"](bag)

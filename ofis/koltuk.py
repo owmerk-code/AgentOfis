@@ -59,6 +59,8 @@ from .db import simdi
 from .mcp_sunucu import (yapilandirma as mcp_yapilandirmasi,
                          SUNUCU_ADI as OFIS_SUNUCU_ADI)
 from .motor import motor_ac, MotorHatasi
+from .motor.tip import TurKanali
+from .postane import NOT_KURALI
 from .tahta import TahtaHatasi
 from .zincir import basamaklari_kur, elenenler, sonraki, ZincirBitti
 
@@ -95,6 +97,36 @@ KANIT_DESENI = re.compile(
 
 class KoltukHatasi(RuntimeError):
     pass
+
+
+#: DURDURMA ISTEGI -- defterde, surec bellekte degil.
+#:
+#: Panelin "Durdur"u bir bellek bayragiydi (`_KOSU["dur"]`): yalniz
+#: panelin KENDI surecinde kosan halkayi, o da tur BITINCE durdurabiliyordu.
+#: Kabuktan baslatilan halkayi hic goremiyordu. Istek artik deftere yazilir:
+#: halka (orkestra) tur sinirinda durur, koltuk KOSAN turu kanal uzerinden
+#: aninda keser (olculdu: claude 8,1 sn'de, $0,007). Yeni bir kosu
+#: baslarken temizlenir -- takili kalan istek sonraki isi oldurmesin.
+DURDUR_ANAHTARI = "durdur_istegi"
+
+
+def durdurma_iste(db, proje_id: str, kim: str = "insan") -> str:
+    zaman = simdi()
+    db.ayar_yaz(proje_id, DURDUR_ANAHTARI, zaman)
+    db.olay_yaz(proje_id, "uyari",
+                f"{kim} ofisi DURDURDU: kosan turlar kesiliyor, yenisi "
+                "baslamayacak. Yarim is 'Surdur' ile kaldigi yerden devam eder.")
+    return zaman
+
+
+def durdurma_istendi(db, proje_id: str) -> str:
+    """Bos degilse durdurma istenmis demektir (deger: isteme ani)."""
+    return db.ayar_oku(proje_id, DURDUR_ANAHTARI, "")
+
+
+def durdurma_temizle(db, proje_id: str) -> None:
+    if durdurma_istendi(db, proje_id):
+        db.ayar_yaz(proje_id, DURDUR_ANAHTARI, "")
 
 
 class Koltuk:
@@ -209,6 +241,10 @@ class Koltuk:
             f"brifing okundu — {'uyanis farki' if devam else 'K1..K4'} · {jeton} jeton",
             {"jeton": jeton, "devam": devam},
         )
+        # Bu metne GIREN patron notlari (K4 ulasmamislari YENI diye yazar).
+        # Motor ilk olayini verince "tur basinda ulasti" diye isaretlenir;
+        # motor hic baslayamazsa isaretlenmez -- yazilmak ulasmak degildir.
+        baslangic_notlari = self._bekleyen_not_idleri(no, ajan_ad)
 
         # 2b -- DISK ANLIK GORUNTUSU (tur BASLAMADAN once).
         #
@@ -549,6 +585,16 @@ class Koltuk:
                 # Fren HER basamakta sifirdan baslar: bir onceki
                 # basamakta sayilanlar bu basamaga borc degildir.
                 fren = tavan.KacakFreni()
+                # TUR ICI KANAL: yalniz tasiyabilen motora. Tasiyamayana
+                # (codex exec) not bir SONRAKI turun basinda gider --
+                # sessizce "ulasti" sanilmaz, olay yalniz ulasinca yazilir.
+                kanal = (TurKanali() if getattr(motor, "tur_ici_mesaj", False)
+                         else None)
+                # Bu turda kanala itilen notlar + durdurmanin soylenip
+                # soylenmedigi (bir kez soylenir, her saniye degil).
+                kd = {"itilen": set(baslangic_notlari), "durdur_soylendi": False}
+                ilk_olay = True
+                son_not = 0.0
                 if basamak.get("ofis_freni"):
                     # Bir kontrolun yerine baskasi geciyorsa SESSIZ
                     # olmaz. Insan, dolar tavaninin bu turda
@@ -645,6 +691,9 @@ class Koltuk:
                     # derdi. Olculmus hata sinifi: eksik baglam, kotu
                     # niyet gibi gorunur.
                     ek_klasorler=tuple(gorev.get("ek_klasorler") or ()),
+                    # Tur ici kanal yalniz VARSA gecer: kanal tanimayan
+                    # bir adaptore bos anahtar gondermek sozlesmeyi kirardi.
+                    **({"kanal": kanal} if kanal is not None else {}),
                     # Bu turun KIMLIGI. Bos ise CLI kendi oturumunu
                     # kullanir (bugunku davranis); dolu ise hesap
                     # baska bir kimlige isaret eder.
@@ -659,6 +708,29 @@ class Koltuk:
                     izin_araci=izin_araci,
                 ):
                     simdiki = time.monotonic()
+
+                    if ilk_olay:
+                        # Motor basladi: brifinge giren notlar ULASTI.
+                        ilk_olay = False
+                        for _nid in baslangic_notlari:
+                            self.ofis.postane.not_iletildi(_nid, yol="tur_basinda")
+
+                    # PATRONUN NOTU ve DURDURMA -- defterden, saniyede bir.
+                    # Defter kanaldir cunku notu yazan (panel/kabuk) ile turu
+                    # kosturan (halka) AYRI surecler olabilir.
+                    if simdiki - son_not >= self.NOT_ARALIGI_S:
+                        son_not = simdiki
+                        yield from self._kanali_besle(kanal, kd, no,
+                                                      ajan_ad, gorev)
+
+                    if olay.tur == "mesaj":
+                        # Motor notu GERCEKTEN iletti (claude: yanki, codex:
+                        # kabul edilen steer). Defter tek yazicidir.
+                        self.ofis.postane.not_iletildi(
+                            str((olay.ek or {}).get("kimlik") or ""), yol="tur_ici")
+                        yield self._olay("not_iletildi", olay.govde, olay.ek,
+                                         yaz=False)
+                        continue
 
                     # KACAK FRENI -- motor sozlesmesinden BAGIMSIZ.
                     #
@@ -876,6 +948,9 @@ class Koltuk:
             _b = self.ofis.brifing.uret(no, ajan_ad, diske_yaz=False,
                                         kesilen=kesilen)
             metin = _b["metin"]
+            # Yeni motorun brifingi de notlari tasir (K4): ulasmamislar bu
+            # motorun ilk olayinda "tur basinda" ulasir.
+            baslangic_notlari = self._bekleyen_not_idleri(no, ajan_ad)
             yield self._olay(
                 "brifing",
                 f"devir paketi — K1..K4 + gecmis · {_b['jeton_tahmini']} jeton",
@@ -977,7 +1052,11 @@ class Koltuk:
             # edecek yoksa SIFIRDAN mi kosacak, buna bakarak karar veriyor.
             butce_bitti = bool(
                 butce_usd and (sonuc.get("maliyet_usd") or 0) >= float(butce_usd))
-            sebep = ("kullanim limiti" if sonuc.get("limit")
+            # INSAN DURDURDU bir ARIZA degildir: is dogru gidiyordu, insan
+            # "dur" dedi. Kaynak tukenmesi gibi sayilir (KAYNAK_SEBEPLERI):
+            # "Surdur" ayni ajanla, ayni oturumdan devam eder.
+            sebep = ("insan durdurdu" if sonuc.get("sebep") == "durduruldu"
+                     else "kullanim limiti" if sonuc.get("limit")
                      else "zaman asimi" if sonuc.get("zaman_asimi")
                      else "butce tavani doldu" if butce_bitti
                      else "tur basarisiz")
@@ -1456,7 +1535,58 @@ class Koltuk:
 
     #: Turun KAYNAK tukenmesinden kesildigini soyleyen birakilma sebepleri.
     #: Bunlar HATA degildir: is dogru gidiyordu, kaynak bitti.
-    KAYNAK_SEBEPLERI = ("kullanim limiti", "zaman asimi", "butce")
+    KAYNAK_SEBEPLERI = ("kullanim limiti", "zaman asimi", "butce",
+                        "insan durdurdu")
+
+    #: Patron notu ve durdurma istegi defterden ne siklikla okunur. Motor
+    #: sessizken bile saniyede bir `nabiz` akar, yani gecikme ~1 sn +
+    #: motorun iletme ani (claude: bir sonraki arac siniri).
+    NOT_ARALIGI_S = 1.0
+
+    def _bekleyen_not_idleri(self, no: int, ajan_ad: str) -> list:
+        try:
+            return [n["id"] for n in
+                    self.ofis.postane.bekleyen_notlar(ajan_ad, gorev_no=no)]
+        except sqlite3.Error:
+            return []
+
+    def _kanali_besle(self, kanal, kd: dict, no: int, ajan_ad: str,
+                      gorev: dict):
+        """Defterdeki YENI notlari kanala, durdurma istegini motora tasir.
+
+        Kanal yoksa (motor tasiyamiyor) hicbir sey itilmez: not defterde
+        bekler ve bir sonraki turun basinda gider. Durdurma da o motorda
+        tur ortasinda UYGULANAMAZ -- halka tur sinirinda durur; bu SOYLENIR.
+        """
+        if durdurma_istendi(self.db, self.proje_id):
+            if kanal is not None and not kanal.durdurulsun:
+                kanal.durdur()
+                yield self._olay("uyari",
+                                 f"#{no} {ajan_ad} turu insanin istegiyle "
+                                 "KESILIYOR (kismi kanit korunur).",
+                                 {"gorev_no": no}, ajan_ad=ajan_ad,
+                                 gorev_id=gorev["id"])
+            elif kanal is None and not kd["durdur_soylendi"]:
+                kd["durdur_soylendi"] = True
+                yield self._olay("uyari",
+                                 f"#{no} {ajan_ad}'in motoru turu ortasinda "
+                                 "kesemiyor; tur bitince durulacak.",
+                                 {"gorev_no": no}, ajan_ad=ajan_ad,
+                                 gorev_id=gorev["id"])
+            return
+        if kanal is None:
+            return
+        for n in self.ofis.postane.bekleyen_notlar(ajan_ad, gorev_no=no):
+            if n["id"] in kd["itilen"]:
+                continue
+            kd["itilen"].add(n["id"])
+            kanal.gonder(n["id"], self.not_metni(n["govde"]))
+
+    @staticmethod
+    def not_metni(govde: str) -> str:
+        """Tur surerken ajana giden notun bicimi. Adaptor BICIMLENDIRMEZ."""
+        return ("PATRONUN NOTU (sen calisirken geldi): " + govde.strip()
+                + "\n\n" + NOT_KURALI + " Ona gore devam et.")
 
     def _devam_mi(self, no: int, ajan_ad: str, ajan: dict, gorev: dict) -> bool:
         """Bu tur, oncekinin USTUNE mi kosacak yoksa SIFIRDAN mi?

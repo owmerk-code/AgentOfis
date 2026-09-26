@@ -461,6 +461,9 @@ class CodexMotoru(Motor):
         self.kip = kip
         # Onay kancasi yalniz app-server'da VAR (olculdu, A2/A3).
         self.izin_kancasi = kip == "app-server"
+        # Tur ici not + durdurma da yalniz app-server'da: `turn/steer` ve
+        # `turn/interrupt` (olculdu, A2: 2/2 ve 1/1). `exec` tek yonludur.
+        self.tur_ici_mesaj = kip == "app-server"
 
     # -- kurulum -----------------------------------------------------------
 
@@ -625,7 +628,14 @@ class CodexMotoru(Motor):
         izinli_araclar: tuple = (),
         ek_ortam: dict = None,
         izin_araci: str = "",
+        kanal=None,
     ) -> Iterator[MotorOlayi]:
+        # TUR ICI KANAL tasinamiyorsa REDDEDILIR: sessizce yok saysaydik
+        # insan notunun ulastigini sanirdi. Koltuk bu motora zaten vermez.
+        if kanal is not None and not self.tur_ici_mesaj:
+            raise MotorHatasi(
+                f"{self.ad} ({self.kip} kipi) tur surerken not alamiyor; "
+                "not bir sonraki turun basinda iletilmeli. Tasiyan kip: app-server.")
         # IZIN KANCASI UYGULANAMIYOR -> KAPALI KALARAK REDDEDILIR.
         #
         # Sessizce yok saysaydik cagiran, riskli her cagrinin ofise
@@ -768,6 +778,7 @@ class CodexMotoru(Motor):
                         kok=str(kok), oturum=oturum, devam=devam, model=model,
                         efor=efor, yazabilir=yazabilir, izin_hedefi=izin_hedefi,
                         mcp_adlari=self._mcp_adlari(mcp_yapilandirma),
+                        kanal=kanal,
                     )
                 else:
                     yield from self._akisi_tuket(
@@ -820,6 +831,12 @@ class CodexMotoru(Motor):
             yield MotorOlayi(
                 "hata", "Hesap kullanim limitine ulasildi.", {"sebep": "limit"},
             )
+        elif durum.get("durduruldu"):
+            # Insanin istegi, ariza degil: sebep ayri ki koltuk isi kaldigi
+            # yerden surdurebilsin.
+            durum["hata_notu"] = "durduruldu"
+            yield MotorOlayi("hata", "Tur insanin istegiyle DURDURULDU.",
+                             {"sebep": "durduruldu", "cikis": cikis})
         elif cikis != 0 or durum["hatali"]:
             ayrinti = (durum["sonuc"] or "".join(hata_parcalari)[-1200:]).strip()
             yield MotorOlayi(
@@ -830,6 +847,7 @@ class CodexMotoru(Motor):
         basarili = (
             not zaman_asti and not durum["limit"]
             and cikis == 0 and not durum["hatali"]
+            and not durum.get("durduruldu")
         )
         yield MotorOlayi(
             "bitti",
@@ -1031,7 +1049,8 @@ class CodexMotoru(Motor):
     def _app_akisi(self, surec, istek: str, durum: dict, hata_parcalari: list,
                    basladi: float, sinir: float, *, kok: str, oturum: str,
                    devam: bool, model: str, efor: str, yazabilir: bool,
-                   izin_hedefi, mcp_adlari: tuple = ()) -> Iterator[MotorOlayi]:
+                   izin_hedefi, mcp_adlari: tuple = (),
+                   kanal=None) -> Iterator[MotorOlayi]:
         """app-server ile TEK turluk konusma; `_akisi_tuket` ile ayni sozlesme.
 
         TEK IPLIK, ENGELLEMEYEN: onay sorusu kapiya gider ve cevabi AYNI
@@ -1055,6 +1074,7 @@ class CodexMotoru(Motor):
         sayac = [0]
         bekleyen = {}     # bizim istek kimligi -> amac
         kararlar = {}     # bizim tool/call kimligi -> bekleyen onay istegi
+        not_istekleri = {}  # bizim turn/steer kimligi -> (not kimligi, metin)
         baglam = {"thread": "", "tur": "", "bitti": False, "durum": "",
                   # Beklenen MCP sunuculari -> son bildirilen durum.
                   "mcp": {ad: "" for ad in mcp_adlari}, "tur_bekliyor": False,
@@ -1111,6 +1131,22 @@ class CodexMotoru(Motor):
                         baglam["tur_bekliyor"] = False
                         iste("turn/start", {**tur_ayari, "threadId": baglam["thread"]},
                              "tur")
+                # TUR ICI KANAL: yalniz tur BASLADIKTAN sonra ve bitmeden.
+                # Oncesinde alinmaz (steer'in gidecegi tur yok); sonrasinda
+                # da alinmaz -- kanalda kalan not sonraki turun basinda.
+                if (kanal is not None and baglam["tur"] and not baglam["bitti"]
+                        and not durum.get("durduruldu")):
+                    if kanal.durdurulsun:
+                        durum["durduruldu"] = True
+                        iste("turn/interrupt", {"threadId": baglam["thread"],
+                                                "turnId": baglam["tur"]}, "durdur")
+                    else:
+                        for not_kimlik, not_metni in kanal.al():
+                            cid = iste("turn/steer", {
+                                "threadId": baglam["thread"],
+                                "expectedTurnId": baglam["tur"],
+                                "input": [{"type": "text", "text": not_metni}]}, "not")
+                            not_istekleri[cid] = (not_kimlik, not_metni)
                 try:
                     oge = satirlar.get(timeout=min(NABIZ_ARALIGI, kalan))
                 except queue.Empty:
@@ -1131,6 +1167,17 @@ class CodexMotoru(Motor):
                 kimlik = mesaj.get("id")
                 # 1) BIZIM isteklerimize cevap
                 if yontem is None and kimlik is not None:
+                    if kimlik in not_istekleri:
+                        # `turn/steer` KABUL edildiyse not ULASTI (olculdu:
+                        # kabul edilen steer dosyayi yazdirdi). Reddedildiyse
+                        # (tur o an bitmis) ulasmadi -- olay yayilmaz, koltuk
+                        # onu sonraki turda verir.
+                        bekleyen.pop(kimlik, None)
+                        not_kimlik, not_metni = not_istekleri.pop(kimlik)
+                        if not mesaj.get("error"):
+                            yield MotorOlayi("mesaj", not_metni[:200],
+                                             {"kimlik": not_kimlik, "yol": "tur_ici"})
+                        continue
                     if kimlik in kararlar:
                         bekleyen.pop(kimlik, None)
                         yield from self._karari_uygula(kararlar.pop(kimlik), mesaj,
@@ -1299,7 +1346,8 @@ class CodexMotoru(Motor):
                                                   hata.get("codexErrorInfo"), durum)
             elif baglam["durum"] == "interrupted" and not durum["zaman_asimi"]:
                 durum["hatali"] = True
-                durum["hata_notu"] = durum["hata_notu"] or "kesildi"
+                durum["hata_notu"] = ("durduruldu" if durum.get("durduruldu")
+                                      else durum["hata_notu"] or "kesildi")
             return olaylar
         if yontem == "error":
             if prm.get("willRetry"):

@@ -56,6 +56,8 @@ BEKLENEN_KOTU_SEBEP = {
     "D11": "hepsi.ozet() DOGRU (dogrulayici kendi cagirdi)",
     "D12": "once SORDU (uydurmadi)",
     "D13": "biten adim TEKRARLANMADI (adim1 degismedi)",
+    "D14": "patronun notu UYGULANDI (a3'te kod)",
+    "D17": "biten adim TEKRARLANMADI (b1 degismedi)",
 }
 
 print("\n1. DOGRULAYICILAR -- iyi GECER, kotu DOGRU SEBEPLE KALIR")
@@ -85,13 +87,15 @@ sina("olculmemis maliyet SIFIR degil (sahte: olculmus 0)",
 
 print("\n3. KATALOG -- hizli set planla ayni")
 hizli = sorted(n for n, t in ISL.ISLER.items() if t["set"] == "hizli")
-sina("hizli set D01 D02 D05 D09 D10 D14",
-     hizli == ["D01", "D02", "D05", "D09", "D10", "D14"], str(hizli))
+sina("hizli set D01 D02 D05 D09 D10 D14 D17",
+     hizli == ["D01", "D02", "D05", "D09", "D10", "D14", "D17"], str(hizli))
 tam = sorted(n for n, t in ISL.ISLER.items() if t["set"] == "tam")
 sina("tam set D03 D04 D06 D07 D08 D11 D12 D13",
      tam == ["D03", "D04", "D06", "D07", "D08", "D11", "D12", "D13"], str(tam))
-sina("her is PLANDAKI 16'dan biri (D15/D16 sonraki fazlarda)",
-     set(ISL.ISLER) <= {f"D{i:02d}" for i in range(1, 17)})
+sina("her is PLANDAKI 17'den biri (D15/D16 sonraki fazlarda)",
+     set(ISL.ISLER) <= {f"D{i:02d}" for i in range(1, 18)})
+sina("hicbir is 'destek yok' degil (D14 E17 ile kosuyor)",
+     not any(t.get("destek_yok") for t in ISL.ISLER.values()))
 sina("negatif isler isaretli",
      all(ISL.ISLER[n].get("negatif") for n in ("D09", "D10")))
 

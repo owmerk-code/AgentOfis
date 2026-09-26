@@ -1,0 +1,256 @@
+{
+ "zaman": "20260926-234647",
+ "ayar": {
+  "kip": "kuru",
+  "motor": "claude",
+  "model": "haiku",
+  "lider_model": "sonnet",
+  "tur_tavani": 0.6
+ },
+ "sonuclar": [
+  {
+   "no": "D14",
+   "ad": "Tur surerken not: 'dur, sunu degistir'",
+   "kip": "kuru_iyi",
+   "motor": "claude",
+   "model": "",
+   "olcutler": [
+    {
+     "olcut": "a1.txt = 1",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "a2.txt = 2",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "a3.txt ilk satiri 3",
+     "gecti": true,
+     "not": "['3', 'ZUMRUT-4471']"
+    },
+    {
+     "olcut": "patronun notu UYGULANDI (a3'te kod)",
+     "gecti": true,
+     "not": "['3', 'ZUMRUT-4471']"
+    },
+    {
+     "olcut": "not is SIRASINDA yazildi",
+     "gecti": true,
+     "not": "1 not"
+    },
+    {
+     "olcut": "not TUR SURERKEN ulasti",
+     "gecti": true,
+     "not": "isci notu aldi (tur SURERKEN, #1): Yon degisikligi: a3.txt'ye 3'un ALTINA ikinci"
+    },
+    {
+     "olcut": "not 45 sn icinde ulasti",
+     "gecti": true,
+     "not": "0.1 sn"
+    },
+    {
+     "olcut": "is KAPANDI",
+     "gecti": true,
+     "not": "bitti"
+    }
+   ],
+   "halka": "Butun isler kapandi.",
+   "durum": "gecti",
+   "tur": 2,
+   "jeton": 2501,
+   "maliyet_usd": 0.0,
+   "fiyatsiz_tur": 0,
+   "kanit": 1,
+   "insana_soru": 0,
+   "istekler": [],
+   "kapi_durdurdu": 0,
+   "kapi_olaylari": [],
+   "sure_sn": 1.1
+  },
+  {
+   "no": "D14",
+   "ad": "Tur surerken not: 'dur, sunu degistir'",
+   "kip": "kuru_kotu",
+   "motor": "claude",
+   "model": "",
+   "olcutler": [
+    {
+     "olcut": "a1.txt = 1",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "a2.txt = 2",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "a3.txt ilk satiri 3",
+     "gecti": true,
+     "not": "['3']"
+    },
+    {
+     "olcut": "patronun notu UYGULANDI (a3'te kod)",
+     "gecti": false,
+     "not": "['3']"
+    },
+    {
+     "olcut": "not is SIRASINDA yazildi",
+     "gecti": true,
+     "not": "1 not"
+    },
+    {
+     "olcut": "not TUR SURERKEN ulasti",
+     "gecti": true,
+     "not": "isci notu aldi (tur SURERKEN, #1): Yon degisikligi: a3.txt'ye 3'un ALTINA ikinci"
+    },
+    {
+     "olcut": "not 45 sn icinde ulasti",
+     "gecti": true,
+     "not": "0.1 sn"
+    },
+    {
+     "olcut": "is KAPANDI",
+     "gecti": true,
+     "not": "bitti"
+    }
+   ],
+   "halka": "Butun isler kapandi.",
+   "durum": "kaldi",
+   "tur": 2,
+   "jeton": 2496,
+   "maliyet_usd": 0.0,
+   "fiyatsiz_tur": 0,
+   "kanit": 1,
+   "insana_soru": 0,
+   "istekler": [],
+   "kapi_durdurdu": 0,
+   "kapi_olaylari": [],
+   "sure_sn": 1.0
+  },
+  {
+   "no": "D17",
+   "ad": "Durdur -> Surdur, kaldigi yerden",
+   "kip": "kuru_iyi",
+   "motor": "claude",
+   "model": "",
+   "olcutler": [
+    {
+     "olcut": "b1.txt = 1",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "b2.txt = 2",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "b3.txt = 3",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "tur insanin istegiyle KESILDI",
+     "gecti": true,
+     "not": "#1 birakildi. insan durdurdu | #1 birakildi: insan durdurdu"
+    },
+    {
+     "olcut": "halka DURDU (yeni tur baslamadi)",
+     "gecti": true,
+     "not": "Insan DURDURDU."
+    },
+    {
+     "olcut": "biten adim TEKRARLANMADI (b1 degismedi)",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "AYNI ajan KALDIGI YERDEN surdurdu",
+     "gecti": false,
+     "not": "#1 Uc adimli kayit (kesintili) -> isci | #1 Uc adimli kayit (kesintili) -> isci | #1 Uc adimli kayit (kesintili) -> isci | #1 Uc adimli kayit (kesintili) -> isci (kaldigi yerden)"
+    },
+    {
+     "olcut": "is KAPANDI",
+     "gecti": true,
+     "not": "bitti"
+    }
+   ],
+   "halka": "Butun isler kapandi.",
+   "durum": "kaldi",
+   "tur": 3,
+   "jeton": 2774,
+   "maliyet_usd": 0.0,
+   "fiyatsiz_tur": 0,
+   "kanit": 1,
+   "insana_soru": 0,
+   "istekler": [],
+   "kapi_durdurdu": 0,
+   "kapi_olaylari": [],
+   "sure_sn": 1.4
+  },
+  {
+   "no": "D17",
+   "ad": "Durdur -> Surdur, kaldigi yerden",
+   "kip": "kuru_kotu",
+   "motor": "claude",
+   "model": "",
+   "olcutler": [
+    {
+     "olcut": "b1.txt = 1",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "b2.txt = 2",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "b3.txt = 3",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "tur insanin istegiyle KESILDI",
+     "gecti": true,
+     "not": "#1 birakildi. insan durdurdu | #1 birakildi: insan durdurdu"
+    },
+    {
+     "olcut": "halka DURDU (yeni tur baslamadi)",
+     "gecti": true,
+     "not": "Insan DURDURDU."
+    },
+    {
+     "olcut": "biten adim TEKRARLANMADI (b1 degismedi)",
+     "gecti": false,
+     "not": ""
+    },
+    {
+     "olcut": "AYNI ajan KALDIGI YERDEN surdurdu",
+     "gecti": false,
+     "not": "#1 Uc adimli kayit (kesintili) -> isci | #1 Uc adimli kayit (kesintili) -> isci | #1 Uc adimli kayit (kesintili) -> isci | #1 Uc adimli kayit (kesintili) -> isci (kaldigi yerden)"
+    },
+    {
+     "olcut": "is KAPANDI",
+     "gecti": true,
+     "not": "bitti"
+    }
+   ],
+   "halka": "Butun isler kapandi.",
+   "durum": "kaldi",
+   "tur": 3,
+   "jeton": 2764,
+   "maliyet_usd": 0.0,
+   "fiyatsiz_tur": 0,
+   "kanit": 1,
+   "insana_soru": 0,
+   "istekler": [],
+   "kapi_durdurdu": 0,
+   "kapi_olaylari": [],
+   "sure_sn": 1.5
+  }
+ ]
+}

@@ -136,7 +136,7 @@ Motor bir adaptör, model bir ayar, arayüz bir istemci.
 
 ## Kod durumu
 
-Yazıldı ve **duman testlerinden geçti** (2382/2382, 26.09.2026):
+Yazıldı ve **duman testlerinden geçti** (2473/2473, 27.09.2026):
 
 | Dosya | Ne yapar |
 |---|---|
@@ -145,16 +145,16 @@ Yazıldı ve **duman testlerinden geçti** (2382/2382, 26.09.2026):
 | `ofis/tahta.py` | Görev, DAG (döngü reddi), **gerçek yazma kilidi** (kira + nabız), kanıt kapısı, CAS. |
 | `ofis/bellek.py` | Çift-zamanlı olgular, karar günlüğü (gerekçe zorunlu), uyanış özeti. **Bilgi kapısı** (`bilgi_ekle`: insanın yazdığı devrilmez) · `[[bağ]]` (seçim bir adım izler) · **kurallar** (yalnız insandan, her brifinge koşulsuz). |
 | `ofis/brifing.py` | **Dört katmanlı brifing** — sistemin kalbi. K3 her dağıtımda taze üretilir. Geçmişi olan işte **devir paketi** (`devir_blogu`) ekler. |
-| `ofis/motor/tip.py` | Motor arayüzü: `MotorOlayi` akışı, `OLAY_TURLERI`, hata sınıfları. Çekirdeğin motora bakan tek yüzü. |
-| `ofis/motor/claude.py` | Claude CLI adaptörü — `stream-json`, izin kapıları, süreç ağacı kesme. |
-| `ofis/motor/codex.py` | **Codex CLI adaptörü — OFİSİN KENDİ YAZDIĞI.** İki kip: **`app-server` (varsayılan, 26.09)** — onay kapısı (`izin_sor`'a codex'in kendi MCP bağlantısıyla sorar), ret gerekçesi `turn/steer` ile ajana, MCP hazır olmadan tur başlamaz; `exec` (açıkça seçilir, görsel üretimi bunu kullanır). |
+| `ofis/motor/tip.py` | Motor arayüzü: `MotorOlayi` akışı, `OLAY_TURLERI`, hata sınıfları. Çekirdeğin motora bakan tek yüzü. **`TurKanali`** (E17): koltuk ile adaptör arasında tur SÜRERKEN not + durdurma kanalı; `tur_ici_mesaj` yetenek bayrağı — taşıyamayan adaptör kanalı REDDEDER. |
+| `ofis/motor/claude.py` | Claude CLI adaptörü — `stream-json`, izin kapıları, süreç ağacı kesme. **Kanal verilince** `--input-format stream-json --replay-user-messages`: not bir sonraki araç sınırında turun içine girer (yankı = ulaştı), `control_request interrupt` turu keser. |
+| `ofis/motor/codex.py` | **Codex CLI adaptörü — OFİSİN KENDİ YAZDIĞI.** İki kip: **`app-server` (varsayılan, 26.09)** — onay kapısı (`izin_sor`'a codex'in kendi MCP bağlantısıyla sorar), ret gerekçesi `turn/steer` ile ajana, MCP hazır olmadan tur başlamaz; patronun notu `turn/steer` (kabul = ulaştı), durdurma `turn/interrupt`; `exec` (açıkça seçilir, görsel üretimi bunu kullanır; kanal almaz). |
 | `ofis/motor/gemini.py` | **DEFTERDE DEĞİL (24.09.2026, kullanıcı kararı: ücretsiz hesapla iş olmuyor).** Dosya duruyor; geri takmak tek satır. **Gemini CLI adaptörü — OFİSİN YAZDIĞI, insan inceleyip kurdu.** `--output-format stream-json`, `--approval-mode plan` ile salt-okunur, `--skip-trust` şart. Bütçe tavanı YOK → kapalı kalarak reddeder. |
-| `ofis/motor/sahte.py` | Senaryolu sahte motor: jeton yakmadan koltuk/panel testi, kenar durumu üretimi. |
+| `ofis/motor/sahte.py` | Senaryolu sahte motor: jeton yakmadan koltuk/panel testi, kenar durumu üretimi. Kanalı taşır (not iletir, durdurmayı uygular). |
 | `ofis/motor/__init__.py` | Kayıt defteri — `motor_ac` · `motor_kaydet` · `musait_motorlar`. |
-| `ofis/koltuk.py` | **Seat Runner** — kilit al → brifing üret → motoru koştur → çıktıyı olaya çevir → nabız at → kanıt topla → incelemeye ver. |
+| `ofis/koltuk.py` | **Seat Runner** — kilit al → brifing üret → motoru koştur → çıktıyı olaya çevir → nabız at → kanıt topla → incelemeye ver. Tur sürerken defterden saniyede bir **not ve DURDURMA** okur (`durdurma_iste` · `durdurma_istendi` · `durdurma_temizle`); durdurulan iş arıza değil, `Sürdür` aynı ajan ve oturumdan devam eder. |
 | `ofis/lider.py` | **Üç kapı** — fan-out (gerekçe zorunlu) · ayrık alan (planlamada) · kanıta karşı inceleme (temiz bağlam, salt okunur). |
-| `ofis/postane.py` | Ajanlar arası soru-cevap + insan onayı. `mesaj` ve `onay` tabloları artık yaşıyor. |
-| `ofis/danisma.py` | **Ajana sorulan soruyu TESLİM eden parça** — yaprak, salt okunur, araç kutusuz. Cevaplanamazsa insana yükseltir. |
+| `ofis/postane.py` | Ajanlar arası soru-cevap + insan onayı. `mesaj` ve `onay` tabloları artık yaşıyor. **Patronun notu** (`not_birak` · `not_iletildi` · `gorev_notlari`; `mod='yonlendirme'`, `okundu=1` = ULAŞTI) ve tek kural cümlesi `NOT_KURALI` (brifing, tur içi not, inceleme ve danışma aynı sözü söyler). |
+| `ofis/danisma.py` | **Ajana sorulan soruyu TESLİM eden parça** — yaprak, salt okunur, araç kutusuz. Cevaplanamazsa insana yükseltir. İşin ana hedefini ve patronun notlarını görür (27.09: görmediği için incelemeyle çelişiyordu). |
 | `ofis/mcp_sunucu.py` | **Ofis MCP sunucusu** — **on üç araç** (`bilgi_yaz` ve `izin_sor` dahil: CLI'ın izin kancası, ofisin TEK kapısı): `durum` · `kanit_ekle` · `karar_yaz` · `soru_sor` · `onay_iste` · `gorsel_uret` · `gorsel_iste` · **`video_uret` · `video_durum` · `video_iste`** · `gorev_ac`. Bağımlılıksız, elle yazılmış stdio JSON-RPC. |
 | `ofis/panel.py` | FastAPI arka uç — oda türetimi, ölçümler, bağlam sağlığı, SSE canlı akış, güvenlik kapıları. |
 | `web/` | `index.html` · `panel.css` · `panel.js` — koyu tema, 1600×1000, iki görünüm + çekmece. |
@@ -184,20 +184,21 @@ Yazıldı ve **duman testlerinden geçti** (2382/2382, 26.09.2026):
 | `ofis/baglayici.py` | **claude.ai baglayicilari** — uc durum (bagli / yetki yok / olculemedi), asla uydurmaz. Bildirim bir SUZGEC DEGILDIR: teknik olarak hepsi yuklenir (~95k jeton), beyan niyeti ve maliyet kararini kaydeder. |
 | `ofis/yetenek.py` | **"Bu ofis neyi yapabilir"** — bes kayit defterini tek ekranda toplar. Ana ayrim SAHIPLIK: ofisin sahip oldugunu yonetir, olmadigini yalnizca OLCER ve komutu soyler. |
 | `ofis/sartname.py` | **Sartname kapisi** — fable'in 1 numarali yeri. Olcutu YAZMAZ, DENETLER. Saf yargi isi: araclar KAPALI kosar (olculdu: aracli 3/4 dustu). Son sansta ogretmez, gorunur uyariyla gecirir. |
-| `ofis/kabuk.py` | **Komut satırı** — 26 komut (koddan sayıldı): `kur` · `ise-al` · `konus` · `hedef` · `devam` · `ekip` · `hesap` · `guncelle` · `bilgi` · `kural` · `model` · `plan` · `roller` · `ajan` · `gorsel` · `video` · `iptal` · `anahtar` · `yetenek` · `kullanim` · `saglik` · `durum` · `bekleyen` · `cevapla` · `onayla` · `panel`. |
+| `ofis/kabuk.py` | **Komut satırı** — 30 komut (koddan sayıldı, 27.09; 26 yazıyordu ve bayattı): `kur` · `ise-al` · `konus` · `hedef` · `devam` · `ekip` · `hesap` · `guncelle` · `bilgi` · `kural` · `model` · `plan` · `roller` · `ajan` · `gorsel` · `video` · **`not`** · **`durdur`** · `iptal` · `anahtar` · `yetenek` · `kullanim` · `saglik` · `durum` · `bekleyen` · `cevapla` · `onayla` · `yedek` · `geri-al` · `panel`. |
 | `ofis/yedek.py` | **YEDEK** — kod + defter (sqlite yedek API'siyle, WAL'da tutarlı) + ajan çıktıları tek arşivde. Sır ALINMAZ. Atomik, ölçülür (özet + bütünlük), son 30 budanır, ek hedefe (Drive) kopyalanır. Geri yükleme yalnız BOŞ klasöre. Günlük tetik yalnız gerçek defterde. |
 | `ofis/depo.py` | **GİZLİ GITHUB DEPOSU** (`owmerk-code/AgentOfis`, PRIVATE) — kod + defterin METİN hâli (`veri/disari/ofis.sql`) + ajan çıktıları (medya hariç). Üç sert kapı: beklenen adres · PRIVATE · sır taraması (kasa değerleri + anahtar biçimleri). Günlük yedeğin arkasında. |
 | `ofis/geri_al.py` | **TUR GERİ ALMA** — her turun öncesi/sonrası proje kökünün dışındaki gölge git deposuna işlenir; `geri-al` YALNIZ o turun dosyalarını (ikili dahil) döndürür. Sonradan değişen dosyayı ve koşan işi ezmez (`--zorla` hariç), sebep zorunlu, geri alma da geri alınabilir. |
 | `baslat.bat` | Tek tık açılış — bağımlılık yoksa kurar, ilk açılışta örnek ofisi kurar. |
 
-Testler (`testler/`, hepsi jeton yakmadan koşar) — **2382/2382** (32 dosya, 26.09.2026'da tek tek koşturulup SAYILDI):
+Testler (`testler/`, hepsi jeton yakmadan koşar) — **2473/2473** (33 dosya, 27.09.2026'da tek tek koşturulup SAYILDI):
 `duman_baglayici.py` 64 · `duman_cekirdek.py` 90 ·
-`duman_codex_app.py` 59 · `duman_danisma.py` 36 ·
-`duman_degisim.py` 105 · `duman_deneme.py` 47 · `duman_depo.py` 31 ·
+`duman_codex_app.py` 68 · `duman_danisma.py` 36 ·
+`duman_degisim.py` 105 · `duman_deneme.py` 53 · `duman_depo.py` 31 ·
 `duman_ekip.py` 60 · `duman_geri_al.py` 29 · `duman_gorsel.py` 87 ·
 `duman_guncelleme.py` 66 · `duman_hafiza.py` 56 · `duman_hesap.py` 39 ·
 `duman_klasor.py` 35 · `duman_koltuk.py` 61 · `duman_kullanim.py` 62 ·
 `duman_lider.py` 44 · `duman_mcp.py` 137 · `duman_motor.py` 113 ·
+`duman_not.py` 76 ·
 `duman_orkestra.py` 57 · `duman_panel.py` 341 ·
 `duman_panel_senaryo.py` 20 · `duman_riskli.py` 183 ·
 `duman_roller.py` 37 · `duman_saglik.py` 37 · `duman_sohbet.py` 94 ·
@@ -10926,10 +10927,8 @@ exec reddeder). **2382/2382** (32 dosya).
 
 ### AÇIK KALAN
 
-- **Tur sürerken İNSANDAN mesaj (E17)** — altyapı hazır (`turn/steer`
-  ölçüldü ve kapı gerekçesi için kullanılıyor) ama panelden/koltuktan
-  ajana mesaj yolu motor sözleşmesine henüz eklenmedi; Claude tarafı
-  ayrıca ölçülecek (`--input-format stream-json`).
+- ~~**Tur sürerken İNSANDAN mesaj (E17)**~~ **KAPANDI (27.09)** — bkz.
+  "TUR İÇİ NOT ve DURDURMA".
 - **Tam deneme seti Codex işçiyle koşulmadı** (yalnız hızlı set).
 - Codex **lider** olarak app-server'da gerçek turda ölçülmedi (zincirde
   ikinci basamak).
@@ -10938,3 +10937,164 @@ exec reddeder). **2382/2382** (32 dosya).
 - Codex yönetici izni isteyen 5 küçük artık bıraktı (`%TEMP%` altında,
   ölçüm koşularımdan): elevated PowerShell'de
   `takeown /f "$env:TEMP\ofis-deneme-*" /r /d y` sonra silinebilir.
+
+## TUR İÇİ NOT ve DURDURMA — E17 (26–27.09.2026)
+
+Rakipte ajan çalışırken terminaline yazılabiliyor. Bizde tur başladıktan
+sonra insanın ajana söyleyebileceği hiçbir şey yoktu: *"dur, şunu
+değiştir"* ancak tur bitince, iş geri gönderilerek söylenebiliyordu. Panelin
+"Durdur" düğmesi de **yumuşaktı** — koşan turu kesmiyor, yalnız bir
+sonrakini başlatmıyordu; kabuktan başlatılan halkayı ise hiç görmüyordu.
+
+### ÖNCE ÖLÇÜLDÜ — iki motorun protokolü
+
+| | Claude CLI | Codex app-server |
+|---|---|---|
+| Tur sürerken mesaj | `--input-format stream-json`: araç sınırında AYNI turun içine girer; araç sınırı yoksa İKİNCİ bir tur açar | `turn/steer` (A2'de ölçülmüştü) |
+| Ulaştığının kanıtı | `--replay-user-messages` yankısı | steer isteğinin KABUL cevabı |
+| Durdurma | `control_request interrupt` → `error_during_execution` (8,1 sn, $0,007) | `turn/interrupt` |
+| Maliyet | `total_cost_usd` BİRİKİMLİ, `usage` SONUÇ BAŞINA | — |
+
+**27.09'da bir ölçüm daha ($0,03):** Claude CLI stdin **kapansa da**
+kuyruktaki mesajı işliyor (iki kipte 2/2 sonuç, 2/2 yankı). Buna göre
+sonuçta stdin'i açık tutmanın sebebi notu kurtarmak DEĞİL — notun açtığı
+ikinci turda da Durdur'un çalışabilmesi (stdin kapalıyken interrupt
+yazılamaz). Kodun yorumu buna göre düzeltildi.
+
+### Tasarım
+
+```
+panel/kabuk --not--> DEFTER (mesaj, mod='yonlendirme') --saniyede bir--> koltuk
+                                                                          |
+                                               TurKanali (iş parçacığı içi)
+                                                                          v
+                                             adaptör: claude stdin / codex steer
+```
+
+- **Defter süreçler arası kanaldır.** Notu yazan (panel, kabuk) ile turu
+  koşturan (halka) ayrı süreçler olabilir. Durdurma isteği de defterde
+  (`ayar: durdur_istegi`).
+- **Yazılmak ULAŞMAK değildir.** `okundu=1` yalnız ulaştığı an: Claude'da
+  yankı, Codex'te kabul edilen steer, ya da not bir sonraki turun
+  brifingine girip motor ilk olayını verdiğinde. Olay yolu da söyler
+  (`tur SÜRERKEN` / `tur BAŞINDA`).
+- **Taşıyamayan motor kanalı REDDEDER** (`tur_ici_mesaj` bayrağı: claude
+  ve codex app-server evet; codex exec ve gemini hayır). Not kaybolmaz,
+  bir sonraki turun başında gider ve bu söylenir.
+- **Not yalnız işin SAHİBİNE**, çalışan (ya da incelemedeki) işe;
+  kapanmış işe ve başkasının işine not REDDEDİLİR. İşi olmayan ajana not
+  yazılmaz: yeni iş lidere yazılır.
+- **Not liderin sohbet geçmişine KARIŞMAZ** (`mod != 'yonlendirme'`) ama
+  işin brifinginde (K4, ulaşmamışsa **YENİ**), liderin incelemesinde
+  (ulaşmamışsa "ULAŞMADI — geri gönder") ve danışmada durur.
+- **Durdurma gerçek:** koşan tur kanal üzerinden KESİLİR (kısmi kanıt
+  korunur), halka yeni tur başlatmaz. Kesilemeyen motorda tur bitince
+  durulur ve bu **söylenir**. Durdurulan iş arıza değil
+  (`KAYNAK_SEBEPLERI`'nde "insan durdurdu"): `Sürdür` aynı ajanla, aynı
+  oturumdan devam eder.
+- **İstek yalnız insan yeni bir şey başlatınca kalkar** (`konus` ·
+  `hedef` · `devam` · panelde lidere yaz / Sürdür). Son soruyu cevaplamak
+  "devam et" demek değildir: durdurulmuş ofiste panel halkayı
+  kendiliğinden döndürmez.
+
+Yüzeyler: panelde her panonun altında **yazma satırı** (yalnız elinde iş
+olan ajanda; gönderince "iletilecek" der, ulaşınca panoda **"notu aldı"**
+görünür) · Durdur düğmesi artık gerçekten keser · kabukta
+`not <ajan> "..."` ve `durdur`.
+
+### GERÇEK MOTORLA ÖLÇÜLDÜ — deneme setinde D14 ve yeni D17
+
+D14 bugüne kadar "destek yok" diye raporlanıyordu. Artık gerçek bir iş:
+üç dosya sırayla yazılır, ilk dosya yazılınca bir gözcü **patron gibi**
+not bırakır (a3'e ikinci satır olarak bir kod). **D17** (yeni, hızlı set):
+ilk dosya yazılınca patron **Durdur**'a basar, koşturucu sonra **Sürdür**'e
+basar. Gözcü motoru sarar, motora dokunmaz — gerçek claude/codex ya da
+kuru kipin sahte motoru, aynı.
+
+| | Claude işçi (haiku) | Codex işçi (gpt-6-luna) |
+|---|---|---|
+| D14 notun ulaşması | **6,3–6,4 sn**, tur sürerken | **0,0–0,1 sn**, tur sürerken |
+| D14 not uygulandı, iş kapandı | geçti ($0,08–0,17) | ilk koşu **KALDI** (aşağıda) → düzeltmeden sonra geçti |
+| D17 tur kesildi, halka durdu, biten adım tekrarlanmadı, aynı ajan kaldığı yerden | geçti ($0,09) | geçti |
+
+### GERÇEK KOŞUNUN BULDUĞU KUSUR — aynı lider iki resme bakıyordu
+
+Codex'te D14'ün ilk koşusu kaldı ve sebep iletim değildi (not 0,1
+saniyede ulaştı):
+
+1. Codex notu aldı, görev metniyle (*"içine yalnız adım numarasını yaz"*)
+   çeliştiğini fark etti ve kurala uyup lidere **sordu**.
+2. Liderin **danışma** turu *"notu kullanma"* dedi — çünkü danışma
+   patronun notunu **hiç görmüyordu** (işin ana hedefini de görmüyordu,
+   yalnız kabul ölçütünü).
+3. Aynı liderin **incelemesi** notu görüyordu ve işi *"not uygulanmamış"*
+   diye geri gönderdi.
+4. Ajan tekrar sordu, danışma yine "ekleme" dedi; iş tik sınırında öldü.
+
+MAST'in ikinci kümesi (ajanlar arası uyumsuzluk) — üstelik tek bir ajanın
+iki kanalı arasında. Claude/haiku aynı çelişkide notu uygulamayı seçtiği
+için bu kusur Claude'da hiç görünmedi. *Bir motoru koşturmadıysan onun
+için hiçbir şey bilmiyorsun.*
+
+Düzeltme iki parça:
+
+- **Danışma işin ana hedefini ve patronun notlarını görür.** Akıl veren
+  ile hüküm veren aynı resme bakmalı.
+- **Kural TEK cümle** (`postane.NOT_KURALI`): *"Patronun notu işin ilk
+  tanımından YENİDİR ve onu DEĞİŞTİRİR: ikisi çelişirse NOT geçerlidir
+  (iş patronundur). Yalnız notun kendisi belirsizse ya da işi imkânsız
+  kılıyorsa DUR ve `soru_sor` ile sor."* Önce dört yerde dört ayrı cümle
+  vardı (brifing: "kabul ölçütüyle çelişiyorsa sor", tur içi not: aynı,
+  inceleme: "işin tanımına ektir", danışma: hiçbir şey). Artık dördü de
+  aynı sabiti basıyor ve sınama bunu ölçüyor.
+
+Düzeltmeden sonra Codex'te D14: **geçti**, ajan sormadan uyguladı, tek
+işçi turunda bitti.
+
+Yol boyunca bir geniş `except Exception: pass` (danışmada, görev bloğu)
+`TahtaHatasi`'na daraltıldı: notların okunamaması sessizce yutulurdu.
+
+### Sınamalar
+
+`testler/duman_not.py` (yeni, **76**) — postane kapıları, brifing YENİ
+işareti, koltuk (kanallı / kanalsız motor), durdurma, orkestra,
+lider/sohbet/danışma, panel ve kabuk, ve Claude adaptörü **sahte bir
+`claude` sürecine karşı** (gerçek CLI koşmaz). `duman_codex_app.py`
+59 → **68** (steer tur başladıktan sonra, doğru tura; reddedilen steer
+ulaştı sayılmaz; durdurma `turn/interrupt`). `duman_deneme.py` 47 → **53**
+(D14 ve D17 kuru kipte: iyi davranış geçer, kötü doğru sebeple kalır;
+hiçbir iş "destek yok" değil).
+
+**Mutasyon: 25/25 ateş etti** — ama ilk koşuda **üçü SESSİZ kaldı** ve
+üçü de sınamanın kusuruydu:
+
+| Sessiz mutasyon | Sebep | Düzeltme |
+|---|---|---|
+| Claude interrupt yazmasın | Sahte CLI **her** `control_request`'i kesme sayıyordu | Sahte yalnız `interrupt` alt türüyle keser (başkasına hata döner, gerçek CLI gibi), kesme bir işaret dosyasına yazılır, sınama işareti VE sürenin kısa olduğunu ölçer |
+| Sonuçta stdin hemen kapansın | Sahte kuyruğunu hep işliyordu — ve gerçek CLI de işliyor (ölçüldü) | Korumanın GERÇEK sebebi sınandı: notun açtığı ikinci turda Durdur |
+| Panel otomatik sürdürme durdurmayı ezsin | Hiç sınama yoktu | Sahne: insanın önünde TEK istek kalır (başka istek olsaydı sebep başka olurdu ve kapı hiç sınanmazdı) |
+
+İlk koşuda üç Codex mutasyonu "ÇÖKTÜ" görünüyordu — **benim mutasyon
+koşucumun yanlış alarmıydı**: Codex testinin bir bölüm başlığı "ZAMAN
+ASIMI" kelimesini içeriyor, koşucu onu çöküş sandı. Bir sınamam da gerçekten
+çöküyordu (`adlar.index("turn/steer")` steer yokken istisna) — korundu.
+*Ölçüm aracının kendisi de ölçülmeli.*
+
+Tam takım: **2473/2473** (33 dosya), takımın bıraktığı geçici klasör 0.
+
+### AÇIK KALAN
+
+- **Gemini'de tur içi not yok** — Gemini defterde değil; Pro gelince
+  A1 (ACP) ölçülecek.
+- **Durdurma tur sınırında değil ama ANINDA da değil:** koltuk defteri
+  saniyede bir okur; Claude kesmeyi bir sonraki olayda uygular (ölçüldü
+  8,1 sn). Uzun, sessiz bir araç çağrısında gecikme uzayabilir.
+- **Kesilen turun kısmi çalışması:** Claude'da interrupt o anki araç
+  çağrısını reddeder; yarım yazılmış bir dosya olabilir. Disk ölçümü onu
+  gösterir, geri alma (`geri-al`) döndürebilir — ama kesilen turda bu
+  ölçülmedi.
+- Panelde notun **"ulaştı"** hâli yalnız olay satırı olarak görünüyor;
+  gönderilen ama henüz ulaşmamış notların listesi yok.
+- **Mutasyon koşusundan kalan artık:** panel mutasyonunun başlattığı arka
+  plan halkası bir geçici defteri açık tuttu (`ofis-not-*`); silindi.
+  Sınama takımının kendisi artık bırakmıyor (ölçüldü).

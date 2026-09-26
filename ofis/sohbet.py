@@ -166,6 +166,9 @@ class Sohbet:
             rows = conn.execute(
                 "SELECT govde, cevap, olusturuldu FROM mesaj "
                 "WHERE proje_id = ? AND gonderen = 'insan' "
+                # Patronun AJANA notu liderle konusma degildir; gecmise
+                # girseydi lider onu kendisine soylenmis sanirdi.
+                "AND mod != 'yonlendirme' "
                 "ORDER BY olusturuldu DESC, rowid DESC LIMIT ?",
                 (self.proje_id, int(adet)),
             ).fetchall()

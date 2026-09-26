@@ -57,7 +57,7 @@ Her eksik bir faza bağlı; hiçbiri sahipsiz değil.
 | E14 | Gemini rol izinlerini reddediyor, 19 rolün 9'unda koşamıyor | F2 |
 | E15 | Codex ve Gemini'de onay kapısı yok (`rm`, `git push` sorulmuyor) | F2 |
 | E16 | Motorlarda "anahtar var ≠ çalışıyor" körlüğü: kota ve oturum hafızası yalnız codex ve görselde var | F2 |
-| E17 | Tur sürerken mesaj yazma yalnız Claude'da ölçüldü; Codex ve Gemini'de yok | F2 |
+| E17 | Tur sürerken mesaj yazma yalnız Claude'da ölçüldü; Codex ve Gemini'de yok | F2 — **Claude + Codex BİTTİ (27.09)**; Gemini Pro'yu bekliyor |
 | E18 | Terminal görünümlü canlı pano, yazma satırı ve Devral yok | F2 |
 | E19 | Gemini limit pencereleri ölçülmüyor | F2 |
 | E20 | Aynı motorda hesap değişince oturumun sürmesi (ertelendi) | F6 |
@@ -258,7 +258,7 @@ olacak, ve üzerine rakibin **yapmadığı** kontrol, ölçüm ve güvenlik katm
 | A4 | Gemini'ye ofis MCP'si tur başına ve kimlik karışmadan verilebilir mi? | Evetse bağla, değilse metin köprüsü |
 | A5 | Bilgisayar kullanımı hangi motorda gerçekten çalışıyor? | Çalışan motor F7'ye girer; hiçbiri çalışmıyorsa madde ertelenir — **ÖLÇÜLDÜ (26.09): bu makinede İKİ CLI da ajana masaüstü aracı VERMİYOR → ERTELENDİ** (bkz. CLAUDE.md "A5") |
 | A6 | Gemini kredisi Türkiye'de veriliyor mu, Veo'yu kapsıyor mu? | Kapsıyorsa Veo; kapsamıyorsa video Higgsfield'e |
-| A7 | Masaüstünde gerçek terminal (Tauri + PTY) Windows'ta çalışıyor mu? | Devral'ın biçimi — **PTY yarısı ÖLÇÜLDÜ (26.09): ÇALIŞIYOR** (ConPTY/pywinpty, claude TUI açıldı). **Tauri yarısı ölçülmedi**: Rust + MSVC kurulumu gerekiyor, insanın kararı |
+| A7 | Masaüstünde gerçek terminal (Tauri + PTY) Windows'ta çalışıyor mu? | Devral'ın biçimi — **PTY yarısı ÖLÇÜLDÜ (26.09): ÇALIŞIYOR** (ConPTY/pywinpty, claude TUI açıldı). **Tauri yarısı F9'a ERTELENDİ** (kullanıcı kararı 26.09: Rust + MSVC kurulumu F9'da). Gerçek terminal için masaüstü uygulaması şart değil: panel + ConPTY yeter |
 
 **Karar değiştirme kuralı:** ölçüm bir kararı çürütürse karar bu dosyada
 gerekçesiyle değiştirilir ve sana bildirilir.
@@ -312,8 +312,9 @@ geçti mi, jeton, süre, maliyet, tur sayısı, insan müdahalesi, kanıt sayıs
 | D14 | Tur sürerken mesaj: "dur, şunu değiştir" | Mesaj N sn içinde etkili · çıktı yeni yöne uydu | hızlı |
 | D15 | Mağaza raporu (Shopify **deneme mağazası**, gerçek hesap değil) | Rakamlar deneme verisiyle aynı · hiçbir yazma eylemi onaysız geçmedi | F6'dan sonra |
 | D16 | Uzun iş + oturum tazeleme | Bağlam eşiğinde tazelendi · iş bozulmadan sürdü | F5'ten sonra |
+| D17 | Durdur → Sürdür (27.09'da eklendi) | Koşan tur kesildi · halka yeni tur başlatmadı · biten adım **tekrarlanmadı** · aynı ajan kaldığı yerden sürdü | hızlı |
 
-**Hızlı set** (D01, D02, D05, D09, D10, D14): her gün, tek motorda, ≈ $1.
+**Hızlı set** (D01, D02, D05, D09, D10, D14, D17): her gün, tek motorda, ≈ $1.
 **Tam set:** faz sonunda, üç motorda.
 
 Sonuçlar motor başına bir tabloya düşer. F4'teki model yönlendirmesi bu
@@ -371,9 +372,9 @@ yedek geri yüklendi · geri alma çalıştı · test sonrası `%TEMP%`'te artı
 **Görevler**
 1. Gemini'yi defterden geri tak, Pro girişiyle (E21).
 2. Gemini: ofis MCP, tarayıcı, rol izinleri Policy Engine ile (E13, E14).
-3. Codex ve Gemini onay kapısı (A3'e göre) (E15).
+3. Codex ve Gemini onay kapısı (A3'e göre) (E15). — **Codex BİTTİ (26.09):** app-server kipi, `izin_sor`'a codex'in kendi MCP bağlantısıyla sorar; gerçek turda `Remove-Item` kapıda durdu.
 4. Motor sağlık hafızası: kota, oturum düşmesi, "çalışıyor mu" üç motorda tek desenle (E16).
-5. Çift yönlü akış: üç motorda tur sürerken mesaj (A1/A2) (E17).
+5. Çift yönlü akış: üç motorda tur sürerken mesaj (A1/A2) (E17). — **Claude + Codex BİTTİ (27.09):** not tur sürerken ulaşır (Claude 6 sn, Codex anında), Durdur koşan turu gerçekten keser, Sürdür kaldığı yerden devam eder; D14 ve D17 iki motorda gerçek turla geçti. Gemini Pro'yu bekliyor.
 6. Panel: terminal görünümlü pano (renk, araç, diff), yazma satırı, Devral / Ofise geri ver (E18).
 7. Gemini limit pencereleri (E19); lider turuna kaçak freni ve hesap ortamı sınaması (E08); boş zincir tuzağı (E09); rollout tarama maliyeti (E10); kabin ölüm kaydı (E12).
 8. Devir yönleri: claude↔codex↔gemini, gerçek sahte-limitle (E07).

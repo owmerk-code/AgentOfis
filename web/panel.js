@@ -112,6 +112,10 @@ const OLAY = {
   // ajanin anlatisiyla karismasin diye.
   degisim:       (o) => ["diskte değişti", o.govde, "dikkat"],
   dosya_canli:   (o) => ["dosyaya yazıyor", sagdanKes(o.govde), ""],
+  // Patronun CALISAN ajana notu ve notun ULASTIGI an. Ikisi ayri: yazilmak
+  // ulasmak degildir (claude'da bir sonraki arac sinirinda ulasir).
+  not:           (o) => ["patron not bıraktı", o.govde, "bekleme"],
+  not_iletildi:  (o) => ["notu aldı", o.govde, "olumlu"],
 };
 
 /* Olay govdesi cogu zaman "<ajan>: <sey>" ya da "#3 baslik -> ajan"
@@ -329,7 +333,16 @@ function cizSerit() {
    Daraltilmis sutun CIZILMEZ -- gorunmeyen seyi cizmek bos is. */
 function cizGorunum() {
   const ciz = { ofis: cizOfis, terminal: cizCanli, gorevler: cizTahta };
-  for (const p of Object.keys(ciz)) if (panoAcik(p)) ciz[p]();
+  // INSAN NOT YAZARKEN pano yeniden cizilmez (Hafiza'daki kuralin aynisi):
+  // her canli olay terminali bastan cizer ve yarim not SILINIRDI.
+  const odak = document.activeElement;
+  const yaziyor = odak && odak.closest && odak.closest(".pano-not") && odak.value;
+  const kok = { ofis: "#gorunum-ofis", terminal: "#gorunum-canli" };
+  for (const p of Object.keys(ciz)) {
+    if (!panoAcik(p)) continue;
+    if (yaziyor && kok[p] && $(kok[p]) && $(kok[p]).contains(odak)) continue;
+    ciz[p]();
+  }
   sutunSayaclari();
 }
 
@@ -370,7 +383,7 @@ function sutunSayaclari() {
    yeri degistirilir. Anahtar geri cevrildiginde hepsi yerinde. */
 const OKUNUR_TURLER = new Set([
   "cikti", "rapor", "kanit", "soru", "cevap", "onay_istendi",
-  "hata", "izin", "ret", "ders",
+  "hata", "izin", "ret", "ders", "not", "not_iletildi",
 ]);
 
 function panoSatiri(o) {
@@ -570,8 +583,40 @@ function panoKur(a, secenek) {
   const kart = kullanimKarti(a);
   if (kart) p.append(kart);
   p.append(ic);
+  // YAZMA SATIRI yalniz elinde IS olan ajanda: not verilmis bir isin
+  // yonunu duzeltir, is dagitmaz (yeni is lidere yazilir).
+  if (!s.gecmis && a.gorev_no) p.append(notSatiri(a));
   D.panolar[a.ad] = ic;
   return p;
+}
+
+/* AJANA NOT (E17). Pano altindaki yazma satiri: "dur, sunu degistir".
+   Not isin tanimina EKTIR. Motor tasiyorsa tur SURERKEN iletilir (claude:
+   bir sonraki arac sinirinda, codex: hemen), tasimiyorsa bir sonraki
+   turun basinda. Ulastigi an panoda "notu aldı" satiri olarak gorunur --
+   gonderildi demek, ulasti demek DEGILDIR (panel uydurmaz). */
+function notSatiri(a) {
+  const f = el("form", "pano-not");
+  const g = el("input");
+  g.placeholder = `${a.ad}'a not (#${a.gorev_no}) — "dur, şunu değiştir" · Enter`;
+  g.maxLength = 1000;
+  g.title = "Not işin tanımına eklenir. Tur sürerken iletilebiliyorsa hemen, " +
+    "iletilemiyorsa bir sonraki turun başında gider.";
+  f.append(g);
+  f.onsubmit = async (e) => {
+    e.preventDefault();
+    const metin = g.value.trim();
+    if (!metin) return;
+    g.disabled = true;
+    const r = await eylem(`/api/ajan/${encodeURIComponent(a.ad)}/not`,
+      { metin, gorev_no: a.gorev_no },
+      (r) => r.tasir
+        ? `not ${a.ad}'a yazıldı — tur sürüyorsa iletilecek; ulaşınca panoda "notu aldı" görünür`
+        : `not kaydedildi — ${a.ad}'ın motoru (${r.motor}) tur sürerken almıyor; sonraki turun başında gider`);
+    g.disabled = false;
+    if (r) g.value = "";
+  };
+  return f;
 }
 
 /* TERMINAL SUTUNU -- ve OLCULMUS bir kusurun duzeltilmesi (22.09.2026).
@@ -3000,6 +3045,7 @@ const PANO_SINIF = {
   hata: "kotu", izin: "kotu", uyari: "kotu", ret: "kotu",
   soru: "bekleme", onay_istendi: "bekleme", cevap: "bekleme",
   tur_ozeti: "sonuk", ders: "kotu",
+  not: "bekleme", not_iletildi: "kanit",
 };
 
 function ajanAc(ad) {

@@ -47,6 +47,8 @@ from ofis.tahta import medya_hedefi, TahtaHatasi  # noqa: E402
 from ofis.gizli import GizliHatasi           # noqa: E402
 from ofis.roller import RolHatasi            # noqa: E402
 from ofis.ekip import EkipHatasi             # noqa: E402
+from ofis.koltuk import (durdurma_iste,       # noqa: E402
+                         durdurma_temizle)
 from ofis.klasor import (                    # noqa: E402
     KlasorHatasi, klasorleri_dogrula, metinler)
 
@@ -158,6 +160,8 @@ def komut_konus(a) -> None:
     soru icin butun makineyi calistirmak jetonu da zamani da bosa yakar.
     """
     ofis = ofis_ac(a.db, a.proje)
+    # Insan yeni bir sey baslatiyor: eski durdurma istegi KALKAR.
+    durdurma_temizle(ofis.db, ofis.proje_id)
     _guncelleme_bildir(ofis)
     # Klasor ACILDIGI YERDE dogrulanir ve GOSTERILIR. Sessizce kabul
     # edilen bir yol, ajan "bulamadim" diyene kadar dogru gorunur.
@@ -239,6 +243,7 @@ def komut_konus(a) -> None:
 
 def komut_hedef(a) -> None:
     ofis = ofis_ac(a.db, a.proje)
+    durdurma_temizle(ofis.db, ofis.proje_id)
     _guncelleme_bildir(ofis)
     try:
         ekler = metinler(klasorleri_dogrula(a.klasor))
@@ -289,6 +294,7 @@ def komut_devam(a) -> None:
     Yeni hedef vermek, bekleyen isin ustune ikinci bir is yigmak olurdu.
     """
     ofis = ofis_ac(a.db, a.proje)
+    durdurma_temizle(ofis.db, ofis.proje_id)
     _gunluk_yedek(ofis)
     bekleyen = (len(ofis.postane.insan_bekleyenler())
                 + len(ofis.postane.bekleyen_onaylar()))
@@ -978,6 +984,46 @@ def _kilitler(ofis, gorev_id: str) -> list:
         return [r["yol_oneki"] for r in conn.execute(
             "SELECT yol_oneki FROM yazma_kilidi WHERE gorev_id = ?",
             (gorev_id,)).fetchall()]
+
+
+def komut_not(a) -> None:
+    """CALISAN bir ajana not birak: "dur, sunu degistir".
+
+    Not isin tanimina EKTIR. Ajanin motoru tasiyabiliyorsa (claude, codex
+    app-server) tur SURERKEN iletilir -- claude'da bir sonraki arac
+    sinirinda, codex'te hemen; tasiyamiyorsa bir sonraki turun basinda.
+    Ulastigi an deftere yazilir (`not_iletildi`); yazilmak ulasmak degildir.
+    """
+    ofis = ofis_ac(a.db, a.proje)
+    try:
+        n = ofis.postane.not_birak(a.ajan, a.metin, gorev_no=a.gorev)
+    except Exception as exc:
+        raise SystemExit(f"Not birakilamadi: {exc}")
+    ajan = ofis.kadro.ajan(a.ajan)
+    from ofis.motor import motor_ac
+    try:
+        tasir = bool(getattr(motor_ac(ajan["motor"]), "tur_ici_mesaj", False))
+    except Exception:
+        tasir = False
+    yaz(f"not -> {n['alici']} (#{n['gorev_no']}): {n['govde'][:120]}")
+    yaz("  " + ("tur SURERKEN iletilecek (ajan calisiyorsa); ulastiginda "
+                "defterde 'not_iletildi' gorunur." if tasir else
+                f"{ajan['motor']} tur surerken not alamiyor: bir SONRAKI "
+                "turun basinda iletilecek."))
+
+
+def komut_durdur(a) -> None:
+    """Ofisi DURDURUR: kosan turlar kesilir, halka yeni tur baslatmaz.
+
+    Istek deftere yazilir; baska bir surecte kosan halka da gorur. Yarim
+    kalan is ariza sayilmaz: `devam` ayni ajanla, ayni oturumdan surdurur.
+    """
+    ofis = ofis_ac(a.db, a.proje)
+    durdurma_iste(ofis.db, ofis.proje_id, "insan (kabuk)")
+    kosan = [g for g in ofis.tahta.liste() if g["durum"] == "calisiyor"]
+    yaz("DURDURMA istendi. " + (f"{len(kosan)} kosan is kesiliyor."
+                                if kosan else "Kosan is yok."))
+    yaz("  surdurmek icin: python -m ofis.kabuk devam")
 
 
 def komut_iptal(a) -> None:
@@ -1917,6 +1963,16 @@ def ayristirici() -> argparse.ArgumentParser:
                     help="`ekle` icin: kanit hangi ise ait")
     vd.add_argument("--ad", default="", help="`ekle` icin: hedef dosya adi")
     vd.set_defaults(islev=komut_video)
+
+    nt = alt.add_parser("not", help="CALISAN ajana not birak (isin tanimina ek)")
+    nt.add_argument("ajan", help="notun gidecegi ajan")
+    nt.add_argument("metin", help="not -- orn. 'dur, once testleri duzelt'")
+    nt.add_argument("--gorev", type=int, default=None,
+                    help="gorev no (verilmezse ajanin elindeki is)")
+    nt.set_defaults(islev=komut_not)
+
+    dr = alt.add_parser("durdur", help="ofisi durdur: kosan turlar kesilir")
+    dr.set_defaults(islev=komut_durdur)
 
     ip = alt.add_parser("iptal", help="yarim isi iptal et (kilitleri birakir)")
     ip.add_argument("no", type=int, help="gorev numarasi")

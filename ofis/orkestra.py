@@ -70,7 +70,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 from . import baglayici, kullanim, roller, sartname, tarayici
 from .klasor import klasorleri_dogrula, metinler
-from .koltuk import Koltuk
+from .koltuk import Koltuk, durdurma_istendi
 from .danisma import Danisma
 from .lider import Lider, LiderHatasi
 from .motor import motor_ac, MotorHatasi
@@ -958,6 +958,12 @@ class Orkestra:
         her zaman ACIKCA soylenir.
         """
         for sira in range(azami_tik):
+            # INSAN DURDURDU: defterdeki istek (panel ya da kabuk). Yeni tur
+            # BASLAMAZ; kosan turu koltuk zaten kesiyor. Istek burada
+            # temizlenmez -- yalniz insan yeni bir sey baslatinca.
+            if durdurma_istendi(self.db, self.proje_id):
+                yield {"bitti": True, "sebep": "Insan DURDURDU.", "tik": sira}
+                return
             ozet = self.tik(butce_usd=butce_usd, zaman_asimi=zaman_asimi,
                             izinli_araclar=izinli_araclar, paralel=paralel,
                             tarayici_gorunur=tarayici_gorunur,
@@ -965,6 +971,9 @@ class Orkestra:
                             tarayici_kabini=tarayici_kabini)
             ozet["tik"] = sira + 1
             yield ozet
+            if durdurma_istendi(self.db, self.proje_id):
+                yield {"bitti": True, "sebep": "Insan DURDURDU.", "tik": sira + 1}
+                return
 
             acik = [g for g in self.ofis.tahta.liste()
                     if g["durum"] in ("hazir", "calisiyor", "inceleme")]

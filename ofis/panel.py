@@ -41,9 +41,11 @@ from . import degisim
 from . import bellek as _bellek
 from .bellek import BellekHatasi
 from . import kabin
+from .koltuk import durdurma_iste, durdurma_istendi, durdurma_temizle
 from .kabin import KabinHatasi
 from .db import VARSAYILAN_YOL
-from .motor import musait_motorlar
+from .motor import motor_ac, musait_motorlar
+from typing import Optional
 from .postane import PostaneHatasi
 from .tahta import TahtaHatasi
 
@@ -414,6 +416,11 @@ class AnahtarGovdesi(BaseModel):
 class AjanaSorGovdesi(BaseModel):
     ajan: str
     metin: str
+
+
+class NotGovdesi(BaseModel):
+    metin: str
+    gorev_no: Optional[int] = None
 
 
 class KanatGovdesi(BaseModel):
@@ -1444,6 +1451,11 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
         if _KOSU["calisiyor"]:
             return {"surduruldu": False,
                     "sebep": "ofis zaten kosuyor: " + (_KOSU["mesaj"] or "?")}
+        # DURDURULMUS ofis kendiliginden KALKMAZ: insan "dur" dedi; son
+        # cevabi vermesi "devam et" demek degildir. Surdur dugmesi acik.
+        if durdurma_istendi(ofis.db, ofis.proje_id):
+            return {"surduruldu": False,
+                    "sebep": "ofis DURDURULMUS; devam icin 'Surdur'e bas."}
         _KOSU.update(dur=False, calisiyor=True, mesaj="halka surduruluyor")
         threading.Thread(target=_halkayi_kostur, args=(db.yol, proje_ad),
                          daemon=True).start()
@@ -1488,6 +1500,8 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
             # bosuna tur. Bunu SOYLERIZ, sessizce dugmeyi yutmayiz.
             raise HTTPException(400, "Acik is yok; surdurulecek bir sey yok. "
                                      "Yeni is icin lidere yaz.")
+        # Insan yeni bir sey baslatiyor: eski durdurma istegi KALKAR.
+        durdurma_temizle(ofis.db, ofis.proje_id)
         _KOSU.update(dur=False, calisiyor=True, mesaj="halka surduruluyor")
         threading.Thread(target=_halkayi_kostur, args=(db.yol, proje_ad),
                          daemon=True).start()
@@ -1496,14 +1510,24 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
 
     @uygulama.post("/api/durdur")
     def api_durdur():
-        """Kosan lider turunu / halkayi YUMUSAKCA durdurur (tur bitince)."""
-        if not _KOSU["calisiyor"]:
+        """Ofisi DURDURUR: kosan turlar KESILIR, yenisi baslamaz.
+
+        Istek DEFTERE yazilir (`koltuk.durdurma_iste`): kabuktan baslatilan
+        halka da gorur ve koltuk kosan turu kanal uzerinden aninda keser
+        (olculdu: claude 8,1 sn). Kanal tasiyamayan motorda tur bitince
+        durulur ve bu SOYLENIR. Durdurulan is ariza sayilmaz: 'Surdur'
+        ayni ajanla, ayni oturumdan devam eder.
+        """
+        ofis = ofis_ac()
+        kosan = [g for g in ofis.tahta.liste() if g["durum"] == "calisiyor"]
+        if not _KOSU["calisiyor"] and not kosan:
             raise HTTPException(400, "Kosan bir sey yok; durdurulacak bir sey "
                                      "yok.")
         _KOSU["dur"] = True
+        durdurma_iste(ofis.db, ofis.proje_id, "insan (panel)")
         return {"durduruluyor": True,
-                "not": "Kosan tur bitince durur; kismi kanit korunur. Yarim "
-                       "kalan is 'surdur' ile kaldigi yerden devam eder."}
+                "not": "Kosan turlar kesiliyor (kismi kanit korunur). Yarim "
+                       "kalan is 'Surdur' ile kaldigi yerden devam eder."}
 
     @uygulama.post("/api/gorev/{no}/iptal")
     def api_iptal(no: int, govde: SebepGovdesi):
@@ -1614,6 +1638,29 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
         except KadroHatasi as exc:
             raise HTTPException(400, str(exc))
         return a
+
+    @uygulama.post("/api/ajan/{ad}/not")
+    def api_ajan_not(ad: str, govde: NotGovdesi):
+        """CALISAN ajana not (E17). Not isin tanimina EKTIR.
+
+        Panel ILETMEZ, deftere YAZAR: turu kosturan koltuk (panelde ya da
+        kabukta, hangi surecte olursa) saniyede bir defterden okur ve motor
+        tasiyorsa tur surerken iletir. Cevap notun NE ZAMAN gidecegini
+        soyler (`tasir`); ulastigi an ayrica `not_iletildi` olayidir.
+        """
+        from .postane import PostaneHatasi
+        ofis = ofis_ac()
+        try:
+            n = ofis.postane.not_birak(ad, govde.metin, gorev_no=govde.gorev_no)
+        except PostaneHatasi as exc:
+            raise HTTPException(400, str(exc))
+        ajan = ofis.kadro.ajan(ad)
+        try:
+            fabrika = MOTOR_FABRIKASI or motor_ac
+            tasir = bool(getattr(fabrika(ajan["motor"]), "tur_ici_mesaj", False))
+        except Exception:
+            tasir = False
+        return {**n, "tasir": tasir, "motor": ajan["motor"]}
 
     @uygulama.post("/api/ajan/{ad}/ayar")
     def api_ajan_ayar(ad: str, govde: AjanAyarGovdesi):
@@ -1845,6 +1892,7 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
                     kabin_cdp = _t.cdp_adresi(_kabin.kapi)
             metin = (metin + "\n\n"
                      + kabin.oge_metni(oge, kabin_paylasildi=bool(kabin_cdp)))
+        durdurma_temizle(ofis.db, ofis.proje_id)
         _KOSU.update(dur=False, calisiyor=True, mesaj=govde.metin[:80])
         threading.Thread(target=_lideri_kostur,
                          args=(db.yol, proje_ad, metin, lider["ad"],

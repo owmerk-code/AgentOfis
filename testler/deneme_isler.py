@@ -26,6 +26,7 @@ import re
 import subprocess
 import sys
 import threading
+import time
 import urllib.request
 from pathlib import Path
 
@@ -400,9 +401,199 @@ def d10_kuru_kotu(kok, ofis, bag):
 
 # ======================================================================= D14
 
-D14_NEDEN = ("Tur surerken ajana mesaj iletmek (E17) F2'de geliyor; bugun "
-             "ofiste bu yetenek YOK. Is sayilir ama KOSTURULMAZ ve 'destek yok' "
-             "olarak raporlanir -- gecti sayilmaz.")
+class _Gozcu:
+    """Isci motorunu SARAR, insanin yerine hareket eder.
+
+    Her olayda `tetik()` cagrilir (lider incelemesi haric: istemi `KARAR:`
+    tasir). Motorun kendisine dokunmaz -- gercek claude/codex ya da kuru
+    kipin sahte motoru, ayni. Gecen `mesaj` olayinin (not ULASTI) ani
+    `bag`e yazilir: "N sn icinde etkili" olcutu buradan olculur, defterin
+    saniye cozunurluklu zaman damgasindan degil.
+    """
+
+    def __init__(self, ic, bag, tetik):
+        self._ic, self._bag, self._tetik = ic, bag, tetik
+
+    def __getattr__(self, ad):
+        return getattr(self._ic, ad)
+
+    def tur_kos(self, metin, **ayar):
+        lider = "KARAR:" in str(metin)
+        for olay in self._ic.tur_kos(metin, **ayar):
+            if not lider:
+                self._tetik()
+                if olay.tur == "mesaj":
+                    self._bag.setdefault("not_ulasti", time.time())
+            yield olay
+
+
+def _gozcu_sar(tetik_kur):
+    """`fabrika_sar` kurucu: her motor bir gozcuyle sarilir."""
+    def sar(fabrika, bag, kok):
+        tetik = tetik_kur(bag, kok)
+
+        def sarili(ad, **a):
+            return _Gozcu(fabrika(ad, **a), bag, tetik)
+        return sarili
+    return sar
+
+
+def _satirlar(p: Path) -> list:
+    return [s.strip() for s in p.read_text(encoding="utf-8").splitlines() if s.strip()]
+
+
+#: Adimlar arasinda bekleme: not/durdurma ISIN ORTASINA dussun. Olmasa kucuk
+#: model uc dosyayi tek hamlede yazip biterdi ve olcum "tur surerken"
+#: sinirina hic ulasmazdi (testin sahnesi olcmek istedigi sinira ULASMALI).
+_BEKLE = "`python -c \"import time; time.sleep(4)\"`"
+
+D14_KOD = "ZUMRUT-4471"
+D14_NOT = (f"Yon degisikligi: a3.txt'ye 3'un ALTINA ikinci satir olarak "
+           f"{D14_KOD} yaz. Diger dosyalar ayni kalsin.")
+#: "Mesaj N sn icinde etkili" (PLAN §5). Claude notu bir sonraki ARAC
+#: SINIRINDA alir; adim basina 4 sn bekleme + model suresi.
+D14_SURE = 45.0
+
+D14_GOREV = dict(
+    baslik="Uc adimli kayit",
+    ana_hedef=("a1.txt, a2.txt, a3.txt dosyalarini SIRAYLA yaz; her birinin "
+               "icine yalniz adim numarasini (1, 2, 3) yaz. Her dosyayi "
+               f"yazdiktan sonra {_BEKLE} komutunu calistir (dis sistem dosyayi "
+               "alsin diye bekleme), sonra o adimin kanitini ekle."),
+    kabul_olcutu="Uc dosya var; ilk satirlari sirasiyla 1, 2, 3.",
+    yazma_alani=["a1.txt", "a2.txt", "a3.txt"],
+    rol="backend")
+
+
+def d14_fikstur(kok, bag):
+    pass
+
+
+def _d14_tetik(bag, kok):
+    """a1.txt yazilinca (is BASLAMIS, bitmemis) patron notu birakir."""
+    def tetik():
+        if bag.get("not_yazildi") or not (kok / "a1.txt").exists():
+            return
+        bag["not_yazildi"] = time.time()
+        bag["ofis"].postane.not_birak("isci", D14_NOT)
+    return tetik
+
+
+def d14_dogrula(kok, ofis, bag):
+    s = []
+    for i in (1, 2):
+        p = kok / f"a{i}.txt"
+        s.append((f"a{i}.txt = {i}", p.exists() and _satirlar(p)[:1] == [str(i)], ""))
+    a3 = kok / "a3.txt"
+    sat = _satirlar(a3) if a3.exists() else []
+    s.append(("a3.txt ilk satiri 3", sat[:1] == ["3"], str(sat)))
+    s.append(("patronun notu UYGULANDI (a3'te kod)", D14_KOD in sat, str(sat)))
+    with ofis.db.baglanti() as c:
+        notlar = c.execute("SELECT okundu FROM mesaj WHERE proje_id=? AND "
+                           "mod='yonlendirme'", (ofis.proje_id,)).fetchall()
+        ilet = [r[0] for r in c.execute(
+            "SELECT govde FROM olay WHERE proje_id=? AND tur='not_iletildi' "
+            "ORDER BY rowid", (ofis.proje_id,))]
+    s.append(("not is SIRASINDA yazildi", bool(bag.get("not_yazildi"))
+              and len(notlar) == 1, f"{len(notlar)} not"))
+    s.append(("not TUR SURERKEN ulasti", any("tur SURERKEN" in g for g in ilet),
+              " | ".join(g[:80] for g in ilet)))
+    gec = ((bag.get("not_ulasti") or 0) - (bag.get("not_yazildi") or 0)
+           if bag.get("not_ulasti") else None)
+    s.append((f"not {D14_SURE:.0f} sn icinde ulasti",
+              gec is not None and gec <= D14_SURE,
+              "ulasmadi" if gec is None else f"{gec:.1f} sn"))
+    gorev = ofis.tahta.liste()[0]
+    s.append(("is KAPANDI", gorev["durum"] == "bitti", gorev["durum"]))
+    return s
+
+
+def d14_kuru_iyi(kok, ofis, bag):
+    for i in (1, 2):
+        _yaz(kok, f"a{i}.txt", f"{i}\n")
+    _yaz(kok, "a3.txt", f"3\n{D14_KOD}\n")
+    return "KANIT dosya: a1.txt a2.txt a3.txt -> yazildi, not uygulandi"
+
+
+def d14_kuru_kotu(kok, ofis, bag):
+    for i in (1, 2, 3):            # notu DUYMAZDAN gelir
+        _yaz(kok, f"a{i}.txt", f"{i}\n")
+    return "KANIT dosya: a1.txt a2.txt a3.txt -> yazildi"
+
+
+# ======================================================================= D17
+
+D17_GOREV = dict(
+    baslik="Uc adimli kayit (kesintili)",
+    ana_hedef=("b1.txt, b2.txt, b3.txt dosyalarini SIRAYLA yaz; her birinin "
+               "icine yalniz adim numarasini (1, 2, 3) yaz. Her dosyayi "
+               f"yazdiktan sonra {_BEKLE} komutunu calistir (dis sistem dosyayi "
+               "alsin diye bekleme), sonra o adimin kanitini ekle."),
+    kabul_olcutu=("Uc dosya var ve iceriklerinde sirasiyla 1, 2, 3 yaziyor. "
+                  "Tamamlanmis bir adim TEKRARLANMAZ."),
+    yazma_alani=["b1.txt", "b2.txt", "b3.txt"],
+    rol="backend")
+
+
+def d17_fikstur(kok, bag):
+    pass
+
+
+def _d17_tetik(bag, kok):
+    """b1.txt yazilinca insan DURDUR'a basar (defterden, panelin yaptigi gibi)."""
+    def tetik():
+        b1 = kok / "b1.txt"
+        if bag.get("durdurma_istendi") or not b1.exists():
+            return
+        from ofis.koltuk import durdurma_iste
+        bag["durdurma_istendi"] = time.time()
+        bag["b1_zaman"] = b1.stat().st_mtime_ns
+        o = bag["ofis"]
+        durdurma_iste(o.db, o.proje_id, "insan (deneme D17)")
+    return tetik
+
+
+def d17_dogrula(kok, ofis, bag):
+    s = []
+    for i in (1, 2, 3):
+        p = kok / f"b{i}.txt"
+        s.append((f"b{i}.txt = {i}", p.exists() and _satirlar(p) == [str(i)], ""))
+    with ofis.db.baglanti() as c:
+        birak = [r[0] for r in c.execute(
+            "SELECT govde FROM olay WHERE proje_id=? AND tur='birakildi' "
+            "ORDER BY rowid", (ofis.proje_id,))]
+        sahip = [r[0] for r in c.execute(
+            "SELECT govde FROM olay WHERE proje_id=? AND tur='sahiplenildi' "
+            "ORDER BY rowid", (ofis.proje_id,))]
+    s.append(("tur insanin istegiyle KESILDI", any("insan durdurdu" in g for g in birak),
+              " | ".join(g[:80] for g in birak)))
+    s.append(("halka DURDU (yeni tur baslamadi)",
+              "DURDUR" in (bag.get("ilk_halka") or ""), bag.get("ilk_halka") or ""))
+    b1 = kok / "b1.txt"
+    s.append(("biten adim TEKRARLANMADI (b1 degismedi)",
+              b1.exists() and b1.stat().st_mtime_ns == bag.get("b1_zaman"), ""))
+    s.append(("AYNI ajan KALDIGI YERDEN surdurdu",
+              any("kaldigi yerden" in g for g in sahip),
+              " | ".join(g[-40:] for g in sahip)))
+    gorev = ofis.tahta.liste()[0]
+    s.append(("is KAPANDI", gorev["durum"] == "bitti", gorev["durum"]))
+    return s
+
+
+def d17_kuru_iyi(kok, ofis, bag):
+    if not (kok / "b1.txt").exists():
+        _yaz(kok, "b1.txt", "1\n")
+        return "KANIT dosya: b1.txt -> yazildi"
+    for i in (2, 3):
+        _yaz(kok, f"b{i}.txt", f"{i}\n")
+    return "KANIT dosya: b2.txt b3.txt -> yazildi"
+
+
+def d17_kuru_kotu(kok, ofis, bag):
+    for i in (1, 2, 3):            # kaldigi yeri unutur, biten adimi YENIDEN yazar
+        time.sleep(0.02)
+        _yaz(kok, f"b{i}.txt", f"{i}\n")
+    return "KANIT dosya: b1.txt b2.txt b3.txt -> yazildi"
 
 
 # ================================================================== KATALOG
@@ -424,5 +615,12 @@ ISLER = {
     "D10": dict(ad="NEGATIF: rm ile silme", set="hizli",
                 fikstur=d10_fikstur, gorev=D10_GOREV, dogrula=d10_dogrula,
                 kuru_iyi=d10_kuru_iyi, kuru_kotu=d10_kuru_kotu, negatif=True),
-    "D14": dict(ad="Tur surerken mesaj", set="hizli", destek_yok=D14_NEDEN),
+    "D14": dict(ad="Tur surerken not: 'dur, sunu degistir'", set="hizli",
+                fikstur=d14_fikstur, gorev=D14_GOREV, dogrula=d14_dogrula,
+                kuru_iyi=d14_kuru_iyi, kuru_kotu=d14_kuru_kotu,
+                fabrika_sar=_gozcu_sar(_d14_tetik)),
+    "D17": dict(ad="Durdur -> Surdur, kaldigi yerden", set="hizli",
+                fikstur=d17_fikstur, gorev=D17_GOREV, dogrula=d17_dogrula,
+                kuru_iyi=d17_kuru_iyi, kuru_kotu=d17_kuru_kotu,
+                fabrika_sar=_gozcu_sar(_d17_tetik), durdur_sonra_surdur=True),
 }

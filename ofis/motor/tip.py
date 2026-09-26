@@ -36,6 +36,9 @@ from __future__ import annotations
 
 import os
 
+import queue
+import threading
+
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Iterator
@@ -54,6 +57,7 @@ OLAY_TURLERI = (
     "limit",       # hesap kullanim limiti sinyali
     "nabiz",       # motor sessiz, ama hayatta -- kilidi tazelemek icin
     "hata",        # tur icinde hata
+    "mesaj",       # insanin tur ici notu motora ULASTI (ek: kimlik)
     "bitti",       # akisin son olayi; her zaman gelir
 )
 
@@ -96,6 +100,57 @@ class MotorLimitHatasi(MotorHatasi):
 
     hata duzeltilir, limit BEKLENIR ya da baska motora gecilir.
     """
+
+
+class TurKanali:
+    """Tur SURERKEN motora giden tek kanal: insanin notu ve durdurma istegi.
+
+    Akis tek yonluydu: motor konusur, koltuk dinler. Insan bir ajana
+    "dur, sunu degistir" diyemiyordu -- ancak tur bitince, bir sonraki
+    brifingle. Yirmi dakikalik bir turda yirmi dakika yanlis yone gitmek
+    demekti bu.
+
+    OLCULDU (26.09.2026):
+    * claude `--input-format stream-json`: tur surerken yazilan mesaj
+      bir sonraki ARAC SINIRINDA ayni tura girer (sleep bittiginde, 21,8.
+      sn); arac siniri yoksa ikinci bir tur acar. `--replay-user-messages`
+      yankisi mesajin GERCEKTEN ulastigi ani verir.
+    * codex app-server: `turn/steer` tur surerken kabul edildi (2/2).
+    * ikisinde de durdurma calisiyor (claude `control_request interrupt`,
+      codex `turn/interrupt`).
+
+    Kanal is parcacigi guvenlidir: koltuk YAZAR, adaptor OKUR. Adaptor
+    metni bicimlendirmez -- ne soylenecegini koltuk bilir, nasil
+    iletilecegini motor. Ulasan her not bir `mesaj` olayiyla bildirilir;
+    bildirilmeyen not ulasmamis sayilir ve bir sonraki turun basinda
+    iletilir. Yani kanaldan alinip motora VARAMAYAN not kaybolmaz.
+    """
+
+    def __init__(self) -> None:
+        self._kuyruk: "queue.Queue" = queue.Queue()
+        self._dur = threading.Event()
+
+    def gonder(self, kimlik: str, metin: str) -> None:
+        self._kuyruk.put((str(kimlik), str(metin)))
+
+    def al(self) -> list:
+        """Bekleyen notlari BOSALTIR: [(kimlik, metin), ...]."""
+        cikan = []
+        while True:
+            try:
+                cikan.append(self._kuyruk.get_nowait())
+            except queue.Empty:
+                return cikan
+
+    def bos_mu(self) -> bool:
+        return self._kuyruk.empty()
+
+    def durdur(self) -> None:
+        self._dur.set()
+
+    @property
+    def durdurulsun(self) -> bool:
+        return self._dur.is_set()
 
 
 class Motor(ABC):
@@ -158,6 +213,13 @@ class Motor(ABC):
     #: ajan araci bulamaz ve 'yok' der.
     baglayici_tasir: bool = False
 
+    #: Tur SURERKEN not alabiliyor ve durdurulabiliyor mu (`TurKanali`).
+    #: Alamayan motora koltuk kanal VERMEZ; not bir sonraki turun basinda
+    #: iletilir ve panel bunu soyler ("sonraki turda iletilecek"). Kanal
+    #: verilen ama tasiyamayan adaptor REDDEDER -- sessizce yok saysaydi
+    #: insan notunun ulastigini sanirdi.
+    tur_ici_mesaj: bool = False
+
     @abstractmethod
     def musait_mi(self) -> bool:
         """Motor bu makinede calistirilabilir mi.
@@ -183,6 +245,7 @@ class Motor(ABC):
         izinli_araclar: tuple = (),
         ek_ortam: dict = None,
         izin_araci: str = "",
+        kanal: "TurKanali" = None,
     ) -> Iterator[MotorOlayi]:
         """Tek tur kos, olaylari akit.
 
@@ -231,6 +294,12 @@ class Motor(ABC):
         Adaptor bunu `ortam_hazirla(..., ek=ek_ortam,
         izinli=tuple(ek_ortam))` ile gecirmeli: acikca yapilandirilmis
         anahtarlar sir suzgecinden GECER, gerisi gecmez.
+
+        `kanal`: tur SURERKEN insanin notu ve durdurma istegi
+        (`TurKanali`). Motor `tur_ici_mesaj = False` ise koltuk hic
+        gecirmez; gecirilirse adaptor REDDEDER. Ulasan her not icin
+        `mesaj` olayi (ek: `kimlik`) yayilir; durdurulan tur `bitti` ile
+        `sebep="durduruldu"` kapanir.
         """
 
     def etiket(self) -> str:

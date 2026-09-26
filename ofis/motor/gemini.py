@@ -207,7 +207,14 @@ class GeminiMotoru(Motor):
                 zaman_asimi: float = None, mcp_yapilandirma: str = "",
                 izinli_araclar: tuple = (),
                 ek_ortam: dict = None,
-                izin_araci: str = "") -> Iterator[MotorOlayi]:
+                izin_araci: str = "",
+                kanal=None) -> Iterator[MotorOlayi]:
+        # TUR ICI KANAL tasinamiyor (`-p` tek yonlu; ACP olculmedi, A1).
+        # Sessizce yok saysaydik insan notunun ulastigini sanirdi.
+        if kanal is not None:
+            raise MotorHatasi(
+                f"{self.ad} tur surerken not alamiyor; not bir sonraki "
+                "turun basinda iletilmeli.")
         # IZIN KANCASI UYGULANAMIYOR -> KAPALI KALARAK REDDEDILIR.
         #
         # Sessizce yok saysaydik cagiran, riskli her cagrinin ofise

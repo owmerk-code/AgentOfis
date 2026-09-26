@@ -36,11 +36,14 @@ class SahteMotor(Motor):
     """Onceden yazilmis bir olay akisini, gercek motor gibi akitir."""
 
     ad = "sahte"
+    #: Tur ici kanali TASIR: koltugun not/durdurma yolu jeton yakmadan
+    #: sinanabilsin. Her adimda kanali bosaltir; ulasan not `mesaj` olur.
+    tur_ici_mesaj = True
 
     def __init__(self, *, senaryo: str = "basarili", gecikme: float = 0.0,
                  mcp_konusur: bool = False,
                  cevap: str = "Is bitti. Kanit: `pytest -q` -> 9 passed.",
-                 limit_pencere: dict = None) -> None:
+                 limit_pencere: dict = None, nabiz_sayisi: int = 3) -> None:
         # Varsayilan KAPALI: sahte motor bir MCP istemcisi degildir, arac
         # cagiramaz. Acik hali, koltugun MCP yolunu sinamak icindir.
         self.mcp_konusur = mcp_konusur
@@ -52,6 +55,9 @@ class SahteMotor(Motor):
         #: Gercek adaptorlerin `bitti.ek["limit_pencere"]`i (bkz. tip.py):
         #: ofisin olcumu deftere TASIDIGI jeton yakmadan sinanabilsin.
         self.limit_pencere = limit_pencere
+        #: 'sessiz' senaryoda kac nabiz akar -- tur ici not/durdurma
+        #: sinamasi turun SURMESINE ihtiyac duyar.
+        self.nabiz_sayisi = nabiz_sayisi
         #: Cagrilarin kaydi -- test "koltuk motora ne verdi" diye sorabilsin.
         self.cagrilar = []
 
@@ -74,6 +80,7 @@ class SahteMotor(Motor):
         izinli_araclar: tuple = (),
         ek_ortam: dict = None,
         izin_araci: str = "",
+        kanal=None,
     ) -> Iterator[MotorOlayi]:
         # IZIN KANCASI UYGULANAMIYOR -> KAPALI KALARAK REDDEDILIR.
         #
@@ -96,7 +103,22 @@ class SahteMotor(Motor):
             "efor": efor, "yazabilir": yazabilir, "senaryo": senaryo,
             "mcp_yapilandirma": mcp_yapilandirma,
             "izinli_araclar": tuple(izinli_araclar or ()),
+            "kanal": kanal is not None, "iletilen": [],
         })
+        kayit = self.cagrilar[-1]
+        durum = {"durduruldu": False}
+
+        def teslim():
+            """Kanaldaki notlari ULASTIRIR; durdurma istenmisse turu keser."""
+            if kanal is None or durum["durduruldu"]:
+                return
+            if kanal.durdurulsun:
+                durum["durduruldu"] = True
+                return
+            for kimlik, not_metni in kanal.al():
+                kayit["iletilen"].append(not_metni)
+                yield MotorOlayi("mesaj", not_metni[:200],
+                                 {"kimlik": kimlik, "yol": "tur_ici"})
 
         yield MotorOlayi("basladi", "sahte tur basladi",
                          {"oturum_id": oturum, "devam": bool(oturum_id),
@@ -107,10 +129,13 @@ class SahteMotor(Motor):
         if senaryo == "sessiz":
             # Motor hicbir sey soylemiyor ama hayatta: koltugun nabiz
             # atmayi surdurup surdurmedigini sinar.
-            for _ in range(3):
+            for _ in range(self.nabiz_sayisi):
                 if self.gecikme:
                     time.sleep(self.gecikme)
                 yield MotorOlayi("nabiz", "", {"gecen_s": 1.0})
+                yield from teslim()
+                if durum["durduruldu"]:
+                    break
 
         if senaryo == "izin_reddi":
             yield MotorOlayi("arac", "Write", {"ozet": "gizli/ayarlar.json"})
@@ -119,13 +144,17 @@ class SahteMotor(Motor):
                 {"hatali": True},
             )
 
-        if senaryo in ("basarili", "zaman_asimi", "hata"):
+        if senaryo in ("basarili", "zaman_asimi", "hata") and not durum["durduruldu"]:
             yield MotorOlayi("arac", "Read", {"ozet": "BRIFING.md"})
             yield MotorOlayi("arac_sonuc", "4 katman okundu", {"hatali": False})
+            yield from teslim()
             for parca in self.cevap.split(" "):
+                if durum["durduruldu"]:
+                    break
                 if self.gecikme:
                     time.sleep(self.gecikme)
                 yield MotorOlayi("metin", parca + " ")
+                yield from teslim()
 
         if senaryo == "limit":
             yield MotorOlayi("limit", "exhausted", {"status": "exhausted"})
@@ -137,8 +166,12 @@ class SahteMotor(Motor):
         elif senaryo == "hata":
             yield MotorOlayi("hata", "Tur basarisiz (cikis 1): sahte hata",
                              {"sebep": "cikis", "cikis": 1})
+        if durum["durduruldu"]:
+            yield MotorOlayi("hata", "Tur insanin istegiyle DURDURULDU.",
+                             {"sebep": "durduruldu", "cikis": 1})
 
-        basarili = senaryo in ("basarili", "izin_reddi", "sessiz")
+        basarili = (senaryo in ("basarili", "izin_reddi", "sessiz")
+                    and not durum["durduruldu"])
         yield MotorOlayi(
             "bitti",
             self.cevap if basarili else "",
@@ -153,6 +186,7 @@ class SahteMotor(Motor):
                 "arac_sayisi": 1,
                 "limit": senaryo == "limit",
                 "zaman_asimi": senaryo == "zaman_asimi",
+                **({"sebep": "durduruldu"} if durum["durduruldu"] else {}),
                 **({"limit_pencere": self.limit_pencere}
                    if self.limit_pencere else {}),
             },

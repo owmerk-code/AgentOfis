@@ -42,6 +42,7 @@ import sqlite3
 
 from . import butce, degisim, kullanim, plan, roller, tarayici
 from .motor import motor_ac, MotorHatasi
+from .postane import NOT_KURALI, gorev_notlari
 from .zincir import LIDER_ZINCIRI, basamaklari_kur, limitte_devret, lider_devri, ZincirBitti
 from .tahta import TahtaHatasi, yol_normalle, yollar_cakisir
 
@@ -266,6 +267,19 @@ class Lider:
         ]
         if g["govde"]:
             satirlar += ["", "**Gorev tarifi:**", "", g["govde"]]
+        # PATRONUN NOTLARI isin tanimina EKTIR ve incelemeye girer. Girmeseydi
+        # lider, patronun "dur, sunu degistir" dedigi isi "olcutten sapti"
+        # diye geri gonderirdi. ULASMAYAN not ayrica soylenir: ajan onu hic
+        # gormediyse ona uymamasi bir kusur degil, bir TESLIM eksigidir.
+        notlar = gorev_notlari(self.db, self.proje_id, g["id"])
+        if notlar:
+            satirlar += ["", f"**Patronun bu ise notlari** ({NOT_KURALI}):"]
+            for n in notlar:
+                satirlar.append(
+                    f"- {n['govde'][:400]}"
+                    + ("" if n["okundu"] else
+                       "  _(ajana ULASMADI -- is bu nota gore yapilmadiysa "
+                       "GERI GONDER, not bir sonraki turda gider)_"))
         # KUNYE ve KURALLAR incelemeye de girer: kabul olcutunu karsilayan
         # ama KAPSAM DISI olan ya da bir ofis kuralini cignenen is
         # kapatilmamali -- ve inceleyen bunu bilmiyorsa kapatir.

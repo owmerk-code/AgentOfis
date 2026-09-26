@@ -197,6 +197,11 @@ def claude_pencereleri(bilgi) -> dict | None:
 #: yazamadi. Tur ortami bu yuzden ACIKCA kurulur: varsayilana guvenmek,
 #: makineden makineye degisen bir davranisa guvenmektir.
 #: (Ayni degiskenler JarvisForge'da da bu sebeple ayarlaniyor.)
+#: Sonuc geldikten sonra yankisi gelmemis bir notun yeni tur acmasi icin
+#: beklenen en uzun sure. Olculen: 0,7 sn. Genis tutuldu (yavas ag), ama
+#: sonsuz degil -- asili surec kilidi rehin tutar.
+NOT_BEKLEME_SN = 45.0
+
 TUR_ORTAMI = {
     "ENABLE_TOOL_SEARCH": "false",          # araclar ertelenmesin, hepsi acik gelsin
     "ENABLE_CLAUDEAI_MCP_SERVERS": "false", # hesabin connector'lari yuklenmesin
@@ -326,6 +331,11 @@ class ClaudeMotoru(Motor):
     butce_destegi = True   # --max-budget-usd
     araclar_kapatilabilir = True
     izin_kancasi = True   # --tools ""
+    #: Tur SURERKEN not ve durdurma (`TurKanali`). OLCULDU (26.09.2026):
+    #: `--input-format stream-json` ile yazilan mesaj bir sonraki arac
+    #: sinirinda AYNI tura girer; arac siniri yoksa ikinci bir tur acar.
+    #: `control_request interrupt` turu aninda keser (8,1 sn, $0,007).
+    tur_ici_mesaj = True
     #: claude.ai baglayicilarini YALNIZ claude CLI yukler (koltuk buna bakar).
     baglayici_tasir = True
 
@@ -396,6 +406,7 @@ class ClaudeMotoru(Motor):
         ek_ortam: dict = None,
         araclar_kapali: bool = False,
         izin_araci: str = "",
+        kanal=None,
     ) -> Iterator[MotorOlayi]:
         metin = str(metin or "").strip()
         if not metin:
@@ -417,6 +428,7 @@ class ClaudeMotoru(Motor):
             ek_klasorler=ek_klasorler, butce_usd=butce_usd,
             mcp_yapilandirma=mcp_yapilandirma, izinli_araclar=izinli_araclar,
             araclar_kapali=araclar_kapali, izin_araci=izin_araci,
+            akis_girdi=kanal is not None,
         )
 
         self._arguman_dogrula(komut)
@@ -481,11 +493,25 @@ class ClaudeMotoru(Motor):
         }
         zaman_asti = False
         cikis = -1
+        # TUR ICI KANAL: gonderilmis ama YANKISI gelmemis notlar. Yanki
+        # (`--replay-user-messages`) notun modele GERCEKTEN ulastigi andir
+        # -- olculdu: 8. sn'de yazilan not 21,8. sn'de, arac sinirinda
+        # yankilandi. Yazmak ulasmak degildir.
+        bekleyen_not: list = []
+        stdin_acik = kanal is not None
+        # Sonuc geldi ama stdin bekleyen not yuzunden acik birakildi: CLI
+        # notu yeni bir tur olarak isler (olculdu, 0,7 sn). Islemezse surec
+        # zaman asimina kadar ASILI kalirdi -- bu an o korumanin saatidir.
+        bosta_an = None
         try:
             if surec.stdin is None:
                 raise MotorHatasi("claude stdin acilamadi.")
-            surec.stdin.write(metin)
-            surec.stdin.close()
+            if kanal is None:
+                surec.stdin.write(metin)
+                surec.stdin.close()
+            else:
+                surec.stdin.write(self._kullanici_satiri(metin))
+                surec.stdin.flush()
 
             biter = time.monotonic() + sinir
             while True:
@@ -493,11 +519,18 @@ class ClaudeMotoru(Motor):
                 if kalan <= 0:
                     zaman_asti = True
                     break
+                if stdin_acik:
+                    stdin_acik = self._kanali_tasi(surec, kanal, bekleyen_not, durum)
                 try:
                     oge = satirlar.get(timeout=min(NABIZ_ARALIGI, kalan))
                 except queue.Empty:
                     if surec.poll() is not None and not okuyucu.is_alive():
                         break
+                    if (stdin_acik and bosta_an is not None
+                            and time.monotonic() - bosta_an > NOT_BEKLEME_SN):
+                        # Not yazildi ama yeni tur acilmadi: bekleme biter,
+                        # yankisiz not ULASMAMIS sayilir (sonraki turda).
+                        stdin_acik = self._stdin_kapat(surec)
                     # Motor sessiz ama hayatta: kilidin kirasi tazelensin.
                     yield MotorOlayi(
                         "nabiz", "",
@@ -511,8 +544,36 @@ class ClaudeMotoru(Motor):
                 except json.JSONDecodeError:
                     continue  # stream-json disi satir (banner, uyari) -- yok say
                 if isinstance(mesaj, dict):
+                    if mesaj.get("type") not in ("result", "system"):
+                        bosta_an = None
+                    if kanal is not None and mesaj.get("type") == "user":
+                        yield from self._yankilar(mesaj, bekleyen_not)
                     for olay in self._mesaji_cevir(mesaj, durum):
                         yield olay
+                    if kanal is not None and mesaj.get("type") == "result":
+                        if durum.get("durduruldu"):
+                            durum["hata_notu"] = "durduruldu"
+                        if stdin_acik:
+                            # Tur bitti. Bu anda kanala dusmus not da
+                            # gonderilir: CLI onu YENI bir tur olarak isler
+                            # (olculdu), yani patronun sozu kaybolmaz.
+                            stdin_acik = self._kanali_tasi(
+                                surec, kanal, bekleyen_not, durum)
+                        if stdin_acik and (not bekleyen_not
+                                           or durum.get("durduruldu")):
+                            # Bekleyen yoksa (ya da tur DURDURULDUYSA) stdin
+                            # kapanir, surec cikar. Kapandiktan sonra gelen
+                            # not kanalda kalir ve koltuk onu bir SONRAKI
+                            # turun basinda verir.
+                            stdin_acik = self._stdin_kapat(surec)
+                        elif stdin_acik:
+                            # Bekleyen not var: stdin ACIK kalir. Notu
+                            # kurtarmak icin DEGIL -- CLI stdin kapansa da
+                            # kuyruktaki notu isler (olculdu 26.09, iki kipte
+                            # 2/2). Acik tutmanin sebebi notun actigi IKINCI
+                            # turda da DURDUR'un calismasi: stdin kapaliyken
+                            # interrupt yazilamaz.
+                            bosta_an = time.monotonic()
 
             if zaman_asti:
                 self._surec_agacini_kes(surec)
@@ -548,6 +609,11 @@ class ClaudeMotoru(Motor):
             yield MotorOlayi(
                 "hata", "Hesap kullanim limitine ulasildi.", {"sebep": "limit"},
             )
+        elif durum.get("durduruldu"):
+            # Insanin istegi: bir ARIZA degil. Sebep ayri yazilir ki koltuk
+            # isi "kaldigi yerden" surdurebilsin (kaynak tukenmesi gibi).
+            yield MotorOlayi("hata", "Tur insanin istegiyle DURDURULDU.",
+                             {"sebep": "durduruldu", "cikis": cikis})
         elif cikis != 0 or durum["hatali"]:
             ayrinti = (durum["sonuc"] or "".join(hata_parcalari)[-1200:]).strip()
             yield MotorOlayi(
@@ -558,6 +624,7 @@ class ClaudeMotoru(Motor):
         basarili = (
             not zaman_asti and not durum["limit"]
             and cikis == 0 and not durum["hatali"]
+            and not durum.get("durduruldu")
         )
         yield MotorOlayi(
             "bitti",
@@ -574,8 +641,74 @@ class ClaudeMotoru(Motor):
                 "limit": durum["limit"],
                 "zaman_asimi": zaman_asti,
                 "limit_pencere": claude_pencereleri(durum["limit_bilgi"]),
+                "sebep": ("" if basarili else
+                          "zaman_asimi" if zaman_asti else
+                          "limit" if durum["limit"] else
+                          "durduruldu" if durum.get("durduruldu") else
+                          (durum["hata_notu"] or "cikis")),
             },
         )
+
+    # -- tur ici kanal -----------------------------------------------------
+
+    @staticmethod
+    def _kullanici_satiri(metin: str) -> str:
+        """stream-json girdisinin tek kullanici mesaji (olculen bicim)."""
+        return json.dumps({"type": "user", "message": {
+            "role": "user", "content": [{"type": "text", "text": metin}]}},
+            ensure_ascii=False) + "\n"
+
+    def _kanali_tasi(self, surec, kanal, bekleyen_not: list, durum: dict) -> bool:
+        """Kanaldaki notlari ve durdurma istegini surece yazar.
+
+        Doner: stdin hala acik mi. Yazma patlarsa (surec olmus) not
+        kanaldan cikmis ama ULASMAMISTIR -- `mesaj` olayi yayilmaz, koltuk
+        onu bir sonraki turda iletir. Kaybolan not yoktur.
+        """
+        try:
+            if kanal.durdurulsun and not durum.get("durduruldu"):
+                durum["durduruldu"] = True
+                surec.stdin.write(json.dumps({
+                    "type": "control_request", "request_id": "ofis-durdur",
+                    "request": {"subtype": "interrupt"}}) + "\n")
+                surec.stdin.flush()
+                # Durdurulan turda yeni not gonderilmez; kanalda kalanlar
+                # sonraki turun basinda verilir.
+                return True
+            if durum.get("durduruldu"):
+                return True
+            for kimlik, not_metni in kanal.al():
+                surec.stdin.write(self._kullanici_satiri(not_metni))
+                bekleyen_not.append((kimlik, not_metni))
+            surec.stdin.flush()
+            return True
+        except (OSError, ValueError):
+            return False
+
+    @staticmethod
+    def _stdin_kapat(surec) -> bool:
+        try:
+            surec.stdin.close()
+        except (OSError, ValueError):
+            pass
+        return False
+
+    @staticmethod
+    def _yankilar(mesaj: dict, bekleyen_not: list):
+        """Yankisi gelen notu `mesaj` olayina cevirir (ulasti = yanki)."""
+        icerik = (mesaj.get("message") or {}).get("content")
+        if not isinstance(icerik, list) or not bekleyen_not:
+            return
+        for blok in icerik:
+            if not (isinstance(blok, dict) and blok.get("type") == "text"):
+                continue
+            yazi = str(blok.get("text") or "")
+            for i, (kimlik, not_metni) in enumerate(bekleyen_not):
+                if yazi.strip() == not_metni.strip():
+                    del bekleyen_not[i]
+                    yield MotorOlayi("mesaj", not_metni[:200],
+                                     {"kimlik": kimlik, "yol": "tur_ici"})
+                    break
 
     # -- komut -------------------------------------------------------------
 
@@ -584,11 +717,16 @@ class ClaudeMotoru(Motor):
                    butce_usd: float, mcp_yapilandirma: str = "",
                    izinli_araclar: tuple = (),
                    araclar_kapali: bool = False,
-                   izin_araci: str = "") -> list:
+                   izin_araci: str = "",
+                   akis_girdi: bool = False) -> list:
         komut = [
             self.calistirilabilir,
             "-p",
-            "--input-format", "text",
+            # AKIS GIRDISI yalniz kanal verilince: tur surerken not
+            # yazilabilsin. Diger turlar (lider, danisma, sartname) olculmus
+            # `text` yolunda kalir -- degismeyen yolun riski yoktur.
+            *(("--input-format", "stream-json", "--replay-user-messages")
+              if akis_girdi else ("--input-format", "text")),
             "--output-format", "stream-json",
             "--verbose",
             "--include-partial-messages",
@@ -797,7 +935,11 @@ class ClaudeMotoru(Motor):
             durum["sonuc"] = str(mesaj.get("result") or "")
             durum["maliyet"] = float(mesaj.get("total_cost_usd") or 0.0)
             kullanim = mesaj.get("usage") or {}
-            durum["jeton"] = int(
+            # `+=`: akis girdisinde bir tur birden cok `result` uretebilir
+            # (olculdu: kullanim SONUC BASINA gelir, 423 sonra 209 cikti
+            # jetonu). `total_cost_usd` ise BIRIKIMLIDIR (0,0068 -> 0,0103),
+            # o yuzden maliyet `=` kalir. Tek sonuclu turda ikisi ayni.
+            durum["jeton"] += int(
                 (kullanim.get("input_tokens") or 0)
                 + (kullanim.get("output_tokens") or 0)
                 + (kullanim.get("cache_read_input_tokens") or 0)

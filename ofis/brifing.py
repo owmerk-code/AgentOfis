@@ -33,6 +33,7 @@ from pathlib import Path
 from . import riskli, roller
 from .roller import RolHatasi
 from .db import simdi
+from .postane import NOT_KURALI, gorev_notlari
 
 #: Kaba jeton tahmini. Kesin olmasi gerekmiyor; amac brifing sisince
 #: uyarabilmek. Turkce'de karakter/jeton orani ~3.
@@ -341,6 +342,18 @@ class Brifing:
             "**Yazma alanin** — yalnizca buraya yazabilirsin:",
             alan,
         ]
+        # PATRONUN NOTLARI isin tanimina EKTIR. Tur basinda (tam brifing,
+        # devam, devir) her zaman gorunur: bir kez soylenip unutulan bir
+        # yon duzeltmesi, sonraki turda eski yone donmek demektir.
+        # Ulasmamis olanlar YENI diye isaretlenir -- ajan once onlara baksin.
+        notlar = gorev_notlari(self.db, self.proje_id, g["id"])
+        if notlar:
+            satirlar += ["", f"**Patronun bu ise notlari** ({NOT_KURALI}):"]
+            for n in notlar:
+                zaman = str(n["olusturuldu"])[5:16].replace("T", " ")
+                satirlar.append(f"  - [{zaman}]"
+                                + ("" if n["okundu"] else " **YENI**")
+                                + f" {n['govde']}")
         blok = self.tahta.blokcular(no)
         if blok:
             satirlar += ["", "**Seni bekleten isler:**"]
