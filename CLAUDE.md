@@ -10767,3 +10767,43 @@ koşturabiliyor ve Claude `Read` ile görsel okuyabiliyor; ekran görüntüsü +
 UI Automation ile kaba bir masaüstü kullanımı kurulabilir. Kullanıcının
 canlı masaüstünde fare/klavye sürmek onun işini bozabilir; bu yüzden
 insan onayı olmadan DENENMEDİ.
+
+## A7 ÖLÇÜLDÜ (yarısı) — gerçek terminal Windows'ta ÇALIŞIYOR (26.09.2026)
+
+Soru *"Tauri + PTY"* iki ayrı sorudur ve ayrıldı:
+
+1. **Gerçek terminal (PTY) Windows'ta çalışıyor mu** — "Devral"ın
+   (insanın ajanın terminalini devralması) asıl sorusu, Tauri'ye bağlı
+   değil. **ÖLÇÜLDÜ, ÇALIŞIYOR.**
+2. **Tauri kabuğu** — Rust derleyicisi ve Visual Studio derleme araçları
+   gerekiyor; bu makinede YOK (`cargo`/`rustc` yok), kurulumu birkaç GB
+   ve sisteme kurulum. **Ölçülmedi, insanın kararı.** (Disk: 23 GB boş.)
+
+Ölçüm Python `pywinpty` 3.0.5 ile (ConPTY), yalnız geçici klasöre
+kuruldu — projeye ve sistem Python'una dokunulmadı:
+
+| | Sonuç |
+|---|---|
+| PowerShell: komut yaz → çıktıyı oku | **evet** |
+| Yeniden boyutlandırma (100 → 140 sütun) | **evet**, kabuk yeni genişliği gördü |
+| Kapanış | **evet**, 10 sn'lik koşu |
+| `claude` etkileşimli ekranı (mesaj GÖNDERİLMEDİ, $0) | **açıldı**: renk/imleç kodlarıyla gerçek arayüz, yeni klasörde "Is this a project you trust?" sorusu |
+| Kapatınca artık süreç | **yok** (claude.exe önce 1 / sonra 1 — 1'i bu oturum) |
+
+### Adaptör yazılırken gerekenler (ölçümle çıktı)
+
+- **`pywinpty` okuması ENGELLER.** İlk ölçüm betiğim veri yokken sonsuza
+  kadar bekledi ve zaman aşımıyla öldü (artık süreç kalmadı, ölçüldü).
+  Okuma ayrı bir iş parçacığında yapılmalı.
+- **`spawn` argüman LİSTESİ ister**, tırnaklı dize değil; dize verince
+  tırnaklarıyla birlikte dosya adı sandı.
+- **Yeni klasörde güven sorusu çıkıyor.** Devral kipinde ajanın klasörü
+  ya önceden güvenilir yapılmalı ya da soru insana gösterilmeli; sessizce
+  "evet" basmak, kullanıcının kararını ofisin vermesi olur.
+- **Onay kapısı etkileşimli kipte ÖLÇÜLMEDİ.** `--permission-prompt-tool`
+  etkileşimli TUI'de de çalışıyor mu bilinmiyor; rakip bu kipte
+  `bypass permissions` ile koşuyor (kapısız). Devral'dan önce ölçülecek.
+
+**Mimari sonucu:** gerçek terminal için masaüstü uygulaması ŞART DEĞİL —
+panelin kendisi (xterm.js + sunucuda ConPTY) aynı şeyi yapabilir. Tauri
+yalnız "uygulama olarak paketleme" sorusu olarak kalıyor (F9).

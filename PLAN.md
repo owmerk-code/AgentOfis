@@ -258,7 +258,7 @@ olacak, ve üzerine rakibin **yapmadığı** kontrol, ölçüm ve güvenlik katm
 | A4 | Gemini'ye ofis MCP'si tur başına ve kimlik karışmadan verilebilir mi? | Evetse bağla, değilse metin köprüsü |
 | A5 | Bilgisayar kullanımı hangi motorda gerçekten çalışıyor? | Çalışan motor F7'ye girer; hiçbiri çalışmıyorsa madde ertelenir — **ÖLÇÜLDÜ (26.09): bu makinede İKİ CLI da ajana masaüstü aracı VERMİYOR → ERTELENDİ** (bkz. CLAUDE.md "A5") |
 | A6 | Gemini kredisi Türkiye'de veriliyor mu, Veo'yu kapsıyor mu? | Kapsıyorsa Veo; kapsamıyorsa video Higgsfield'e |
-| A7 | Masaüstünde gerçek terminal (Tauri + PTY) Windows'ta çalışıyor mu? | Devral'ın biçimi |
+| A7 | Masaüstünde gerçek terminal (Tauri + PTY) Windows'ta çalışıyor mu? | Devral'ın biçimi — **PTY yarısı ÖLÇÜLDÜ (26.09): ÇALIŞIYOR** (ConPTY/pywinpty, claude TUI açıldı). **Tauri yarısı ölçülmedi**: Rust + MSVC kurulumu gerekiyor, insanın kararı |
 
 **Karar değiştirme kuralı:** ölçüm bir kararı çürütürse karar bu dosyada
 gerekçesiyle değiştirilir ve sana bildirilir.
