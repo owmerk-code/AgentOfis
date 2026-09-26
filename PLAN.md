@@ -256,7 +256,7 @@ olacak, ve üzerine rakibin **yapmadığı** kontrol, ölçüm ve güvenlik katm
 | A2 | Codex app-server kararlı mı? | Evetse app-server, değilse `exec` + `resume` — **ÖLÇÜLDÜ (26.09): ÇALIŞIYOR → app-server** (steer 2/2, interrupt 1/1, onay 4/4; bkz. CLAUDE.md "A2") |
 | A3 | Codex ve Gemini'de onay kapısı nereden kurulur? | Codex `hooks` / Gemini Policy Engine + hooks — **Codex yarısı ÖLÇÜLDÜ (26.09): hooks gerekmedi, app-server `requestApproval` ile her komut istemciye soruluyor** |
 | A4 | Gemini'ye ofis MCP'si tur başına ve kimlik karışmadan verilebilir mi? | Evetse bağla, değilse metin köprüsü |
-| A5 | Bilgisayar kullanımı hangi motorda gerçekten çalışıyor? | Çalışan motor F7'ye girer; hiçbiri çalışmıyorsa madde ertelenir |
+| A5 | Bilgisayar kullanımı hangi motorda gerçekten çalışıyor? | Çalışan motor F7'ye girer; hiçbiri çalışmıyorsa madde ertelenir — **ÖLÇÜLDÜ (26.09): bu makinede İKİ CLI da ajana masaüstü aracı VERMİYOR → ERTELENDİ** (bkz. CLAUDE.md "A5") |
 | A6 | Gemini kredisi Türkiye'de veriliyor mu, Veo'yu kapsıyor mu? | Kapsıyorsa Veo; kapsamıyorsa video Higgsfield'e |
 | A7 | Masaüstünde gerçek terminal (Tauri + PTY) Windows'ta çalışıyor mu? | Devral'ın biçimi |
 

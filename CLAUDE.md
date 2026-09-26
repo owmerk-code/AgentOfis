@@ -10738,3 +10738,32 @@ klasör, ofisin codex evi, `gpt-6-luna`, `effort: low`).
   `guncelleme.py` deneme turu app-server yolunu da koşturmalı.
 
 Maliyet: 4 kısa tur, codex aboneliği (5 saatlik pencere %20'de sabit kaldı).
+
+
+## A5 ÖLÇÜLDÜ — masaüstü kullanımı bu makinede YOK, ertelendi (26.09.2026)
+
+Soru: *"ajan bilgisayarı (masaüstü uygulamalarını) kullanabilir mi?"*
+Kullanıcının gerçek masaüstüne dokunmadan, önce aracın ajana VERİLİP
+VERİLMEDİĞİ ölçüldü ($0'a yakın):
+
+| Nerede baktım | Sonuç |
+|---|---|
+| codex `features list` | `computer_use stable true` — bayrak AÇIK |
+| codex app-server şeması | Windows için uygulama başına izin modeli VAR (`exes`: ürün/yayıncı adı + izin ver/engelle, `aumids`, `default_app_access`) |
+| codex `exec` turunda ajanın kendi araç listesi | `exec · wait · request_user_input · clock · collaboration.*` — **masaüstü aracı YOK** |
+| codex yüklü eklenti/skill, 4.820 eklentilik katalog | resmî bir computer-use eklentisi **YOK** |
+| claude CLI 2.1.282 `system/init` araç listesi (32 araç) | **masaüstü aracı YOK** (yalnız `--chrome`: tarayıcı, masaüstü değil) |
+
+**Hüküm (dikkatli ifade):** *"bu makinedeki iki CLI da ajana masaüstü
+aracı VERMİYOR, baktığım beş yerde ölçtüm"* — "yapılamaz" DEĞİL. Codex'in
+yapılandırma şeması Windows'u tanıyor; araç muhtemelen yalnız Codex
+masaüstü uygulamasında ya da ileriki bir CLI sürümünde geliyor. Bu
+**ölçülmedi.** PLAN kuralı gereği madde ERTELENDİ; CLI güncellemesinde
+(`guncelleme.py`) yeniden ölçülecek: turda araç listesinde `computer`
+geçiyor mu.
+
+**Denenmemiş yedek yol (varsayım, iddia değil):** ajan zaten PowerShell
+koşturabiliyor ve Claude `Read` ile görsel okuyabiliyor; ekran görüntüsü +
+UI Automation ile kaba bir masaüstü kullanımı kurulabilir. Kullanıcının
+canlı masaüstünde fare/klavye sürmek onun işini bozabilir; bu yüzden
+insan onayı olmadan DENENMEDİ.
