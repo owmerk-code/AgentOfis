@@ -10677,3 +10677,64 @@ insana tek soru düşmedi. 9 tur, $0,40.
 **Deneme seti: 13 işin 13'ü gerçek ajanla geçti** (D14 F2'de). Bugünkü
 gerçek koşuların toplamı ≈ $4. **2308/2308.**
 
+
+
+Not (F1 kapanışı): `f1-bitti` etiketi GitHub'a ilk denemede GİTMEDİ —
+`yedek github` "degisiklik_yok" dedi ve o yol etiket göndermiyordu.
+`depo.gonder` artık değişiklik yokken de `push --tags` yapıyor
+(`duman_depo` 31, sınaması: "değişiklik YOKKEN de yeni etiket gider").
+
+## A2 ÖLÇÜLDÜ — Codex app-server ÇALIŞIYOR (26.09.2026)
+
+F0'ın Gemini'siz ilk sorusu: *"Codex tur sürerken mesaj alabiliyor mu,
+ve riskli komutu kim durdurur?"* Önce `codex app-server --help` ve
+protokolün kendi şeması (`generate-json-schema`, 101 istemci isteği, 10
+sunucu isteği) TAM okundu, sonra gerçek turla ölçüldü (boş geçici
+klasör, ofisin codex evi, `gpt-6-luna`, `effort: low`).
+
+| Soru | Sonuç |
+|---|---|
+| Başlıyor mu | **evet** — `initialize` + `thread/start` (codex-cli 0.156.0, şemada `[experimental]` etiketli) |
+| Tur sürerken mesaj (`turn/steer`) | **çalışıyor, 2/2** — 25 sn'lik komut sürerken "iki.txt'yi de yaz" dendi, kabul edildi, dosya YAZILDI |
+| Durdurma (`turn/interrupt`) | **çalışıyor, 1/1** — 25 sn'lik tur 4,5 sn'de kapandı |
+| Onay kapısı | **çalışıyor, 4/4** — `approvalPolicy: untrusted` ile HER komut istemciye `item/commandExecution/requestApproval` olarak soruluyor; `decline` verilen `rm` KOŞMADI |
+| Limit yüzdesi | **tur koşmadan okunuyor** — `account/rateLimits/read`: 5 sa %20 · 7 gün %42 · plan plus · yenilenme anları |
+
+### Üç sonuç
+
+1. **Karar A2: codex adaptörü app-server'a geçecek (F2, E15/E17).**
+   `exec` bugün tek yönlü: tur başladıktan sonra ne mesaj ne onay
+   geçebiliyor. App-server ikisini de veriyor.
+2. **A3'ün codex yarısı `hooks` GEREKTİRMEDİ.** Onay isteği doğrudan
+   istemciye (ofise) geliyor; karar `riskli.py`nin ölçütüyle verilir,
+   Claude'daki `izin_sor` kancasının aynısı. Yani 22.09'dan beri yazılı
+   sınır — *"kabuk kapısı yalnız claude'da"* — kapanabilir. `hooks`
+   ölçülmedi; gerek kalmadı.
+3. **Codex'in canlı limiti artık TUR BEKLEMEDEN okunabilir.** Bugün
+   yalnız tur sonunda oturum kaydından okunuyordu (bayat kalabiliyordu).
+
+### Ölçülen iki tuzak (adaptör yazılırken)
+
+- **Model komutları BİRLEŞTİRİYOR.** İlk denemede üç adım (`Set-Content;
+  Start-Sleep; rm`) tek PowerShell satırına kondu; `rm` yüzünden BÜTÜN
+  satır reddedildi ve zararsız adım da koşmadı. Kapı komutun tamamına
+  karar veriyor — bu doğru (parçalamak kaçak yol açardı), ama ajana
+  *"riskli adımı ayrı komutta çalıştır"* denmeli.
+- **Ret sonrası ajan "BITTI" dedi.** Komut reddedilmişken başarı söyledi.
+  Kanıt kapısı bunu zaten yakalar (kanıt yok); yine de reddin sebebi
+  ajana açıkça iletilmeli.
+
+### Açık kalan
+
+- `untrusted` politikasında `Start-Sleep` bile soruluyor → her komut bir
+  istek-cevap. Ofis bunları otomatik cevaplayacak (yalnız riskli olan
+  insana düşer); gecikmesi ölçülmedi.
+- Dosya yazma (`item/fileChange/requestApproval`) ve MCP araç çağrısının
+  app-server'da nasıl sorulduğu ÖLÇÜLMEDİ (bu koşularda yazma PowerShell
+  ile yapıldı).
+- Kesilen turun alt süreci (`Start-Sleep`) gerçekten öldü mü ölçülmedi;
+  adaptörde `SurecKafesi` bunu kapsayacak.
+- Şema `[experimental]` diyor: CLI güncellemesinde bozulabilir →
+  `guncelleme.py` deneme turu app-server yolunu da koşturmalı.
+
+Maliyet: 4 kısa tur, codex aboneliği (5 saatlik pencere %20'de sabit kaldı).

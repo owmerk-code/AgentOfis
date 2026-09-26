@@ -253,8 +253,8 @@ olacak, ve üzerine rakibin **yapmadığı** kontrol, ölçüm ve güvenlik katm
 | # | Soru | Ölçülünce seçilecek |
 |---|---|---|
 | A1 | Gemini tur sürerken mesaj kabul ediyor mu (ACP)? | ACP evetse ACP, değilse `-p` + `--resume` |
-| A2 | Codex app-server kararlı mı? | Evetse app-server, değilse `exec` + `resume` |
-| A3 | Codex ve Gemini'de onay kapısı nereden kurulur? | Codex `hooks` / Gemini Policy Engine + hooks |
+| A2 | Codex app-server kararlı mı? | Evetse app-server, değilse `exec` + `resume` — **ÖLÇÜLDÜ (26.09): ÇALIŞIYOR → app-server** (steer 2/2, interrupt 1/1, onay 4/4; bkz. CLAUDE.md "A2") |
+| A3 | Codex ve Gemini'de onay kapısı nereden kurulur? | Codex `hooks` / Gemini Policy Engine + hooks — **Codex yarısı ÖLÇÜLDÜ (26.09): hooks gerekmedi, app-server `requestApproval` ile her komut istemciye soruluyor** |
 | A4 | Gemini'ye ofis MCP'si tur başına ve kimlik karışmadan verilebilir mi? | Evetse bağla, değilse metin köprüsü |
 | A5 | Bilgisayar kullanımı hangi motorda gerçekten çalışıyor? | Çalışan motor F7'ye girer; hiçbiri çalışmıyorsa madde ertelenir |
 | A6 | Gemini kredisi Türkiye'de veriliyor mu, Veo'yu kapsıyor mu? | Kapsıyorsa Veo; kapsamıyorsa video Higgsfield'e |
