@@ -138,6 +138,10 @@ try:
     r2 = gonder()
     sina("degisiklik yoksa bos commit ATMAZ", r2["durum"] == "degisiklik_yok", str(r2))
     sina("uzakta commit sayisi degismedi", uzakta_commit() == "2")
+    git(kok, "tag", "faz-deneme")
+    gonder()
+    sina("degisiklik YOKKEN de yeni etiket gider",
+         "faz-deneme" in git(uzak, "tag").stdout, git(uzak, "tag").stdout)
     c.execute("INSERT INTO olgu VALUES ('kargo', 'ucretsiz')")
     c.commit()
     r3 = gonder()

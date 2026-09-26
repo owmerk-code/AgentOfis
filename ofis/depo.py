@@ -223,6 +223,10 @@ def gonder(neden: str = "elle", *, kok: Path = None, db_yolu: Path = None,
     # "degisiklik yok" denip GitHub'a HIC gitmiyordu (gercek kosuda cikti).
     gonderilmemis = _gonderilmemis_dosyalar(kok)
     if not degisen and gonderilmemis is not None and not gonderilmemis[0]:
+        # Degisiklik yok ama yeni bir FAZ ETIKETI olabilir (olculdu:
+        # `f1-bitti` bu yolda hic gitmedi). Etiket sir tasimaz -- zaten
+        # gonderilmis bir commit'i isaret eder; uc kapi yukarida gecildi.
+        _git(kok, "push", "-q", "origin", "--tags", zaman_asimi=120)
         return {"durum": "degisiklik_yok", "sebep": ""}
     taranacak = sorted(set(degisen) | set((gonderilmemis or ([], []))[1]))
 
