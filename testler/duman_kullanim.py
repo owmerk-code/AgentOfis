@@ -312,6 +312,47 @@ sina("ayarlanan esik ekrana ULASIYOR", "isci   5s %70" in K.metin(db, ofis.proje
 db.ayar_yaz(ofis.proje_id, "onceden_gecis", "kapali")
 sina("KAPALI oldugu soyleniyor", "KAPALI" in K.metin(db, ofis.proje_id))
 
+print("\n9. E11 VERI GOCU -- eski codex 0.0 -> olculemedi")
+import sqlite3 as _sq
+_gdb = Veritabani(kok / "goc.sqlite3")
+_go = Ofis.proje_ac(_gdb, "Goc", amac="a", basari_olcutu="b", kok_klasor=str(kok))
+for _d in ({"motor": "codex", "model": "gpt-5.6-sol", "maliyet_usd": 0.0, "jeton": 9},
+           {"model": "gpt-5.6-luna", "maliyet_usd": 0, "jeton": 5},
+           {"motor": "claude", "model": "claude-haiku", "maliyet_usd": 0.0, "jeton": 0},
+           {"motor": "codex", "maliyet_usd": None, "jeton": 3},
+           {"motor": "claude", "maliyet_usd": 0.12, "jeton": 7}):
+    _gdb.olay_yaz(_go.proje_id, "tur_ozeti", json.dumps(_d))
+_c = _sq.connect(str(_gdb.yol))
+_c.execute("PRAGMA user_version = 0")
+_c.commit()
+_c.close()
+Veritabani(kok / "goc.sqlite3")              # acilis gocu kosturur
+
+
+def _maliyetler():
+    _c = _sq.connect(str(_gdb.yol))
+    try:
+        return [json.loads(g).get("maliyet_usd") for (g,) in _c.execute(
+            "SELECT govde FROM olay WHERE tur='tur_ozeti' ORDER BY rowid")]
+    finally:
+        _c.close()
+
+
+_m = _maliyetler()
+sina("codex 0.0 -> None (motor alani ile)", _m[0] is None, str(_m))
+sina("codex 0 -> None (yalniz model adi ile)", _m[1] is None, str(_m))
+sina("Claude'un GERCEK sifirina dokunulmadi", _m[2] == 0.0, str(_m))
+sina("zaten None olan ayni", _m[3] is None)
+sina("fiyatli tur ayni", _m[4] == 0.12)
+_c = _sq.connect(str(_gdb.yol))
+sina("surum 1'e yazildi", _c.execute("PRAGMA user_version").fetchone()[0] >= 1)
+_c.close()
+_gdb.olay_yaz(_go.proje_id, "tur_ozeti", json.dumps(
+    {"motor": "codex", "maliyet_usd": 0.0}))
+Veritabani(kok / "goc.sqlite3")
+sina("goc IKINCI KEZ kosmuyor (yeni kayda dokunmadi)", _maliyetler()[5] == 0.0)
+
+
 print(f"\n== sonuc: {GECEN} gecti, {KALAN} kaldi ==")
 print(f"klasor: {kok}")
 sys.exit(1 if KALAN else 0)

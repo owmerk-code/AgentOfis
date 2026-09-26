@@ -136,7 +136,7 @@ Motor bir adaptör, model bir ayar, arayüz bir istemci.
 
 ## Kod durumu
 
-Yazıldı ve **duman testlerinden geçti** (2231/2231, 26.09.2026):
+Yazıldı ve **duman testlerinden geçti** (2238/2238, 26.09.2026):
 
 | Dosya | Ne yapar |
 |---|---|
@@ -190,7 +190,7 @@ Yazıldı ve **duman testlerinden geçti** (2231/2231, 26.09.2026):
 | `ofis/geri_al.py` | **TUR GERİ ALMA** — her turun öncesi/sonrası proje kökünün dışındaki gölge git deposuna işlenir; `geri-al` YALNIZ o turun dosyalarını (ikili dahil) döndürür. Sonradan değişen dosyayı ve koşan işi ezmez (`--zorla` hariç), sebep zorunlu, geri alma da geri alınabilir. |
 | `baslat.bat` | Tek tık açılış — bağımlılık yoksa kurar, ilk açılışta örnek ofisi kurar. |
 
-Testler (`testler/`, hepsi jeton yakmadan koşar) — **2231/2231** (30 dosya, 26.09.2026'da tek tek koşturulup SAYILDI):
+Testler (`testler/`, hepsi jeton yakmadan koşar) — **2238/2238** (30 dosya, 26.09.2026'da tek tek koşturulup SAYILDI):
 `duman_cekirdek.py` 78 · `duman_motor.py` 102 · `duman_koltuk.py` 61 ·
 `duman_lider.py` 44 · `duman_mcp.py` 130 · `duman_panel.py` 341 ·
 `duman_orkestra.py` 57 · `duman_zincir.py` 71 · `duman_tavan.py` 27 · `duman_kullanim.py` 55 ·
@@ -10531,4 +10531,26 @@ Düzeltmeden sonra hızlı set gerçek ajanla yine **5/5, $0,36**.
   D13) yazılmadı.
 - Hızlı set yalnız claude'da koştu; codex işçiyle koşulmadı.
 - `.playwright-mcp` gürültüsü (yukarıda).
+
+## E11 — ESKİ CODEX MALİYETLERİ DÜZELTİLDİ (26.09.2026)
+
+Ölçüldü (gerçek defter, salt okunur): **10 codex turu `maliyet_usd: 0.0`**
+— ölçülmüş sıfır, yani panel ve kullanım onları BEDAVA gösteriyordu.
+Codex dolar bildirmez; doğrusu `None` (ölçülemedi). Motoru yazılmamış 3
+tur da `0.0`'dı ama bakıldı: başlamadan düşen Claude turları (0 jeton) —
+GERÇEK sıfır, dokunulmadı.
+
+**Veri göçü** (`db.VERI_GOCLERI`, SQLite `user_version`): sütun
+göçlerinden farkı kaydın İÇERİĞİNİ değiştirmesi, o yüzden her defterde
+BİR KEZ koşar. Yalnız codex (motor `codex` ya da model `gpt-`) ve tam 0'a
+dokunur, kayda `maliyet_notu` düşer. Gerçek defter yedeklenip göç etti:
+11 codex turu `None`, `kullanim` artık "+15 tur fiyatsız" diyor.
+Sınama `duman_kullanim` 9. bölüm; mutasyonlar (her açılışta koşsun ·
+model adına bakmasın) ateş etti. **2238/2238.**
+
+Açık (not): gerçek Playwright koşan sınamadan sonra `%TEMP%`'te bir
+`chrome_url_fetcher_*` klasörü beliriyor; kaynağı KESİN DEĞİL (kullanıcının
+kendi Chrome'u da aynı yere aynı türü yazıyor ve kilitli `.tmp`'yi o
+tutuyor). Bizim `ofis-*` klasörlerimiz sıfır. Emin olunmayan artık
+"testin" diye yazılmadı.
 

@@ -536,6 +536,39 @@ CREATE TABLE IF NOT EXISTS canli_degisim (
 """
 
 
+def _goc_codex_maliyet(conn) -> None:
+    """E11: eski codex turlarinin `maliyet_usd: 0.0` kaydi -> None.
+
+    Codex dolar BILDIRMEZ; adaptor 21.09'a kadar `0.0` yaziyordu ve bu
+    OLCULMUS SIFIR demekti -- panel ve kullanim o turlari bedava
+    gosterdi. Duzeltme yalniz codex turlarina (motor 'codex' ya da model
+    'gpt-' ile baslayan) ve tam 0'a dokunur; Claude'un gercek sifirina
+    (baslamadan dusen tur) dokunmaz. Degisen kayda not dusulur.
+    """
+    import json as _json
+    for rowid, govde in conn.execute(
+            "SELECT rowid, govde FROM olay WHERE tur = 'tur_ozeti'").fetchall():
+        try:
+            d = _json.loads(govde or "{}")
+        except ValueError:
+            continue
+        codex = (d.get("motor") == "codex"
+                 or str(d.get("model") or "").startswith("gpt-"))
+        mal = d.get("maliyet_usd")
+        if codex and isinstance(mal, (int, float)) and mal == 0:
+            d["maliyet_usd"] = None
+            d["maliyet_notu"] = ("E11 gocu: codex dolar bildirmez; eski 0.0 "
+                                 "olculmus sifir sanilirdi")
+            conn.execute("UPDATE olay SET govde = ? WHERE rowid = ?",
+                         (_json.dumps(d, ensure_ascii=False), rowid))
+
+
+#: (surum, islev) -- yalniz SONA eklenir, sira degismez.
+VERI_GOCLERI = (
+    (1, _goc_codex_maliyet),
+)
+
+
 class Veritabani:
     """SQLite sarmalayici. Tek dosya, tek makine, disa bagimlilik yok."""
 
@@ -575,6 +608,7 @@ class Veritabani:
             conn.execute("PRAGMA foreign_keys=ON")
             conn.executescript(SEMA)
             self._goc(conn)
+            self._veri_goc(conn)
 
     #: Sonradan eklenen sutunlar: (tablo, sutun, tam ALTER tanimi).
     #: `CREATE TABLE IF NOT EXISTS` var olan bir tabloyu GUNCELLEMEZ --
@@ -607,6 +641,20 @@ class Veritabani:
         # engellemeye baska bir kapidan geri donmek olurdu.
         ("onay", "kapsam", "TEXT NOT NULL DEFAULT 'eylem'"),
     )
+
+    def _veri_goc(self, conn) -> None:
+        """VERI goclari -- her defterde BIR KEZ, sirayla.
+
+        Sutun goclerinden farki: bunlar var olan kayitlarin ICERIGINI
+        duzeltir, o yuzden iki kez kosmamali. Surum SQLite'in kendi
+        `user_version` alaninda tutulur: ayri bir tabloda tutsaydik o
+        tablo da bir goc isterdi.
+        """
+        surum = conn.execute("PRAGMA user_version").fetchone()[0]
+        for no, islev in VERI_GOCLERI:
+            if no > surum:
+                islev(conn)
+                conn.execute(f"PRAGMA user_version = {int(no)}")
 
     def _goc(self, conn) -> None:
         """Eksik sutunlari ekler. Var olan veri KORUNUR.
