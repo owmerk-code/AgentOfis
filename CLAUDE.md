@@ -55,8 +55,14 @@ modelleri ajan sistemimizde kullanacağız."*
 | **opus** | Yalnız gerçekten yargı gereken ağır işler |
 | **sonnet** | Lider (bölme kararı, kanıta karşı inceleme) |
 | **haiku** | İşçiler — kapalı uçlu, kabul ölçütü net işler |
-| **codex** | Limit yenilenince eklenecek (adaptörü ofis kendi yazdı) |
-| **GPT** | Sonra — hesap bağlanınca |
+| **codex (GPT)** | **Claude ile EŞİT ikinci ana motor** (ChatGPT aboneliği, app-server kipi; görsel üretimi de buradan) |
+| **Gemini · Kimi · Qwen · Groq · DeepSeek · OpenCode** | **Eklenti motor** — hesap alınınca takılır, motor matrisinden geçmeden deftere girmez |
+
+**Bitti çizgisi (27.09.2026, kullanıcı):** *"agent sistemini bitirdiğinde
+gemini olmadan da gpt ve claude abonelikleri ile kullanabilmeliyiz."*
+Sistem Claude + Codex ile TAM kullanılabilir olunca biter; öteki motorlar
+onu beklemez ama takılabilmeleri için altyapı hazır ve ölçülür durur
+(PLAN.md §1, B5).
 
 Ölçülmüş gerekçe: model verilmeden koşan ilk iş **$0.88**, açık model
 verilen ikinci iş **$0.08** tuttu. **On kat.** Ajan işe alınırken model

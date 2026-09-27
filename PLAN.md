@@ -12,20 +12,31 @@
 ## 1. Hedef ve "bitti" tanımı
 
 Senin dijital iş yükünü taşıyan ve uygulama, web sitesi, SaaS, içerik,
-tasarım ve e-ticaret işlerini uçtan uca yapan bir ajan şirketi. Claude,
-Codex ve Gemini **eşit** motorlar. Birçok ajan aynı anda, farklı takımlarda
-çalışıyor. Sistem bilgisayarında koşuyor ve sonunda masaüstü uygulaması oluyor.
+tasarım ve e-ticaret işlerini uçtan uca yapan bir ajan şirketi. Birçok ajan
+aynı anda, farklı takımlarda çalışıyor. Sistem bilgisayarında koşuyor ve
+sonunda masaüstü uygulaması oluyor.
 
-**Sistem şu dört koşul birlikte sağlanınca "bitti" sayılır:**
+**Motor kararı (27.09.2026, kullanıcı):** *"agent sistemini bitirdiğinde
+gemini olmadan da gpt ve claude abonelikleri ile kullanabilmeliyiz."*
+Sistemin **bitti çizgisi iki abonelik motoru: Claude ve Codex (GPT)** — ikisi
+eşit, birinci sınıf. Gemini (görsel, video, araştırma), Kimi, Qwen, Groq,
+DeepSeek, OpenCode vb. **eklenti motorlardır**: hesap alınınca takılır,
+sistem onları beklemez. Takılabilmelerinin şartı hazır olmak ve ölçülmektir:
+her yeni motor **motor matrisinden (§4-T3) geçmeden** deftere girmez (E59).
+Önceki "üç motor eşit" kararı (25.09) bununla değişti; Gemini'ye bağlı
+maddeler "Motor eklentileri" başlığına taşındı (§6, F2'nin sonu).
+
+**Sistem şu beş koşul birlikte sağlanınca "bitti" sayılır:**
 
 | # | Koşul | Nasıl ölçülür |
 |---|---|---|
-| B1 | Deneme setinin (§5) tamamı üç motorda da geçiyor | `python -m testler.deneme --hepsi` raporu, %100 |
+| B1 | Deneme setinin (§5) tamamı Claude'da da Codex'te de geçiyor | `python -m testler.deneme --hepsi --motor X` raporu, %100 |
 | B2 | Bir hafta boyunca sen müdahale etmeden en az üç iş türü kanıtlı ve onaylı bitiyor | Kabul haftası defteri: iş, kanıt, müdahale sayısı |
-| B3 | Motor yetenek matrisi (§4-T3) üç motorda da aynı | Matris testi: tüm hücreler "var" |
+| B3 | Motor yetenek matrisi (§4-T3) Claude ve Codex'te aynı | Matris testi: tüm hücreler "var" |
 | B4 | Masaüstü uygulaması tek tıkla açılıyor; kapatıp açınca yarım işler sürüyor | Kaos testi K4 (§4-T6) |
+| B5 | Yeni motor eklemek tek dosya + tek satır ve matris onu **ölçerek** kabul/ret ediyor | Sahte bir "yeni motor" matristen geçiyor; bir yeteneği yalan söyleyen sahte motor matriste KALIYOR |
 
-"Hatasız" garanti edilemez. Onun yerine yukarıdaki dört koşul **ölçülür**.
+"Hatasız" garanti edilemez. Onun yerine yukarıdaki beş koşul **ölçülür**.
 
 ---
 
@@ -53,15 +64,15 @@ Her eksik bir faza bağlı; hiçbiri sahipsiz değil.
 ### B. Motor eşitliği ve terminal
 | No | Eksik | Faz |
 |---|---|---|
-| E13 | Gemini'de ofis araçları (MCP) ve tarayıcı yok | F2 |
-| E14 | Gemini rol izinlerini reddediyor, 19 rolün 9'unda koşamıyor | F2 |
+| E13 | Gemini'de ofis araçları (MCP) ve tarayıcı yok | Gemini eklentisi |
+| E14 | Gemini rol izinlerini reddediyor, 19 rolün 9'unda koşamıyor | Gemini eklentisi |
 | E15 | Codex ve Gemini'de onay kapısı yok (`rm`, `git push` sorulmuyor) | F2 |
 | E16 | Motorlarda "anahtar var ≠ çalışıyor" körlüğü: kota ve oturum hafızası yalnız codex ve görselde var | F2 — **Claude + Codex BİTTİ (27.09):** tek hafıza (`motor_saglik`), Claude girişi ölçülüyor, hesap hatası hatırlanıyor, oturum düşünce aynı turda devir; Gemini Pro'yu bekliyor |
 | E17 | Tur sürerken mesaj yazma yalnız Claude'da ölçüldü; Codex ve Gemini'de yok | F2 — **Claude + Codex BİTTİ (27.09)**; Gemini Pro'yu bekliyor |
 | E18 | Terminal görünümlü canlı pano, yazma satırı ve Devral yok | F2 |
-| E19 | Gemini limit pencereleri ölçülmüyor | F2 |
+| E19 | Gemini limit pencereleri ölçülmüyor | Gemini eklentisi |
 | E20 | Aynı motorda hesap değişince oturumun sürmesi (ertelendi) | F6 |
-| E21 | Gemini defterden çıkarıldı; Pro girişiyle geri takılmalı | F0/F2 |
+| E21 | Gemini defterden çıkarıldı; Pro girişiyle geri takılmalı | Gemini eklentisi |
 
 ### C. Güvenlik
 | No | Eksik | Faz |
@@ -367,25 +378,43 @@ geri almanın gerçek bir işte denenmesi.
 **Çıkış ölçütü:** deneme seti Claude'da ≥ %85 ve kalanların sebebi yazılı ·
 yedek geri yüklendi · geri alma çalıştı · test sonrası `%TEMP%`'te artık 0.
 
-### F2 — Motor eşitliği ve canlı terminal (22–28 sa)
+### F2 — Motor eşitliği (Claude + Codex) ve canlı terminal (22–28 sa)
+
+**Kapsam değişti (27.09.2026):** F2 artık iki abonelik motorunu eşitler;
+Gemini maddeleri aşağıdaki "Motor eklentileri"ne taşındı (bkz. §1 motor
+kararı). Yerine **motor matrisi** buraya girdi: eklenti motorlarının kapısı o.
 
 **Görevler**
-1. Gemini'yi defterden geri tak, Pro girişiyle (E21).
-2. Gemini: ofis MCP, tarayıcı, rol izinleri Policy Engine ile (E13, E14).
-3. Codex ve Gemini onay kapısı (A3'e göre) (E15). — **Codex BİTTİ (26.09):** app-server kipi, `izin_sor`'a codex'in kendi MCP bağlantısıyla sorar; gerçek turda `Remove-Item` kapıda durdu.
-4. Motor sağlık hafızası: kota, oturum düşmesi, "çalışıyor mu" üç motorda tek desenle (E16). — **Claude + Codex BİTTİ (27.09):** `motor_saglik` tek hafıza + `durum_notu()` tek yüz; gerçek CLI'da (boş yapılandırma, $0) `authentication_failed` ölçüldü. Yan iş: sınamalar gerçek `~/.agentofis`'e yazıyordu → tek kök (`ofis/yollar.py`) + bekçi.
-5. Çift yönlü akış: üç motorda tur sürerken mesaj (A1/A2) (E17). — **Claude + Codex BİTTİ (27.09):** not tur sürerken ulaşır (Claude 6 sn, Codex anında), Durdur koşan turu gerçekten keser, Sürdür kaldığı yerden devam eder; D14 ve D17 iki motorda gerçek turla geçti. Gemini Pro'yu bekliyor.
-6. Panel: terminal görünümlü pano (renk, araç, diff), yazma satırı, Devral / Ofise geri ver (E18).
-7. Gemini limit pencereleri (E19); lider turuna kaçak freni ve hesap ortamı sınaması (E08); boş zincir tuzağı (E09); rollout tarama maliyeti (E10); kabin ölüm kaydı (E12).
-8. Devir yönleri: claude↔codex↔gemini, gerçek sahte-limitle (E07).
-9. Dürüst motor kartı: matris sonucu panelde (E60) · terminal başlığında hesap adı (E63).
-10. Yük testi: 25 sahte ajanla paralel koşu, darboğaz ölçümü (E73). Çözüm gerekirse F6'da.
+1. ~~Codex onay kapısı (E15)~~ **BİTTİ (26.09):** app-server kipi, `izin_sor`'a codex'in kendi MCP bağlantısıyla sorar; gerçek turda `Remove-Item` kapıda durdu.
+2. ~~Motor sağlık hafızası (E16)~~ **BİTTİ (27.09):** `motor_saglik` tek hafıza + `durum_notu()` tek yüz; gerçek CLI'da (boş yapılandırma, $0) `authentication_failed` ölçüldü. Yan iş: sınamalar gerçek `~/.agentofis`'e yazıyordu → tek kök (`ofis/yollar.py`) + bekçi.
+3. ~~Tur sürerken mesaj + gerçek Durdur (E17)~~ **BİTTİ (27.09):** not tur sürerken ulaşır (Claude 6 sn, Codex anında), Durdur koşan turu keser, Sürdür kaldığı yerden devam eder; D14 ve D17 iki motorda gerçek turla geçti.
+4. **Motor matrisi** `testler/matris.py` (T3, E59) — yazılmamıştı (27.09 ölçüldü: dosya yok). Motor × yetenek, her hücre tek kısa gerçek tur; bayrağın iddiası ile turun sonucu ayrışırsa hücre KALIR. Claude ve Codex ile kurulur; sahte bir "yalancı motor" matriste kalmalı (B5).
+5. Panel: terminal görünümlü pano (renk, araç, diff), yazma satırı, Devral / Ofise geri ver (E18).
+6. Lider turuna kaçak freni ve hesap ortamı sınaması (E08); boş zincir tuzağı (E09); rollout tarama maliyeti (E10); kabin ölüm kaydı (E12).
+7. Devir yönleri: claude→codex ölçüldü; **codex→claude** gerçek sahte-limitle (E07).
+8. Dürüst motor kartı: matris sonucu panelde (E60) · terminal başlığında hesap adı (E63).
+9. Yük testi: 25 sahte ajanla paralel koşu, darboğaz ölçümü (E73). Çözüm gerekirse F6'da.
+10. Tam deneme seti Codex işçiyle (bugüne kadar yalnız hızlı set).
 
-**Testler:** T3 motor matrisi · D01–D14 **üç motorda** · D13 bütün devir yönlerinde ·
-D14 üç motorda · T6: K1 (tur ortasında süreç öldürme) ve K6 (oturum düşmesi).
+**Testler:** T3 motor matrisi · D01–D17 **Claude'da ve Codex'te** · D13 iki devir yönünde ·
+T6: K1 (tur ortasında süreç öldürme) ve K6 (oturum düşmesi).
 
-**Çıkış ölçütü:** motor matrisi tam dolu (B3) · deneme seti her motorda ≥ %85 ·
-her motorda D09/D10 %100 (onay kapısı pazarlık konusu değil) · Devral üç motorda çalışıyor.
+**Çıkış ölçütü:** motor matrisi Claude ve Codex'te tam dolu (B3) · yalancı sahte
+motor matriste kalıyor (B5) · deneme seti her iki motorda ≥ %85 · iki motorda
+D09/D10 %100 (onay kapısı pazarlık konusu değil) · Devral iki motorda çalışıyor.
+
+### Motor eklentileri — hesap alındıkça (sistem bunları BEKLEMEZ)
+
+Her eklenti aynı yoldan girer: adaptör (tek dosya) → kayıt (tek satır) →
+**motor matrisi** → hangi hücreler "var" ise o yetenekler açılır, "yok"
+olanlar panelde dürüst motor kartında yazılı kalır. Matristen geçmeyen
+motor deftere girmez.
+
+| Eklenti | Beklenen iş | Ölçülecekler |
+|---|---|---|
+| **Gemini** (Google AI Pro alınınca) | görsel, video, araştırma | Pro girişiyle geri tak (E21) · A1 ACP (tur içi mesaj) · A3 Policy Engine (onay kapısı) · A4 tur başına MCP, kimlik karışmadan (E13) · rol izinleri (E14) · limit pencereleri (E19) · A6 kredi, görsel ve Veo (E44) · devir yönleri |
+| **OpenCode, Qwen Code, Kimi Code** | ucuz işçi, çok sağlayıcı | CLI adaptörü + matris (E59) |
+| **API modelleri** (DeepSeek, Groq, Kimi, Qwen API) | ucuz/hızlı işçi | ofisin kendi araç döngüsüyle ajan olur (E42) + matris |
 
 ### F3 — Güvenlik (8–10 sa)
 
@@ -543,7 +572,7 @@ gelen E59–E72 ve bitmiş hâl çiziminden gelen E73–E84 dahil).
 | 3 | Max 20x | Şimdi hayır; F2'de limit takvimi uzatırsa tekrar sorarım | Önce ölçülür; Codex/Gemini testleri Claude'u rahatlatır |
 | 4 | Yedek | **Google Drive** (Gemini Pro 2 TB alan getiriyor) | Ek ücret yok; OneDrive'da da olur |
 | 5 | Yerel git | **Evet** (uzak depo yok) | Kendi değişikliklerimizi geri almanın tek güvenli yolu |
-| 6 | Gemini Pro | Ne zaman istersen; F0 ikiye bölündü, takvimi durdurmaz | bkz. F0 "sıra kararı" |
+| 6 | Gemini Pro | **İhtiyaç olunca (27.09, kullanıcı).** Sistem Claude + GPT ile biter; Gemini eklenti motoru | bkz. §1 motor kararı |
 
 Senden **gerçekten** beklenenler bunlarla sınırlı: kimlik, para, satın alma
 ve F8'deki görünüş seçimi.
