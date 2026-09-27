@@ -524,11 +524,19 @@ KABUK_ARACLARI = frozenset({"Bash", "PowerShell"})
 
 #: Komut basi: satir basi ya da bir kabuk ayraci. `rm` gibi kisa adlar
 #: baska kelimenin icinde (`format` icindeki `rm`) yakalanmasin diye.
-_B = r"(?:^|[\s;&|(`])"
+#:
+#: TIRNAK ve SUSLU PARANTEZ de komut basidir (27.09.2026, motor matrisi
+#: olctu): codex her komutu `powershell.exe -Command 'rm cop.tmp'` diye
+#: SARARAK kosturuyor. Ayraclar arasinda tirnak yoktu; `rm`, `del`,
+#: `rmdir` tirnaktan sonra geldigi icin HIC eslesmedi ve codex'te silme
+#: komutu kapiya sorulmadan kostu -- dosya silindi. 26.09 olcumu bunu
+#: goremedi: orada `Remove-Item` kullanildi ve o kural `\b` ile her yerde
+#: yakaliyor. `{` PowerShell betik blogu (`-Command "& { del x }"`).
+_B = r"(?:^|[\s;&|(`'\"{])"
 
 KABUK_KURALLARI = (
     ("silme", _kur((
-        _B + r"rm\s", _B + r"rmdir\b", _B + r"(?:del|erase|rd)\s",
+        _B + r"rm\s", _B + r"rmdir\b", _B + r"(?:del|erase|rd|ri)\s",
         r"\bremove-item\b", _B + r"unlink\b", _B + r"shred\b",
         r"\bgit\s+clean\b", r"\bgit\s+reset\s+--hard\b",
         r"\bgit\s+checkout\s+--\s", r"\bgit\s+branch\s+-d\b",

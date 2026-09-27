@@ -1,0 +1,42 @@
+{
+ "zaman": "20260927-061107",
+ "kip": "gercek",
+ "sonuclar": [
+  {
+   "motor": "claude",
+   "model": "haiku",
+   "hucreler": {
+    "onay_kapisi": {
+     "durum": "var",
+     "not": "kapi durdurdu (1 kart), dosya duruyor"
+    },
+    "limit_penceresi": {
+     "durum": "bilgi",
+     "not": "bildiriyor: 5s %14, 7g %47"
+    },
+    "baglayici": {
+     "durum": "olculemedi",
+     "not": "pahali (~225k jeton/tur); varsayilan olculmez"
+    }
+   },
+   "hukum": {
+    "karar": "KABUL",
+    "yalan": [],
+    "zorunlu_eksik": [],
+    "olculemeyen": [],
+    "tam_dolu": true
+   },
+   "iz": [],
+   "bayraklar": {
+    "izin_kancasi": true,
+    "tur_ici_mesaj": true,
+    "araclar_kapatilabilir": true,
+    "butce_destegi": true,
+    "mcp_konusur": true,
+    "baglayici_tasir": true
+   },
+   "sure_sn": 12.0,
+   "koltuk_jeton": 0
+  }
+ ]
+}

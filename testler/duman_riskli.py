@@ -887,5 +887,31 @@ try:
 except OSError:
     pass
 
+# ---------------------------------------------- SARILMIS KABUK KOMUTU
+print("\nSARILMIS KOMUT -- codex komutu powershell -Command '...' ile sarar")
+# 27.09.2026, motor matrisi: `rm` tirnaktan sonra geldigi icin eslesmedi ve
+# codex'te dosya kapiya sorulmadan silindi. Her bicim, gercekte gelen
+# ham metinle sinanir.
+_PS = r'"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe" -Command '
+for komut, sinif in (
+        (_PS + "'rm cop.tmp'", "silme"),
+        (_PS + '"rm -Force cop.tmp"', "silme"),
+        (_PS + "'del cop.tmp'", "silme"),
+        (_PS + "'ri cop.tmp'", "silme"),
+        (_PS + "'rmdir eski'", "silme"),
+        (_PS + '"& { del cop.tmp }"', "silme"),
+        ('cmd /c "del cop.tmp"', "silme"),
+        ("bash -lc 'rm -rf build'", "silme"),
+        (_PS + "'scp a.txt u@h:/x'", "gonderim"),
+        (_PS + "'setx YOL x'", "sistem"),
+):
+    b = R.arac_degerlendir("Bash", {"command": komut})
+    sina(f"sarili {komut[-26:]!r} -> {sinif}", bool(b) and b.get("sinif") == sinif
+         and b.get("sorulur") is True, str(b and b.get("sinif")))
+for komut in (_PS + "'Get-ChildItem -Force'", _PS + "'python ozet.py'",
+              _PS + "'npm run format'", "echo firma", _PS + "'Get-Content rapor.md'"):
+    sina(f"zararsiz sarili komut SERBEST {komut[-24:]!r}",
+         R.arac_degerlendir("Bash", {"command": komut}) is None)
+
 print(f"\n== sonuc: {GECEN} gecti, {KALAN} kaldi ==")
 sys.exit(1 if KALAN else 0)

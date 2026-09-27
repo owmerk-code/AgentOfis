@@ -142,7 +142,7 @@ Motor bir adaptör, model bir ayar, arayüz bir istemci.
 
 ## Kod durumu
 
-Yazıldı ve **duman testlerinden geçti** (2545/2545, 27.09.2026):
+Yazıldı ve **duman testlerinden geçti** (2607/2607, 27.09.2026):
 
 | Dosya | Ne yapar |
 |---|---|
@@ -198,8 +198,8 @@ Yazıldı ve **duman testlerinden geçti** (2545/2545, 27.09.2026):
 | `ofis/geri_al.py` | **TUR GERİ ALMA** — her turun öncesi/sonrası proje kökünün dışındaki gölge git deposuna işlenir; `geri-al` YALNIZ o turun dosyalarını (ikili dahil) döndürür. Sonradan değişen dosyayı ve koşan işi ezmez (`--zorla` hariç), sebep zorunlu, geri alma da geri alınabilir. |
 | `baslat.bat` | Tek tık açılış — bağımlılık yoksa kurar, ilk açılışta örnek ofisi kurar. |
 
-Testler (`testler/`, hepsi jeton yakmadan koşar) — **2545/2545** (34 dosya, 27.09.2026'da tek tek koşturulup SAYILDI; hepsi GEÇİCİ kökte, gerçek `~/.agentofis`e dokunmadan):
-`duman_baglayici.py` 64 · `duman_cekirdek.py` 90 ·
+Testler (`testler/`, hepsi jeton yakmadan koşar) — **2607/2607** (35 dosya, 27.09.2026'da tek tek koşturulup SAYILDI; hepsi GEÇİCİ kökte, gerçek `~/.agentofis`e dokunmadan):
+`duman_baglayici.py` 64 · `duman_cekirdek.py` 100 ·
 `duman_codex_app.py` 68 · `duman_danisma.py` 36 ·
 `duman_degisim.py` 105 · `duman_deneme.py` 53 · `duman_depo.py` 48 ·
 `duman_ekip.py` 60 · `duman_geri_al.py` 29 · `duman_gorsel.py` 87 ·
@@ -209,7 +209,7 @@ Testler (`testler/`, hepsi jeton yakmadan koşar) — **2545/2545** (34 dosya, 2
 `duman_motor_saglik.py` 55 ·
 `duman_not.py` 76 ·
 `duman_orkestra.py` 57 · `duman_panel.py` 341 ·
-`duman_panel_senaryo.py` 20 · `duman_riskli.py` 183 ·
+`duman_panel_senaryo.py` 20 · `duman_riskli.py` 198 · `duman_matris.py` 37 ·
 `duman_roller.py` 37 · `duman_saglik.py` 37 · `duman_sohbet.py` 94 ·
 `duman_tarayici.py` 155 · `duman_tavan.py` 27 · `duman_video.py` 35 ·
 `duman_yedek.py` 47 · `duman_zincir.py` 71 · `duman_zorluk.py` 57
@@ -11348,3 +11348,86 @@ sınama Chrome'u güncelleyici çalıştırıp `%TEMP%`'e artık bırakıyordu).
   ayrı karar.
 - `.playwright-mcp` yedeğe girmiyor (bilinçli, 70 MB). Kalıcı araştırma
   malzemesi oradan çıkarılıp `calisma/` altına konmalı.
+
+## MOTOR MATRİSİ (27.09.2026) — yeni motorun kapısı, ve iki gerçek delik buldu
+
+Kullanıcı: *"agent sistemini bitirdiğinde gemini olmadan da gpt ve claude
+abonelikleri ile kullanabilmeliyiz… ilerde kimi, qwen, deepseek, opencode
+da olacak."* Yeni motor tek dosya + tek satırla takılıyor; `testler/matris.py`
+onun **kapısı**: motor deftere girmeden önce iddia ettiği her yeteneği
+gerçek, kısa, tavanlı bir turla gösterir.
+
+- Hücreler: tur · dosya yazar · komut koşar (cevap modelin bilemeyeceği
+  bir sayı: rastgele tohumun özeti) · kanıt · kafa yazamaz · oturum sürer
+  (zorunlu) + onay kapısı · tur içi not · durdurma · araçları kapatma ·
+  tavan · tarayıcı · limit penceresi · bağlayıcı (bayrağa bağlı).
+- Sonuç: **var** · **yok** (bayrak kapalı, dürüst — kusur değil) ·
+  **YALAN** (iddia edildi, çalışmadı — kusur) · **KALDI** (zorunlu) ·
+  **olculemedi** (sebebiyle). Hüküm: zorunlular var ve YALAN yoksa KABUL.
+- Sınanan motor TEK başına koşar: zincir başka motora devredip "geçti"
+  diyemez. Son ölçüm `~/.agentofis/motor_matris.json` (dürüst motor kartı
+  E60 buradan okuyacak).
+- **Kuru kip ($0):** dürüst sahte motor KABUL, yalancı sahte motor (kanca,
+  kanal, tavan, araç kapatma iddia eder, hiçbirini yapmaz) RED ve dört
+  yalan adıyla sayılıyor — B5 ölçüldü. `duman_matris.py` 37; beş mutasyonun
+  beşi ateş etti.
+
+### GERÇEK SONUÇ
+
+| Hücre | Claude (haiku) | Codex (gpt-6-luna) |
+|---|---|---|
+| zorunlu altısı | var | var |
+| onay kapısı | var | var (düzeltmeden sonra) |
+| tur içi not · durdurma | var · var | var · var |
+| araçları kapatma | var | **yok** |
+| tur başına tavan | var ($0,001'de kesti) | **yok** (başlamadan reddediyor) |
+| tarayıcı | var | var |
+| bağlayıcı | ölçülmedi (~225k jeton) | **yok** |
+| **hüküm** | **KABUL** | **KABUL** |
+
+Codex'in üç "yok"u CLI sınırı ve dürüst bildiriliyor; çekirdek o işi o
+motora vermiyor. **PLAN B3 ("iki motorda aynı") bu yüzden birebir
+karşılanamaz** — B3'ün doğru okunuşu "iki motor da yalan söylemiyor ve
+zorunluların hepsi var" (bkz. PLAN).
+
+### Matrisin bulduğu İKİ GERÇEK DELİK
+
+1. **CODEX'TE `rm` KAPIYA HİÇ SORULMUYORDU.** Codex her komutu
+   `powershell.exe -Command 'rm cop.tmp'` diye SARIYOR; kabuk kurallarının
+   komut başı ayracında tırnak yoktu, `rm`/`del`/`rmdir` tırnaktan sonra
+   geldiği için eşleşmedi ve dosya **sorulmadan silindi**. 26.09'daki
+   ölçüm bunu göremedi çünkü o tur `Remove-Item` kullandı (o kural her
+   yerde yakalıyor). Ayraçlara `'` `"` `{` eklendi, `ri` (Remove-Item kısa
+   adı) silme sayıldı. `duman_riskli` +15: gerçekte gelen sarılı biçimler
+   ve zararsız sarılı komutların SERBEST kaldığı; eski kapıyla 9 ateş.
+   Düzeltmeden sonra gerçek codex turunda kapı durdurdu, dosya yerinde.
+2. **`yazma_alani: ["."]` SESSİZCE SÜZÜLÜYORDU.** Normalleşince boş kalıyor,
+   `gorev_ac` onu atıyordu: iş "yazma alanı belirtilmemiş" diye açıldı ve
+   **hiç kilit alınmadı** (Yasa 1 delindi). Codex doğru davranıp sordu,
+   Claude sormadan yazdı — aynı delik iki motorda iki davranış. Artık
+   kökün tamamı (`.`, `./`, kökün mutlak yolu) REDDEDİLİYOR ve ne
+   yapılacağı söyleniyor; kökün tamamını kilitlemek her paralel işi
+   durdururdu. `duman_cekirdek` +10; kapı koparılınca 8 ateş.
+
+### Kendi hatalarım
+
+- Onay hücresini önce koltuk yolundan kurdum; ajan komutu hiç denemedi,
+  kendisi onay istedi (brifingdeki ölçüt sınav talimatından güçlü çıktı).
+  Bu **ölçütün** çalıştığını gösterir, **kapıyı** sınamaz. Hücre brifingsiz,
+  ofisin kendi MCP'si ve `izin_sor` kancasıyla kuruldu; kapının kartı
+  (`IMZA:`) ajanın kendi `onay_iste`sinden ayrı sayılıyor. Model yine de
+  bazen denemediği için hücre bir kez yeniden dener ve bunu söyler.
+- Codex'in tavan reddini (istisna) hücre "hata" sayıyordu → "yok".
+- Kabuk → Python kaçış tuzağı iki kez daha (`
+` gerçek satır sonu oldu).
+
+### AÇIK KALAN
+
+- **Bağlayıcı hücresi hiç ölçülmedi** (tur başına ~225k jeton).
+- **Dürüst motor kartı (E60)** panelde yok; veri hazır.
+- Tavan hücresi $0,001 ile ölçülüyor; Claude'da tur $0,00105'te kesildi —
+  tavanın **yaklaşık** uygulandığı görüldü, sınırın kesinliği değil.
+- `calisma/cinar/ofis_yurume/` ve `calisma/BRIFING.md` değişikliği bu
+  işten değil (06:27, kaynağı bilinmiyor); dokunulmadı, işlenmedi.
+
+Toplam **2607/2607** (35 dosya, ölçülen).

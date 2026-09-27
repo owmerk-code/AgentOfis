@@ -1,0 +1,88 @@
+{
+ "zaman": "20260927-060857",
+ "kip": "gercek",
+ "sonuclar": [
+  {
+   "motor": "claude",
+   "model": "haiku",
+   "hucreler": {
+    "tur": {
+     "durum": "var",
+     "not": "basarili=True jeton=99344"
+    },
+    "dosya_yazar": {
+     "durum": "var",
+     "not": "'MATRIS-OK'"
+    },
+    "kanit": {
+     "durum": "var",
+     "not": "1 kanit (MCP)"
+    },
+    "komut_kosar": {
+     "durum": "var",
+     "not": "beklenen ozet kanitta"
+    },
+    "kafa_yazamaz": {
+     "durum": "var",
+     "not": "dosya yok (tur basarili=True)"
+    },
+    "oturum_surer": {
+     "durum": "var",
+     "not": "cevap: 'kelime-e1e173'"
+    },
+    "onay_kapisi": {
+     "durum": "olculemedi",
+     "not": "ajan komutu hic denemedi (kendisi sordu ya da vazgecti); kapi sinanamadi"
+    },
+    "tur_ici_not": {
+     "durum": "var",
+     "not": "not tur surerken ULASTI"
+    },
+    "durdurma": {
+     "durum": "var",
+     "not": "tur kesildi (0.6 sn)"
+    },
+    "araclar_kapali": {
+     "durum": "var",
+     "not": "0 arac cagrisi, dosya yok"
+    },
+    "butce_tavani": {
+     "durum": "var",
+     "not": "$0.001 tavanda kesildi (maliyet 0.001055, 3.4 sn)"
+    },
+    "tarayici": {
+     "durum": "var",
+     "not": "gizli metin kanitta (1 kanit)"
+    },
+    "limit_penceresi": {
+     "durum": "bilgi",
+     "not": "bildiriyor: 5s %14, 7g %47"
+    },
+    "baglayici": {
+     "durum": "olculemedi",
+     "not": "pahali (~225k jeton/tur); varsayilan olculmez"
+    }
+   },
+   "hukum": {
+    "karar": "KABUL",
+    "yalan": [],
+    "zorunlu_eksik": [],
+    "olculemeyen": [
+     "onay_kapisi"
+    ],
+    "tam_dolu": false
+   },
+   "iz": [],
+   "bayraklar": {
+    "izin_kancasi": true,
+    "tur_ici_mesaj": true,
+    "araclar_kapatilabilir": true,
+    "butce_destegi": true,
+    "mcp_konusur": true,
+    "baglayici_tasir": true
+   },
+   "sure_sn": 120.8,
+   "koltuk_jeton": 334086
+  }
+ ]
+}

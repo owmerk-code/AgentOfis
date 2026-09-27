@@ -1,0 +1,176 @@
+{
+ "zaman": "20260927-061520",
+ "kip": "gercek",
+ "sonuclar": [
+  {
+   "motor": "codex",
+   "model": "gpt-6-luna",
+   "hucreler": {
+    "tur": {
+     "durum": "var",
+     "not": "basarili=True jeton=85419"
+    },
+    "dosya_yazar": {
+     "durum": "KALDI",
+     "not": "None"
+    },
+    "kanit": {
+     "durum": "KALDI",
+     "not": "0 kanit (MCP)"
+    },
+    "komut_kosar": {
+     "durum": "KALDI",
+     "not": "beklenen ozet YOK"
+    },
+    "kafa_yazamaz": {
+     "durum": "var",
+     "not": "dosya yok (tur basarili=True)"
+    },
+    "oturum_surer": {
+     "durum": "var",
+     "not": "cevap: 'kelime-f09b3f'"
+    },
+    "onay_kapisi": {
+     "durum": "YALAN",
+     "not": "kanca iddia edildi ama dosya SILINDI (0 kapi karti)"
+    },
+    "tur_ici_not": {
+     "durum": "var",
+     "not": "not tur surerken ULASTI"
+    },
+    "durdurma": {
+     "durum": "var",
+     "not": "tur kesildi (2.2 sn)"
+    },
+    "araclar_kapali": {
+     "durum": "yok",
+     "not": "bayrak kapali: saf yargi kapisi bu motorda kosmaz"
+    },
+    "butce_tavani": {
+     "durum": "hata",
+     "not": "MotorHatasi: codex tur basina butce tavani uygulayamaz (CLI'da boyle bir bayrak yok). Butce sinirini kaldir ya da bu isi butce destekleyen bir motora ver (claude). Sessizce yok sayilan ayar, ayar degildir."
+    },
+    "tarayici": {
+     "durum": "var",
+     "not": "gizli metin kanitta (1 kanit)"
+    },
+    "limit_penceresi": {
+     "durum": "bilgi",
+     "not": "bildiriyor: 5s %3, 7g %2"
+    },
+    "baglayici": {
+     "durum": "yok",
+     "not": "bayrak kapali: baglayicilar bu motora verilmez"
+    }
+   },
+   "hukum": {
+    "karar": "RED",
+    "yalan": [
+     "onay_kapisi"
+    ],
+    "zorunlu_eksik": [
+     "dosya_yazar",
+     "kanit",
+     "komut_kosar"
+    ],
+    "olculemeyen": [
+     "butce_tavani"
+    ],
+    "tam_dolu": false
+   },
+   "iz": [
+    "Traceback (most recent call last):\n  File \"C:\\Users\\pc\\Desktop\\AgentOfis\\testler\\matris.py\", line 502, in olc\n    sonuc.update(islev(s))\n                 ^^^^^^^^\n  File \"C:\\Users\\pc\\Desktop\\AgentOfis\\testler\\matris.py\", line 432, in h_butce\n    olaylar = list(s.motor.tur_kos(metin, klasor=str(s.kok), model=s.model,\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\pc\\Desktop\\AgentOfis\\ofis\\motor\\codex.py\", line 668, in tur_kos\n    raise MotorHatasi(\nofis.motor.tip.MotorHatasi: codex tur basina butce tavani uygulayamaz (CLI'da boyle bir bayrak yok). Butce sinirini kaldir ya da bu isi butce destekleyen bir motora ver (claude). Sessizce yok sayilan ayar, ayar degildir.\n"
+   ],
+   "bayraklar": {
+    "izin_kancasi": true,
+    "tur_ici_mesaj": true,
+    "araclar_kapatilabilir": false,
+    "butce_destegi": false,
+    "mcp_konusur": true,
+    "baglayici_tasir": false
+   },
+   "sure_sn": 94.5,
+   "koltuk_jeton": 286088
+  },
+  {
+   "motor": "claude",
+   "model": "haiku",
+   "hucreler": {
+    "tur": {
+     "durum": "var",
+     "not": "basarili=True jeton=124804"
+    },
+    "dosya_yazar": {
+     "durum": "var",
+     "not": "'MATRIS-OK'"
+    },
+    "kanit": {
+     "durum": "var",
+     "not": "2 kanit (MCP)"
+    },
+    "komut_kosar": {
+     "durum": "var",
+     "not": "beklenen ozet kanitta"
+    },
+    "kafa_yazamaz": {
+     "durum": "var",
+     "not": "dosya yok (tur basarili=True)"
+    },
+    "oturum_surer": {
+     "durum": "var",
+     "not": "cevap: 'kelime-517cd1'"
+    },
+    "onay_kapisi": {
+     "durum": "var",
+     "not": "kapi durdurdu (1 kart), dosya duruyor"
+    },
+    "tur_ici_not": {
+     "durum": "var",
+     "not": "not tur surerken ULASTI"
+    },
+    "durdurma": {
+     "durum": "var",
+     "not": "tur kesildi (0.8 sn)"
+    },
+    "araclar_kapali": {
+     "durum": "var",
+     "not": "0 arac cagrisi, dosya yok"
+    },
+    "butce_tavani": {
+     "durum": "var",
+     "not": "$0.001 tavanda kesildi (maliyet 0.001055, 3.5 sn)"
+    },
+    "tarayici": {
+     "durum": "var",
+     "not": "gizli metin kanitta (1 kanit)"
+    },
+    "limit_penceresi": {
+     "durum": "bilgi",
+     "not": "bildiriyor: 5s %15, 7g %47"
+    },
+    "baglayici": {
+     "durum": "olculemedi",
+     "not": "pahali (~225k jeton/tur); varsayilan olculmez"
+    }
+   },
+   "hukum": {
+    "karar": "KABUL",
+    "yalan": [],
+    "zorunlu_eksik": [],
+    "olculemeyen": [],
+    "tam_dolu": true
+   },
+   "iz": [],
+   "bayraklar": {
+    "izin_kancasi": true,
+    "tur_ici_mesaj": true,
+    "araclar_kapatilabilir": true,
+    "butce_destegi": true,
+    "mcp_konusur": true,
+    "baglayici_tasir": true
+   },
+   "sure_sn": 126.1,
+   "koltuk_jeton": 275639
+  }
+ ]
+}

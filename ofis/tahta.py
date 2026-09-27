@@ -242,6 +242,20 @@ class Tahta:
         if not alanlar:
             return
         kok = self.kok_klasor()
+        # KOKUN TAMAMI yazma alani olamaz (27.09.2026, motor matrisi olctu):
+        # `["."]` normallesince BOS kaliyordu ve gorev_ac onu SESSIZCE
+        # suzuyordu. Gorev "yazma alani belirtilmemis" diye acildi ve HIC
+        # KILIT ALINMADI (Yasa 1 delindi); codex dogru davranip sordu,
+        # claude sormadan yazdi. Kokun tamamini kilitlemek de cozum degil:
+        # her paralel isi durdururdu. Reddedilir ve NE yapilacagi soylenir.
+        butun = [str(y) for y in alanlar
+                 if str(y).strip() and not kok_goreli(str(y), kok or "")]
+        if butun:
+            raise TahtaHatasi(
+                f"Yazma alani {butun} proje kokunun TAMAMI demek; kabul "
+                "edilmez. Kokun tamami kilitlenirse her paralel is durur, "
+                "kilitlenmezse yazma kilidi hic calismaz. Isin yazacagi "
+                "dosya ya da klasorleri TEK TEK yaz (orn. [\"rapor.md\", \"src/\"]).")
         if not kok:
             return          # kok bilinmiyorsa OLCEMEYIZ; uydurmayiz
         kokp = Path(kok)
@@ -375,8 +389,12 @@ class Tahta:
         # `C:/.../calisma/KILAVUZ.md`) farkli sayar ve cakismayi HIC
         # gormezdi -- Yasa 1'in sessizce delinmesi (bkz. `kok_goreli`).
         _kok = self.kok_klasor()
-        alanlar = [kok_goreli(y, _kok) for y in (yazma_alani or [])
-                   if kok_goreli(y, _kok)]
+        # Bos girdi (`""`) atlanir; ama `"."` gibi normallesince bos kalan
+        # bir alan SUZULMEZ, kapiya gider ve reddedilir (bkz. _alanlari_dogrula).
+        ham = [str(y).strip() for y in (yazma_alani or []) if str(y).strip()]
+        self._alanlari_dogrula([y for y in ham if not kok_goreli(y, _kok)],
+                               ek_klasorler)
+        alanlar = [kok_goreli(y, _kok) for y in ham]
         self._alanlari_dogrula(alanlar, ek_klasorler)
         # Var olmadigi ANINDA reddedilir; sessizce atlanan bir klasor,
         # ajanin "bulamadim" demesiyle ortaya cikardi.

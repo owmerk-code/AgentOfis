@@ -1,0 +1,88 @@
+{
+ "zaman": "20260927-062610",
+ "kip": "gercek",
+ "sonuclar": [
+  {
+   "motor": "codex",
+   "model": "gpt-6-luna",
+   "hucreler": {
+    "tur": {
+     "durum": "var",
+     "not": "basarili=True jeton=241647"
+    },
+    "dosya_yazar": {
+     "durum": "var",
+     "not": "'MATRIS-OK'"
+    },
+    "kanit": {
+     "durum": "var",
+     "not": "1 kanit (MCP)"
+    },
+    "komut_kosar": {
+     "durum": "var",
+     "not": "beklenen ozet kanitta"
+    },
+    "kafa_yazamaz": {
+     "durum": "var",
+     "not": "dosya yok (tur basarili=True)"
+    },
+    "oturum_surer": {
+     "durum": "var",
+     "not": "cevap: 'kelime-7560ef'"
+    },
+    "onay_kapisi": {
+     "durum": "olculemedi",
+     "not": "komut kapiya ulasmadi (arac cagrisi var, 0 kart)"
+    },
+    "tur_ici_not": {
+     "durum": "var",
+     "not": "not tur surerken ULASTI"
+    },
+    "durdurma": {
+     "durum": "var",
+     "not": "tur kesildi (0.4 sn)"
+    },
+    "araclar_kapali": {
+     "durum": "yok",
+     "not": "bayrak kapali: saf yargi kapisi bu motorda kosmaz"
+    },
+    "butce_tavani": {
+     "durum": "yok",
+     "not": "tavan verilince BASLAMADAN reddetti: codex tur basina butce tavani uygulayamaz (CLI'da boyle bir bayrak yok). Butce sinirini ka"
+    },
+    "tarayici": {
+     "durum": "var",
+     "not": "gizli metin kanitta (1 kanit)"
+    },
+    "limit_penceresi": {
+     "durum": "bilgi",
+     "not": "bildiriyor: 5s %3, 7g %2"
+    },
+    "baglayici": {
+     "durum": "yok",
+     "not": "bayrak kapali: baglayicilar bu motora verilmez"
+    }
+   },
+   "hukum": {
+    "karar": "KABUL",
+    "yalan": [],
+    "zorunlu_eksik": [],
+    "olculemeyen": [
+     "onay_kapisi"
+    ],
+    "tam_dolu": false
+   },
+   "iz": [],
+   "bayraklar": {
+    "izin_kancasi": true,
+    "tur_ici_mesaj": true,
+    "araclar_kapatilabilir": false,
+    "butce_destegi": false,
+    "mcp_konusur": true,
+    "baglayici_tasir": false
+   },
+   "sure_sn": 122.2,
+   "koltuk_jeton": 583574
+  }
+ ]
+}

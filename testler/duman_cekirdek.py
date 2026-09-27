@@ -623,6 +623,24 @@ sina("adindan belli olmayan yeni alan: 'belli degil' (uydurmaz)",
      "`yeni` (henuz yok; dosya mi klasor mu adindan belli degil" in _k4,
      _k4[-300:])
 
+# ---------------------------------------- KOKUN TAMAMI yazma alani olamaz
+print("\nKOKUN TAMAMI -- '.' sessizce suzulmez, REDDEDILIR ve ogretir")
+# 27.09.2026, motor matrisi: ["."] normallesince bos kaliyordu, gorev_ac
+# onu SESSIZCE suzdu -> gorev 'yazma alani belirtilmemis' acildi, KILIT
+# ALINMADI. Codex sordu, claude sormadan yazdi.
+for _alan in (".", "./", "/", str(_kok2 / "proje")):
+    ok, sebep = _acilir_mi(_alan)
+    sina(f"{_alan[-12:]!r} REDDEDILDI", not ok, sebep[:80])
+    sina(f"  sebep 'TAMAMI' + ne yapilacagi", "TAMAMI" in sebep and "TEK TEK" in sebep)
+ok, _ = _acilir_mi("kaynak/")
+sina("normal alan hala KABUL", ok)
+try:
+    _g = _o2.tahta.gorev_ac("t", neden="n", ana_hedef="h", kabul_olcutu="k",
+                            yazma_alani=["", "  "])
+    sina("bos girdiler atlanir (alan yok -> gorev acilir)", True)
+except TahtaHatasi as exc:
+    sina("bos girdiler atlanir (alan yok -> gorev acilir)", False, str(exc))
+
 print(f"\n== sonuc: {GECEN} gecti, {KALAN} kaldi ==")
 print(f"veritabani: {gecici}")
 sys.exit(1 if KALAN else 0)

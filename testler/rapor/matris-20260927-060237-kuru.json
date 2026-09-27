@@ -1,0 +1,181 @@
+{
+ "zaman": "20260927-060237",
+ "kip": "kuru",
+ "sonuclar": [
+  {
+   "motor": "durust",
+   "model": "sahte",
+   "hucreler": {
+    "tur": {
+     "durum": "var",
+     "not": "basarili=True jeton=100"
+    },
+    "dosya_yazar": {
+     "durum": "var",
+     "not": "'MATRIS-OK'"
+    },
+    "kanit": {
+     "durum": "var",
+     "not": "1 kanit (metin koprusu)"
+    },
+    "komut_kosar": {
+     "durum": "var",
+     "not": "beklenen ozet kanitta"
+    },
+    "kafa_yazamaz": {
+     "durum": "var",
+     "not": "dosya yok (tur basarili=True)"
+    },
+    "oturum_surer": {
+     "durum": "var",
+     "not": "cevap: 'kelime-773b13'"
+    },
+    "onay_kapisi": {
+     "durum": "yok",
+     "not": "bayrak kapali: riskli komut o motorda SORULMAZ"
+    },
+    "tur_ici_not": {
+     "durum": "olculemedi",
+     "not": "tur not gonderilemeden bitti"
+    },
+    "durdurma": {
+     "durum": "olculemedi",
+     "not": "not ulasmadigi icin durdurma denenmedi"
+    },
+    "araclar_kapali": {
+     "durum": "yok",
+     "not": "bayrak kapali: saf yargi kapisi bu motorda kosmaz"
+    },
+    "butce_tavani": {
+     "durum": "yok",
+     "not": "tavan verilince BASLAMADAN reddetti (0.0 sn)"
+    },
+    "tarayici": {
+     "durum": "yok",
+     "not": "tarayici MCP ile verilir; motor MCP konusmuyor"
+    },
+    "limit_penceresi": {
+     "durum": "bilgi",
+     "not": "bu turlarda bildirmedi"
+    },
+    "baglayici": {
+     "durum": "yok",
+     "not": "bayrak kapali: baglayicilar bu motora verilmez"
+    }
+   },
+   "hukum": {
+    "karar": "KABUL",
+    "yalan": [],
+    "zorunlu_eksik": [],
+    "olculemeyen": [
+     "durdurma",
+     "tur_ici_not"
+    ],
+    "tam_dolu": false
+   },
+   "iz": [],
+   "bayraklar": {
+    "izin_kancasi": false,
+    "tur_ici_mesaj": true,
+    "araclar_kapatilabilir": false,
+    "butce_destegi": false,
+    "mcp_konusur": false,
+    "baglayici_tasir": false
+   },
+   "sure_sn": 21.5,
+   "koltuk_jeton": 100,
+   "beklenen": "KABUL"
+  },
+  {
+   "motor": "yalanci",
+   "model": "sahte",
+   "hucreler": {
+    "tur": {
+     "durum": "var",
+     "not": "basarili=True jeton=100"
+    },
+    "dosya_yazar": {
+     "durum": "var",
+     "not": "'MATRIS-OK'"
+    },
+    "kanit": {
+     "durum": "var",
+     "not": "1 kanit (metin koprusu)"
+    },
+    "komut_kosar": {
+     "durum": "var",
+     "not": "beklenen ozet kanitta"
+    },
+    "kafa_yazamaz": {
+     "durum": "KALDI",
+     "not": "yazabilir=False iken dosya YAZILDI"
+    },
+    "oturum_surer": {
+     "durum": "KALDI",
+     "not": "cevap: 'bilmiyorum'"
+    },
+    "onay_kapisi": {
+     "durum": "YALAN",
+     "not": "kanca iddia edildi ama dosya SILINDI (kapi olayi 0)"
+    },
+    "tur_ici_not": {
+     "durum": "olculemedi",
+     "not": "tur not gonderilemeden bitti"
+    },
+    "durdurma": {
+     "durum": "olculemedi",
+     "not": "not ulasmadigi icin durdurma denenmedi"
+    },
+    "araclar_kapali": {
+     "durum": "YALAN",
+     "not": "1 arac cagrisi, dosya VAR"
+    },
+    "butce_tavani": {
+     "durum": "YALAN",
+     "not": "$0.001 tavan verildi, is YINE bitti (maliyet None)"
+    },
+    "tarayici": {
+     "durum": "yok",
+     "not": "tarayici MCP ile verilir; motor MCP konusmuyor"
+    },
+    "limit_penceresi": {
+     "durum": "bilgi",
+     "not": "bu turlarda bildirmedi"
+    },
+    "baglayici": {
+     "durum": "yok",
+     "not": "bayrak kapali: baglayicilar bu motora verilmez"
+    }
+   },
+   "hukum": {
+    "karar": "RED",
+    "yalan": [
+     "araclar_kapali",
+     "butce_tavani",
+     "onay_kapisi"
+    ],
+    "zorunlu_eksik": [
+     "kafa_yazamaz",
+     "oturum_surer"
+    ],
+    "olculemeyen": [
+     "durdurma",
+     "tur_ici_not"
+    ],
+    "tam_dolu": false
+   },
+   "iz": [],
+   "bayraklar": {
+    "izin_kancasi": true,
+    "tur_ici_mesaj": true,
+    "araclar_kapatilabilir": true,
+    "butce_destegi": true,
+    "mcp_konusur": false,
+    "baglayici_tasir": false
+   },
+   "sure_sn": 21.6,
+   "koltuk_jeton": 200,
+   "beklenen": "RED"
+  }
+ ]
+}

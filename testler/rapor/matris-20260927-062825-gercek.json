@@ -1,0 +1,42 @@
+{
+ "zaman": "20260927-062825",
+ "kip": "gercek",
+ "sonuclar": [
+  {
+   "motor": "codex",
+   "model": "gpt-6-luna",
+   "hucreler": {
+    "onay_kapisi": {
+     "durum": "var",
+     "not": "kapi durdurdu (1 kart), dosya duruyor"
+    },
+    "limit_penceresi": {
+     "durum": "bilgi",
+     "not": "bildiriyor: 5s %5, 7g %3"
+    },
+    "baglayici": {
+     "durum": "yok",
+     "not": "bayrak kapali: baglayicilar bu motora verilmez"
+    }
+   },
+   "hukum": {
+    "karar": "KABUL",
+    "yalan": [],
+    "zorunlu_eksik": [],
+    "olculemeyen": [],
+    "tam_dolu": true
+   },
+   "iz": [],
+   "bayraklar": {
+    "izin_kancasi": true,
+    "tur_ici_mesaj": true,
+    "araclar_kapatilabilir": false,
+    "butce_destegi": false,
+    "mcp_konusur": true,
+    "baglayici_tasir": false
+   },
+   "sure_sn": 26.6,
+   "koltuk_jeton": 0
+  }
+ ]
+}
