@@ -142,7 +142,7 @@ Motor bir adaptör, model bir ayar, arayüz bir istemci.
 
 ## Kod durumu
 
-Yazıldı ve **duman testlerinden geçti** (2653/2653, 27.09.2026):
+Yazıldı ve **duman testlerinden geçti** (2681/2681, 27.09.2026):
 
 | Dosya | Ne yapar |
 |---|---|
@@ -198,17 +198,17 @@ Yazıldı ve **duman testlerinden geçti** (2653/2653, 27.09.2026):
 | `ofis/geri_al.py` | **TUR GERİ ALMA** — her turun öncesi/sonrası proje kökünün dışındaki gölge git deposuna işlenir; `geri-al` YALNIZ o turun dosyalarını (ikili dahil) döndürür. Sonradan değişen dosyayı ve koşan işi ezmez (`--zorla` hariç), sebep zorunlu, geri alma da geri alınabilir. |
 | `baslat.bat` | Tek tık açılış — bağımlılık yoksa kurar, ilk açılışta örnek ofisi kurar. |
 
-Testler (`testler/`, hepsi jeton yakmadan koşar) — **2653/2653** (35 dosya, 27.09.2026'da tek tek koşturulup SAYILDI; hepsi GEÇİCİ kökte, gerçek `~/.agentofis`e dokunmadan):
+Testler (`testler/`, hepsi jeton yakmadan koşar) — **2681/2681** (35 dosya, 27.09.2026'da tek tek koşturulup SAYILDI; hepsi GEÇİCİ kökte, gerçek `~/.agentofis`e dokunmadan):
 `duman_baglayici.py` 64 · `duman_cekirdek.py` 100 ·
 `duman_codex_app.py` 68 · `duman_danisma.py` 36 ·
 `duman_degisim.py` 105 · `duman_deneme.py` 53 · `duman_depo.py` 48 ·
 `duman_ekip.py` 60 · `duman_geri_al.py` 29 · `duman_gorsel.py` 87 ·
 `duman_guncelleme.py` 66 · `duman_hafiza.py` 56 · `duman_hesap.py` 53 ·
-`duman_klasor.py` 35 · `duman_koltuk.py` 61 · `duman_kullanim.py` 81 ·
+`duman_klasor.py` 35 · `duman_koltuk.py` 61 · `duman_kullanim.py` 96 ·
 `duman_lider.py` 44 · `duman_mcp.py` 137 · `duman_motor.py` 113 ·
 `duman_motor_saglik.py` 55 ·
 `duman_not.py` 76 ·
-`duman_orkestra.py` 57 · `duman_panel.py` 350 ·
+`duman_orkestra.py` 57 · `duman_panel.py` 363 ·
 `duman_panel_senaryo.py` 20 · `duman_riskli.py` 198 · `duman_matris.py` 37 ·
 `duman_roller.py` 37 · `duman_saglik.py` 37 · `duman_sohbet.py` 94 ·
 `duman_tarayici.py` 155 · `duman_tavan.py` 27 · `duman_video.py` 35 ·
@@ -11525,3 +11525,40 @@ ateş etti. Raydaki sayılar kullanıcının claude.ai ve ChatGPT ekranlarıyla
 birebir (codex 5s %100 / 7g %19 · claude %35 / %53 / Fable %10).
 
 Toplam **2653/2653** (35 dosya, ölçülen).
+
+
+### Hesaplar tek düğmede, ayrıntı hesap panosunda (27.09.2026)
+
+Kullanıcı: *"ilerde başka hesaplar da olacak, karmaşık olmasın."* Rayda
+hesap başına, pencere başına ayrı çip vardı; hesap sayısı arttıkça ray
+taşardı. Önce tasarım gösterildi (artifact), kullanıcı "karar sende" dedi.
+
+- **Rayda tek düğme:** hesap başına bir ince çubuk (rengi o hesabın en
+  dolu penceresi: yeşil · sarı %75 · kırmızı %90/dolu · gri kullanılamıyor),
+  yazı yalnız SORUNU söyler ("codex dolu · ↻ 1 sa 8 dk"). 2 hesapta da 10
+  hesapta da aynı yer.
+- **Tıklayınca hesap panosu** (çekmece): sağlayıcıya göre gruplu, en acil
+  üstte; her hesapta e-posta · plan · kullanan ajanlar · pencere çubukları
+  (yenilenme anı + ölçüm yaşı) · kullanılamıyorsa motorun kendi teşhisi.
+  "Şimdi tazele" (`POST /api/hesaplar/tazele`, kota harcamaz).
+- **Pencereler SABİT SÜTUN DEĞİL:** hesap sağlayıcının bildirdiği kadar
+  pencere getirir; API hesabında pencere aylık dolardır. Yeni motor =
+  yeni satır, arayüz değişmez.
+- **Çubuktaki çizgi = ofisin kararı:** önceden geçiş eşiği (Fable'da kapı
+  eşiği). "İş sırası" şeridi zincirin KENDİ kararını gösterir:
+  `zincir.esikteki_basamaklar` çıkarıldı, `pencereye_gore_sirala` ve panel
+  aynı işlevi çağırır (ikinci kopya yok). Hepsi eşikteyse "sonda" denmez
+  (zincir sırayı değiştirmiyor).
+- Tek kaynak `kullanim.hesap_tablosu` (`/api/hesaplar`, 20 sn önbellek):
+  ray ve pano aynı cevabı okur. Motoru defterden çıkarılmış hesap (gemini)
+  "kapalı" sayılır, sorun sayılmaz; kapatılan hesap en altta, sayıma girmez.
+- Terminal başlığındaki hesap rozeti duruyor (ajanın hangi hesaptan
+  yediği). Hesap sekmesi (ofisin tükettiği) duruyor.
+
+Gerçek defterin kopyasıyla tarayıcıda ölçüldü: ray "Hesaplar 2/3 hazır ·
+codex2 kullanılamıyor"; pano canlı okumayla codex 5s %5 (yenilenmiş),
+claude %17 / %55 / Fable %11, codex2'nin çaresi, gemini kapalı.
+`duman_kullanim` +15 · `duman_panel` +13 (hesap özeti Node'da
+çalıştırılarak); yedi mutasyonun yedisi ateş etti.
+
+Toplam **2681/2681** (35 dosya, ölçülen).
