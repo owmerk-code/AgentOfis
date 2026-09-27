@@ -22,6 +22,8 @@ Ev kurallari:
   yapmak onay ister. Kod yazmak, test kosmak sormaz.
 
 ### Sana ozel — gecmiste duselen notlar
+- Bir sayfa hakkında "yok/verilmemiş" demeden önce sayfayı o iddiaya özgü bir soruyla yeniden tara; ve yöntem notunda görülemedi dediğin şey hakkında öneri yazma.
+- Bir sayfa hakkında "X yok" demeden önce o sayfayı (altbilgi dahil) tam metin olarak yeniden tara; yönteme dair iddiaları (ekran görüntüsü alındı vb.) yalnızca gerçekten üretilen çıktıya dayandır.
 - Yazma alanı dışına dosya yazma ya da yazılım kurma gerekiyorsa önce lidere sor ve onayı kanıta ekle. Görmediğin bir şeyi (ekran görüntüsü, görsel yerleşim) gözlem gibi rapora yazma.
 - Özet çıkaran bir getirme aracıyla (WebFetch) okuduğun metni harfi harfine alıntı gibi sunma. Yazım hatası iddiasını ancak metni aynen alıntılayarak yap, "muhtemelen" diye tahmin yürütme. Görevin istediği araç yoksa işe başlamadan söyle.
 - Aynı işi iki kez koşturduysan, teslimde YALNIZCA teslim edilen dosyada yapistirilan kosuya ait kanitlari sun; terk edilmis deneme koşusunun çıktısını kanıt diye eklemek iki farklı veritabanı/ofis adı gösterip çelişki izlenimi yaratır.
@@ -38,6 +40,16 @@ Ev kurallari:
 
 **Kisitlar:** Yerel makine, Python 3.12, Turkce
 
+### Gecerli olgular
+
+- **ofis panel kaynağı:** Ofis ekranının çizim ve hareket kodu C:\Users\pc\Desktop\AgentOfis\web\panel.js içinde. Harita ölçüleri HARITA, masa koordinatları masaYerleri, ajan hedefleri ajanKonumlari, geçişler yuru ve haritaKur işlevlerinde (panel.js okuması, 27.09.2026). _(kaynak: ajan:cinar #31)_
+- **semuparfum iletişim:** 0501 611 36 67, iletisim@semuparfum.com, wa.me/905016113667 (https://semuparfum.com/pages/contact ve ana sayfa) _(kaynak: ajan:demir #30)_
+- **semuparfum kapıda ödeme:** mevcut, 49 TL ek ücret (https://semuparfum.com, WebFetch ile doğrulandı) _(kaynak: ajan:demir #30)_
+- **semuparfum satıcı adresi:** Yener Kozmetik, Çobançeşme Mah. Halitpaşa Sk. No: 2, Bahçelievler / İstanbul (https://semuparfum.com/pages/hakkimizda, rapor satır 15) _(kaynak: ajan:demir #30)_
+- **semuparfum ürün fiyatı:** Belle ve Brave 1.490,00 TL, 50 ml, KDV dahil (https://semuparfum.com/products/belle ve /products/brave, WebFetch ile doğrulandı) _(kaynak: ajan:demir #30)_
+
+_Bu liste yalnizca SU AN gecerli olgulari icerir. Eskimis bir bilgi hatirliyorsan, buradaki gecerlidir._
+
 ---
 
 ## K3 — SU ANKI DURUM
@@ -46,22 +58,22 @@ Ev kurallari:
 
 **Son kararlar** (en yenisi ustte):
 
-- `demir`: 'bilge, semuparfum.com'u yalnızca tarayıcıyla, Shopify paneline girmeden, ilk kez gelen bir müşteri gibi gezsin. Şunlara baksın: ana sayfa ve ilk izlenim, güven işaretleri (iletişim, adres, iade/kargo politikası, ödeme seçenekleri, yorumlar), ürün sayfalarındaki koku notaları, ml, fiyat ve görsellerin anlaşılır olup olmadığı, sepet ve ödeme adımlarındaki engeller, mobilde görünüm ve hız izlenimi, Türkçe metin kalitesi. Sonuçları calisma/bilge/semuparfum_musteri_analizi.md dosyasına yazsın: güçlü yönler, zayıf yönler ve öncelik sırasına göre en fazla 10 somut öneri. Her gözlemin yanında hangi sayfada görüldüğünü URL olarak versin; göremediği bir şey için tahmin yürütmesin, 'görülemedi' yazsın.' bolunmedi, tek ajanda kosacak.
-  _gerekce: Bu iş tek bir tarayıcı gezintisi ve tek bir rapor dosyası. Ana sayfa, güven işaretleri, ürün sayfaları, sepet/ödeme, mobil görünüm ve metin kalitesi aynı gezintide sırayla gözlenir. Hepsi aynı dosyaya (bilge/semuparfum_musteri_analizi.md) yazılır. Bölersek kollar aynı dosyaya yazmak zorunda kalır, bu da yasak. Bölmek ayrıca yaklaşık 15 kat jeton harcar ama işi hızlandırmaz. Shopify bağlayıcısı gerekmiyor, hatta isteniyor da değil: hedef açıkça panele girmeden, müşteri gözüyle bakmak. Bu yüzden tarayıcı yeterli ve ucuz. Yazma alanını bu kez proje köküne (C:/Users/pc/Desktop/AgentOfis/calisma) göre verdim: kökte gerçekten olan bilge/ klasörünün içinde._
-- `demir`: Patron mesaji 'semuparfum.com sitemize dışardan müşteri gözüyle analiz et  fikrini söyle' icin yol: dagit.
-  _gerekce: Siteyi kendi bilgimle değerlendiremem; semuparfum.com'un bugünkü halini görmeden görüş bildirirsem uydurmuş olurum. Önce birinin siteye bir müşteri gibi girip incelemesi gerekiyor. Bu araştırma rolünün işi, kadroda bilge var, yeni bir rol gerekmiyor. İş tek parça: tek ajan, tek rapor. Bölersek jeton boşa gider. Shopify bağlayıcısı gerekmiyor, çünkü müşteri gözüyle bakmak için yönetim paneli değil sitenin dışarıdan görünen yüzü lazım. Tarayıcıyla bakmak yetiyor ve çok daha ucuz. Bu işte para harcanmayacak. Not: calisma/BRIFING.md bu tura ait görünmüyor, ege'nin #29 numaralı gemini dosya görevini anlatıyor. O görevi yapmadım ve hiçbir dosyaya yazmadım._
-- `demir`: Patron mesaji 'cugara harbi zehir he' icin yol: cevap.
-  _gerekce: Patron molada sohbet ediyor. Bu bir iş ya da görev değil, o yüzden ajan uyandırmak gereksiz jeton harcamak olur. Görev açılmadığı için kapatılacak iş de, yazılacak kanıt da yok; komut çalıştırmadığım için kanıt uydurmuyorum._
-- `demir`: Patron mesaji 'şuanlık bir iş yok molda dinlenmede kalın' icin yol: cevap.
-  _gerekce: Patron şu an iş olmadığını ve ekibin molada kalmasını istiyor. Bu bir iş talebi değil, bir durum bildirimi. Açık iş yok, tüm ajanlar zaten boşta. Kimseyi uyandırmaya ya da görev açmaya gerek yok; uyandırmak yalnızca boşuna jeton yakar. Görev açılmadığı ve iş yapılmadığı için kanıt satırı da yok._
-- `demir`: Patron mesaji 'çınarla konuşcam demir çınarı çağır' icin yol: cevap.
-  _gerekce: Patron bir iş vermiyor, çınarla doğrudan konuşmak istiyor. Ofiste bir ajanı canlı sohbete çağırmanın doğrulanmış bir yolu yok. Çınar'a ancak görev açarak ulaşabilirim, açılacak bir iş de henüz yok. Boş görev açmak jeton yakar ve sonuç vermez. Doğru adım durumu dürüstçe söylemek ve patrona çınardan ne istediğini sormak. Bir önceki turda 'Merhaba patron, buradayım' cevabını çınar değil ben verdim; bunu da düzeltmem gerekiyor._
-- `insan`: gemini CLI 0.52.0 -> 0.60.0
-  _gerekce: Insan onayladi; surum olculdu (0.60.0) ve deneme turu gecti._
-- `insan`: Ekip onerisi #2 reddedildi.
-  _gerekce: vazgeçtim_
-- `demir`: Patron mesaji 'merhabaa' icin yol: cevap.
-  _gerekce: Bu yalnızca bir selam; iş, soru ya da karar talebi yok. Ajan uyandırmak ya da görev açmak boşuna jeton harcar. Hiçbir komut çalıştırılmadı ve dosyaya yazılmadı. Bu yüzden KANIT satırı da yok; uydurmamak için bilerek boş bırakıldı._
+- `demir`: 'Ofis ekranında boştaki ajanlar yerinde durmayacak, ofis içinde rastgele yürüyecek. Bir ajan iş aldığında kendi masasına dönecek. Kanıt olarak değişen dosya, kısa bir test ya da ekran görüntüsü ve boştaki ajanın konumunun zamanla değiştiğini gösteren çıktı istenecek.' bolunmedi, tek ajanda kosacak.
+  _gerekce: Bu iş tek bir ekran bileşenindeki tek bir davranış değişikliği. Boştaki ajanın rastgele yürümesi ile iş alınca masaya dönmesi aynı hareket/durum döngüsünün iki dalı. İkisi aynı dosyaya dokunur ve aynı testle kanıtlanır. Bölersek kollar aynı panel dosyasına yazmak zorunda kalır, bu da yasak. Ayrıca yaklaşık 15 kat jeton yakar ve işi hızlandırmaz. Bağlayıcı gerekmiyor, para ya da dışarı çıkan bir adım yok. Önemli bir sınır var: calisma ağacında ofis ekranının kaynağı görünmüyor. Yalnızca cinar/test_panel_js.mjs panel JS'ine dair bir iz veriyor. Bu yüzden yazma alanı olarak yalnızca calisma içinde gerçekten yazılabilecek yeri verdim. Ekranın gerçek dosyası calisma dışındaysa çınar oraya yazmayacak, önce tam yolla lidere soracak. Bu planlama turunda komut koşturmadım, yalnızca BRIFING.md'yi okudum. O yüzden kanıt satırı yazmıyorum, uydurmamak için._
+- `demir`: Patron mesaji 'ajanlar molada duruyor hareket etsimler ofiste yürüsünler' icin yol: dagit.
+  _gerekce: Patron ofis ekranındaki görünümü değiştirmek istiyor. Boştaki ajanlar 'molada' diye yerinde duruyor, patron bunların ofiste dolaşmasını istiyor. Bu bir cevapla çözülmez; arayüz kodunda küçük bir değişiklik gerekiyor. İş tek parça ve bölünmüyor, o yüzden tek ajana gidiyor. Kod işini kadroda en iyi çınar (backend) yapar. İş basit bir animasyon olduğu için 'arayuz' rolünü ayrıca işe almaya gerek yok. Bu değişikliği ben yaparsam onu incelemek sana kalır; çınar yaparsa incelemeyi ben yaparım. Dosyanın yerini göremedim: ofis klasörü benim erişimimin dışında. Bu yüzden ekranı çizen kodun hangi dosyada olduğunu da çınar bulacak._
+- `demir`: Patron mesaji 'paranın amuna koyalım bir takım oluşturalım onlarca yüzlerce ajanı takımda çalış' icin yol: cevap.
+  _gerekce: Patron 'bu iş ne olmalı sence' diye görüş soruyor. İş vermiyor. Ajan uyandırmak ya da görev açmak boşuna jeton yakar. Yön belli olmadan kadro önermek de erken olur: kadro yolu ancak bir iş belli olduğunda ve bir rol eksik kaldığında açılır. Cevabı ofiste zaten doğrulanmış olgulara dayandırdım: semuparfum.com canlı bir mağaza, fiyatı ve kapıda ödemesi doğrulandı, Shopify, Meta Reklamları, Canva ve Gmail bağlı. Para kilidi kapalı. Kalabalık kadronun yaklaşık 15 kat jeton yaktığı ölçüldü. Kazanç rakamı uydurmadım. Not: calisma/BRIFING.md dosyasını açtım ama bu tura ait değil, bilge'nin eski #30 numaralı görevini anlatıyor. O görevi sürdürmedim ve hiçbir dosyaya yazmadım. Görev açılmadığı için KANIT satırı yok; uydurmamak için bilerek boş bıraktım._
+- `demir`: Patron mesaji 'naber' icin yol: cevap.
+  _gerekce: Patron sadece selam veriyor, herhangi bir is ya da karar sorusu yok. Ajan kosturmak jeton ve zaman israfi olur; durum ozeti verip topu patrona atmak dogru yol._
+- `demir`: Patron mesaji 'TRADE AJAN EKİBİMİZİ KURARSAK  BİRDEN FAZLA AJAN ÇALIŞACAK PARA KAZANACAK NASIL ' icin yol: cevap.
+  _gerekce: Patron 'nasıl sence' diye fikir soruyor. Bu bir görüş ve karar sorusu, henüz tanımlı bir iş yok. Ajan koşturmak jeton yakar ama yeni bir bilgi getirmez. Ayrıca gerçek para işlemi için ne bir borsa ya da aracı kurum bağlayıcısı var ne de para kilidi açık. Önce patronun hedefi ve risk kararı netleşmeli._
+- `demir`: Patron mesaji 'HACKTOOL TAKIMI KURDUM AMA SİLEMİYOM SİL ONU' icin yol: cevap.
+  _gerekce: Ofisin kadrosunda da açık işlerde de 'hacktool' adında bir takım yok. Çalışma klasöründe 'hack' kelimesini aradım, hiçbir sonuç çıkmadı. Neyin silineceği belli değil ve silme geri alınamaz. Ayrıca kadroyu kuran ve silen ben değilim, bunu ofis patronun onayıyla yapıyor. Yanlış bir şeyi silmemek için bir ajan çalıştırmadan önce patrondan netlik istiyorum._
+- `demir`: Patron mesaji 'ÇINARI ÇAĞIR MASAYA GEÇİN İKİNİZ' icin yol: cevap.
+  _gerekce: Patron bir iş vermiyor; Çınar'la birlikte oturup konuşmamızı istiyor. Ofiste bir ajanı canlı sohbete ya da ortak bir toplantıya çağırmanın denenmiş bir yolu yok. Çınar'a ancak bir görev açarak ulaşabilirim. Konu belli olmadan görev açmak jeton yakar ve ortaya bir şey çıkmaz. Aynı durumda daha önce verilen karar da buydu ('çınarla konuşcam demir çınarı çağır' -> cevap). Doğru adım, patrona konuyu sormak ve Çınar'ı gerçek bir işle çağırmak. Bu arada calisma/BRIFING.md'yi okudum. Dosya bu tura ait değil; kapanmış #30 numaralı görevde bilge'nin brifingi. Hiçbir dosyaya yazmadım ve komut çalıştırmadım. Görev de açılmadı, bu yüzden kanıt satırı yok; uydurmamak için bilerek boş bıraktım._
+- `demir`: Patron mesaji 'BOŞVER O İŞİ' icin yol: cevap.
+  _gerekce: Patron açık kalan semuparfum analizinin (sepet, ödeme, mobil, hız) takibini bırakmamızı söylüyor. Bu bir karar bildirimi; yapılacak yeni bir iş yok. Ajan uyandırmak boşa jeton harcatır. Yapılacak tek şey kararı kaydedip onaylamak._
 
 _Bu kararlar baglayicidir. Biriyle celisen bir sey yapman gerekiyorsa once lidere sor._
 
@@ -69,35 +81,24 @@ _Bu kararlar baglayicidir. Biriyle celisen bir sey yapman gerekiyorsa once lider
 
 ## K4 — GOREVIN
 
-### #30 — semuparfum.com ilk kez gelen müşteri gözüyle analiz
+### #31 — Ofis ekranı: boştaki ajan rastgele yürür, iş alınca masasına döner
 
-Yalnız tarayıcıyı kullan. Shopify paneline ya da Shopify bağlayıcısına GİRME. Siteyi https://semuparfum.com adresinden ilk kez gelen bir müşteri gibi gez. Sırasıyla şunlara bak:
-1) Ana sayfa ve ilk izlenim: ne satıldığı ilk ekranda anlaşılıyor mu, menü ve arama çalışıyor mu?
-2) Güven işaretleri: iletişim bilgisi, fiziksel adres, iade/değişim ve kargo politikası sayfaları, ödeme seçenekleri (logolar, taksit, kapıda ödeme vb.), müşteri yorumları. Sayfaların alt kısmındaki bağlantıları da aç.
-3) Ürün sayfaları: en az 2, tercihen 3 farklı ürün aç. Koku notaları (üst/orta/alt), ml bilgisi, fiyat ve indirim gösterimi, görsel sayısı ve kalitesi anlaşılır mı?
-4) Sepet ve ödeme: bir ürünü sepete ekle, sepete ve ödeme sayfasına kadar ilerle. Engelleri not et: zorunlu üyelik, gizli masraflar, kargo ücretinin ne zaman göründüğü. Gerçek kişisel bilgi GİRME, siparişi TAMAMLAMA, ödeme BAŞLATMA. Bir adım bunları gerektiriyorsa orada dur ve raporda 'bu adımın ötesi görülemedi' yaz. Para, dışarıya çıkan ya da geri alınamaz bir eylem gerekirse durup patrona sor.
-5) Mobil: tarayıcı penceresini daraltarak ya da mobil görünüm moduyla ana sayfayı, bir ürün sayfasını ve sepeti kontrol et. Hız için yalnızca izlenim yaz ve bunun ölçüm olmadığını belirt.
-6) Türkçe metin kalitesi: yazım hataları, çeviri kokan ifadeler, tutarsızlıklar. Örnek cümleyi ve URL'sini ver.
+Önce ofis ekranının hareket/çizim kodunu bul. Ajan konumu, masa koordinatı ve durum (boşta/çalışıyor) nerede tutuluyor, onu belirle. İpucu: cinar/test_panel_js.mjs mevcut panel JS'ini test ediyor, oradan başla. Kaynak calisma dışındaysa (ör. ../ofis/...) oraya YAZMA. Tam dosya yolunu vererek `ofis.soru_sor` ile lidere sor ve yazma alanının genişletilmesini iste. Cevap gelene kadar hareket mantığını saf, test edilebilir bir modül olarak cinar/ofis_yurume/ altında yaz. Davranış şöyle olacak: (a) Durum 'boşta' ise ajan ofis sınırları içinde rastgele bir hedef nokta seçer. Nokta masalara ya da duvarlara çakışmamalı. Ajan sabit hızla o noktaya yürür, varınca kısa ve rastgele bir süre bekler, sonra yeni hedef seçer. (b) Durum 'çalışıyor'a geçtiği anda hedef kendi masası olur. Ajan masaya yürür, varınca durur ve iş sürdükçe yerinde kalır. (c) İş bitip tekrar boşta olunca dolaşma yeniden başlar. Rastgelelik için enjekte edilebilir bir tohum/RNG kullan ki test deterministik olsun. Zaman adımı (tick) da dışarıdan sürülebilsin. Test dosyasını cinar/testler/ altına yaz (ör. test_ofis_yurume.mjs). Test boştaki ajanın konumlarını birkaç adım boyunca yazdırsın ve farklı olduklarını doğrulasın. Durumu 'çalışıyor'a çevirip masaya varışı doğrulasın. Testi koştur ve gerçek çıktısını kanıt olarak ekle. Mümkünse ekranı açıp ekran görüntüsü al. Riskli bir adım yok: push/yayın yapma.
 
-Kurallar: Her gözlemin yanına, görüldüğü sayfanın URL'sini yaz. Göremediğin şey için tahmin yürütme, 'görülemedi' yaz. Sonuçları bilge/semuparfum_musteri_analizi.md dosyasına Türkçe yaz. Dosyada şu bölümler olsun: Güçlü yönler, Zayıf yönler, ve öncelik sırasına göre en fazla 10 somut öneri. Her önerinin hangi gözleme dayandığı URL ile belli olsun. Başka bir dosyaya yazma. İşi iki kez koşturduysan, teslimde yalnızca dosyaya giren koşunun kanıtlarını sun.
+**Bu is nicin var:** Ofis ekranında boştaki ajanlar donuk duruyor. Patron, boşta olanların ofiste dolaşmasını ve iş alan ajanın masasına dönmesini istiyor. Böylece kimin boşta, kimin çalışıyor olduğu hareketten okunabilecek.
 
-**Bu is nicin var:** Mağazanın ilk kez gelen bir müşteriye nasıl göründüğünü, güveni ve satın almayı neyin engellediğini kanıtlı biçimde görmek ve önceliklendirilmiş somut öneriler çıkarmak.
+**Bagli oldugu ust hedef:** Ofis ekranında boştaki ajanlar yerinde durmayacak, ofis içinde rastgele yürüyecek. Bir ajan iş aldığında kendi masasına dönecek. Kanıt olarak değişen dosya, kısa bir test ya da ekran görüntüsü ve boştaki ajanın konumunun zamanla değiştiğini gösteren çıktı istenecek.
 
-**Bagli oldugu ust hedef:** bilge, semuparfum.com'u yalnızca tarayıcıyla, Shopify paneline girmeden, ilk kez gelen bir müşteri gibi gezsin. Şunlara baksın: ana sayfa ve ilk izlenim, güven işaretleri (iletişim, adres, iade/kargo politikası, ödeme seçenekleri, yorumlar), ürün sayfalarındaki koku notaları, ml, fiyat ve görsellerin anlaşılır olup olmadığı, sepet ve ödeme adımlarındaki engeller, mobilde görünüm ve hız izlenimi, Türkçe metin kalitesi. Sonuçları calisma/bilge/semuparfum_musteri_analizi.md dosyasına yazsın: güçlü yönler, zayıf yönler ve öncelik sırasına göre en fazla 10 somut öneri. Her gözlemin yanında hangi sayfada görüldüğünü URL olarak versin; göremediği bir şey için tahmin yürütmesin, 'görülemedi' yazsın.
-
-**Bittigini nasil kanitlayacaksin:** bilge/semuparfum_musteri_analizi.md dosyası yazılmış olmalı. Dosyada 'Güçlü yönler', 'Zayıf yönler' ve 'Öneriler' başlıkları bulunmalı. Öneriler öncelik sırasına göre numaralanmalı ve en fazla 10 tane olmalı. Her gözlem ve iddianın yanında, görüldüğü sayfanın tam URL'si (https://semuparfum.com/...) yazmalı; kaynaksız iddia olmamalı. Hedefteki başlıkların her biri ya bir URL'li gözlemle ya da açıkça 'görülemedi' ifadesiyle karşılanmalı: ana sayfa ve ilk izlenim; iletişim; adres; iade politikası; kargo politikası; ödeme seçenekleri; yorumlar; ürün sayfasında koku notaları, ml, fiyat ve görseller; sepet; ödeme adımları; mobil görünüm; hız izlenimi; Türkçe metin kalitesi. En az 2 farklı ürün sayfası incelenmiş ve URL'leri verilmiş olmalı. Teslimde kanıt olarak dosya yolu ve rapordaki URL'ler sunulmalı.
+**Bittigini nasil kanitlayacaksin:** 1) Testler yeşil ve komut çıktısı kanıt olarak eklendi. Örnek: `node cinar/testler/test_ofis_yurume.mjs` hatasız biter ve 'passed/ok' satırlarını basar. 2) Aynı test ya da ayrı bir betik, boştaki bir ajanın konumunu sabit tohumla en az 3 zaman adımında yazdırır. Örnek: t=0 (x,y), t=1 (x,y), t=2 (x,y). Konumlar birbirinden farklıdır ve hepsi ofis sınırları içindedir. Bu çıktı terminal kanıtı olarak eklenir. 3) Test, ajanın durumunu 'boşta'dan 'çalışıyor'a çevirir. Yeterli adımdan sonra ajanın konumu kendi masasının koordinatına eşit olur (tolerans içinde) ve orada sabit kalır. Bu da çıktıda görünür. 4) Değişen dosyaların listesi diff kanıtı olarak eklenir. Değişiklik yalnızca yazma alanına dokunmuştur. Ekranın kaynağı calisma dışında olduğu için yazılamadıysa, bu engel kanıt diye sunulmaz: lidere sorulan soru ve cevabı eklenir. 5) Ekran görüntüsü alınabildiyse eklenir. Alınamadıysa görülmemiş bir yerleşim gözlem gibi yazılmaz.
 
 **Yazma alanin** — yalnizca buraya yazabilirsin:
-  - `bilge/semuparfum_musteri_analizi.md/`
+  - `cinar/ofis_yurume/` (klasor -- icine yazabilirsin)
+  - `cinar/testler/test_ofis_yurume.mjs` (DOSYA -- bu dosyayi yaz, klasor ACMA)
 
 **Bu goreve daha once eklenmis kanitlar:**
-  - dosya: bilge/semuparfum_musteri_analizi.md yazıldı _(bilge)_
-  - diff: bilge/semuparfum_musteri_analizi.md düzeltmeleri (ret sonrası) _(bilge)_
-  - terminal: Tarayıcı otomasyon aracı arama denemesi durduruldu _(bilge)_
-  - terminal: Playwright MCP durumu tespiti _(bilge)_
-  - terminal: Playwright kurulumu tamamlandı, otomasyon scripti onay bekliyor _(bilge)_
-  - terminal: Playwright ile gerçek tarayıcı gezintisi: sepet + ödeme + mobil _(bilge)_
-  - diff: bilge/semuparfum_musteri_analizi.md — gerçek tarayıcı bulgularıyla güncellendi _(bilge)_
+  - terminal: node cinar/testler/test_ofis_yurume.mjs _(cinar)_
+  - diff: git status --short -- cinar/ofis_yurume cinar/testler/test_ofis_yurume.mjs _(cinar)_
+  - terminal: panel.js yazma alanı sorusu ve danışman yanıtı _(cinar)_
 
 ## NEYI KENDIN YAPARSIN, NEYI SORARSIN
 
@@ -122,6 +123,8 @@ Bunu sana yalnizca RICA olarak soylemiyoruz: ofis, riskli gorunen bir eylemi sen
 
 Durdurulunca: ayni eylemi tekrar deneme, BASKA BIR YOLDAN da yapmaya calisma. Buraya kadar yaptiklarini `kanit_ekle` ile yaz ve turu bitir.
 
+TARAYICIN VAR ve SERBEST: `browser_navigate` ile istedigin siteye git, gez, tikla, form doldur, sepet/odeme adimlarina bak -- terminaldeki Claude Code gibi. Yalniz riskli EYLEM (yayina alma, silme, odeme, gonderme) patrona sorulur. Yalniz sayfa metni gerekiyorsa WebFetch daha ucuzdur.
+
 **Bitirince:** kanitini ekle (`ofis.kanit_ekle`), sonra isi incelemeye ver.
 **Takilirsan:** lidere sor (`ofis.soru_sor`) — tahmin etme.
 
@@ -144,14 +147,15 @@ Sebep: tur senin elinde olmayan bir sebeple (kullanim limiti) kesilebilir ve isi
 ## DEVIR — bu is DAHA ONCE BASLADI, sifirdan baslama
 
 **Diskte OLCULEN degisiklik** (ofisin olcumu, ajanin sozu degil) — once bunlara bak:
-  - `bilge/semuparfum_musteri_analizi.md` degisti (+10 -9)
+  - `cinar/ofis_yurume/hareket.mjs` eklendi (+107 -0)
+  - `cinar/testler/test_ofis_yurume.mjs` eklendi (+43 -0)
 
-**Son durum notu** (bilge, 2026-09-24T02:25:25+00:00) — ajanin SOZU, dosyalarla dogrulamadan guvenme:
-> bilge/semuparfum_musteri_analizi.md gerçek tarayıcı (Playwright/Chromium) verileriyle güncellendi — sepet, checkout URL'si, kargo/kapıda ödeme, mobil emülasyon ve yükleme süresi gözlemleri URL'li olarak eklendi, kaynaksız dil hatası iddiaları düzeltildi (7 kanıt eklendi) | görev incelemeye veriliyor, sırada bir şey yok.
+**Son durum notu** (cinar, 2026-09-27T03:30:04+00:00) — ajanin SOZU, dosyalarla dogrulamadan guvenme:
+> test ve soru yanıtı kanıtlandı, panel.js izni istendi | sırada patronun yanıtı var
 
 **Eklenmis son kanitlar** — TEKRAR EKLEME:
-  - terminal: Playwright kurulumu tamamlandı, otomasyon scripti onay bekliyor — /tmp/pw içine npm ile playwright@1.63.0 kuruldu ve `npx playwright install chromium` ile Chromium indirildi (hatasız tamamlandı). Ardından siteyi gezip sepete e
-  - terminal: Playwright ile gerçek tarayıcı gezintisi: sepet + ödeme + mobil — node /tmp/pw/run.js çıktısı (gerçek Chromium tarayıcısıyla):
-  - diff: bilge/semuparfum_musteri_analizi.md — gerçek tarayıcı bulgularıyla güncellendi — Yöntem notu, "Sepet ve Ödeme" (4. bölüm) ve "Mobil Görünüm ve Hız" (5. bölüm) tamamen gerçek Playwright/Chromium oturumundan (bkz. önceki "Playwright ile gerçek
+  - terminal: node cinar/testler/test_ofis_yurume.mjs — exit_code=0
+  - diff: git status --short -- cinar/ofis_yurume cinar/testler/test_ofis_yurume.mjs — exit_code=0
+  - terminal: panel.js yazma alanı sorusu ve danışman yanıtı — Soru: Ofis ekranının gerçek kaynağı C:\Users\pc\Desktop\AgentOfis\web\panel.js. `mola` konumu ajanKonumlari içinde sabit hesaplanıyor, çizim haritaKur içinde ya
 
 Once diskteki durumu dogrula, sonra YARIM KALANI tamamla. Biten adimi tekrarlama.

@@ -27,8 +27,8 @@ CREATE TABLE ajan (
     UNIQUE (proje_id, ad)
 );
 INSERT INTO "ajan" VALUES('d493f64de40446a8a2a13935869d39a4','915d303e41ee4cb59fa908401d277926','d719a7e2ec6c420d9dd59dd2b43eb0fa','demir','lider',1,'claude','opus','normal','eller','C:\Users\pc\Desktop\AgentOfis\calisma','','kuruluyor',2,'2026-09-18T17:01:47+00:00','2026-09-20T01:26:47+00:00');
-INSERT INTO "ajan" VALUES('a43911fd8b504f68b023fd4190bc70d1','915d303e41ee4cb59fa908401d277926','d719a7e2ec6c420d9dd59dd2b43eb0fa','cinar','backend',0,'codex','gpt-6-sol','normal','eller','C:\Users\pc\Desktop\AgentOfis\calisma','01a0c55a-1767-7f63-ac79-eebdc01ba1e9','aktif',5,'2026-09-18T17:01:48+00:00','2026-09-23T00:21:41+00:00');
-INSERT INTO "ajan" VALUES('5dcf20ec8f764a4b89e29985aeff997f','915d303e41ee4cb59fa908401d277926','d719a7e2ec6c420d9dd59dd2b43eb0fa','bilge','arastirma',0,'claude','sonnet','normal','eller','C:\Users\pc\Desktop\AgentOfis\calisma','6301ae58-51a9-44ea-88a0-6912de1e8332','aktif',5,'2026-09-18T17:01:48+00:00','2026-09-24T10:22:25+00:00');
+INSERT INTO "ajan" VALUES('a43911fd8b504f68b023fd4190bc70d1','915d303e41ee4cb59fa908401d277926','d719a7e2ec6c420d9dd59dd2b43eb0fa','cinar','backend',0,'codex','gpt-6-sol','normal','eller','C:\Users\pc\Desktop\AgentOfis\calisma','01a0e0e6-2e66-73d0-9900-ce9733d42690','aktif',5,'2026-09-18T17:01:48+00:00','2026-09-27T03:29:25+00:00');
+INSERT INTO "ajan" VALUES('5dcf20ec8f764a4b89e29985aeff997f','915d303e41ee4cb59fa908401d277926','d719a7e2ec6c420d9dd59dd2b43eb0fa','bilge','arastirma',0,'claude','sonnet','normal','eller','C:\Users\pc\Desktop\AgentOfis\calisma','43845d34-67a2-49f9-8bd5-874ceb1da98a','aktif',5,'2026-09-18T17:01:48+00:00','2026-09-27T03:34:12+00:00');
 INSERT INTO "ajan" VALUES('981c80aaaae34da3a0b68fc43864f4a9','915d303e41ee4cb59fa908401d277926','d719a7e2ec6c420d9dd59dd2b43eb0fa','deniz','metin',0,'claude','sonnet','normal','eller','C:\Users\pc\Desktop\AgentOfis\calisma','','kuruluyor',4,'2026-09-18T17:01:48+00:00','2026-09-21T00:38:23+00:00');
 INSERT INTO "ajan" VALUES('d85984d4185947d69e98988dc79b963a','915d303e41ee4cb59fa908401d277926','d719a7e2ec6c420d9dd59dd2b43eb0fa','yaprak','entegrasyon',0,'claude','sonnet','normal','eller','C:/Users/pc/Desktop/AgentOfis/calisma','52f327de-4e42-4195-a246-72d860b55bb5','aktif',4,'2026-09-18T17:22:05+00:00','2026-09-21T00:26:25+00:00');
 INSERT INTO "ajan" VALUES('a90c1e469b0f4dad952939ead961c9ac','ada28da59be143d795b1346bd25b4f34','c0d6b3d1def443d397ba345a3508fbe9','kaya','lider',1,'claude','sonnet','normal','eller','C:/Users/pc/Desktop/GuvenKart-3D','','kuruluyor',1,'2026-09-18T17:52:07+00:00','2026-09-18T17:52:07+00:00');
@@ -2713,6 +2713,302 @@ Sebep: tur senin elinde olmayan bir sebeple (kullanim limiti) kesilebilir ve isi
   - diff: bilge/semuparfum_musteri_analizi.md — gerçek tarayıcı bulgularıyla güncellendi — Yöntem notu, "Sepet ve Ödeme" (4. bölüm) ve "Mobil Görünüm ve Hız" (5. bölüm) tamamen gerçek Playwright/Chromium oturumundan (bkz. önceki "Playwright ile gerçek
 
 Once diskteki durumu dogrula, sonra YARIM KALANI tamamla. Biten adimi tekrarlama.',4640,'2026-09-24T10:19:12+00:00');
+INSERT INTO "brifing" VALUES('8bad80614c3d40bda77a299a92ddb17f','8b85bc1326004304a5c48da383b8b5c6','cinar','## K1 — ANAYASA
+
+Sen **cinar**''sin. Meslegin: backend.
+
+## ROLUN: backend  (YAZILIM)
+
+API, veri katmani, altyapi. Sunucu tarafi is mantigi.
+
+- Dosya yazabilir misin: EVET
+- Senden beklenen kanit turu: terminal, diff
+- Bu rolde ''bitti'' genellikle su demektir:
+  Testler yesil (komut ciktisi kanit olarak eklendi) ve degisiklik yalnizca yazma alanina dokundu.
+
+Ev kurallari:
+- **Kanitsiz is bitmez.** Terminal ciktisi, diff ya da ekran goruntusu
+  eklemeden gorevi incelemeye veremezsin. ''Calisiyor'' demek iddiadir.
+- **Yalnizca sana verilen yazma alaninda calis.** Disina cikman gerekiyorsa
+  once lidere sor; alan baskasinda kilitli olabilir.
+- **Takilirsan sor.** Tahmin etme. Lidere soru sormak ucuz, yanlis varsayimla
+  iki saat calismak pahalidir.
+- **Riskli adimda dur.** Para harcamak, disari yazmak, yayina almak, `push`
+  yapmak onay ister. Kod yazmak, test kosmak sormaz.
+
+### Sana ozel — gecmiste duselen notlar
+- Ortam bir komutu/yazmayi engelledigi icin cikti uretilemediginde isi "kanit" adi altinda engellenme mesajiyla teslim etme; once alternatif yolu dene, olmuyorsa lidere sor -- engel raporu kanit yerine gecmez.
+- Büyük proje klasörlerinde dosya sayarken venv/node_modules/.git gibi bağımlılık klasörlerini sessizce hariç tutma -- hariç tutulan yolları ve gerekçesini açıkça rapora yaz, aksi halde rakam yanıltıcı olur.
+- "iki testi tutarlı hale getir" talimatı verildiğinde, sadece kodu değiştirip eski testleri değiştirmeden bırakmak yeterli değildir — hem kod hem testler aynı kararı yansıtmalı; kanıt geçmişinde ileri-geri gidip son halde orijinal tutarsızlığa geri dönülmüş olması gözden kaçırılmamalı.
+
+---
+
+## K2 — PROJE KUNYESI
+
+**Proje:** Ofisim
+
+**Amac:** Gunluk islerin buyuk kismini ajan ekibiyle yurutmek
+
+**Basari olcutu:** Verilen hedef kanitla kapaniyor
+
+**Kisitlar:** Yerel makine, Python 3.12, Turkce
+
+### Gecerli olgular
+
+- **semuparfum iletişim:** 0501 611 36 67, iletisim@semuparfum.com, wa.me/905016113667 (https://semuparfum.com/pages/contact ve ana sayfa) _(kaynak: ajan:demir #30)_
+- **semuparfum kapıda ödeme:** mevcut, 49 TL ek ücret (https://semuparfum.com, WebFetch ile doğrulandı) _(kaynak: ajan:demir #30)_
+- **semuparfum satıcı adresi:** Yener Kozmetik, Çobançeşme Mah. Halitpaşa Sk. No: 2, Bahçelievler / İstanbul (https://semuparfum.com/pages/hakkimizda, rapor satır 15) _(kaynak: ajan:demir #30)_
+- **semuparfum ürün fiyatı:** Belle ve Brave 1.490,00 TL, 50 ml, KDV dahil (https://semuparfum.com/products/belle ve /products/brave, WebFetch ile doğrulandı) _(kaynak: ajan:demir #30)_
+
+_Bu liste yalnizca SU AN gecerli olgulari icerir. Eskimis bir bilgi hatirliyorsan, buradaki gecerlidir._
+
+---
+
+## K3 — SU ANKI DURUM
+
+**Su an kim ne yapiyor:**
+
+**Son kararlar** (en yenisi ustte):
+
+- `demir`: ''Ofis ekranında boştaki ajanlar yerinde durmayacak, ofis içinde rastgele yürüyecek. Bir ajan iş aldığında kendi masasına dönecek. Kanıt olarak değişen dosya, kısa bir test ya da ekran görüntüsü ve boştaki ajanın konumunun zamanla değiştiğini gösteren çıktı istenecek.'' bolunmedi, tek ajanda kosacak.
+  _gerekce: Bu iş tek bir ekran bileşenindeki tek bir davranış değişikliği. Boştaki ajanın rastgele yürümesi ile iş alınca masaya dönmesi aynı hareket/durum döngüsünün iki dalı. İkisi aynı dosyaya dokunur ve aynı testle kanıtlanır. Bölersek kollar aynı panel dosyasına yazmak zorunda kalır, bu da yasak. Ayrıca yaklaşık 15 kat jeton yakar ve işi hızlandırmaz. Bağlayıcı gerekmiyor, para ya da dışarı çıkan bir adım yok. Önemli bir sınır var: calisma ağacında ofis ekranının kaynağı görünmüyor. Yalnızca cinar/test_panel_js.mjs panel JS''ine dair bir iz veriyor. Bu yüzden yazma alanı olarak yalnızca calisma içinde gerçekten yazılabilecek yeri verdim. Ekranın gerçek dosyası calisma dışındaysa çınar oraya yazmayacak, önce tam yolla lidere soracak. Bu planlama turunda komut koşturmadım, yalnızca BRIFING.md''yi okudum. O yüzden kanıt satırı yazmıyorum, uydurmamak için._
+- `demir`: Patron mesaji ''ajanlar molada duruyor hareket etsimler ofiste yürüsünler'' icin yol: dagit.
+  _gerekce: Patron ofis ekranındaki görünümü değiştirmek istiyor. Boştaki ajanlar ''molada'' diye yerinde duruyor, patron bunların ofiste dolaşmasını istiyor. Bu bir cevapla çözülmez; arayüz kodunda küçük bir değişiklik gerekiyor. İş tek parça ve bölünmüyor, o yüzden tek ajana gidiyor. Kod işini kadroda en iyi çınar (backend) yapar. İş basit bir animasyon olduğu için ''arayuz'' rolünü ayrıca işe almaya gerek yok. Bu değişikliği ben yaparsam onu incelemek sana kalır; çınar yaparsa incelemeyi ben yaparım. Dosyanın yerini göremedim: ofis klasörü benim erişimimin dışında. Bu yüzden ekranı çizen kodun hangi dosyada olduğunu da çınar bulacak._
+- `demir`: Patron mesaji ''paranın amuna koyalım bir takım oluşturalım onlarca yüzlerce ajanı takımda çalış'' icin yol: cevap.
+  _gerekce: Patron ''bu iş ne olmalı sence'' diye görüş soruyor. İş vermiyor. Ajan uyandırmak ya da görev açmak boşuna jeton yakar. Yön belli olmadan kadro önermek de erken olur: kadro yolu ancak bir iş belli olduğunda ve bir rol eksik kaldığında açılır. Cevabı ofiste zaten doğrulanmış olgulara dayandırdım: semuparfum.com canlı bir mağaza, fiyatı ve kapıda ödemesi doğrulandı, Shopify, Meta Reklamları, Canva ve Gmail bağlı. Para kilidi kapalı. Kalabalık kadronun yaklaşık 15 kat jeton yaktığı ölçüldü. Kazanç rakamı uydurmadım. Not: calisma/BRIFING.md dosyasını açtım ama bu tura ait değil, bilge''nin eski #30 numaralı görevini anlatıyor. O görevi sürdürmedim ve hiçbir dosyaya yazmadım. Görev açılmadığı için KANIT satırı yok; uydurmamak için bilerek boş bıraktım._
+- `demir`: Patron mesaji ''naber'' icin yol: cevap.
+  _gerekce: Patron sadece selam veriyor, herhangi bir is ya da karar sorusu yok. Ajan kosturmak jeton ve zaman israfi olur; durum ozeti verip topu patrona atmak dogru yol._
+- `demir`: Patron mesaji ''TRADE AJAN EKİBİMİZİ KURARSAK  BİRDEN FAZLA AJAN ÇALIŞACAK PARA KAZANACAK NASIL '' icin yol: cevap.
+  _gerekce: Patron ''nasıl sence'' diye fikir soruyor. Bu bir görüş ve karar sorusu, henüz tanımlı bir iş yok. Ajan koşturmak jeton yakar ama yeni bir bilgi getirmez. Ayrıca gerçek para işlemi için ne bir borsa ya da aracı kurum bağlayıcısı var ne de para kilidi açık. Önce patronun hedefi ve risk kararı netleşmeli._
+- `demir`: Patron mesaji ''HACKTOOL TAKIMI KURDUM AMA SİLEMİYOM SİL ONU'' icin yol: cevap.
+  _gerekce: Ofisin kadrosunda da açık işlerde de ''hacktool'' adında bir takım yok. Çalışma klasöründe ''hack'' kelimesini aradım, hiçbir sonuç çıkmadı. Neyin silineceği belli değil ve silme geri alınamaz. Ayrıca kadroyu kuran ve silen ben değilim, bunu ofis patronun onayıyla yapıyor. Yanlış bir şeyi silmemek için bir ajan çalıştırmadan önce patrondan netlik istiyorum._
+- `demir`: Patron mesaji ''ÇINARI ÇAĞIR MASAYA GEÇİN İKİNİZ'' icin yol: cevap.
+  _gerekce: Patron bir iş vermiyor; Çınar''la birlikte oturup konuşmamızı istiyor. Ofiste bir ajanı canlı sohbete ya da ortak bir toplantıya çağırmanın denenmiş bir yolu yok. Çınar''a ancak bir görev açarak ulaşabilirim. Konu belli olmadan görev açmak jeton yakar ve ortaya bir şey çıkmaz. Aynı durumda daha önce verilen karar da buydu (''çınarla konuşcam demir çınarı çağır'' -> cevap). Doğru adım, patrona konuyu sormak ve Çınar''ı gerçek bir işle çağırmak. Bu arada calisma/BRIFING.md''yi okudum. Dosya bu tura ait değil; kapanmış #30 numaralı görevde bilge''nin brifingi. Hiçbir dosyaya yazmadım ve komut çalıştırmadım. Görev de açılmadı, bu yüzden kanıt satırı yok; uydurmamak için bilerek boş bıraktım._
+- `demir`: Patron mesaji ''BOŞVER O İŞİ'' icin yol: cevap.
+  _gerekce: Patron açık kalan semuparfum analizinin (sepet, ödeme, mobil, hız) takibini bırakmamızı söylüyor. Bu bir karar bildirimi; yapılacak yeni bir iş yok. Ajan uyandırmak boşa jeton harcatır. Yapılacak tek şey kararı kaydedip onaylamak._
+
+_Bu kararlar baglayicidir. Biriyle celisen bir sey yapman gerekiyorsa once lidere sor._
+
+---
+
+## K4 — GOREVIN
+
+### #31 — Ofis ekranı: boştaki ajan rastgele yürür, iş alınca masasına döner
+
+Önce ofis ekranının hareket/çizim kodunu bul. Ajan konumu, masa koordinatı ve durum (boşta/çalışıyor) nerede tutuluyor, onu belirle. İpucu: cinar/test_panel_js.mjs mevcut panel JS''ini test ediyor, oradan başla. Kaynak calisma dışındaysa (ör. ../ofis/...) oraya YAZMA. Tam dosya yolunu vererek `ofis.soru_sor` ile lidere sor ve yazma alanının genişletilmesini iste. Cevap gelene kadar hareket mantığını saf, test edilebilir bir modül olarak cinar/ofis_yurume/ altında yaz. Davranış şöyle olacak: (a) Durum ''boşta'' ise ajan ofis sınırları içinde rastgele bir hedef nokta seçer. Nokta masalara ya da duvarlara çakışmamalı. Ajan sabit hızla o noktaya yürür, varınca kısa ve rastgele bir süre bekler, sonra yeni hedef seçer. (b) Durum ''çalışıyor''a geçtiği anda hedef kendi masası olur. Ajan masaya yürür, varınca durur ve iş sürdükçe yerinde kalır. (c) İş bitip tekrar boşta olunca dolaşma yeniden başlar. Rastgelelik için enjekte edilebilir bir tohum/RNG kullan ki test deterministik olsun. Zaman adımı (tick) da dışarıdan sürülebilsin. Test dosyasını cinar/testler/ altına yaz (ör. test_ofis_yurume.mjs). Test boştaki ajanın konumlarını birkaç adım boyunca yazdırsın ve farklı olduklarını doğrulasın. Durumu ''çalışıyor''a çevirip masaya varışı doğrulasın. Testi koştur ve gerçek çıktısını kanıt olarak ekle. Mümkünse ekranı açıp ekran görüntüsü al. Riskli bir adım yok: push/yayın yapma.
+
+**Bu is nicin var:** Ofis ekranında boştaki ajanlar donuk duruyor. Patron, boşta olanların ofiste dolaşmasını ve iş alan ajanın masasına dönmesini istiyor. Böylece kimin boşta, kimin çalışıyor olduğu hareketten okunabilecek.
+
+**Bagli oldugu ust hedef:** Ofis ekranında boştaki ajanlar yerinde durmayacak, ofis içinde rastgele yürüyecek. Bir ajan iş aldığında kendi masasına dönecek. Kanıt olarak değişen dosya, kısa bir test ya da ekran görüntüsü ve boştaki ajanın konumunun zamanla değiştiğini gösteren çıktı istenecek.
+
+**Bittigini nasil kanitlayacaksin:** 1) Testler yeşil ve komut çıktısı kanıt olarak eklendi. Örnek: `node cinar/testler/test_ofis_yurume.mjs` hatasız biter ve ''passed/ok'' satırlarını basar. 2) Aynı test ya da ayrı bir betik, boştaki bir ajanın konumunu sabit tohumla en az 3 zaman adımında yazdırır. Örnek: t=0 (x,y), t=1 (x,y), t=2 (x,y). Konumlar birbirinden farklıdır ve hepsi ofis sınırları içindedir. Bu çıktı terminal kanıtı olarak eklenir. 3) Test, ajanın durumunu ''boşta''dan ''çalışıyor''a çevirir. Yeterli adımdan sonra ajanın konumu kendi masasının koordinatına eşit olur (tolerans içinde) ve orada sabit kalır. Bu da çıktıda görünür. 4) Değişen dosyaların listesi diff kanıtı olarak eklenir. Değişiklik yalnızca yazma alanına dokunmuştur. Ekranın kaynağı calisma dışında olduğu için yazılamadıysa, bu engel kanıt diye sunulmaz: lidere sorulan soru ve cevabı eklenir. 5) Ekran görüntüsü alınabildiyse eklenir. Alınamadıysa görülmemiş bir yerleşim gözlem gibi yazılmaz.
+
+**Yazma alanin** — yalnizca buraya yazabilirsin:
+  - `cinar/ofis_yurume` (henuz yok; dosya mi klasor mu adindan belli degil -- isin tanimina bak)
+  - `cinar/testler/test_ofis_yurume.mjs` (DOSYA -- henuz yok; bu ADLA bir dosya yaz, klasor ACMA)
+
+## NEYI KENDIN YAPARSIN, NEYI SORARSIN
+
+ISINI YAPARKEN SERBESTSIN: dosya yaz, komut kostur, ara,
+tarayicida gez ve TIKLA, form doldur. Her adim icin izin ISTEME.
+
+Yalniz su UC SORUDAN biri "evet" ise ONCE `onay_iste` cagir ve DUR:
+
+  1. GERI ALINABILIR MI?  Yanlis olursa tek hamlede geri alinir mi?
+     (alinmaz ise: silme, kalici degisiklik, sozlesme)
+  2. DISARI CIKIYOR MU?   Patrondan baskasi goruyor/aliyor mu?
+     (yayin, canliya alma, gonderim, paylasim, musteriye mesaj)
+  3. PARA VAR MI?         Harcanan, tahsil edilen, taahhut edilen?
+
+Kisacasi: PATRONU ZORA SOKABILECEK bir sey yapmak uzereysen sor.
+Emin degilsen sor -- sormanin bedeli bir dakika, yanlis yapmanin
+bedeli patronun magazasi/reklami/hesabi.
+
+Sormadigin her sey icin serbestsin ve BEKLEMEN gerekmez.
+
+Bunu sana yalnizca RICA olarak soylemiyoruz: ofis, riskli gorunen bir eylemi sen fark etmesen bile DURDURUR ve patrona sorar -- dosya, komut, baglayici ve tarayici, hepsi ayni kapidan gecer. Durdurulursan hata yapmis olmazsin; cevap gelince kaldigin yerden devam edersin.
+
+Durdurulunca: ayni eylemi tekrar deneme, BASKA BIR YOLDAN da yapmaya calisma. Buraya kadar yaptiklarini `kanit_ekle` ile yaz ve turu bitir.
+
+TARAYICIN VAR ve SERBEST: `browser_navigate` ile istedigin siteye git, gez, tikla, form doldur, sepet/odeme adimlarina bak -- terminaldeki Claude Code gibi. Yalniz riskli EYLEM (yayina alma, silme, odeme, gonderme) patrona sorulur. Yalniz sayfa metni gerekiyorsa WebFetch daha ucuzdur.
+
+**Bitirince:** kanitini ekle (`ofis.kanit_ekle`), sonra isi incelemeye ver.
+**Takilirsan:** lidere sor (`ofis.soru_sor`) — tahmin etme.
+
+**BILGI YAZMAK -- tetikleyici olursa ZORUNLU.** Isin sirasinda bir dosyadan, komuttan ya da kaynaktan projeye dair bir DEGER ogrendiysen (port, surum, adres, fiyat, hesap adi, klasor yolu) ve bu deger bu isten sonra da gecerliyse `ofis.bilgi_yaz` ile yaz:
+
+    konu: kisa ad       icerik: deger (nereden ogrendin)
+
+Ornek: konu `veritabani surumu`, icerik `PostgreSQL 16 (docker-compose.yml)`. Ilgili bilgiye `[[konu]]` ile bagla. Gecici is notu YAZMA -- o DURUM satirina gider. Arac sende yoksa atla.
+
+**DURUM SATIRI YAZMAK ZORUNDASIN.** Her dosyayi ya da adimi bitirdiginde VE turun sonunda, metnine ayri bir satir olarak TAM OLARAK su bicimde yaz:
+
+    DURUM: <ne bitti> | <sirada ne var>
+
+Ornek: `DURUM: cikti/bir.txt yazildi | sirada cikti/iki.txt`
+
+Sebep: tur senin elinde olmayan bir sebeple (kullanim limiti) kesilebilir ve isi BASKA bir model surdurur -- o model senin konusmani goremez, yalniz bu satiri gorur. En son satir gecerlidir.',4546,'2026-09-27T03:26:14+00:00');
+INSERT INTO "brifing" VALUES('67424de055604916863dd862e5fdb3f2','8b85bc1326004304a5c48da383b8b5c6','bilge','## K1 — ANAYASA
+
+Sen **bilge**''sin. Meslegin: arastirma.
+
+## ROLUN: arastirma  (BILGI)
+
+Kaynakli arastirma, rakip analizi, karsilastirma. Bulur ve yazar.
+
+- Dosya yazabilir misin: EVET
+- Senden beklenen kanit turu: baglanti, dosya
+- Bu rolde ''bitti'' genellikle su demektir:
+  Her iddianin yaninda KAYNAK baglantisi var ve rapor dosya olarak yazildi. Kaynaksiz iddia yok.
+
+Ev kurallari:
+- **Kanitsiz is bitmez.** Terminal ciktisi, diff ya da ekran goruntusu
+  eklemeden gorevi incelemeye veremezsin. ''Calisiyor'' demek iddiadir.
+- **Yalnizca sana verilen yazma alaninda calis.** Disina cikman gerekiyorsa
+  once lidere sor; alan baskasinda kilitli olabilir.
+- **Takilirsan sor.** Tahmin etme. Lidere soru sormak ucuz, yanlis varsayimla
+  iki saat calismak pahalidir.
+- **Riskli adimda dur.** Para harcamak, disari yazmak, yayina almak, `push`
+  yapmak onay ister. Kod yazmak, test kosmak sormaz.
+
+### Sana ozel — gecmiste duselen notlar
+- Bir sayfa hakkında "yok/verilmemiş" demeden önce sayfayı o iddiaya özgü bir soruyla yeniden tara; ve yöntem notunda görülemedi dediğin şey hakkında öneri yazma.
+- Bir sayfa hakkında "X yok" demeden önce o sayfayı (altbilgi dahil) tam metin olarak yeniden tara; yönteme dair iddiaları (ekran görüntüsü alındı vb.) yalnızca gerçekten üretilen çıktıya dayandır.
+- Yazma alanı dışına dosya yazma ya da yazılım kurma gerekiyorsa önce lidere sor ve onayı kanıta ekle. Görmediğin bir şeyi (ekran görüntüsü, görsel yerleşim) gözlem gibi rapora yazma.
+- Özet çıkaran bir getirme aracıyla (WebFetch) okuduğun metni harfi harfine alıntı gibi sunma. Yazım hatası iddiasını ancak metni aynen alıntılayarak yap, "muhtemelen" diye tahmin yürütme. Görevin istediği araç yoksa işe başlamadan söyle.
+- Aynı işi iki kez koşturduysan, teslimde YALNIZCA teslim edilen dosyada yapistirilan kosuya ait kanitlari sun; terk edilmis deneme koşusunun çıktısını kanıt diye eklemek iki farklı veritabanı/ofis adı gösterip çelişki izlenimi yaratır.
+
+---
+
+## K2 — PROJE KUNYESI
+
+**Proje:** Ofisim
+
+**Amac:** Gunluk islerin buyuk kismini ajan ekibiyle yurutmek
+
+**Basari olcutu:** Verilen hedef kanitla kapaniyor
+
+**Kisitlar:** Yerel makine, Python 3.12, Turkce
+
+### Gecerli olgular
+
+- **ofis panel kaynağı:** Ofis ekranının çizim ve hareket kodu C:\Users\pc\Desktop\AgentOfis\web\panel.js içinde. Harita ölçüleri HARITA, masa koordinatları masaYerleri, ajan hedefleri ajanKonumlari, geçişler yuru ve haritaKur işlevlerinde (panel.js okuması, 27.09.2026). _(kaynak: ajan:cinar #31)_
+- **semuparfum iletişim:** 0501 611 36 67, iletisim@semuparfum.com, wa.me/905016113667 (https://semuparfum.com/pages/contact ve ana sayfa) _(kaynak: ajan:demir #30)_
+- **semuparfum kapıda ödeme:** mevcut, 49 TL ek ücret (https://semuparfum.com, WebFetch ile doğrulandı) _(kaynak: ajan:demir #30)_
+- **semuparfum satıcı adresi:** Yener Kozmetik, Çobançeşme Mah. Halitpaşa Sk. No: 2, Bahçelievler / İstanbul (https://semuparfum.com/pages/hakkimizda, rapor satır 15) _(kaynak: ajan:demir #30)_
+- **semuparfum ürün fiyatı:** Belle ve Brave 1.490,00 TL, 50 ml, KDV dahil (https://semuparfum.com/products/belle ve /products/brave, WebFetch ile doğrulandı) _(kaynak: ajan:demir #30)_
+
+_Bu liste yalnizca SU AN gecerli olgulari icerir. Eskimis bir bilgi hatirliyorsan, buradaki gecerlidir._
+
+---
+
+## K3 — SU ANKI DURUM
+
+**Su an kim ne yapiyor:**
+
+**Son kararlar** (en yenisi ustte):
+
+- `demir`: ''Ofis ekranında boştaki ajanlar yerinde durmayacak, ofis içinde rastgele yürüyecek. Bir ajan iş aldığında kendi masasına dönecek. Kanıt olarak değişen dosya, kısa bir test ya da ekran görüntüsü ve boştaki ajanın konumunun zamanla değiştiğini gösteren çıktı istenecek.'' bolunmedi, tek ajanda kosacak.
+  _gerekce: Bu iş tek bir ekran bileşenindeki tek bir davranış değişikliği. Boştaki ajanın rastgele yürümesi ile iş alınca masaya dönmesi aynı hareket/durum döngüsünün iki dalı. İkisi aynı dosyaya dokunur ve aynı testle kanıtlanır. Bölersek kollar aynı panel dosyasına yazmak zorunda kalır, bu da yasak. Ayrıca yaklaşık 15 kat jeton yakar ve işi hızlandırmaz. Bağlayıcı gerekmiyor, para ya da dışarı çıkan bir adım yok. Önemli bir sınır var: calisma ağacında ofis ekranının kaynağı görünmüyor. Yalnızca cinar/test_panel_js.mjs panel JS''ine dair bir iz veriyor. Bu yüzden yazma alanı olarak yalnızca calisma içinde gerçekten yazılabilecek yeri verdim. Ekranın gerçek dosyası calisma dışındaysa çınar oraya yazmayacak, önce tam yolla lidere soracak. Bu planlama turunda komut koşturmadım, yalnızca BRIFING.md''yi okudum. O yüzden kanıt satırı yazmıyorum, uydurmamak için._
+- `demir`: Patron mesaji ''ajanlar molada duruyor hareket etsimler ofiste yürüsünler'' icin yol: dagit.
+  _gerekce: Patron ofis ekranındaki görünümü değiştirmek istiyor. Boştaki ajanlar ''molada'' diye yerinde duruyor, patron bunların ofiste dolaşmasını istiyor. Bu bir cevapla çözülmez; arayüz kodunda küçük bir değişiklik gerekiyor. İş tek parça ve bölünmüyor, o yüzden tek ajana gidiyor. Kod işini kadroda en iyi çınar (backend) yapar. İş basit bir animasyon olduğu için ''arayuz'' rolünü ayrıca işe almaya gerek yok. Bu değişikliği ben yaparsam onu incelemek sana kalır; çınar yaparsa incelemeyi ben yaparım. Dosyanın yerini göremedim: ofis klasörü benim erişimimin dışında. Bu yüzden ekranı çizen kodun hangi dosyada olduğunu da çınar bulacak._
+- `demir`: Patron mesaji ''paranın amuna koyalım bir takım oluşturalım onlarca yüzlerce ajanı takımda çalış'' icin yol: cevap.
+  _gerekce: Patron ''bu iş ne olmalı sence'' diye görüş soruyor. İş vermiyor. Ajan uyandırmak ya da görev açmak boşuna jeton yakar. Yön belli olmadan kadro önermek de erken olur: kadro yolu ancak bir iş belli olduğunda ve bir rol eksik kaldığında açılır. Cevabı ofiste zaten doğrulanmış olgulara dayandırdım: semuparfum.com canlı bir mağaza, fiyatı ve kapıda ödemesi doğrulandı, Shopify, Meta Reklamları, Canva ve Gmail bağlı. Para kilidi kapalı. Kalabalık kadronun yaklaşık 15 kat jeton yaktığı ölçüldü. Kazanç rakamı uydurmadım. Not: calisma/BRIFING.md dosyasını açtım ama bu tura ait değil, bilge''nin eski #30 numaralı görevini anlatıyor. O görevi sürdürmedim ve hiçbir dosyaya yazmadım. Görev açılmadığı için KANIT satırı yok; uydurmamak için bilerek boş bıraktım._
+- `demir`: Patron mesaji ''naber'' icin yol: cevap.
+  _gerekce: Patron sadece selam veriyor, herhangi bir is ya da karar sorusu yok. Ajan kosturmak jeton ve zaman israfi olur; durum ozeti verip topu patrona atmak dogru yol._
+- `demir`: Patron mesaji ''TRADE AJAN EKİBİMİZİ KURARSAK  BİRDEN FAZLA AJAN ÇALIŞACAK PARA KAZANACAK NASIL '' icin yol: cevap.
+  _gerekce: Patron ''nasıl sence'' diye fikir soruyor. Bu bir görüş ve karar sorusu, henüz tanımlı bir iş yok. Ajan koşturmak jeton yakar ama yeni bir bilgi getirmez. Ayrıca gerçek para işlemi için ne bir borsa ya da aracı kurum bağlayıcısı var ne de para kilidi açık. Önce patronun hedefi ve risk kararı netleşmeli._
+- `demir`: Patron mesaji ''HACKTOOL TAKIMI KURDUM AMA SİLEMİYOM SİL ONU'' icin yol: cevap.
+  _gerekce: Ofisin kadrosunda da açık işlerde de ''hacktool'' adında bir takım yok. Çalışma klasöründe ''hack'' kelimesini aradım, hiçbir sonuç çıkmadı. Neyin silineceği belli değil ve silme geri alınamaz. Ayrıca kadroyu kuran ve silen ben değilim, bunu ofis patronun onayıyla yapıyor. Yanlış bir şeyi silmemek için bir ajan çalıştırmadan önce patrondan netlik istiyorum._
+- `demir`: Patron mesaji ''ÇINARI ÇAĞIR MASAYA GEÇİN İKİNİZ'' icin yol: cevap.
+  _gerekce: Patron bir iş vermiyor; Çınar''la birlikte oturup konuşmamızı istiyor. Ofiste bir ajanı canlı sohbete ya da ortak bir toplantıya çağırmanın denenmiş bir yolu yok. Çınar''a ancak bir görev açarak ulaşabilirim. Konu belli olmadan görev açmak jeton yakar ve ortaya bir şey çıkmaz. Aynı durumda daha önce verilen karar da buydu (''çınarla konuşcam demir çınarı çağır'' -> cevap). Doğru adım, patrona konuyu sormak ve Çınar''ı gerçek bir işle çağırmak. Bu arada calisma/BRIFING.md''yi okudum. Dosya bu tura ait değil; kapanmış #30 numaralı görevde bilge''nin brifingi. Hiçbir dosyaya yazmadım ve komut çalıştırmadım. Görev de açılmadı, bu yüzden kanıt satırı yok; uydurmamak için bilerek boş bıraktım._
+- `demir`: Patron mesaji ''BOŞVER O İŞİ'' icin yol: cevap.
+  _gerekce: Patron açık kalan semuparfum analizinin (sepet, ödeme, mobil, hız) takibini bırakmamızı söylüyor. Bu bir karar bildirimi; yapılacak yeni bir iş yok. Ajan uyandırmak boşa jeton harcatır. Yapılacak tek şey kararı kaydedip onaylamak._
+
+_Bu kararlar baglayicidir. Biriyle celisen bir sey yapman gerekiyorsa once lidere sor._
+
+---
+
+## K4 — GOREVIN
+
+### #31 — Ofis ekranı: boştaki ajan rastgele yürür, iş alınca masasına döner
+
+Önce ofis ekranının hareket/çizim kodunu bul. Ajan konumu, masa koordinatı ve durum (boşta/çalışıyor) nerede tutuluyor, onu belirle. İpucu: cinar/test_panel_js.mjs mevcut panel JS''ini test ediyor, oradan başla. Kaynak calisma dışındaysa (ör. ../ofis/...) oraya YAZMA. Tam dosya yolunu vererek `ofis.soru_sor` ile lidere sor ve yazma alanının genişletilmesini iste. Cevap gelene kadar hareket mantığını saf, test edilebilir bir modül olarak cinar/ofis_yurume/ altında yaz. Davranış şöyle olacak: (a) Durum ''boşta'' ise ajan ofis sınırları içinde rastgele bir hedef nokta seçer. Nokta masalara ya da duvarlara çakışmamalı. Ajan sabit hızla o noktaya yürür, varınca kısa ve rastgele bir süre bekler, sonra yeni hedef seçer. (b) Durum ''çalışıyor''a geçtiği anda hedef kendi masası olur. Ajan masaya yürür, varınca durur ve iş sürdükçe yerinde kalır. (c) İş bitip tekrar boşta olunca dolaşma yeniden başlar. Rastgelelik için enjekte edilebilir bir tohum/RNG kullan ki test deterministik olsun. Zaman adımı (tick) da dışarıdan sürülebilsin. Test dosyasını cinar/testler/ altına yaz (ör. test_ofis_yurume.mjs). Test boştaki ajanın konumlarını birkaç adım boyunca yazdırsın ve farklı olduklarını doğrulasın. Durumu ''çalışıyor''a çevirip masaya varışı doğrulasın. Testi koştur ve gerçek çıktısını kanıt olarak ekle. Mümkünse ekranı açıp ekran görüntüsü al. Riskli bir adım yok: push/yayın yapma.
+
+**Bu is nicin var:** Ofis ekranında boştaki ajanlar donuk duruyor. Patron, boşta olanların ofiste dolaşmasını ve iş alan ajanın masasına dönmesini istiyor. Böylece kimin boşta, kimin çalışıyor olduğu hareketten okunabilecek.
+
+**Bagli oldugu ust hedef:** Ofis ekranında boştaki ajanlar yerinde durmayacak, ofis içinde rastgele yürüyecek. Bir ajan iş aldığında kendi masasına dönecek. Kanıt olarak değişen dosya, kısa bir test ya da ekran görüntüsü ve boştaki ajanın konumunun zamanla değiştiğini gösteren çıktı istenecek.
+
+**Bittigini nasil kanitlayacaksin:** 1) Testler yeşil ve komut çıktısı kanıt olarak eklendi. Örnek: `node cinar/testler/test_ofis_yurume.mjs` hatasız biter ve ''passed/ok'' satırlarını basar. 2) Aynı test ya da ayrı bir betik, boştaki bir ajanın konumunu sabit tohumla en az 3 zaman adımında yazdırır. Örnek: t=0 (x,y), t=1 (x,y), t=2 (x,y). Konumlar birbirinden farklıdır ve hepsi ofis sınırları içindedir. Bu çıktı terminal kanıtı olarak eklenir. 3) Test, ajanın durumunu ''boşta''dan ''çalışıyor''a çevirir. Yeterli adımdan sonra ajanın konumu kendi masasının koordinatına eşit olur (tolerans içinde) ve orada sabit kalır. Bu da çıktıda görünür. 4) Değişen dosyaların listesi diff kanıtı olarak eklenir. Değişiklik yalnızca yazma alanına dokunmuştur. Ekranın kaynağı calisma dışında olduğu için yazılamadıysa, bu engel kanıt diye sunulmaz: lidere sorulan soru ve cevabı eklenir. 5) Ekran görüntüsü alınabildiyse eklenir. Alınamadıysa görülmemiş bir yerleşim gözlem gibi yazılmaz.
+
+**Yazma alanin** — yalnizca buraya yazabilirsin:
+  - `cinar/ofis_yurume/` (klasor -- icine yazabilirsin)
+  - `cinar/testler/test_ofis_yurume.mjs` (DOSYA -- bu dosyayi yaz, klasor ACMA)
+
+**Bu goreve daha once eklenmis kanitlar:**
+  - terminal: node cinar/testler/test_ofis_yurume.mjs _(cinar)_
+  - diff: git status --short -- cinar/ofis_yurume cinar/testler/test_ofis_yurume.mjs _(cinar)_
+  - terminal: panel.js yazma alanı sorusu ve danışman yanıtı _(cinar)_
+
+## NEYI KENDIN YAPARSIN, NEYI SORARSIN
+
+ISINI YAPARKEN SERBESTSIN: dosya yaz, komut kostur, ara,
+tarayicida gez ve TIKLA, form doldur. Her adim icin izin ISTEME.
+
+Yalniz su UC SORUDAN biri "evet" ise ONCE `onay_iste` cagir ve DUR:
+
+  1. GERI ALINABILIR MI?  Yanlis olursa tek hamlede geri alinir mi?
+     (alinmaz ise: silme, kalici degisiklik, sozlesme)
+  2. DISARI CIKIYOR MU?   Patrondan baskasi goruyor/aliyor mu?
+     (yayin, canliya alma, gonderim, paylasim, musteriye mesaj)
+  3. PARA VAR MI?         Harcanan, tahsil edilen, taahhut edilen?
+
+Kisacasi: PATRONU ZORA SOKABILECEK bir sey yapmak uzereysen sor.
+Emin degilsen sor -- sormanin bedeli bir dakika, yanlis yapmanin
+bedeli patronun magazasi/reklami/hesabi.
+
+Sormadigin her sey icin serbestsin ve BEKLEMEN gerekmez.
+
+Bunu sana yalnizca RICA olarak soylemiyoruz: ofis, riskli gorunen bir eylemi sen fark etmesen bile DURDURUR ve patrona sorar -- dosya, komut, baglayici ve tarayici, hepsi ayni kapidan gecer. Durdurulursan hata yapmis olmazsin; cevap gelince kaldigin yerden devam edersin.
+
+Durdurulunca: ayni eylemi tekrar deneme, BASKA BIR YOLDAN da yapmaya calisma. Buraya kadar yaptiklarini `kanit_ekle` ile yaz ve turu bitir.
+
+TARAYICIN VAR ve SERBEST: `browser_navigate` ile istedigin siteye git, gez, tikla, form doldur, sepet/odeme adimlarina bak -- terminaldeki Claude Code gibi. Yalniz riskli EYLEM (yayina alma, silme, odeme, gonderme) patrona sorulur. Yalniz sayfa metni gerekiyorsa WebFetch daha ucuzdur.
+
+**Bitirince:** kanitini ekle (`ofis.kanit_ekle`), sonra isi incelemeye ver.
+**Takilirsan:** lidere sor (`ofis.soru_sor`) — tahmin etme.
+
+**BILGI YAZMAK -- tetikleyici olursa ZORUNLU.** Isin sirasinda bir dosyadan, komuttan ya da kaynaktan projeye dair bir DEGER ogrendiysen (port, surum, adres, fiyat, hesap adi, klasor yolu) ve bu deger bu isten sonra da gecerliyse `ofis.bilgi_yaz` ile yaz:
+
+    konu: kisa ad       icerik: deger (nereden ogrendin)
+
+Ornek: konu `veritabani surumu`, icerik `PostgreSQL 16 (docker-compose.yml)`. Ilgili bilgiye `[[konu]]` ile bagla. Gecici is notu YAZMA -- o DURUM satirina gider. Arac sende yoksa atla.
+
+**DURUM SATIRI YAZMAK ZORUNDASIN.** Her dosyayi ya da adimi bitirdiginde VE turun sonunda, metnine ayri bir satir olarak TAM OLARAK su bicimde yaz:
+
+    DURUM: <ne bitti> | <sirada ne var>
+
+Ornek: `DURUM: cikti/bir.txt yazildi | sirada cikti/iki.txt`
+
+Sebep: tur senin elinde olmayan bir sebeple (kullanim limiti) kesilebilir ve isi BASKA bir model surdurur -- o model senin konusmani goremez, yalniz bu satiri gorur. En son satir gecerlidir.
+
+---
+
+## DEVIR — bu is DAHA ONCE BASLADI, sifirdan baslama
+
+**Diskte OLCULEN degisiklik** (ofisin olcumu, ajanin sozu degil) — once bunlara bak:
+  - `cinar/ofis_yurume/hareket.mjs` eklendi (+107 -0)
+  - `cinar/testler/test_ofis_yurume.mjs` eklendi (+43 -0)
+
+**Son durum notu** (cinar, 2026-09-27T03:30:04+00:00) — ajanin SOZU, dosyalarla dogrulamadan guvenme:
+> test ve soru yanıtı kanıtlandı, panel.js izni istendi | sırada patronun yanıtı var
+
+**Eklenmis son kanitlar** — TEKRAR EKLEME:
+  - terminal: node cinar/testler/test_ofis_yurume.mjs — exit_code=0
+  - diff: git status --short -- cinar/ofis_yurume cinar/testler/test_ofis_yurume.mjs — exit_code=0
+  - terminal: panel.js yazma alanı sorusu ve danışman yanıtı — Soru: Ofis ekranının gerçek kaynağı C:\Users\pc\Desktop\AgentOfis\web\panel.js. `mola` konumu ajanKonumlari içinde sabit hesaplanıyor, çizim haritaKur içinde ya
+
+Once diskteki durumu dogrula, sonra YARIM KALANI tamamla. Biten adimi tekrarlama.',5148,'2026-09-27T03:34:01+00:00');
 CREATE TABLE canli_degisim (
     id              TEXT PRIMARY KEY,
     proje_id        TEXT NOT NULL,
@@ -2979,6 +3275,164 @@ INSERT INTO "degisim" VALUES('a4ecf6e7f5504c94aaeda6acbe79067f','915d303e41ee4cb
 +6. Fiyat gösterimine gerekirse referans/eski fiyat veya paket indirimi (2''li set gibi) eklemek dönüşüm artırıcı bir seçenek olabilir. — https://semuparfum.com/products/belle, https://semuparfum.com/products/brave
 +7. WhatsApp linki ana sayfanın kaynağında (wa.me bağlantısı) mevcut; bunun sayfada görsel olarak ne kadar öne çıktığı **görülemedi** (ekran görüntüsü alınamadı) — görsel yerleşim netleştirilip gerekiyorsa canlı destek varlığı daha görünür kılınabilir. — https://semuparfum.com
 ','',0,'2026-09-24T10:23:19+00:00');
+INSERT INTO "degisim" VALUES('46c38b3630894a3090e9491b708c39f9','915d303e41ee4cb59fa908401d277926','8b85bc1326004304a5c48da383b8b5c6','cinar','cinar/ofis_yurume/hareket.mjs','eklendi',0,107,0,'--- a/cinar/ofis_yurume/hareket.mjs
++++ b/cinar/ofis_yurume/hareket.mjs
+@@ -0,0 +1,107 @@
++// Harita birimleri yuzdelik koordinattir. Bu modul DOM ve zamanlayici kullanmaz.
++export function tohumluRng(tohum) {
++  let durum = tohum >>> 0;
++  return () => ((durum = (1664525 * durum + 1013904223) >>> 0) / 2 ** 32);
++}
++
++function noktaGecerli(p, alan, engeller, pay) {
++  if (p.x < alan.x + pay || p.x > alan.x + alan.w - pay ||
++      p.y < alan.y + pay || p.y > alan.y + alan.h - pay) return false;
++  return engeller.every((e) =>
++    p.x < e.x - pay || p.x > e.x + e.w + pay ||
++    p.y < e.y - pay || p.y > e.y + e.h + pay);
++}
++
++function yolAcik(a, b, alan, engeller, pay) {
++  if (b.x < alan.x + pay || b.x > alan.x + alan.w - pay ||
++      b.y < alan.y + pay || b.y > alan.y + alan.h - pay) return false;
++  return engeller.every((e) => {
++    const sol = e.x - pay, sag = e.x + e.w + pay;
++    const ust = e.y - pay, alt = e.y + e.h + pay;
++    // Masa basindan kalkisa izin ver; hedefe giderken diger engelleri kesme.
++    if (a.x >= sol && a.x <= sag && a.y >= ust && a.y <= alt) return true;
++    let giris = 0, cikis = 1;
++    for (const [bas, fark, min, max] of
++      [[a.x, b.x - a.x, sol, sag], [a.y, b.y - a.y, ust, alt]]) {
++      if (Math.abs(fark) < 1e-12) {
++        if (bas < min || bas > max) return true;
++      } else {
++        const t1 = (min - bas) / fark, t2 = (max - bas) / fark;
++        giris = Math.max(giris, Math.min(t1, t2));
++        cikis = Math.min(cikis, Math.max(t1, t2));
++      }
++    }
++    return giris > cikis;
++  });
++}
++
++export function yuruyusOlustur({ konum, masa, alan, engeller = [],
++                                hiz = 20, pay = 1, rng = Math.random,
++                                bekleme = [0.4, 1.2] }) {
++  if (!konum || !masa || !alan || !Number.isFinite(hiz) || hiz <= 0 ||
++      !Number.isFinite(pay) || pay < 0 ||
++      !Number.isFinite(bekleme[0]) || !Number.isFinite(bekleme[1]) ||
++      bekleme[0] < 0 || bekleme[1] < bekleme[0])
++    throw new Error("gecersiz yuruyus ayari");
++
++  const s = { konum: { ...konum }, masa: { ...masa },
++              durum: "boşta", hedef: null, bekle: 0 };
++  const rastgele = () => {
++    const r = rng();
++    if (!Number.isFinite(r) || r < 0 || r >= 1) throw new Error("RNG [0,1) donmeli");
++    return r;
++  };
++  const hedefSec = () => {
++    for (let i = 0; i < 200; i++) {
++      const p = { x: alan.x + pay + rastgele() * (alan.w - 2 * pay),
++                  y: alan.y + pay + rastgele() * (alan.h - 2 * pay) };
++      if (Math.hypot(p.x - s.konum.x, p.y - s.konum.y) > 0.5 &&
++          noktaGecerli(p, alan, engeller, pay) &&
++          yolAcik(s.konum, p, alan, engeller, pay)) return p;
++    }
++    // Engeller alani doldurduysa rastgele sonsuz donguye girmesin.
++    return null;
++  };
++
++  return {
++    durumAyarla(durum) {
++      if (durum !== "boşta" && durum !== "çalışıyor") throw new Error("gecersiz durum");
++      if (s.durum === durum) return;
++      s.durum = durum;
++      s.hedef = durum === "çalışıyor" ? { ...s.masa } : null;
++      s.bekle = 0;
++    },
++    tick(dt) {
++      if (!Number.isFinite(dt) || dt < 0) throw new Error("gecersiz zaman adimi");
++      let kalan = dt;
++      for (let tur = 0; kalan > 0 && tur < 1000; tur++) {
++        if (s.durum === "boşta" && s.bekle > 0) {
++          const sure = Math.min(kalan, s.bekle);
++          kalan -= sure;
++          s.bekle -= sure;
++          if (s.bekle > 1e-9) break;
++          s.bekle = 0;
++        }
++        if (!s.hedef) s.hedef = s.durum === "çalışıyor" ? { ...s.masa } : hedefSec();
++        if (!s.hedef) break;
++        const mesafe = Math.hypot(s.hedef.x - s.konum.x, s.hedef.y - s.konum.y);
++        const adim = Math.min(mesafe, hiz * kalan);
++        if (mesafe > 0) {
++          s.konum.x += (s.hedef.x - s.konum.x) * adim / mesafe;
++          s.konum.y += (s.hedef.y - s.konum.y) * adim / mesafe;
++        }
++        kalan -= adim / hiz;
++        if (adim + 1e-9 < mesafe) break;
++        s.konum = { ...s.hedef };
++        s.hedef = null;
++        if (s.durum === "çalışıyor") break;
++        s.bekle = bekleme[0] + rastgele() * (bekleme[1] - bekleme[0]);
++      }
++      return this.oku();
++    },
++    oku() {
++      return { konum: { ...s.konum }, masa: { ...s.masa }, durum: s.durum,
++               hedef: s.hedef && { ...s.hedef }, bekle: s.bekle };
++    },
++  };
++}
+','',0,'2026-09-27T03:29:02+00:00');
+INSERT INTO "degisim" VALUES('dbe5db3105ef4ed8b10e8631a2b4a4cf','915d303e41ee4cb59fa908401d277926','8b85bc1326004304a5c48da383b8b5c6','cinar','cinar/testler/test_ofis_yurume.mjs','eklendi',0,43,0,'--- a/cinar/testler/test_ofis_yurume.mjs
++++ b/cinar/testler/test_ofis_yurume.mjs
+@@ -0,0 +1,43 @@
++import assert from "node:assert/strict";
++import { tohumluRng, yuruyusOlustur } from "../ofis_yurume/hareket.mjs";
++
++const alan = { x: 0, y: 0, w: 100, h: 55 };
++const masa = { x: 46, y: 25 };
++const engeller = [{ x: 41, y: 20, w: 10, h: 10 }];
++const ayar = { konum: { x: 20, y: 40 }, masa, alan, engeller,
++               hiz: 8, pay: 2, bekleme: [0.3, 0.7], rng: tohumluRng(31) };
++const ajan = yuruyusOlustur(ayar);
++const iz = [ajan.oku().konum];
++for (let i = 1; i <= 3; i++) iz.push(ajan.tick(1).konum);
++
++for (const [i, p] of iz.entries()) {
++  console.log(`boşta t=${i}: (${p.x.toFixed(3)}, ${p.y.toFixed(3)})`);
++  assert.ok(p.x >= alan.x && p.x <= alan.x + alan.w);
++  assert.ok(p.y >= alan.y && p.y <= alan.y + alan.h);
++  assert.ok(p.x < engeller[0].x || p.x > engeller[0].x + engeller[0].w ||
++            p.y < engeller[0].y || p.y > engeller[0].y + engeller[0].h);
++}
++assert.equal(new Set(iz.map((p) => `${p.x},${p.y}`)).size, 4);
++
++const ayniTohum = yuruyusOlustur({ ...ayar, rng: tohumluRng(31) });
++for (let i = 1; i <= 3; i++)
++  assert.deepEqual(ayniTohum.tick(1).konum, iz[i]);
++console.log("ok: boşta hareket ve sabit tohum");
++
++ajan.durumAyarla("çalışıyor");
++assert.deepEqual(ajan.oku().hedef, masa);
++for (let i = 0; i < 20; i++) ajan.tick(1);
++assert.deepEqual(ajan.oku().konum, masa);
++console.log(`çalışıyor: (${ajan.oku().konum.x}, ${ajan.oku().konum.y})`);
++for (let i = 0; i < 5; i++) assert.deepEqual(ajan.tick(1).konum, masa);
++console.log("ok: masaya vardı ve çalışırken sabit kaldı");
++
++ajan.durumAyarla("boşta");
++const once = ajan.oku().konum;
++ajan.tick(1);
++assert.notDeepEqual(ajan.oku().konum, once);
++console.log("ok: iş bitince dolaşma yeniden başladı");
++
++assert.throws(() => ajan.tick(-1), /zaman/);
++assert.throws(() => ajan.durumAyarla("bilinmiyor"), /durum/);
++console.log("passed: ofis yürüyüşü");
+','',0,'2026-09-27T03:29:02+00:00');
 CREATE TABLE ders (
     id              TEXT PRIMARY KEY,
     proje_id        TEXT NOT NULL REFERENCES proje(id),
@@ -3184,6 +3638,7 @@ INSERT INTO "gorev" VALUES('153e04b7313f48a9b943219c8b44b753','915d303e41ee4cb59
 6) Türkçe metin kalitesi: yazım hataları, çeviri kokan ifadeler, tutarsızlıklar. Örnek cümleyi ve URL''sini ver.
 
 Kurallar: Her gözlemin yanına, görüldüğü sayfanın URL''sini yaz. Göremediğin şey için tahmin yürütme, ''görülemedi'' yaz. Sonuçları bilge/semuparfum_musteri_analizi.md dosyasına Türkçe yaz. Dosyada şu bölümler olsun: Güçlü yönler, Zayıf yönler, ve öncelik sırasına göre en fazla 10 somut öneri. Her önerinin hangi gözleme dayandığı URL ile belli olsun. Başka bir dosyaya yazma. İşi iki kez koşturduysan, teslimde yalnızca dosyaya giren koşunun kanıtlarını sun.','Mağazanın ilk kez gelen bir müşteriye nasıl göründüğünü, güveni ve satın almayı neyin engellediğini kanıtlı biçimde görmek ve önceliklendirilmiş somut öneriler çıkarmak.','bilge, semuparfum.com''u yalnızca tarayıcıyla, Shopify paneline girmeden, ilk kez gelen bir müşteri gibi gezsin. Şunlara baksın: ana sayfa ve ilk izlenim, güven işaretleri (iletişim, adres, iade/kargo politikası, ödeme seçenekleri, yorumlar), ürün sayfalarındaki koku notaları, ml, fiyat ve görsellerin anlaşılır olup olmadığı, sepet ve ödeme adımlarındaki engeller, mobilde görünüm ve hız izlenimi, Türkçe metin kalitesi. Sonuçları calisma/bilge/semuparfum_musteri_analizi.md dosyasına yazsın: güçlü yönler, zayıf yönler ve öncelik sırasına göre en fazla 10 somut öneri. Her gözlemin yanında hangi sayfada görüldüğünü URL olarak versin; göremediği bir şey için tahmin yürütmesin, ''görülemedi'' yazsın.','bilge/semuparfum_musteri_analizi.md dosyası yazılmış olmalı. Dosyada ''Güçlü yönler'', ''Zayıf yönler'' ve ''Öneriler'' başlıkları bulunmalı. Öneriler öncelik sırasına göre numaralanmalı ve en fazla 10 tane olmalı. Her gözlem ve iddianın yanında, görüldüğü sayfanın tam URL''si (https://semuparfum.com/...) yazmalı; kaynaksız iddia olmamalı. Hedefteki başlıkların her biri ya bir URL''li gözlemle ya da açıkça ''görülemedi'' ifadesiyle karşılanmalı: ana sayfa ve ilk izlenim; iletişim; adres; iade politikası; kargo politikası; ödeme seçenekleri; yorumlar; ürün sayfasında koku notaları, ml, fiyat ve görseller; sepet; ödeme adımları; mobil görünüm; hız izlenimi; Türkçe metin kalitesi. En az 2 farklı ürün sayfası incelenmiş ve URL''leri verilmiş olmalı. Teslimde kanıt olarak dosya yolu ve rapordaki URL''ler sunulmalı.','["bilge/semuparfum_musteri_analizi.md"]','bilge','bitti','normal',14,0,'2026-09-24T02:07:52+00:00','2026-09-24T10:24:07+00:00','[]','orta','','[]','[]',0,0);
+INSERT INTO "gorev" VALUES('8b85bc1326004304a5c48da383b8b5c6','915d303e41ee4cb59fa908401d277926','d719a7e2ec6c420d9dd59dd2b43eb0fa',31,'Ofis ekranı: boştaki ajan rastgele yürür, iş alınca masasına döner','Önce ofis ekranının hareket/çizim kodunu bul. Ajan konumu, masa koordinatı ve durum (boşta/çalışıyor) nerede tutuluyor, onu belirle. İpucu: cinar/test_panel_js.mjs mevcut panel JS''ini test ediyor, oradan başla. Kaynak calisma dışındaysa (ör. ../ofis/...) oraya YAZMA. Tam dosya yolunu vererek `ofis.soru_sor` ile lidere sor ve yazma alanının genişletilmesini iste. Cevap gelene kadar hareket mantığını saf, test edilebilir bir modül olarak cinar/ofis_yurume/ altında yaz. Davranış şöyle olacak: (a) Durum ''boşta'' ise ajan ofis sınırları içinde rastgele bir hedef nokta seçer. Nokta masalara ya da duvarlara çakışmamalı. Ajan sabit hızla o noktaya yürür, varınca kısa ve rastgele bir süre bekler, sonra yeni hedef seçer. (b) Durum ''çalışıyor''a geçtiği anda hedef kendi masası olur. Ajan masaya yürür, varınca durur ve iş sürdükçe yerinde kalır. (c) İş bitip tekrar boşta olunca dolaşma yeniden başlar. Rastgelelik için enjekte edilebilir bir tohum/RNG kullan ki test deterministik olsun. Zaman adımı (tick) da dışarıdan sürülebilsin. Test dosyasını cinar/testler/ altına yaz (ör. test_ofis_yurume.mjs). Test boştaki ajanın konumlarını birkaç adım boyunca yazdırsın ve farklı olduklarını doğrulasın. Durumu ''çalışıyor''a çevirip masaya varışı doğrulasın. Testi koştur ve gerçek çıktısını kanıt olarak ekle. Mümkünse ekranı açıp ekran görüntüsü al. Riskli bir adım yok: push/yayın yapma.','Ofis ekranında boştaki ajanlar donuk duruyor. Patron, boşta olanların ofiste dolaşmasını ve iş alan ajanın masasına dönmesini istiyor. Böylece kimin boşta, kimin çalışıyor olduğu hareketten okunabilecek.','Ofis ekranında boştaki ajanlar yerinde durmayacak, ofis içinde rastgele yürüyecek. Bir ajan iş aldığında kendi masasına dönecek. Kanıt olarak değişen dosya, kısa bir test ya da ekran görüntüsü ve boştaki ajanın konumunun zamanla değiştiğini gösteren çıktı istenecek.','1) Testler yeşil ve komut çıktısı kanıt olarak eklendi. Örnek: `node cinar/testler/test_ofis_yurume.mjs` hatasız biter ve ''passed/ok'' satırlarını basar. 2) Aynı test ya da ayrı bir betik, boştaki bir ajanın konumunu sabit tohumla en az 3 zaman adımında yazdırır. Örnek: t=0 (x,y), t=1 (x,y), t=2 (x,y). Konumlar birbirinden farklıdır ve hepsi ofis sınırları içindedir. Bu çıktı terminal kanıtı olarak eklenir. 3) Test, ajanın durumunu ''boşta''dan ''çalışıyor''a çevirir. Yeterli adımdan sonra ajanın konumu kendi masasının koordinatına eşit olur (tolerans içinde) ve orada sabit kalır. Bu da çıktıda görünür. 4) Değişen dosyaların listesi diff kanıtı olarak eklenir. Değişiklik yalnızca yazma alanına dokunmuştur. Ekranın kaynağı calisma dışında olduğu için yazılamadıysa, bu engel kanıt diye sunulmaz: lidere sorulan soru ve cevabı eklenir. 5) Ekran görüntüsü alınabildiyse eklenir. Alınamadıysa görülmemiş bir yerleşim gözlem gibi yazılmaz.','["cinar/ofis_yurume", "cinar/testler/test_ofis_yurume.mjs"]','bilge','calisiyor','normal',4,0,'2026-09-27T03:26:14+00:00','2026-09-27T03:34:01+00:00','[]','orta','','[]','[]',0,0);
 CREATE TABLE gorev_bagimlilik (
     gorev_id        TEXT NOT NULL REFERENCES gorev(id),
     bagli_oldugu    TEXT NOT NULL REFERENCES gorev(id),
@@ -4477,6 +4932,32 @@ INSERT INTO "kanit" VALUES('601cfc551a464cd5815dced132f7f6b5','153e04b7313f48a9b
 (3) Mobil bölümündeki "yatay taşma veya kırılma gözlenmedi" iddiası kaldırıldı; yerine "içerik yüklemesi (DOM/metin düzeyinde) hatasızdı" ve "görsel yerleşim (yatay taşma, kırılma...) görülemedi" olarak düzeltildi.','bilge','2026-09-24T10:21:13+00:00');
 INSERT INTO "kanit" VALUES('34b9cf4872a84dc986dd9657d0288531','153e04b7313f48a9b943219c8b44b753','diff','bilge/semuparfum_musteri_analizi.md — ret sonrası 3. düzeltme','(1) Adres iddiası düzeltildi: WebFetch ile https://semuparfum.com/pages/hakkimizda doğrulandı — sayfada "Çobançeşme Mah. Halitpaşa Sk. No: 2, Bahçelievler / İstanbul" açık adresi üç kez geçiyor. 15. satırdaki "açık adres verilmemiş" ifadesi kaldırıldı, doğru adres eklendi. Zayıf Yön 4 ("adres yalnızca ilçe düzeyinde") ve Öneri 4 ("hakkımızda sayfasına açık adres ekle") kaldırıldı, her iki liste yeniden numaralandırıldı (Zayıf Yönler artık 1-6, Öneriler 1-7).
 (2) Öneri 8''deki "sayfa içinde görsel olarak öne çıkan sabit bir buton/ikon yok" iddiası, yöntem notundaki "ekran görüntüsü alınamadı, görsel yerleşim gözlemlenmedi" ifadesiyle çelişiyordu. Madde artık "görülemedi" olarak düzeltildi: WhatsApp linkinin sayfa kaynağında var olduğu ama görsel öne çıkıp çıkmadığının ekran görüntüsü olmadan görülemediği yazıldı (Öneri 7).','bilge','2026-09-24T10:23:14+00:00');
+INSERT INTO "kanit" VALUES('2b215cdf759c4b6ba7ef86450b56ef78','8b85bc1326004304a5c48da383b8b5c6','terminal','node cinar/testler/test_ofis_yurume.mjs','exit_code=0
+boşta t=0: (20.000, 40.000)
+boşta t=1: (21.373, 32.119)
+boşta t=2: (22.746, 24.237)
+boşta t=3: (24.118, 16.356)
+ok: boşta hareket ve sabit tohum
+çalışıyor: (46, 25)
+ok: masaya vardı ve çalışırken sabit kaldı
+ok: iş bitince dolaşma yeniden başladı
+passed: ofis yürüyüşü','cinar','2026-09-27T03:28:33+00:00');
+INSERT INTO "kanit" VALUES('695be58e772b4866aa94ae97b66d4d6d','8b85bc1326004304a5c48da383b8b5c6','diff','git status --short -- cinar/ofis_yurume cinar/testler/test_ofis_yurume.mjs','exit_code=0
+?? cinar/ofis_yurume/
+?? cinar/testler/test_ofis_yurume.mjs
+Dosya listesi: cinar/ofis_yurume/hareket.mjs (4210 bayt), cinar/testler/test_ofis_yurume.mjs (1839 bayt).','cinar','2026-09-27T03:28:47+00:00');
+INSERT INTO "kanit" VALUES('339fb1a7c5504571b521376fd7aacc63','8b85bc1326004304a5c48da383b8b5c6','terminal','panel.js yazma alanı sorusu ve danışman yanıtı','Soru: Ofis ekranının gerçek kaynağı C:\Users\pc\Desktop\AgentOfis\web\panel.js. `mola` konumu ajanKonumlari içinde sabit hesaplanıyor, çizim haritaKur içinde yapılıyor. İzinli alanda cinar/ofis_yurume/hareket.mjs ve deterministik testini yazıp yeşil test/dosya kanıtlarını ekledim. Ekrana bağlamak için yazma alanımı tam olarak C:\Users\pc\Desktop\AgentOfis\web\panel.js dosyasına (gerekirse web altında tarayıcıdan yüklenebilir hareket modülüne) genişletir misin?
+Yanıt: Yazma alanını genişletemem. Ben danışmanım: dosya yazamam, iş açamam, görev ya da izin veremem. `web/panel.js` için yazma iznini ancak lider (ya da patron) verebilir. Bu soruyu lidere sormalısın.','cinar','2026-09-27T03:29:42+00:00');
+INSERT INTO "kanit" VALUES('2050d41dc00444c6bae940aa91df5f83','8b85bc1326004304a5c48da383b8b5c6','terminal','node cinar/testler/test_ofis_yurume.mjs (yeniden dogrulama)','boşta t=0: (20.000, 40.000)
+boşta t=1: (21.373, 32.119)
+boşta t=2: (22.746, 24.237)
+boşta t=3: (24.118, 16.356)
+ok: boşta hareket ve sabit tohum
+çalışıyor: (46, 25)
+ok: masaya vardı ve çalışırken sabit kaldı
+ok: iş bitince dolaşma yeniden başladı
+passed: ofis yürüyüşü
+exit_code=0','bilge','2026-09-27T03:34:44+00:00');
 CREATE TABLE karar (
     id              TEXT PRIMARY KEY,
     proje_id        TEXT NOT NULL REFERENCES proje(id),
@@ -4591,6 +5072,10 @@ INSERT INTO "karar" VALUES('15e8f5008fca4b969923ed0e0500a90b','915d303e41ee4cb59
 INSERT INTO "karar" VALUES('58674f43984147d296b511f4c8f57c0d','915d303e41ee4cb59fa908401d277926',NULL,'dagitim','Patron mesaji ''ÇINARI ÇAĞIR MASAYA GEÇİN İKİNİZ'' icin yol: cevap.','Patron bir iş vermiyor; Çınar''la birlikte oturup konuşmamızı istiyor. Ofiste bir ajanı canlı sohbete ya da ortak bir toplantıya çağırmanın denenmiş bir yolu yok. Çınar''a ancak bir görev açarak ulaşabilirim. Konu belli olmadan görev açmak jeton yakar ve ortaya bir şey çıkmaz. Aynı durumda daha önce verilen karar da buydu (''çınarla konuşcam demir çınarı çağır'' -> cevap). Doğru adım, patrona konuyu sormak ve Çınar''ı gerçek bir işle çağırmak. Bu arada calisma/BRIFING.md''yi okudum. Dosya bu tura ait değil; kapanmış #30 numaralı görevde bilge''nin brifingi. Hiçbir dosyaya yazmadım ve komut çalıştırmadım. Görev de açılmadı, bu yüzden kanıt satırı yok; uydurmamak için bilerek boş bıraktım.','demir','[]','2026-09-26T03:54:20+00:00');
 INSERT INTO "karar" VALUES('d3187230b30c4eeeb9764f65203406f2','915d303e41ee4cb59fa908401d277926',NULL,'dagitim','Patron mesaji ''HACKTOOL TAKIMI KURDUM AMA SİLEMİYOM SİL ONU'' icin yol: cevap.','Ofisin kadrosunda da açık işlerde de ''hacktool'' adında bir takım yok. Çalışma klasöründe ''hack'' kelimesini aradım, hiçbir sonuç çıkmadı. Neyin silineceği belli değil ve silme geri alınamaz. Ayrıca kadroyu kuran ve silen ben değilim, bunu ofis patronun onayıyla yapıyor. Yanlış bir şeyi silmemek için bir ajan çalıştırmadan önce patrondan netlik istiyorum.','demir','[]','2026-09-26T03:55:42+00:00');
 INSERT INTO "karar" VALUES('c907bd7cd4d34667a2dfbd47bfd03858','915d303e41ee4cb59fa908401d277926',NULL,'dagitim','Patron mesaji ''TRADE AJAN EKİBİMİZİ KURARSAK  BİRDEN FAZLA AJAN ÇALIŞACAK PARA KAZANACAK NASIL '' icin yol: cevap.','Patron ''nasıl sence'' diye fikir soruyor. Bu bir görüş ve karar sorusu, henüz tanımlı bir iş yok. Ajan koşturmak jeton yakar ama yeni bir bilgi getirmez. Ayrıca gerçek para işlemi için ne bir borsa ya da aracı kurum bağlayıcısı var ne de para kilidi açık. Önce patronun hedefi ve risk kararı netleşmeli.','demir','[]','2026-09-26T03:57:48+00:00');
+INSERT INTO "karar" VALUES('b7bb822fbbc343b6bf62ff2f00a8f7b2','915d303e41ee4cb59fa908401d277926',NULL,'dagitim','Patron mesaji ''naber'' icin yol: cevap.','Patron sadece selam veriyor, herhangi bir is ya da karar sorusu yok. Ajan kosturmak jeton ve zaman israfi olur; durum ozeti verip topu patrona atmak dogru yol.','demir','[]','2026-09-27T03:14:20+00:00');
+INSERT INTO "karar" VALUES('e87a07db7b13403d9be0fd61ed1324e6','915d303e41ee4cb59fa908401d277926',NULL,'dagitim','Patron mesaji ''paranın amuna koyalım bir takım oluşturalım onlarca yüzlerce ajanı takımda çalış'' icin yol: cevap.','Patron ''bu iş ne olmalı sence'' diye görüş soruyor. İş vermiyor. Ajan uyandırmak ya da görev açmak boşuna jeton yakar. Yön belli olmadan kadro önermek de erken olur: kadro yolu ancak bir iş belli olduğunda ve bir rol eksik kaldığında açılır. Cevabı ofiste zaten doğrulanmış olgulara dayandırdım: semuparfum.com canlı bir mağaza, fiyatı ve kapıda ödemesi doğrulandı, Shopify, Meta Reklamları, Canva ve Gmail bağlı. Para kilidi kapalı. Kalabalık kadronun yaklaşık 15 kat jeton yaktığı ölçüldü. Kazanç rakamı uydurmadım. Not: calisma/BRIFING.md dosyasını açtım ama bu tura ait değil, bilge''nin eski #30 numaralı görevini anlatıyor. O görevi sürdürmedim ve hiçbir dosyaya yazmadım. Görev açılmadığı için KANIT satırı yok; uydurmamak için bilerek boş bıraktım.','demir','[]','2026-09-27T03:22:52+00:00');
+INSERT INTO "karar" VALUES('7e81e53995444e2693a2307cb7140005','915d303e41ee4cb59fa908401d277926',NULL,'dagitim','Patron mesaji ''ajanlar molada duruyor hareket etsimler ofiste yürüsünler'' icin yol: dagit.','Patron ofis ekranındaki görünümü değiştirmek istiyor. Boştaki ajanlar ''molada'' diye yerinde duruyor, patron bunların ofiste dolaşmasını istiyor. Bu bir cevapla çözülmez; arayüz kodunda küçük bir değişiklik gerekiyor. İş tek parça ve bölünmüyor, o yüzden tek ajana gidiyor. Kod işini kadroda en iyi çınar (backend) yapar. İş basit bir animasyon olduğu için ''arayuz'' rolünü ayrıca işe almaya gerek yok. Bu değişikliği ben yaparsam onu incelemek sana kalır; çınar yaparsa incelemeyi ben yaparım. Dosyanın yerini göremedim: ofis klasörü benim erişimimin dışında. Bu yüzden ekranı çizen kodun hangi dosyada olduğunu da çınar bulacak.','demir','[]','2026-09-27T03:25:28+00:00');
+INSERT INTO "karar" VALUES('eb8ddbf8506d4a8c9e09a132d9fa5231','915d303e41ee4cb59fa908401d277926',NULL,'dagitim','''Ofis ekranında boştaki ajanlar yerinde durmayacak, ofis içinde rastgele yürüyecek. Bir ajan iş aldığında kendi masasına dönecek. Kanıt olarak değişen dosya, kısa bir test ya da ekran görüntüsü ve boştaki ajanın konumunun zamanla değiştiğini gösteren çıktı istenecek.'' bolunmedi, tek ajanda kosacak.','Bu iş tek bir ekran bileşenindeki tek bir davranış değişikliği. Boştaki ajanın rastgele yürümesi ile iş alınca masaya dönmesi aynı hareket/durum döngüsünün iki dalı. İkisi aynı dosyaya dokunur ve aynı testle kanıtlanır. Bölersek kollar aynı panel dosyasına yazmak zorunda kalır, bu da yasak. Ayrıca yaklaşık 15 kat jeton yakar ve işi hızlandırmaz. Bağlayıcı gerekmiyor, para ya da dışarı çıkan bir adım yok. Önemli bir sınır var: calisma ağacında ofis ekranının kaynağı görünmüyor. Yalnızca cinar/test_panel_js.mjs panel JS''ine dair bir iz veriyor. Bu yüzden yazma alanı olarak yalnızca calisma içinde gerçekten yazılabilecek yeri verdim. Ekranın gerçek dosyası calisma dışındaysa çınar oraya yazmayacak, önce tam yolla lidere soracak. Bu planlama turunda komut koşturmadım, yalnızca BRIFING.md''yi okudum. O yüzden kanıt satırı yazmıyorum, uydurmamak için.','demir','[]','2026-09-27T03:26:14+00:00');
 CREATE TABLE kural (
     id              TEXT PRIMARY KEY,
     proje_id        TEXT NOT NULL REFERENCES proje(id),
@@ -5148,6 +5633,76 @@ INSERT INTO "mesaj" VALUES('0179f787704545f89a6c093c68190d3c','915d303e41ee4cb59
 Şunu da ekleyeyim: ajanlarla en hızlı para kazanabileceğimiz yer zaten elimizde, semuparfum. Mağaza ve reklam işleri, Shopify ve Meta Reklamları bağlı, risk de düşük.
 
 **Sizden karar:** 1. adımı, yani trade araştırmasını başlatayım mı? Yoksa enerjiyi semuparfum satışlarına mı verelim?','2026-09-26T03:57:48+00:00',1,'2026-09-26T03:57:28+00:00');
+INSERT INTO "mesaj" VALUES('5c2b6207ad0d4f1e9d554500a1c13658','915d303e41ee4cb59fa908401d277926','insan','demir','naber','uyandiran',NULL,'Naber patron! Ofis sakin, acik is yok, ekip (bilge, cinar, deniz, ege, yaprak) bosta bekliyor. Elimizde hazir duran tek sey semuparfum.com musteri gozuyle analiz raporu; onun da sepet/odeme/mobil/hiz kisimlarini bosverdik, o dosya kapandi. Yeni bir is var mi, ne yapalim? Soyle, hemen kollari sivayalim.','2026-09-27T03:14:20+00:00',1,'2026-09-27T03:13:44+00:00');
+INSERT INTO "mesaj" VALUES('d3b8d4247d394266b0ee2a9b6dd9ae30','915d303e41ee4cb59fa908401d277926','insan','demir','paranın amuna koyalım bir takım oluşturalım onlarca yüzlerce ajanı takımda çalışıtıralım uçtan uca bir iş kursunlar çalışsın bu iş ne olmalı sence?','uyandiran',NULL,'Patron, önce dürüst olayım: yüzlerce ajan kendi başına para kazandırmaz. Ajan sayısını artırmak jeton faturasını katlar, parayı değil. Bizde birden fazla ajanla çalışmak yaklaşık 15 kat jeton yakıyor. Para kilidi de şu an kapalı. Para, zaten satış yapan bir işe bağlanınca gelir.
+
+**Önerim: sıfırdan iş kurmayalım, elimizdeki işi ajanlarla uçtan uca döndürelim. O iş semuparfum.**
+
+Neden:
+- Canlı bir mağaza var, ürün, fiyat (1.490 TL) ve kapıda ödeme hazır.
+- Shopify, Meta Reklamları, Canva ve Gmail zaten bağlı. Yeni hesap ya da yeni yatırım gerekmiyor.
+- Müşteri gözüyle yapılmış bir analiz raporumuz da duruyor. Nereden başlayacağımızı biliyoruz.
+
+**Uçtan uca hat şöyle olur (her halkada bir ajan):**
+1. **Mağaza:** ürün açıklamaları, koku notaları, stok ve fiyat takibi.
+2. **İçerik ve SEO:** ürün ve blog metinleri, Google''da görünürlük.
+3. **Reklam:** Meta reklam metni ve görsel istemi, sonra performans raporu.
+4. **Destek:** kargo, iade ve soru yanıtlarının taslağı. Ajan taslağı yazar, göndermeyi siz onaylarsınız.
+5. **Analiz:** haftalık satış ve reklam raporu. Neyin işe yaradığını rakamla gösterir.
+
+Bunun için 5-8 ajan yeter, yüzlercesine gerek yok. Şu an elimizde metin (deniz, ege), araştırma (bilge), backend (çınar) ve entegrasyon (yaprak) var. Hattın tamamı için ileride mağaza, reklam, destek ve analiz rollerini önermem gerekecek. Bunları iş netleşince tek tek önerip onayınıza sunarım.
+
+**Değişmeyen kurallar:** Reklama para harcamak, müşteriye mesaj göndermek ve siteye bir şey yayınlamak hep sizin onayınızla olur. Para kilidini de yalnızca siz açarsınız.
+
+Kaç lira kazandırır bilmiyorum, rakam uydurmayacağım. Bunu analiz halkası ölçecek.
+
+Başlamak isterseniz ilk adım olarak şunu öneririm: **analiz raporundaki öneriler üzerinden semuparfum ürün sayfalarının metin ve SEO iyileştirmesi.** Para gerektirmiyor, dışarı bir şey çıkmıyor ve mevcut kadroyla yapılabiliyor. ''Başla'' derseniz işi açarım. Başka bir yön istiyorsanız söyleyin, onu konuşalım.','2026-09-27T03:22:52+00:00',1,'2026-09-27T03:22:19+00:00');
+INSERT INTO "mesaj" VALUES('3c823c82565b465094f35b05ec7e6f7e','915d303e41ee4cb59fa908401d277926','insan','demir','ajanlar molada duruyor hareket etsimler ofiste yürüsünler','uyandiran',NULL,'Patron, özet şöyle:
+
+**İsteğin:** Moladaki ajanlar yerinde durmasın, ofiste yürüsün.
+
+**Yapılan:**
+- Yürüyüş mantığı yazıldı ve test edildi. Boştaki ajan ofis içinde rastgele dolaşıyor, iş alınca kendi masasına dönüp orada kalıyor.
+- Dosyalar: `cinar/ofis_yurume/hareket.mjs` ve `cinar/testler/test_ofis_yurume.mjs`.
+
+**Kanıt (ekipten gelen test çıktısı):**
+- `node cinar/testler/test_ofis_yurume.mjs` hatasız bitti (çıkış kodu 0).
+- Boştaki ajanın konumu adım adım değişiyor: t=0 (20, 40), t=1 (21.4, 32.1), t=2 (22.7, 24.2), t=3 (24.1, 16.4). Test "ok: boşta hareket ve sabit tohum" satırını bastı.
+- Ajan işe geçince masasına vardı: "çalışıyor: (46, 25)", ardından "ok: masaya vardı" satırı geldi.
+- Değişen dosyalar yalnızca izin verilen alanda.
+
+**Bitmeyen iş: ekranda henüz görünmüyor.**
+Yürüyüş kodu hazır ama ofis ekranına bağlanmadı. Ekranı çizen dosya `web/panel.js`. Bu dosya ekibin yazma izni dışında kalıyor. Danışman bu izni veremeyeceğini söyledi. Bu yüzden ekran görüntüsü de yok. Ekranda yürüdüklerini henüz kimse görmedi.
+
+**Senden gereken tek karar:**
+cinar''ın yazma iznini yalnızca `C:\Users\pc\Desktop\AgentOfis\web\panel.js` dosyasını da kapsayacak şekilde genişletiyor musun? "Evet" dersen yürüyüş ekrana bağlanır, ekran görüntüsüyle birlikte sonucu getiririz.
+
+Not: Testi bu oturumda kendim çalıştıramadım. Burada terminal aracım yok. Yukarıdaki çıktılar ekibin raporundan alındı. Ben yalnızca dosyaların yerinde olduğuna baktım.
+
+KANIT dosya: cinar/ofis_yurume/hareket.mjs -> Glob ile var olduğu doğrulandı (değiştirilmedi)
+KANIT dosya: cinar/testler/test_ofis_yurume.mjs -> Glob ile var olduğu doğrulandı (değiştirilmedi)
+
+
+---
+
+**Defterden (ofis yazdi, lider degil):**
+
+- #31 Ofis ekranı: boştaki ajan rastgele yürür, iş alınca masasına döner: **calisiyor** (3 kanit)
+
+**1 is HENUZ KAPANMADI.** Kapanmayan is, yapilmamis is degildir ama BITMIS de degildir -- kanit kapisi ondan gecmedi.
+
+**1 istek SENI bekliyor.** `python -m ofis.kabuk bekleyen`','2026-09-27T03:30:22+00:00',1,'2026-09-27T03:25:07+00:00');
+INSERT INTO "mesaj" VALUES('898826c369664d95bfe9aa8c0ae0dc09','915d303e41ee4cb59fa908401d277926','cinar','demir','Ofis ekranının gerçek kaynağı C:\Users\pc\Desktop\AgentOfis\web\panel.js. `mola` konumu ajanKonumlari içinde sabit hesaplanıyor, çizim haritaKur içinde yapılıyor. İzinli alanda cinar/ofis_yurume/hareket.mjs ve deterministik testini yazıp yeşil test/dosya kanıtlarını ekledim. Ekrana bağlamak için yazma alanımı tam olarak C:\Users\pc\Desktop\AgentOfis\web\panel.js dosyasına (gerekirse web altında tarayıcıdan yüklenebilir hareket modülüne) genişletir misin?','bekleyen','8b85bc1326004304a5c48da383b8b5c6','Yazma alanını genişletemem. Ben danışmanım: dosya yazamam, iş açamam, görev ya da izin veremem. `web/panel.js` için yazma iznini ancak lider (ya da patron) verebilir. Bu soruyu lidere sormalısın. Soru ve cevabı, kabul ölçütü 4''ün istediği gibi kanıta ekle.
+
+İzin gelene kadar yapabileceklerin:
+
+1. **Lidere net bir izin isteği gönder.** Sadece `web/panel.js` dosyası, ve gerekiyorsa `web/` altında tek bir yeni dosya (örneğin `web/ofis_yurume.js`). Değişiklik iki noktayla sınırlı kalsın: `ajanKonumlari` içindeki sabit `mola` hesabı ve `yuru`/`haritaKur` içindeki konum güncellemesi. Böylece izin dar kalır ve başka ajanların alanıyla çakışmaz.
+2. **Entegrasyonu kendi alanında hazır tut.** `cinar/ofis_yurume/` altına `panel.js` için uygulanacak yamayı (diff) ve tarayıcıya yüklenecek sürümü koy. İzin gelince iş tek adımda biter.
+3. **Modül yükleme biçimini kontrol et.** `panel.js` sayfaya klasik `<script>` ile mi, yoksa `type="module"` ile mi yükleniyor, bak. Bunu ben doğrulayamadım; kısıtlı alanım yüzünden `web/` klasörünü okuyamadım. Klasik script ise `.mjs` içindeki `import` çalışmaz. O durumda aynı mantığı global bir nesneye (örneğin `window.OfisYurume`) bağlayan bir sürüm gerekir. Ayrıca sayfa `file://` üzerinden açılıyorsa, tarayıcılar ES modüllerini genelde engeller.
+4. **Kanıtı dürüst bırak.** Ekran bağlantısı yapılmadıysa kanıtta "ekrana bağlanmadı, izin bekleniyor" yaz, lidere sorduğun soruyu ve cevabını ekle. Ekran görüntüsü yoksa ekranda görülen bir yerleşimi gözlem gibi anlatma.
+
+Bu danışma turunda hiçbir komut çalıştırmadım ve hiçbir dosya değiştirmedim. `web/` klasörünü okumayı denedim ama çalışma alanı dışında kaldığı için erişim reddedildi. Bu yüzden terminal ya da dosya kanıtım yok.','2026-09-27T03:29:23+00:00',1,'2026-09-27T03:28:57+00:00');
+INSERT INTO "mesaj" VALUES('2e29a2d114a7441baec0dd5bf2ee6370','915d303e41ee4cb59fa908401d277926','cinar','insan','#31 için yazma alanımı yalnızca `C:\Users\pc\Desktop\AgentOfis\web\panel.js` dosyasına genişletir misiniz? Ofis ekranının çizim kodu bu dosyada. Şu an izinli alanda yürüyüş modülü ve yeşil deterministik testi hazır; panel.js izniyle boşta dolaşmayı ve iş alınca masaya dönüşü ekrana bağlayacağım. Önceki `lider` sorusu danışmana yönlendi; danışman izin veremeyeceğini bildirdi.','bekleyen','8b85bc1326004304a5c48da383b8b5c6','anlamadım bişey ne demek istedüğ','2026-09-27T03:34:01+00:00',1,'2026-09-27T03:29:59+00:00');
 CREATE TABLE olay (
     id              INTEGER PRIMARY KEY AUTOINCREMENT,
     proje_id        TEXT NOT NULL,
@@ -11792,6 +12347,277 @@ INSERT INTO "olay" VALUES(3094,'915d303e41ee4cb59fa908401d277926','demir',NULL,'
 
 **Gerçekler:**
 - Yapay zekâ ajanlarının piyasada sürekli kâr ettiği kanıtlanmış değil. Birden fazla ajan kullanmak da bu','2026-09-26T03:57:48+00:00');
+INSERT INTO "olay" VALUES(3095,'915d303e41ee4cb59fa908401d277926','insan',NULL,'soru','insan -> demir: naber','2026-09-27T03:13:44+00:00');
+INSERT INTO "olay" VALUES(3096,'915d303e41ee4cb59fa908401d277926','demir',NULL,'uyari','''codex2'' hesabi zincire alinmadi: bu evde giris YOK: C:\Users\pc/.agentofis/codex2 -- PowerShell: $env:CODEX_HOME="C:\Users\pc/.agentofis/codex2"; codex login','2026-09-27T03:14:05+00:00');
+INSERT INTO "olay" VALUES(3097,'915d303e41ee4cb59fa908401d277926','demir',NULL,'uyari','''gemini'' hesabi zincire alinmadi: motor acilamadi: Bilinmeyen motor: ''gemini''. Kayitli olanlar: claude, codex, sahte','2026-09-27T03:14:05+00:00');
+INSERT INTO "olay" VALUES(3098,'915d303e41ee4cb59fa908401d277926','demir',NULL,'tur_ozeti','{"jeton": 22391, "maliyet_usd": 0.1814683, "sure_ms": 15500.0, "model": "claude-opus-5-5", "arac_sayisi": 0, "basarili": true, "motor": "claude", "hesap": "", "yol": "lider", "limit_pencere": {"kaynak": "claude CLI (rate_limit_event)", "hal": "allowed", "plan": "", "pencereler": {"5s": {"kullanim": 0.15, "yenilenme": 1790488800}, "7g": {"kullanim": 0.47, "yenilenme": 1790737200}}}}','2026-09-27T03:14:20+00:00');
+INSERT INTO "olay" VALUES(3099,'915d303e41ee4cb59fa908401d277926','demir',NULL,'karar','demir: Patron mesaji ''naber'' icin yol: cevap.','2026-09-27T03:14:20+00:00');
+INSERT INTO "olay" VALUES(3100,'915d303e41ee4cb59fa908401d277926','demir',NULL,'cevap','demir -> insan: Naber patron! Ofis sakin, acik is yok, ekip (bilge, cinar, deniz, ege, yaprak) bosta bekliyor. Elimizde hazir duran tek sey semuparfum.com musteri gozuyle analiz raporu; onun da sepet/odeme/mobil/hiz ','2026-09-27T03:14:20+00:00');
+INSERT INTO "olay" VALUES(3101,'915d303e41ee4cb59fa908401d277926','insan',NULL,'soru','insan -> demir: paranın amuna koyalım bir takım oluşturalım onlarca yüzlerce ajanı takımda çalışıtıralım uçtan uca bir iş kursunlar çalışsın bu iş ne olmalı sence?','2026-09-27T03:22:19+00:00');
+INSERT INTO "olay" VALUES(3102,'915d303e41ee4cb59fa908401d277926','demir',NULL,'uyari','''codex2'' hesabi zincire alinmadi: bu evde giris YOK: C:\Users\pc/.agentofis/codex2 -- PowerShell: $env:CODEX_HOME="C:\Users\pc/.agentofis/codex2"; codex login','2026-09-27T03:22:19+00:00');
+INSERT INTO "olay" VALUES(3103,'915d303e41ee4cb59fa908401d277926','demir',NULL,'uyari','''gemini'' hesabi zincire alinmadi: motor acilamadi: Bilinmeyen motor: ''gemini''. Kayitli olanlar: claude, codex, sahte','2026-09-27T03:22:19+00:00');
+INSERT INTO "olay" VALUES(3104,'915d303e41ee4cb59fa908401d277926','demir',NULL,'tur_ozeti','{"jeton": 44833, "maliyet_usd": 0.17116160000000002, "sure_ms": 32890.0, "model": "claude-opus-5-5", "arac_sayisi": 2, "basarili": true, "motor": "claude", "hesap": "", "yol": "lider", "limit_pencere": {"kaynak": "claude CLI (rate_limit_event)", "hal": "allowed", "plan": "", "pencereler": {"5s": {"kullanim": 0.17, "yenilenme": 1790488800}, "7g": {"kullanim": 0.48, "yenilenme": 1790737200}}}}','2026-09-27T03:22:52+00:00');
+INSERT INTO "olay" VALUES(3105,'915d303e41ee4cb59fa908401d277926','demir',NULL,'karar','demir: Patron mesaji ''paranın amuna koyalım bir takım oluşturalım onlarca yüzlerce ajanı takımda çalış'' icin yol: cevap.','2026-09-27T03:22:52+00:00');
+INSERT INTO "olay" VALUES(3106,'915d303e41ee4cb59fa908401d277926','demir',NULL,'cevap','demir -> insan: Patron, önce dürüst olayım: yüzlerce ajan kendi başına para kazandırmaz. Ajan sayısını artırmak jeton faturasını katlar, parayı değil. Bizde birden fazla ajanla çalışmak yaklaşık 15 kat jeton yakıyor.','2026-09-27T03:22:52+00:00');
+INSERT INTO "olay" VALUES(3107,'915d303e41ee4cb59fa908401d277926','insan',NULL,'soru','insan -> demir: ajanlar molada duruyor hareket etsimler ofiste yürüsünler','2026-09-27T03:25:07+00:00');
+INSERT INTO "olay" VALUES(3108,'915d303e41ee4cb59fa908401d277926','demir',NULL,'uyari','''codex2'' hesabi zincire alinmadi: bu evde giris YOK: C:\Users\pc/.agentofis/codex2 -- PowerShell: $env:CODEX_HOME="C:\Users\pc/.agentofis/codex2"; codex login','2026-09-27T03:25:08+00:00');
+INSERT INTO "olay" VALUES(3109,'915d303e41ee4cb59fa908401d277926','demir',NULL,'uyari','''gemini'' hesabi zincire alinmadi: motor acilamadi: Bilinmeyen motor: ''gemini''. Kayitli olanlar: claude, codex, sahte','2026-09-27T03:25:08+00:00');
+INSERT INTO "olay" VALUES(3110,'915d303e41ee4cb59fa908401d277926','demir',NULL,'tur_ozeti','{"jeton": 24377, "maliyet_usd": 0.08476619999999999, "sure_ms": 20062.0, "model": "claude-opus-5-5", "arac_sayisi": 1, "basarili": true, "motor": "claude", "hesap": "", "yol": "lider", "limit_pencere": {"kaynak": "claude CLI (rate_limit_event)", "hal": "allowed", "plan": "", "pencereler": {"5s": {"kullanim": 0.18, "yenilenme": 1790488800}, "7g": {"kullanim": 0.48, "yenilenme": 1790737200}}}}','2026-09-27T03:25:28+00:00');
+INSERT INTO "olay" VALUES(3111,'915d303e41ee4cb59fa908401d277926','demir',NULL,'karar','demir: Patron mesaji ''ajanlar molada duruyor hareket etsimler ofiste yürüsünler'' icin yol: dagit.','2026-09-27T03:25:28+00:00');
+INSERT INTO "olay" VALUES(3112,'915d303e41ee4cb59fa908401d277926','demir',NULL,'uyari','''codex2'' hesabi zincire alinmadi: bu evde giris YOK: C:\Users\pc/.agentofis/codex2 -- PowerShell: $env:CODEX_HOME="C:\Users\pc/.agentofis/codex2"; codex login','2026-09-27T03:25:28+00:00');
+INSERT INTO "olay" VALUES(3113,'915d303e41ee4cb59fa908401d277926','demir',NULL,'uyari','''gemini'' hesabi zincire alinmadi: motor acilamadi: Bilinmeyen motor: ''gemini''. Kayitli olanlar: claude, codex, sahte','2026-09-27T03:25:28+00:00');
+INSERT INTO "olay" VALUES(3114,'915d303e41ee4cb59fa908401d277926','demir',NULL,'tur_ozeti','{"jeton": 53365, "maliyet_usd": 0.19744279999999997, "sure_ms": 45328.0, "model": "claude-opus-5-5", "arac_sayisi": 3, "basarili": true, "motor": "claude", "hesap": "", "yol": "lider", "limit_pencere": {"kaynak": "claude CLI (rate_limit_event)", "hal": "allowed", "plan": "", "pencereler": {"5s": {"kullanim": 0.18, "yenilenme": 1790488800}, "7g": {"kullanim": 0.48, "yenilenme": 1790737200}}}}','2026-09-27T03:26:14+00:00');
+INSERT INTO "olay" VALUES(3115,'915d303e41ee4cb59fa908401d277926','demir',NULL,'karar','demir: ''Ofis ekranında boştaki ajanlar yerinde durmayacak, ofis içinde rastgele yürüyecek. Bir ajan iş aldığında kendi masasına dönecek. Kanıt olarak değişen dosya, kısa bir test ya da ekran görüntüsü ve boştaki ajanın konumunun zamanla değiştiğini gösteren çıktı istenecek.'' bolunmedi, tek ajanda kosacak.','2026-09-27T03:26:14+00:00');
+INSERT INTO "olay" VALUES(3116,'915d303e41ee4cb59fa908401d277926','demir','8b85bc1326004304a5c48da383b8b5c6','gorev_acildi','#31 Ofis ekranı: boştaki ajan rastgele yürür, iş alınca masasına döner','2026-09-27T03:26:14+00:00');
+INSERT INTO "olay" VALUES(3117,'915d303e41ee4cb59fa908401d277926','cinar','8b85bc1326004304a5c48da383b8b5c6','sahiplenildi','#31 Ofis ekranı: boştaki ajan rastgele yürür, iş alınca masasına döner -> cinar','2026-09-27T03:26:14+00:00');
+INSERT INTO "olay" VALUES(3118,'915d303e41ee4cb59fa908401d277926','',NULL,'sahiplenildi','#31 Ofis ekranı: boştaki ajan rastgele yürür, iş alınca masasına döner -> cinar','2026-09-27T03:26:14+00:00');
+INSERT INTO "olay" VALUES(3119,'915d303e41ee4cb59fa908401d277926','',NULL,'brifing','brifing okundu — K1..K4 · 4546 jeton','2026-09-27T03:26:14+00:00');
+INSERT INTO "olay" VALUES(3120,'915d303e41ee4cb59fa908401d277926','cinar','8b85bc1326004304a5c48da383b8b5c6','uyari','''codex2'' hesabi zincire alinmadi: bu evde giris YOK: C:\Users\pc/.agentofis/codex2 -- PowerShell: $env:CODEX_HOME="C:\Users\pc/.agentofis/codex2"; codex login','2026-09-27T03:26:16+00:00');
+INSERT INTO "olay" VALUES(3121,'915d303e41ee4cb59fa908401d277926','cinar','8b85bc1326004304a5c48da383b8b5c6','uyari','''gemini'' hesabi zincire alinmadi: motor acilamadi: Bilinmeyen motor: ''gemini''. Kayitli olanlar: claude, codex, sahte','2026-09-27T03:26:16+00:00');
+INSERT INTO "olay" VALUES(3122,'915d303e41ee4cb59fa908401d277926','cinar','8b85bc1326004304a5c48da383b8b5c6','tarayici_acildi','#31 tarayici[tiklayabilir (riskli eylem ONAYA duser)]: SERBEST -- her site acilabilir · gizli · profil: yalitilmis (diske yazmaz)','2026-09-27T03:26:16+00:00');
+INSERT INTO "olay" VALUES(3123,'915d303e41ee4cb59fa908401d277926','cinar','8b85bc1326004304a5c48da383b8b5c6','uyari','codex tur basina DOLAR tavani uygulayamiyor; yerine ofis freni gecerli (en cok 120 arac cagrisi, 400,000 harf) + birikmis jeton tavani.','2026-09-27T03:26:16+00:00');
+INSERT INTO "olay" VALUES(3124,'915d303e41ee4cb59fa908401d277926','cinar','8b85bc1326004304a5c48da383b8b5c6','basladi','codex turu basladi','2026-09-27T03:26:16+00:00');
+INSERT INTO "olay" VALUES(3125,'915d303e41ee4cb59fa908401d277926','cinar','8b85bc1326004304a5c48da383b8b5c6','oturum','gpt-6-sol','2026-09-27T03:26:16+00:00');
+INSERT INTO "olay" VALUES(3126,'915d303e41ee4cb59fa908401d277926','cinar','8b85bc1326004304a5c48da383b8b5c6','cikti','Önce brifingi ve mevcut panel testini okuyup ekran kodunun yerini belirleyeceğim. Ardından izinli alanda yürüyüş modülünü ve testini hazırlayacağım.
+
+DURUM: görev alındı | sırada kaynakları incelemek var','2026-09-27T03:26:26+00:00');
+INSERT INTO "olay" VALUES(3127,'915d303e41ee4cb59fa908401d277926','cinar','8b85bc1326004304a5c48da383b8b5c6','arac','Bash','2026-09-27T03:26:30+00:00');
+INSERT INTO "olay" VALUES(3128,'915d303e41ee4cb59fa908401d277926','cinar','8b85bc1326004304a5c48da383b8b5c6','arac','Bash','2026-09-27T03:26:30+00:00');
+INSERT INTO "olay" VALUES(3129,'915d303e41ee4cb59fa908401d277926','cinar','8b85bc1326004304a5c48da383b8b5c6','arac','Bash','2026-09-27T03:26:30+00:00');
+INSERT INTO "olay" VALUES(3130,'915d303e41ee4cb59fa908401d277926','cinar','8b85bc1326004304a5c48da383b8b5c6','arac_sonuc','## K1 â€” ANAYASA
+
+Sen **cinar**''sin. Meslegin: backend.
+
+## ROLUN: backend  (YAZILIM)
+
+API, veri katmani, altyapi. Sunucu tarafi is mantigi.
+
+- Dosya yazabilir misin: EVET
+- Senden beklenen kanit turu: terminal, diff
+- Bu rolde ''bitti'' genellikle su demektir:
+  Testler yesil (komut cikti','2026-09-27T03:26:31+00:00');
+INSERT INTO "olay" VALUES(3131,'915d303e41ee4cb59fa908401d277926','cinar','8b85bc1326004304a5c48da383b8b5c6','arac_sonuc','cinar\test_panel_js.mjs','2026-09-27T03:26:31+00:00');
+INSERT INTO "olay" VALUES(3132,'915d303e41ee4cb59fa908401d277926','cinar','8b85bc1326004304a5c48da383b8b5c6','arac_sonuc','// web/panel.js icindeki SAF islevleri (DOM''suz) sinar.
+// panel.js bir tarayici dosyasi oldugu icin import edilmez: metin olarak
+// okunur, ilgili islev govdeleri parantez-eslestirme ile ayiklanir ve
+// `new Function` ile degerlendirilir. DOM''a dokunulmaz.
+
+import { readFileSync } from "node:f','2026-09-27T03:26:31+00:00');
+INSERT INTO "olay" VALUES(3133,'915d303e41ee4cb59fa908401d277926','cinar','8b85bc1326004304a5c48da383b8b5c6','arac','Bash','2026-09-27T03:26:45+00:00');
+INSERT INTO "olay" VALUES(3134,'915d303e41ee4cb59fa908401d277926','cinar','8b85bc1326004304a5c48da383b8b5c6','arac','Bash','2026-09-27T03:26:45+00:00');
+INSERT INTO "olay" VALUES(3135,'915d303e41ee4cb59fa908401d277926','cinar','8b85bc1326004304a5c48da383b8b5c6','arac','Bash','2026-09-27T03:26:45+00:00');
+INSERT INTO "olay" VALUES(3136,'915d303e41ee4cb59fa908401d277926','cinar','8b85bc1326004304a5c48da383b8b5c6','arac_sonuc','11:  ofis: null, tahta: null, kanat: "",
+14:  sonOlay: 0, olaylar: [], acikCekmece: null, panolar: {},
+15:  // Ofis gorunumunde terminali acik olan ajan. Kat planinda sprite''a
+16:  // tiklayinca dolar; kanat degisince veya ajan gorunmez olunca duser.
+18:  // OKUNUR KIP: arac gurultusu susar, ajanin ','2026-09-27T03:26:46+00:00');
+INSERT INTO "olay" VALUES(3137,'915d303e41ee4cb59fa908401d277926','cinar','8b85bc1326004304a5c48da383b8b5c6','arac_sonuc','Name       FullName                                    
+----       --------                                    
+index.html C:\Users\pc\Desktop\AgentOfis\web\index.html
+panel.css  C:\Users\pc\Desktop\AgentOfis\web\panel.css 
+panel.js   C:\Users\pc\Desktop\AgentOfis\web\panel.js','2026-09-27T03:26:46+00:00');
+INSERT INTO "olay" VALUES(3138,'915d303e41ee4cb59fa908401d277926','cinar','8b85bc1326004304a5c48da383b8b5c6','arac_sonuc','Directory: C:\Users\pc\Desktop\AgentOfis\calisma\cinar
+
+
+Mode                 LastWriteTime         Length Name                                                                 
+----                 -------------         ------ ----                                                                 ','2026-09-27T03:26:46+00:00');
+INSERT INTO "olay" VALUES(3139,'915d303e41ee4cb59fa908401d277926','cinar','8b85bc1326004304a5c48da383b8b5c6','cikti','Ekran kodu `C:\Users\pc\Desktop\AgentOfis\web\panel.js` içinde. Masa yerleri `masaYerleri`, ajanların hedefleri `ajanKonumlari`, çizim ve geçişler `haritaKur` çevresinde; dosya yazma alanımın dışında. İzinli alanda saf hareket modülünü hazırlayıp panel bağlantısı için lidere tam yolu bildireceğim.
+
+DURUM: panel kaynağının yeri belirlendi | sırada hareket akışını okuyup modülü yazmak var','2026-09-27T03:26:50+00:00');
+INSERT INTO "olay" VALUES(3140,'915d303e41ee4cb59fa908401d277926','cinar','8b85bc1326004304a5c48da383b8b5c6','arac','Bash','2026-09-27T03:26:53+00:00');
+INSERT INTO "olay" VALUES(3141,'915d303e41ee4cb59fa908401d277926','cinar','8b85bc1326004304a5c48da383b8b5c6','arac_sonuc','896: /* Harita olculeri, YUZDE. `alt`: masalar salonunun altindaki odalar
+897:    [anahtar, sol, genislik]. ODALAR''daki her masa-disi oda burada
+898:    olmali -- olmazsa o haldeki ajan "mola"ya duser ve yanlis odada
+899:    gorunur (duman_panel bunu sinar). */
+900: const HARITA = {
+901:   duva','2026-09-27T03:26:53+00:00');
+INSERT INTO "olay" VALUES(3142,'915d303e41ee4cb59fa908401d277926','cinar','8b85bc1326004304a5c48da383b8b5c6','arac','Edit','2026-09-27T03:27:26+00:00');
+INSERT INTO "olay" VALUES(3143,'915d303e41ee4cb59fa908401d277926','cinar','8b85bc1326004304a5c48da383b8b5c6','arac_sonuc','completed','2026-09-27T03:27:29+00:00');
+INSERT INTO "olay" VALUES(3144,'915d303e41ee4cb59fa908401d277926','cinar','8b85bc1326004304a5c48da383b8b5c6','dosya_canli','yaziyor: cinar/ofis_yurume/hareket.mjs','2026-09-27T03:27:30+00:00');
+INSERT INTO "olay" VALUES(3145,'915d303e41ee4cb59fa908401d277926','cinar','8b85bc1326004304a5c48da383b8b5c6','cikti','Mevcut panelde `mola` durumu sabit oda konumu üretiyor; yürüyüş yalnızca hedef değiştiğinde başlıyor. Saf modülü yazdım: dışarıdan verilen zaman adımı ve RNG ile boşta hedef seçiyor, iş başlayınca masa hedefini öne alıyor. Şimdi davranışı testle doğruluyorum.
+
+DURUM: cinar/ofis_yurume/hareket.mjs yazıldı | sırada test dosyası var','2026-09-27T03:27:35+00:00');
+INSERT INTO "olay" VALUES(3146,'915d303e41ee4cb59fa908401d277926','cinar','8b85bc1326004304a5c48da383b8b5c6','arac','Edit','2026-09-27T03:27:50+00:00');
+INSERT INTO "olay" VALUES(3147,'915d303e41ee4cb59fa908401d277926','cinar','8b85bc1326004304a5c48da383b8b5c6','arac_sonuc','completed','2026-09-27T03:27:51+00:00');
+INSERT INTO "olay" VALUES(3148,'915d303e41ee4cb59fa908401d277926','cinar','8b85bc1326004304a5c48da383b8b5c6','dosya_canli','yaziyor: cinar/testler/test_ofis_yurume.mjs','2026-09-27T03:27:52+00:00');
+INSERT INTO "olay" VALUES(3149,'915d303e41ee4cb59fa908401d277926','cinar','8b85bc1326004304a5c48da383b8b5c6','arac','Bash','2026-09-27T03:28:03+00:00');
+INSERT INTO "olay" VALUES(3150,'915d303e41ee4cb59fa908401d277926','cinar','8b85bc1326004304a5c48da383b8b5c6','arac_sonuc','boşta t=0: (20.000, 40.000)
+boşta t=1: (21.373, 32.119)
+boşta t=2: (22.746, 24.237)
+boşta t=3: (24.118, 16.356)
+ok: boşta hareket ve sabit tohum
+çalışıyor: (46, 25)
+ok: masaya vardı ve çalışırken sabit kaldı
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+AssertionError [','2026-09-27T03:28:04+00:00');
+INSERT INTO "olay" VALUES(3151,'915d303e41ee4cb59fa908401d277926','cinar','8b85bc1326004304a5c48da383b8b5c6','arac','Edit','2026-09-27T03:28:20+00:00');
+INSERT INTO "olay" VALUES(3152,'915d303e41ee4cb59fa908401d277926','cinar','8b85bc1326004304a5c48da383b8b5c6','arac_sonuc','completed','2026-09-27T03:28:21+00:00');
+INSERT INTO "olay" VALUES(3153,'915d303e41ee4cb59fa908401d277926','cinar','8b85bc1326004304a5c48da383b8b5c6','arac','Bash','2026-09-27T03:28:24+00:00');
+INSERT INTO "olay" VALUES(3154,'915d303e41ee4cb59fa908401d277926','cinar','8b85bc1326004304a5c48da383b8b5c6','arac_sonuc','boşta t=0: (20.000, 40.000)
+boşta t=1: (21.373, 32.119)
+boşta t=2: (22.746, 24.237)
+boşta t=3: (24.118, 16.356)
+ok: boşta hareket ve sabit tohum
+çalışıyor: (46, 25)
+ok: masaya vardı ve çalışırken sabit kaldı
+ok: iş bitince dolaşma yeniden başladı
+passed: ofis yürüyüşü','2026-09-27T03:28:26+00:00');
+INSERT INTO "olay" VALUES(3155,'915d303e41ee4cb59fa908401d277926','cinar','8b85bc1326004304a5c48da383b8b5c6','cikti','Testte masa koordinatından ayrılırken kendi masasını engel sayan bir durum çıktı; çıkış yolunu buna göre düzelttim. Test artık boşta üç farklı konum, masaya dönüş, çalışırken sabit kalma ve iş bitince yeniden yürüme için geçiyor.
+
+DURUM: modül ve test tamamlandı, test yeşil | sırada kanıt ve panel yetkisi sorusu var','2026-09-27T03:28:29+00:00');
+INSERT INTO "olay" VALUES(3156,'915d303e41ee4cb59fa908401d277926','cinar','8b85bc1326004304a5c48da383b8b5c6','arac','ofis.kanit_ekle','2026-09-27T03:28:33+00:00');
+INSERT INTO "olay" VALUES(3157,'915d303e41ee4cb59fa908401d277926','cinar','8b85bc1326004304a5c48da383b8b5c6','kanit','#31 terminal: node cinar/testler/test_ofis_yurume.mjs','2026-09-27T03:28:33+00:00');
+INSERT INTO "olay" VALUES(3158,'915d303e41ee4cb59fa908401d277926','cinar','8b85bc1326004304a5c48da383b8b5c6','arac_sonuc','{"content": [{"type": "text", "text": "Kanit eklendi: [terminal] node cinar/testler/test_ofis_yurume.mjs (#31 icin toplam 1 kanit)."}], "structuredContent": null, "_meta": null}','2026-09-27T03:28:33+00:00');
+INSERT INTO "olay" VALUES(3159,'915d303e41ee4cb59fa908401d277926','cinar','8b85bc1326004304a5c48da383b8b5c6','arac','Bash','2026-09-27T03:28:39+00:00');
+INSERT INTO "olay" VALUES(3160,'915d303e41ee4cb59fa908401d277926','cinar','8b85bc1326004304a5c48da383b8b5c6','arac','Bash','2026-09-27T03:28:39+00:00');
+INSERT INTO "olay" VALUES(3161,'915d303e41ee4cb59fa908401d277926','cinar','8b85bc1326004304a5c48da383b8b5c6','arac','Bash','2026-09-27T03:28:39+00:00');
+INSERT INTO "olay" VALUES(3162,'915d303e41ee4cb59fa908401d277926','cinar','8b85bc1326004304a5c48da383b8b5c6','arac_sonuc','completed','2026-09-27T03:28:41+00:00');
+INSERT INTO "olay" VALUES(3163,'915d303e41ee4cb59fa908401d277926','cinar','8b85bc1326004304a5c48da383b8b5c6','arac_sonuc','warning: unable to access ''C:\Users\pc/.config/git/ignore'': Permission denied
+warning: unable to access ''C:\Users\pc/.config/git/ignore'': Permission denied
+?? cinar/ofis_yurume/
+?? cinar/testler/test_ofis_yurume.mjs','2026-09-27T03:28:41+00:00');
+INSERT INTO "olay" VALUES(3164,'915d303e41ee4cb59fa908401d277926','cinar','8b85bc1326004304a5c48da383b8b5c6','arac_sonuc','FullName                                                                 Length
+--------                                                                 ------
+C:\Users\pc\Desktop\AgentOfis\calisma\cinar\ofis_yurume\hareket.mjs        4210
+C:\Users\pc\Desktop\AgentOfis\calisma\cinar\testler\test_','2026-09-27T03:28:41+00:00');
+INSERT INTO "olay" VALUES(3165,'915d303e41ee4cb59fa908401d277926','cinar','8b85bc1326004304a5c48da383b8b5c6','arac','ofis.kanit_ekle','2026-09-27T03:28:47+00:00');
+INSERT INTO "olay" VALUES(3166,'915d303e41ee4cb59fa908401d277926','cinar','8b85bc1326004304a5c48da383b8b5c6','kanit','#31 diff: git status --short -- cinar/ofis_yurume cinar/testler/test_ofis_yurume.mjs','2026-09-27T03:28:47+00:00');
+INSERT INTO "olay" VALUES(3167,'915d303e41ee4cb59fa908401d277926','cinar','8b85bc1326004304a5c48da383b8b5c6','arac_sonuc','{"content": [{"type": "text", "text": "Kanit eklendi: [diff] git status --short -- cinar/ofis_yurume cinar/testler/test_ofis_yurume.mjs (#31 icin toplam 2 kanit)."}], "structuredContent": null, "_meta": null}','2026-09-27T03:28:47+00:00');
+INSERT INTO "olay" VALUES(3168,'915d303e41ee4cb59fa908401d277926','cinar','8b85bc1326004304a5c48da383b8b5c6','arac','ofis.bilgi_yaz','2026-09-27T03:28:47+00:00');
+INSERT INTO "olay" VALUES(3169,'915d303e41ee4cb59fa908401d277926','',NULL,'olgu','ofis panel kaynağı: Ofis ekranının çizim ve hareket kodu C:\Users\pc\Desktop\AgentOfis\web\panel.js içinde. Harita ölçüleri HARITA, masa koordinatları masaYerleri, ajan hedefleri ajanKonumlari, geçişler yuru ve haritaKur işlevlerinde (panel.js okuması, 27.09.2026).','2026-09-27T03:28:47+00:00');
+INSERT INTO "olay" VALUES(3170,'915d303e41ee4cb59fa908401d277926','cinar','8b85bc1326004304a5c48da383b8b5c6','arac_sonuc','{"content": [{"type": "text", "text": "Bilgi yazildi: ofis panel kaynağı."}], "structuredContent": null, "_meta": null}','2026-09-27T03:28:47+00:00');
+INSERT INTO "olay" VALUES(3171,'915d303e41ee4cb59fa908401d277926','cinar','8b85bc1326004304a5c48da383b8b5c6','cikti','Kanıtları ofise ekledim: başarılı test çıktısı ve yalnızca izinli alanda oluşan iki dosyanın listesi. Ekrandaki gerçek değişiklik için dışarıdaki `panel.js` dosyasına yazma yetkisi gerekiyor; bu genişletmeyi lidere soruyorum.
+
+DURUM: test ve dosya kanıtları eklendi | sırada liderin yazma alanı yanıtı var','2026-09-27T03:28:54+00:00');
+INSERT INTO "olay" VALUES(3172,'915d303e41ee4cb59fa908401d277926','cinar','8b85bc1326004304a5c48da383b8b5c6','arac','ofis.soru_sor','2026-09-27T03:28:57+00:00');
+INSERT INTO "olay" VALUES(3173,'915d303e41ee4cb59fa908401d277926','cinar','8b85bc1326004304a5c48da383b8b5c6','soru','cinar -> demir: Ofis ekranının gerçek kaynağı C:\Users\pc\Desktop\AgentOfis\web\panel.js. `mola` konumu ajanKonumlari içinde sabit hesaplanıyor, çizim haritaKur içinde yapılıyor. İzinli alanda cinar/ofis_yurume/harek','2026-09-27T03:28:57+00:00');
+INSERT INTO "olay" VALUES(3174,'915d303e41ee4cb59fa908401d277926','cinar','8b85bc1326004304a5c48da383b8b5c6','arac_sonuc','{"content": [{"type": "text", "text": "Soru ''demir'' adresine iletildi ve cevap bekleniyor.\nSIMDI DUR: tahminle devam etme, turu burada bitir. Cevap gelince kaldigin yerden surdurulecek."}], "structuredContent": null, "_meta": null}','2026-09-27T03:28:57+00:00');
+INSERT INTO "olay" VALUES(3175,'915d303e41ee4cb59fa908401d277926','cinar','8b85bc1326004304a5c48da383b8b5c6','cikti','İzinli alanda yürüyüş modülünü ve deterministik testi hazırladım. Test geçti; boşta ajanın konumu üç adımda değişti, iş alınca masasına dönüp orada kaldı. Terminal çıktısını ve değişen dosya listesini `ofis.kanit_ekle` ile ekledim.
+
+Ekrandaki gerçek değişiklik için `C:\Users\pc\Desktop\AgentOfis\web\panel.js` dosyasına yazma alanı gerekiyor. Lidere tam yolu bildirerek genişletme istedim; yanıt bekleniyor.
+
+DURUM: modül ve test kanıtlandı, panel için izin soruldu | sırada liderin yanıtıyla ekran bağlantısı var','2026-09-27T03:29:02+00:00');
+INSERT INTO "olay" VALUES(3176,'915d303e41ee4cb59fa908401d277926','cinar','8b85bc1326004304a5c48da383b8b5c6','durum_notu','modül ve test kanıtlandı, panel için izin soruldu | sırada liderin yanıtıyla ekran bağlantısı var','2026-09-27T03:29:02+00:00');
+INSERT INTO "olay" VALUES(3177,'915d303e41ee4cb59fa908401d277926','cinar','8b85bc1326004304a5c48da383b8b5c6','degisim','diskte degisen: 2 dosya · +150/-0','2026-09-27T03:29:02+00:00');
+INSERT INTO "olay" VALUES(3178,'915d303e41ee4cb59fa908401d277926','cinar','8b85bc1326004304a5c48da383b8b5c6','bekliyor','#31 soru bekliyor: Ofis ekranının gerçek kaynağı C:\Users\pc\Desktop\AgentOfis\web\panel.js. `mola` konumu ajanKonumlari içinde sabit hesaplanıyor, çizim haritaKur içinde yapılıyor. İzinli alanda cinar/ofis_yurume/harek','2026-09-27T03:29:02+00:00');
+INSERT INTO "olay" VALUES(3179,'915d303e41ee4cb59fa908401d277926','cinar','8b85bc1326004304a5c48da383b8b5c6','tur_ozeti','{"jeton": 1109253, "maliyet_usd": null, "sure_ms": 166281.0, "model": "gpt-6-sol", "arac_sayisi": 19, "basarili": true, "motor": "codex", "hesap": "", "limit_pencere": {"kaynak": "codex app-server (account/rateLimits)", "hal": "", "plan": "plus", "pencereler": {"5s": {"kullanim": 0.06, "yenilenme": 1790494853}, "7g": {"kullanim": 0.03, "yenilenme": 1791061490}}}}','2026-09-27T03:29:02+00:00');
+INSERT INTO "olay" VALUES(3180,'915d303e41ee4cb59fa908401d277926','',NULL,'tur_bitti','Önce brifingi ve mevcut panel testini okuyup ekran kodunun yerini belirleyeceğim. Ardından izinli alanda yürüyüş modülünü ve testini hazırlayacağım.
+
+DURUM: görev alındı | sırada kaynakları incelemek varEkran kodu `C:\Users\pc\Desktop\AgentOfis\web\panel.js` içinde. Masa yerleri `masaYerleri`, ajanların hedefleri `ajanKonumlari`, çizim ve geçişler `haritaKur` çevresinde; dosya yazma alanımın dışında. İzinli alanda saf hareket modülünü hazırlayıp panel bağlantısı için lidere tam yolu bildireceğim.
+
+DURUM: panel kaynağının yeri belirlendi | sırada hareket akışını okuyup modülü yazmak varMevcut panelde `mola` durumu sabit oda konumu üretiyor; yürüyüş yalnızca hedef değiştiğinde başlıyor. Saf modülü yazdım: dışarıdan verilen zaman adımı ve RNG ile boşta hedef seçiyor, iş başlayınca masa hedefini öne alıyor. Şimdi davranışı testle doğruluyorum.
+
+DURUM: cinar/ofis_yurume/hareket.mjs yazıldı | sırada test dosyası varTestte masa koordinatından ayrılırken kendi masasını engel sayan bir durum çıktı; çıkış yolunu buna göre düzelttim. Test artık boşta üç farklı konum, masaya dönüş, çalışırken sabit kalma ve iş bitince yeniden yürüme için geçiyor.
+
+DURUM: modül ve test tamamlandı, test yeşil | sırada kanıt ve panel yetkisi sorusu varKanıtları ofise ekledim: başarılı test çıktısı ve yalnızca izinli alanda oluşan iki dosyanın listesi. Ekrandaki gerçek değişiklik için dışarıdaki `panel.js` dosyasına yazma yetkisi gerekiyor; bu genişletmeyi lidere soruyorum.
+
+DURUM: test ve dosya kanıtları eklendi | sırada liderin yazma alanı yanıtı varİzinli alanda yürüyüş modülünü ve deterministik testi hazırladım. Test geçti; boşta ajanın konumu üç adımda değişti, iş alınca masasına dönüp orada kaldı. Terminal çıktısını ve değişen dosya listesini `ofis.kanit_ekle` ile ekledim.
+
+Ekrandaki gerçek değişiklik için `C:\Users\pc\Desktop\AgentOfis\web\panel.js` dosyasına yazma alanı gerekiyor. Lidere tam yolu bildirerek genişletme istedim; yanıt bekleniyor.
+
+DURUM: modül ve test kanıtlandı, panel için i','2026-09-27T03:29:02+00:00');
+INSERT INTO "olay" VALUES(3181,'915d303e41ee4cb59fa908401d277926','demir',NULL,'tur_ozeti','{"jeton": 18703, "maliyet_usd": 0.06334000000000001, "sure_ms": 20562.0, "model": "claude-opus-5-5", "arac_sayisi": 1, "basarili": true, "motor": "claude", "hesap": "", "yol": "danisma", "limit_pencere": {"kaynak": "claude CLI (rate_limit_event)", "hal": "allowed", "plan": "", "pencereler": {"5s": {"kullanim": 0.18, "yenilenme": 1790488800}, "7g": {"kullanim": 0.48, "yenilenme": 1790737200}}}}','2026-09-27T03:29:23+00:00');
+INSERT INTO "olay" VALUES(3182,'915d303e41ee4cb59fa908401d277926','demir','8b85bc1326004304a5c48da383b8b5c6','cevap','demir -> cinar: Yazma alanını genişletemem. Ben danışmanım: dosya yazamam, iş açamam, görev ya da izin veremem. `web/panel.js` için yazma iznini ancak lider (ya da patron) verebilir. Bu soruyu lidere sormalısın. Soru','2026-09-27T03:29:23+00:00');
+INSERT INTO "olay" VALUES(3183,'915d303e41ee4cb59fa908401d277926','demir','8b85bc1326004304a5c48da383b8b5c6','danisma','demir -> cinar: Yazma alanını genişletemem. Ben danışmanım: dosya yazamam, iş açamam, görev ya da izin veremem. `web/panel.js` için yazma iznini ancak lider (ya da patron) verebilir. Bu soruyu lidere sormalısın. Soru','2026-09-27T03:29:23+00:00');
+INSERT INTO "olay" VALUES(3184,'915d303e41ee4cb59fa908401d277926','',NULL,'brifing','brifing okundu — uyanis farki · 1386 jeton','2026-09-27T03:29:23+00:00');
+INSERT INTO "olay" VALUES(3185,'915d303e41ee4cb59fa908401d277926','cinar','8b85bc1326004304a5c48da383b8b5c6','uyari','''codex2'' hesabi zincire alinmadi: bu evde giris YOK: C:\Users\pc/.agentofis/codex2 -- PowerShell: $env:CODEX_HOME="C:\Users\pc/.agentofis/codex2"; codex login','2026-09-27T03:29:24+00:00');
+INSERT INTO "olay" VALUES(3186,'915d303e41ee4cb59fa908401d277926','cinar','8b85bc1326004304a5c48da383b8b5c6','uyari','''gemini'' hesabi zincire alinmadi: motor acilamadi: Bilinmeyen motor: ''gemini''. Kayitli olanlar: claude, codex, sahte','2026-09-27T03:29:24+00:00');
+INSERT INTO "olay" VALUES(3187,'915d303e41ee4cb59fa908401d277926','cinar','8b85bc1326004304a5c48da383b8b5c6','tarayici_acildi','#31 tarayici[tiklayabilir (riskli eylem ONAYA duser)]: SERBEST -- her site acilabilir · gizli · profil: yalitilmis (diske yazmaz)','2026-09-27T03:29:24+00:00');
+INSERT INTO "olay" VALUES(3188,'915d303e41ee4cb59fa908401d277926','cinar','8b85bc1326004304a5c48da383b8b5c6','uyari','codex tur basina DOLAR tavani uygulayamiyor; yerine ofis freni gecerli (en cok 120 arac cagrisi, 400,000 harf) + birikmis jeton tavani.','2026-09-27T03:29:24+00:00');
+INSERT INTO "olay" VALUES(3189,'915d303e41ee4cb59fa908401d277926','cinar','8b85bc1326004304a5c48da383b8b5c6','basladi','codex turu basladi','2026-09-27T03:29:24+00:00');
+INSERT INTO "olay" VALUES(3190,'915d303e41ee4cb59fa908401d277926','cinar','8b85bc1326004304a5c48da383b8b5c6','oturum','gpt-6-sol','2026-09-27T03:29:25+00:00');
+INSERT INTO "olay" VALUES(3191,'915d303e41ee4cb59fa908401d277926','cinar','8b85bc1326004304a5c48da383b8b5c6','cikti','Yanıtı aldım: önceki soru danışmana gitmiş ve danışman `web/panel.js` için yazma izni veremiyor. Bu soru ve yanıtı ofise kanıt olarak ekleyip, yalnızca gerekli dosya için patrona net izin isteği göndereceğim.
+
+DURUM: danışman yanıtı alındı | sırada soru ve yanıtı kanıta eklemek var','2026-09-27T03:29:37+00:00');
+INSERT INTO "olay" VALUES(3192,'915d303e41ee4cb59fa908401d277926','cinar','8b85bc1326004304a5c48da383b8b5c6','arac','ofis.kanit_ekle','2026-09-27T03:29:42+00:00');
+INSERT INTO "olay" VALUES(3193,'915d303e41ee4cb59fa908401d277926','cinar','8b85bc1326004304a5c48da383b8b5c6','kanit','#31 terminal: panel.js yazma alanı sorusu ve danışman yanıtı','2026-09-27T03:29:42+00:00');
+INSERT INTO "olay" VALUES(3194,'915d303e41ee4cb59fa908401d277926','cinar','8b85bc1326004304a5c48da383b8b5c6','arac_sonuc','{"content": [{"type": "text", "text": "Kanit eklendi: [terminal] panel.js yazma alanı sorusu ve danışman yanıtı (#31 icin toplam 3 kanit)."}], "structuredContent": null, "_meta": null}','2026-09-27T03:29:42+00:00');
+INSERT INTO "olay" VALUES(3195,'915d303e41ee4cb59fa908401d277926','cinar','8b85bc1326004304a5c48da383b8b5c6','cikti','Soru ve danışman yanıtı kanıta eklendi. Danışman izin veremediği için yetki isteğini patrona yöneltiyorum; kapsam yalnızca panel dosyası.
+
+DURUM: izin engelinin soru ve yanıtı kanıtlandı | sırada panel.js için yetki yanıtı var','2026-09-27T03:29:55+00:00');
+INSERT INTO "olay" VALUES(3196,'915d303e41ee4cb59fa908401d277926','cinar','8b85bc1326004304a5c48da383b8b5c6','arac','ofis.soru_sor','2026-09-27T03:29:59+00:00');
+INSERT INTO "olay" VALUES(3197,'915d303e41ee4cb59fa908401d277926','cinar','8b85bc1326004304a5c48da383b8b5c6','soru','cinar -> insan: #31 için yazma alanımı yalnızca `C:\Users\pc\Desktop\AgentOfis\web\panel.js` dosyasına genişletir misiniz? Ofis ekranının çizim kodu bu dosyada. Şu an izinli alanda yürüyüş modülü ve yeşil determinist','2026-09-27T03:29:59+00:00');
+INSERT INTO "olay" VALUES(3198,'915d303e41ee4cb59fa908401d277926','cinar','8b85bc1326004304a5c48da383b8b5c6','arac_sonuc','{"content": [{"type": "text", "text": "Soru ''insan'' adresine iletildi ve cevap bekleniyor.\nSIMDI DUR: tahminle devam etme, turu burada bitir. Cevap gelince kaldigin yerden surdurulecek."}], "structuredContent": null, "_meta": null}','2026-09-27T03:29:59+00:00');
+INSERT INTO "olay" VALUES(3199,'915d303e41ee4cb59fa908401d277926','cinar','8b85bc1326004304a5c48da383b8b5c6','cikti','Yürüyüş modülü ve testi hazır; test geçti ve çıktısı `ofis.kanit_ekle` ile eklendi. Danışmanın yazma izni veremediği yanıtını da kanıta ekledim.
+
+Ekrandaki davranışı tamamlamak için gereken tek dosya olan `C:\Users\pc\Desktop\AgentOfis\web\panel.js` için patrona yazma alanı genişletme isteği gönderdim. Yanıt bekleniyor.
+
+DURUM: test ve soru yanıtı kanıtlandı, panel.js izni istendi | sırada patronun yanıtı var','2026-09-27T03:30:03+00:00');
+INSERT INTO "olay" VALUES(3200,'915d303e41ee4cb59fa908401d277926','cinar','8b85bc1326004304a5c48da383b8b5c6','durum_notu','test ve soru yanıtı kanıtlandı, panel.js izni istendi | sırada patronun yanıtı var','2026-09-27T03:30:04+00:00');
+INSERT INTO "olay" VALUES(3201,'915d303e41ee4cb59fa908401d277926','cinar','8b85bc1326004304a5c48da383b8b5c6','bekliyor','#31 soru bekliyor: #31 için yazma alanımı yalnızca `C:\Users\pc\Desktop\AgentOfis\web\panel.js` dosyasına genişletir misiniz? Ofis ekranının çizim kodu bu dosyada. Şu an izinli alanda yürüyüş modülü ve yeşil determinist','2026-09-27T03:30:04+00:00');
+INSERT INTO "olay" VALUES(3202,'915d303e41ee4cb59fa908401d277926','cinar','8b85bc1326004304a5c48da383b8b5c6','tur_ozeti','{"jeton": 1413199, "maliyet_usd": null, "sure_ms": 39891.0, "model": "gpt-6-sol", "arac_sayisi": 2, "basarili": true, "motor": "codex", "hesap": "", "limit_pencere": {"kaynak": "codex app-server (account/rateLimits)", "hal": "", "plan": "plus", "pencereler": {"5s": {"kullanim": 0.06, "yenilenme": 1790494853}, "7g": {"kullanim": 0.03, "yenilenme": 1791061490}}}}','2026-09-27T03:30:04+00:00');
+INSERT INTO "olay" VALUES(3203,'915d303e41ee4cb59fa908401d277926','',NULL,'tur_bitti','Yanıtı aldım: önceki soru danışmana gitmiş ve danışman `web/panel.js` için yazma izni veremiyor. Bu soru ve yanıtı ofise kanıt olarak ekleyip, yalnızca gerekli dosya için patrona net izin isteği göndereceğim.
+
+DURUM: danışman yanıtı alındı | sırada soru ve yanıtı kanıta eklemek varSoru ve danışman yanıtı kanıta eklendi. Danışman izin veremediği için yetki isteğini patrona yöneltiyorum; kapsam yalnızca panel dosyası.
+
+DURUM: izin engelinin soru ve yanıtı kanıtlandı | sırada panel.js için yetki yanıtı varYürüyüş modülü ve testi hazır; test geçti ve çıktısı `ofis.kanit_ekle` ile eklendi. Danışmanın yazma izni veremediği yanıtını da kanıta ekledim.
+
+Ekrandaki davranışı tamamlamak için gereken tek dosya olan `C:\Users\pc\Desktop\AgentOfis\web\panel.js` için patrona yazma alanı genişletme isteği gönderdim. Yanıt bekleniyor.
+
+DURUM: test ve soru yanıtı kanıtlandı, panel.js izni istendi | sırada patronun yanıtı var','2026-09-27T03:30:04+00:00');
+INSERT INTO "olay" VALUES(3204,'915d303e41ee4cb59fa908401d277926','demir',NULL,'uyari','''codex2'' hesabi zincire alinmadi: bu evde giris YOK: C:\Users\pc/.agentofis/codex2 -- PowerShell: $env:CODEX_HOME="C:\Users\pc/.agentofis/codex2"; codex login','2026-09-27T03:30:04+00:00');
+INSERT INTO "olay" VALUES(3205,'915d303e41ee4cb59fa908401d277926','demir',NULL,'uyari','''gemini'' hesabi zincire alinmadi: motor acilamadi: Bilinmeyen motor: ''gemini''. Kayitli olanlar: claude, codex, sahte','2026-09-27T03:30:04+00:00');
+INSERT INTO "olay" VALUES(3206,'915d303e41ee4cb59fa908401d277926','demir',NULL,'tur_ozeti','{"jeton": 17279, "maliyet_usd": 0.0532368, "sure_ms": 18234.0, "model": "claude-opus-5-5", "arac_sayisi": 1, "basarili": true, "motor": "claude", "hesap": "", "yol": "lider", "limit_pencere": {"kaynak": "claude CLI (rate_limit_event)", "hal": "allowed", "plan": "", "pencereler": {"5s": {"kullanim": 0.18, "yenilenme": 1790488800}, "7g": {"kullanim": 0.48, "yenilenme": 1790737200}}}}','2026-09-27T03:30:22+00:00');
+INSERT INTO "olay" VALUES(3207,'915d303e41ee4cb59fa908401d277926','demir',NULL,'cevap','demir -> insan: Patron, özet şöyle:
+
+**İsteğin:** Moladaki ajanlar yerinde durmasın, ofiste yürüsün.
+
+**Yapılan:**
+- Yürüyüş mantığı yazıldı ve test edildi. Boştaki ajan ofis içinde rastgele dolaşıyor, iş alınca kend','2026-09-27T03:30:22+00:00');
+INSERT INTO "olay" VALUES(3208,'915d303e41ee4cb59fa908401d277926','insan','8b85bc1326004304a5c48da383b8b5c6','cevap','insan -> cinar: anlamadım bişey ne demek isted','2026-09-27T03:34:00+00:00');
+INSERT INTO "olay" VALUES(3209,'915d303e41ee4cb59fa908401d277926','bilge','8b85bc1326004304a5c48da383b8b5c6','sahiplenildi','#31 Ofis ekranı: boştaki ajan rastgele yürür, iş alınca masasına döner -> bilge','2026-09-27T03:34:01+00:00');
+INSERT INTO "olay" VALUES(3210,'915d303e41ee4cb59fa908401d277926','',NULL,'sahiplenildi','#31 Ofis ekranı: boştaki ajan rastgele yürür, iş alınca masasına döner -> bilge','2026-09-27T03:34:01+00:00');
+INSERT INTO "olay" VALUES(3211,'915d303e41ee4cb59fa908401d277926','insan','8b85bc1326004304a5c48da383b8b5c6','cevap','insan -> cinar: anlamadım bişey ne demek istedüğ','2026-09-27T03:34:01+00:00');
+INSERT INTO "olay" VALUES(3212,'915d303e41ee4cb59fa908401d277926','',NULL,'brifing','brifing okundu — K1..K4 · 5148 jeton','2026-09-27T03:34:01+00:00');
+INSERT INTO "olay" VALUES(3213,'915d303e41ee4cb59fa908401d277926','bilge','8b85bc1326004304a5c48da383b8b5c6','uyari','''codex2'' hesabi zincire alinmadi: bu evde giris YOK: C:\Users\pc/.agentofis/codex2 -- PowerShell: $env:CODEX_HOME="C:\Users\pc/.agentofis/codex2"; codex login','2026-09-27T03:34:02+00:00');
+INSERT INTO "olay" VALUES(3214,'915d303e41ee4cb59fa908401d277926','bilge','8b85bc1326004304a5c48da383b8b5c6','uyari','''gemini'' hesabi zincire alinmadi: motor acilamadi: Bilinmeyen motor: ''gemini''. Kayitli olanlar: claude, codex, sahte','2026-09-27T03:34:02+00:00');
+INSERT INTO "olay" VALUES(3215,'915d303e41ee4cb59fa908401d277926','bilge','8b85bc1326004304a5c48da383b8b5c6','tarayici_acildi','#31 tarayici[tiklayabilir (riskli eylem ONAYA duser)]: SERBEST -- her site acilabilir · gizli · profil: yalitilmis (diske yazmaz)','2026-09-27T03:34:02+00:00');
+INSERT INTO "olay" VALUES(3216,'915d303e41ee4cb59fa908401d277926','bilge','8b85bc1326004304a5c48da383b8b5c6','basladi','claude turu basladi','2026-09-27T03:34:02+00:00');
+INSERT INTO "olay" VALUES(3217,'915d303e41ee4cb59fa908401d277926','bilge','8b85bc1326004304a5c48da383b8b5c6','oturum','claude-sonnet-5','2026-09-27T03:34:12+00:00');
+INSERT INTO "olay" VALUES(3218,'915d303e41ee4cb59fa908401d277926','bilge','8b85bc1326004304a5c48da383b8b5c6','arac','mcp__ofis__durum','2026-09-27T03:34:15+00:00');
+INSERT INTO "olay" VALUES(3219,'915d303e41ee4cb59fa908401d277926','bilge','8b85bc1326004304a5c48da383b8b5c6','limit','allowed','2026-09-27T03:34:15+00:00');
+INSERT INTO "olay" VALUES(3220,'915d303e41ee4cb59fa908401d277926','bilge','8b85bc1326004304a5c48da383b8b5c6','arac_sonuc','## ISIN: #31 Ofis ekranı: boştaki ajan rastgele yürür, iş alınca masasına döner
+- neden: Ofis ekranında boştaki ajanlar donuk duruyor. Patron, boşta olanların ofiste dolaşmasını ve iş alan ajanın masasına dönmesini istiyor. Böylece kimin boşta, kimin çalışıyor olduğu hareketten okunabilecek.
+- ana h','2026-09-27T03:34:15+00:00');
+INSERT INTO "olay" VALUES(3221,'915d303e41ee4cb59fa908401d277926','bilge','8b85bc1326004304a5c48da383b8b5c6','arac','Bash','2026-09-27T03:34:25+00:00');
+INSERT INTO "olay" VALUES(3222,'915d303e41ee4cb59fa908401d277926','bilge','8b85bc1326004304a5c48da383b8b5c6','limit','allowed','2026-09-27T03:34:25+00:00');
+INSERT INTO "olay" VALUES(3223,'915d303e41ee4cb59fa908401d277926','bilge','8b85bc1326004304a5c48da383b8b5c6','arac_sonuc','?? cinar/ofis_yurume/
+?? cinar/testler/test_ofis_yurume.mjs
+---
+// Harita birimleri yuzdelik koordinattir. Bu modul DOM ve zamanlayici kullanmaz.
+export function tohumluRng(tohum) {
+  let durum = tohum >>> 0;
+  return () => ((durum = (1664525 * durum + 1013904223) >>> 0) / 2 ** 32);
+}
+
+function nokt','2026-09-27T03:34:26+00:00');
+INSERT INTO "olay" VALUES(3224,'915d303e41ee4cb59fa908401d277926','bilge','8b85bc1326004304a5c48da383b8b5c6','arac','Read','2026-09-27T03:34:35+00:00');
+INSERT INTO "olay" VALUES(3225,'915d303e41ee4cb59fa908401d277926','bilge','8b85bc1326004304a5c48da383b8b5c6','arac_sonuc','1	import assert from "node:assert/strict";
+2	import { tohumluRng, yuruyusOlustur } from "../ofis_yurume/hareket.mjs";
+3	
+4	const alan = { x: 0, y: 0, w: 100, h: 55 };
+5	const masa = { x: 46, y: 25 };
+6	const engeller = [{ x: 41, y: 20, w: 10, h: 10 }];
+7	const ayar = { konum: { x: 20, y: 40 }, masa,','2026-09-27T03:34:35+00:00');
+INSERT INTO "olay" VALUES(3226,'915d303e41ee4cb59fa908401d277926','bilge','8b85bc1326004304a5c48da383b8b5c6','cikti','K','2026-09-27T03:34:37+00:00');
+INSERT INTO "olay" VALUES(3227,'915d303e41ee4cb59fa908401d277926','bilge','8b85bc1326004304a5c48da383b8b5c6','cikti','od ve testler zaten tamamlanmış görünüyor; ana bekleyen adım panel.js''e yazma izni sorusuydu. Önce testi tekrar koşturup mevcut hâlini doğrulayacağım, sonra bekleyen soruya bakacağım.','2026-09-27T03:34:40+00:00');
+INSERT INTO "olay" VALUES(3228,'915d303e41ee4cb59fa908401d277926','bilge','8b85bc1326004304a5c48da383b8b5c6','arac','Bash','2026-09-27T03:34:40+00:00');
+INSERT INTO "olay" VALUES(3229,'915d303e41ee4cb59fa908401d277926','bilge','8b85bc1326004304a5c48da383b8b5c6','arac_sonuc','boşta t=0: (20.000, 40.000)
+boşta t=1: (21.373, 32.119)
+boşta t=2: (22.746, 24.237)
+boşta t=3: (24.118, 16.356)
+ok: boşta hareket ve sabit tohum
+çalışıyor: (46, 25)
+ok: masaya vardı ve çalışırken sabit kaldı
+ok: iş bitince dolaşma yeniden başladı
+passed: ofis yürüyüşü
+exit_code=0','2026-09-27T03:34:41+00:00');
+INSERT INTO "olay" VALUES(3230,'915d303e41ee4cb59fa908401d277926','bilge','8b85bc1326004304a5c48da383b8b5c6','arac','mcp__ofis__kanit_ekle','2026-09-27T03:34:44+00:00');
+INSERT INTO "olay" VALUES(3231,'915d303e41ee4cb59fa908401d277926','bilge','8b85bc1326004304a5c48da383b8b5c6','kanit','#31 terminal: node cinar/testler/test_ofis_yurume.mjs (yeniden dogrulama)','2026-09-27T03:34:44+00:00');
+INSERT INTO "olay" VALUES(3232,'915d303e41ee4cb59fa908401d277926','bilge','8b85bc1326004304a5c48da383b8b5c6','arac_sonuc','Kanit eklendi: [terminal] node cinar/testler/test_ofis_yurume.mjs (yeniden dogrulama) (#31 icin toplam 4 kanit).','2026-09-27T03:34:44+00:00');
 CREATE TABLE olgu (
     id                  TEXT PRIMARY KEY,
     proje_id            TEXT NOT NULL REFERENCES proje(id),
@@ -11807,6 +12633,7 @@ INSERT INTO "olgu" VALUES('969f314073e14b39b90fd320b2604f22','915d303e41ee4cb59f
 INSERT INTO "olgu" VALUES('9db3e43c6b4d482eaa19bdc332cfd6a7','915d303e41ee4cb59fa908401d277926','semuparfum ürün fiyatı','Belle ve Brave 1.490,00 TL, 50 ml, KDV dahil (https://semuparfum.com/products/belle ve /products/brave, WebFetch ile doğrulandı)','ajan:demir #30','2026-09-24T10:24:07+00:00',NULL,'2026-09-24T10:24:07+00:00',NULL);
 INSERT INTO "olgu" VALUES('66a9704b20954590a905b0fc6897a19e','915d303e41ee4cb59fa908401d277926','semuparfum kapıda ödeme','mevcut, 49 TL ek ücret (https://semuparfum.com, WebFetch ile doğrulandı)','ajan:demir #30','2026-09-24T10:24:07+00:00',NULL,'2026-09-24T10:24:07+00:00',NULL);
 INSERT INTO "olgu" VALUES('358bada768ea4c7497bb0d84014f9513','915d303e41ee4cb59fa908401d277926','semuparfum iletişim','0501 611 36 67, iletisim@semuparfum.com, wa.me/905016113667 (https://semuparfum.com/pages/contact ve ana sayfa)','ajan:demir #30','2026-09-24T10:24:07+00:00',NULL,'2026-09-24T10:24:07+00:00',NULL);
+INSERT INTO "olgu" VALUES('12829271f7ff4f609b573db3cfca795f','915d303e41ee4cb59fa908401d277926','ofis panel kaynağı','Ofis ekranının çizim ve hareket kodu C:\Users\pc\Desktop\AgentOfis\web\panel.js içinde. Harita ölçüleri HARITA, masa koordinatları masaYerleri, ajan hedefleri ajanKonumlari, geçişler yuru ve haritaKur işlevlerinde (panel.js okuması, 27.09.2026).','ajan:cinar #31','2026-09-27T03:28:47+00:00',NULL,'2026-09-27T03:28:47+00:00',NULL);
 CREATE TABLE onay (
     id              TEXT PRIMARY KEY,
     proje_id        TEXT NOT NULL REFERENCES proje(id),
@@ -11861,6 +12688,7 @@ CREATE TABLE tur_anlik (
     geri_alindi     TEXT NOT NULL DEFAULT '',
     olusturuldu     TEXT NOT NULL
 );
+INSERT INTO "tur_anlik" VALUES('e49ae4a05ebb4e45ad4b9e7aae89636a','915d303e41ee4cb59fa908401d277926','8b85bc1326004304a5c48da383b8b5c6','cinar','C:/Users/pc/Desktop/AgentOfis/calisma','1f910a98151a23e2871d34abf2e00bb2b6cc487f','2ff34f00e8ae3d7a6a6c33e8f8ffad21d327c935',2,0,'','','2026-09-27T03:29:02+00:00');
 CREATE TABLE yazma_kilidi (
     id              TEXT PRIMARY KEY,
     proje_id        TEXT NOT NULL REFERENCES proje(id),
@@ -11872,6 +12700,8 @@ CREATE TABLE yazma_kilidi (
     -- gecmezse kilit dusar ve is yeniden sahiplenilebilir.
     son_nabiz       TEXT NOT NULL
 );
+INSERT INTO "yazma_kilidi" VALUES('70d03c8b89a64da8967960e1822a9643','915d303e41ee4cb59fa908401d277926','cinar/ofis_yurume','8b85bc1326004304a5c48da383b8b5c6','bilge','2026-09-27T03:34:01+00:00','2026-09-27T03:35:03+00:00');
+INSERT INTO "yazma_kilidi" VALUES('b4c9bcd5704348e8aff302df239da1cd','915d303e41ee4cb59fa908401d277926','cinar/testler/test_ofis_yurume.mjs','8b85bc1326004304a5c48da383b8b5c6','bilge','2026-09-27T03:34:01+00:00','2026-09-27T03:35:03+00:00');
 CREATE INDEX ix_kilit_yol ON yazma_kilidi (proje_id, yol_oneki);
 CREATE INDEX ix_karar_proje ON karar (proje_id, olusturuldu DESC);
 CREATE INDEX ix_olgu_konu ON olgu (proje_id, konu, gecerli_bitis);
@@ -11883,6 +12713,6 @@ CREATE INDEX ix_degisim_proje
 CREATE INDEX ix_tur_anlik_proje
     ON tur_anlik (proje_id, olusturuldu DESC);
 DELETE FROM "sqlite_sequence";
-INSERT INTO "sqlite_sequence" VALUES('olay',3094);
+INSERT INTO "sqlite_sequence" VALUES('olay',3232);
 COMMIT;
 PRAGMA user_version=1;
