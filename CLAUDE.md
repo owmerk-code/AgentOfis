@@ -11427,7 +11427,8 @@ zorunluların hepsi var" (bkz. PLAN).
 - **Dürüst motor kartı (E60)** panelde yok; veri hazır.
 - Tavan hücresi $0,001 ile ölçülüyor; Claude'da tur $0,00105'te kesildi —
   tavanın **yaklaşık** uygulandığı görüldü, sınırın kesinliği değil.
-- `calisma/cinar/ofis_yurume/` ve `calisma/BRIFING.md` değişikliği bu
-  işten değil (06:27, kaynağı bilinmiyor); dokunulmadı, işlenmedi.
+- `calisma/cinar/ofis_yurume/` ve `calisma/BRIFING.md` bu işten değil:
+  gerçek ofisin iş #31'i (bilge, 06:13–06:34). Bilgisayar kapanınca iş
+  `calisiyor`da yarım kaldı; panelden "Sürdür" ile devam eder.
 
 Toplam **2607/2607** (35 dosya, ölçülen).
