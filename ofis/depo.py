@@ -101,14 +101,127 @@ def defteri_metne_yaz(db_yolu: Path, hedef: Path) -> dict:
         try:
             src.backup(dst)
             satirlar = list(dst.iterdump())
+            surum = dst.execute("PRAGMA user_version").fetchone()[0]
         finally:
             dst.close()
             src.close()
+    # `iterdump` PRAGMA user_version TASIMAZ (27.09.2026 olculdu: metinden
+    # geri kurulan defter 0'dan baslayip veri goclerini yeniden kosturacakti).
+    satirlar.append(f"PRAGMA user_version={int(surum)};")
     hedef.parent.mkdir(parents=True, exist_ok=True)
     gecici = hedef.with_name(hedef.name + ".part")
     gecici.write_text("\n".join(satirlar) + "\n", encoding="utf-8", newline="\n")
     os.replace(gecici, hedef)
     return {"satir": len(satirlar), "boyut": hedef.stat().st_size}
+
+
+# ------------------------------------------------------- metin -> defter
+
+#: Dokumun son satiri. `iterdump` PRAGMA user_version TASIMAZ (27.09.2026
+#: olculdu: geri kurulan defterde surum 0 cikti, oysa asli 1'di).
+SURUM_DESENI = re.compile(r"^PRAGMA user_version=(\d+);\r?$", re.M)
+
+
+def _surumsuz(metin: str) -> str:
+    return SURUM_DESENI.sub("", metin).rstrip("\n")
+
+
+def metinden_defter(sql_yolu: Path, hedef: Path, *, surum: int | None = None) -> dict:
+    """Metin dokumunden defteri GERI KURAR -- bos yere, OLCULEREK.
+
+    27.09.2026: baska bir ajan araci (OpenCode, `create-tauri-app ...
+    --yes`) `Desktop\\agentofis` yolunu sildi; Windows buyuk/kucuk harf
+    ayirmadigi icin silinen bizim `AgentOfis` klasorumuzdu. Kod GitHub'dan
+    geri geldi; defteri bu dokumden ELLE kurdum ve iki hata cikti:
+
+    1. **Satir sonu cevrildi.** Dokumu `read_text` ile okudum; o
+       evrensel satir sonu kipinde okur ve metin DEGERLERININ icindeki
+       `\\r\\n`'leri `\\n`e cevirir. 339 karakter sessizce kayboldu;
+       `integrity_check` "ok" dedi. Yakalayan tek sey geri donus
+       karsilastirmasiydi: kurulan defterin dokumu asli ile bayt bayt
+       ayni degildi.
+    2. **Veri gocu surumu kayboldu.** `iterdump` `PRAGMA user_version`
+       tasimiyor; kurulan defter 0'dan baslayip veri goclerini yeniden
+       kosturacakti. Dokum artik surumu son satir olarak yaziyor.
+
+    Kurallar:
+
+    * **Canli defterin ustune yazmaz.** Hedef (ya da onun -wal/-shm'si)
+      varsa REDDEDER; `yedek.geri_yukle`nin "yalniz BOS klasore" kuraliyla
+      ayni. Canliyi degistirmek insanin karari.
+    * **Geri donus olculur.** Kurulan defter yeniden dokulur ve kaynak
+      metinle (surum satiri disinda) BIREBIR ayni olmalidir; degilse
+      metinde defterde karsiligi olmayan bir sey vardir (elle
+      duzenlenmis, bozulmus, ya da okuma cevirmis) ve kurulum
+      REDDEDILIR. `integrity_check` bunu goremez: kayip veri tutarli
+      bir defter birakir.
+    * **Atomik:** `.part`'a kurulur, olculur, sonra adi verilir. Yarim
+      kurulum hedefte kalmaz.
+    * Eski bicimde (surum satiri olmayan) dokumde surum `surum` ile
+      verilebilir; verilmezse 0 kalir ve bu SOYLENIR: veri gocleri
+      bir sonraki acilista yeniden kosar.
+    """
+    sql_yolu, hedef = Path(sql_yolu), Path(hedef)
+    for ek in ("", "-wal", "-shm"):
+        if Path(str(hedef) + ek).exists():
+            raise DepoHatasi(
+                f"{hedef.name}{ek} zaten var -- geri kurulum CANLI defterin "
+                f"ustune yazmaz. Bos bir yol ver; degistirmek senin kararin.")
+    # SATIR SONU CEVRILMEDEN oku: degerlerin icindeki \r\n korunmali.
+    with open(sql_yolu, encoding="utf-8", newline="") as f:
+        sql = f.read()
+    m = SURUM_DESENI.search(sql)
+    dokum_surumu = int(m.group(1)) if m else None
+    if dokum_surumu is not None:
+        kaynak = "dokum"
+    elif surum is not None:
+        kaynak = "elle"
+    else:
+        kaynak = "yok"
+
+    hedef.parent.mkdir(parents=True, exist_ok=True)
+    gecici = hedef.with_name(hedef.name + ".part")
+    if gecici.exists():
+        gecici.unlink()
+    try:
+        c = sqlite3.connect(str(gecici))
+        try:
+            c.executescript(sql)
+            if dokum_surumu is None and surum is not None:
+                c.execute(f"PRAGMA user_version = {int(surum)}")
+            c.commit()
+            butunluk = c.execute("PRAGMA integrity_check").fetchone()[0]
+            son_surum = c.execute("PRAGMA user_version").fetchone()[0]
+            sayilar = {t: c.execute(f'SELECT count(*) FROM "{t}"').fetchone()[0]
+                       for (t,) in c.execute(
+                           "SELECT name FROM sqlite_master WHERE type='table' "
+                           "AND name NOT LIKE 'sqlite_%'").fetchall()}
+        finally:
+            c.close()
+        if butunluk != "ok":
+            raise DepoHatasi(f"kurulan defter butunluk denetiminden gecmedi: {butunluk}")
+        with tempfile.TemporaryDirectory(prefix="ofis-depo-geri-") as tmp:
+            geri = Path(tmp) / "geri.sql"
+            defteri_metne_yaz(gecici, geri)
+            with open(geri, encoding="utf-8", newline="") as f:
+                geri_metin = f.read()
+        if _surumsuz(geri_metin) != _surumsuz(sql):
+            raise DepoHatasi(
+                "kurulan defter kaynak metni BIREBIR vermiyor -- metinde "
+                "defterde karsiligi olmayan bir sey var (elle duzenlenmis ya "
+                "da bozulmus olabilir). Kurulum REDDEDILDI; canli bir sey "
+                "degismedi.")
+    except sqlite3.Error as exc:
+        if gecici.exists():
+            gecici.unlink()
+        raise DepoHatasi(f"metin defter olarak kurulamadi: {exc}")
+    except DepoHatasi:
+        if gecici.exists():
+            gecici.unlink()
+        raise
+    os.replace(gecici, hedef)
+    return {"hedef": str(hedef), "surum": son_surum, "surum_kaynagi": kaynak,
+            "tablo": sayilar}
 
 
 # ---------------------------------------------------------------- sir tarama

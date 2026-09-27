@@ -154,7 +154,7 @@ Kaynak: "bitmiş hâl" tasarımı (https://claude.ai/artifact/HVT7qEg1rsZK696TBh
 | E80 | Onay yorgunluğu: günlük onay sayısı ölçülür; proje başına "bu sınıf serbest" politikası (insanla) | F5 |
 | E81 | Değer panosu: haftalık iş, kanıt, onay, geri dönen iş, hesap başına tüketim | F8 |
 | E82 | Güncelleme penceresi: CLI/model güncellemesi yalnız kuyruk boşken ve deneme turundan geçerek | F5 |
-| E83 | Başka bilgisayara yedekten kurulum provası; geri gelme süresi ölçülür | F9 |
+| E83 | Başka bilgisayara yedekten kurulum provası; geri gelme süresi ölçülür | F9 — **istemeden yapıldı (27.09):** proje klasörü başka bir ajan aracınca silindi, GitHub + ZIP'ten ~1 saatte geri kuruldu; iki kusur çıktı ve koda taşındı (`yedek metinden`). Kalan: başka bilgisayarda prova |
 | E84 | Ofis kendi eksiğini önerir (sağlık + düşen deneme işi → öneri); onayla `calisma/`'da yapılır, insan kurar | F6 |
 
 ### K. Rakibin Instagram hesabından (25.09.2026)

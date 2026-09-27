@@ -123,7 +123,11 @@ CDP_KAPI = _bos_kapi()
 _profil = tempfile.mkdtemp(prefix="ofis-panel-prof-")
 _tmp = tempfile.mkdtemp(prefix="ofis-panel-tmp-")
 tarayici = subprocess.Popen(
-    T.kabin_komutu(chrome, profil=_profil, kapi=CDP_KAPI, baslangic="about:blank"),
+    # Sinama tarayicisi guncelleyici CALISTIRMAZ: 27.09'da Chrome'un bileseni
+    # gecici klasore `chrome_chrome_BITS_*` birakti ve silinemedi (BITS
+    # hizmeti tutuyor). Kullanicinin kabinine DOKUNULMAZ; bu yalniz sinamada.
+    T.kabin_komutu(chrome, profil=_profil, kapi=CDP_KAPI, baslangic="about:blank")
+    + ["--disable-component-update", "--disable-background-networking"],
     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
     env=dict(os.environ, TEMP=_tmp, TMP=_tmp))
 
@@ -224,7 +228,15 @@ async def senaryolar():
             lambda: sayi("SELECT count(*) FROM onay WHERE durum='onaylandi'") >= 1, 15))
         sina("kapsam DAR ('eylem')", sayi(
             "SELECT count(*) FROM onay WHERE durum='onaylandi' AND kapsam='eylem'") >= 1)
-        sina("bildirim 'bir kez'", "bir kez" in (await not_metni()).lower(), await not_metni())
+        # Defter YAZILDIKTAN sonra panel bildirimi bir an sonra cizer; hemen
+        # bakmak yaristi (27.09: yuklu makinede bos metin okundu).
+        bildirim = ""
+        for _ in range(30):
+            bildirim = (await not_metni()).lower()
+            if "bir kez" in bildirim:
+                break
+            await asyncio.sleep(0.2)
+        sina("bildirim 'bir kez'", "bir kez" in bildirim, bildirim)
 
         # ---------------------------------------------------- S4 CEVAPLA
         print("\nS4. CEVAPLA -- soru cevaplanir, deftere yazilir")

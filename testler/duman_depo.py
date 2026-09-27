@@ -184,6 +184,86 @@ try:
     D.AZAMI_DOSYA_MB = eski
     sina("sinir ustu dosya REDDEDILDI", r["durum"] == "reddedildi"
          and "b.txt" in r["sebep"], str(r))
+
+    # --------------------------------- 6. METINDEN GERI KURULUM
+    print("\n6. METINDEN GERI KURULUM -- olculerek, bos yere")
+    # 27.09.2026: proje klasoru baska bir ajan aracinca silindi; defter bu
+    # dokumden ELLE kuruldu ve iki hata cikti (satir sonu cevrildi, surum
+    # kayboldu). Bu bolum ikisini de, ve canliyi ezmemeyi sinar.
+    kd = ANA / "kaynak.sqlite3"
+    k = sqlite3.connect(str(kd))
+    k.execute("CREATE TABLE kanit (baslik TEXT, icerik TEXT)")
+    k.execute("INSERT INTO kanit VALUES ('crlf', ?)", ("satir1\r\nsatir2\r\n",))
+    k.execute("INSERT INTO kanit VALUES ('duz', 'tek satir')")
+    k.execute("PRAGMA user_version = 3")
+    k.commit()
+    k.close()
+    dokum = ANA / "dokum.sql"
+    D.defteri_metne_yaz(kd, dokum)
+    metin = dokum.read_bytes()
+    sina("dokum SURUMU tasiyor", b"PRAGMA user_version=3;" in metin)
+    sina("dokum degerin icindeki \\r'yi tasiyor", b"\r" in metin)
+
+    yeni = ANA / "geri" / "o.sqlite3"
+    try:
+        r = D.metinden_defter(dokum, yeni)
+    except D.DepoHatasi as exc:
+        r = {"hata": str(exc)}
+    sina("geri kuruldu", yeni.exists(), str(r))
+    if yeni.exists():
+        g = sqlite3.connect(str(yeni))
+        deger = g.execute("SELECT icerik FROM kanit WHERE baslik='crlf'").fetchone()
+        surum = g.execute("PRAGMA user_version").fetchone()[0]
+        g.close()
+        sina("degerin icindeki \\r\\n KORUNDU (satir sonu cevrilmedi)",
+             deger is not None and deger[0] == "satir1\r\nsatir2\r\n", repr(deger))
+        sina("veri gocu SURUMU korundu", surum == 3, str(surum))
+    sina("surum kaynagi dokum", r.get("surum_kaynagi") == "dokum", str(r))
+    sina("yarim .part kalmadi", not yeni.with_name("o.sqlite3.part").exists())
+
+    # Canli defterin ustune YAZMAZ.
+    once = yeni.read_bytes() if yeni.exists() else b""
+    try:
+        D.metinden_defter(dokum, yeni)
+        sina("var olan hedef REDDEDILDI", False, "-- ustune yazdi!")
+    except D.DepoHatasi as exc:
+        sina("var olan hedef REDDEDILDI", True)
+        sina("  sebep 'CANLI' diyor", "CANLI" in str(exc))
+    sina("  var olan defter DEGISMEDI", yeni.exists() and yeni.read_bytes() == once)
+
+    # Eski bicim: surum satiri yok -> verilmezse 0 kalir ve SOYLENIR.
+    eski = ANA / "eski.sql"
+    eski.write_bytes(D.SURUM_DESENI.sub("", metin.decode("utf-8")).encode("utf-8"))
+    r = D.metinden_defter(eski, ANA / "eski1.sqlite3")
+    sina("eski dokum: surum kaynagi 'yok' diye SOYLENIYOR",
+         r["surum_kaynagi"] == "yok" and r["surum"] == 0, str(r))
+    r = D.metinden_defter(eski, ANA / "eski2.sqlite3", surum=3)
+    sina("eski dokum: surum elle verilebiliyor",
+         r["surum_kaynagi"] == "elle" and r["surum"] == 3, str(r))
+
+    # Geri donus olculuyor: defterde karsiligi olmayan satir REDDEDILIR.
+    elle = ANA / "elle.sql"
+    elle.write_bytes(metin.replace(b"COMMIT;", b"-- elle eklenmis satir\nCOMMIT;"))
+    hedef3 = ANA / "elle.sqlite3"
+    try:
+        D.metinden_defter(elle, hedef3)
+        sina("karsiligi olmayan metin REDDEDILDI", False, "-- kabul edildi!")
+    except D.DepoHatasi as exc:
+        sina("karsiligi olmayan metin REDDEDILDI", True)
+        sina("  sebep BIREBIR diyor", "BIREBIR" in str(exc))
+    sina("  reddedilen kurulum hedefte iz birakmadi",
+         not hedef3.exists() and not hedef3.with_name("elle.sqlite3.part").exists())
+
+    bozuk = ANA / "bozuk.sql"
+    bozuk.write_text("BU SQL DEGIL;\n", encoding="utf-8")
+    try:
+        D.metinden_defter(bozuk, ANA / "bozuk.sqlite3")
+        sina("bozuk metin REDDEDILDI", False)
+    except D.DepoHatasi:
+        sina("bozuk metin REDDEDILDI", True)
+    sina("  bozuk kurulum iz birakmadi",
+         not (ANA / "bozuk.sqlite3").exists()
+         and not (ANA / "bozuk.sqlite3.part").exists())
     c.close()
 finally:
     # Git nesneleri Windows'ta SALT OKUNUR; duz rmtree onlari atlar ve

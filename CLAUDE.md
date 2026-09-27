@@ -142,7 +142,7 @@ Motor bir adaptör, model bir ayar, arayüz bir istemci.
 
 ## Kod durumu
 
-Yazıldı ve **duman testlerinden geçti** (2528/2528, 27.09.2026):
+Yazıldı ve **duman testlerinden geçti** (2545/2545, 27.09.2026):
 
 | Dosya | Ne yapar |
 |---|---|
@@ -194,14 +194,14 @@ Yazıldı ve **duman testlerinden geçti** (2528/2528, 27.09.2026):
 | `ofis/sartname.py` | **Sartname kapisi** — fable'in 1 numarali yeri. Olcutu YAZMAZ, DENETLER. Saf yargi isi: araclar KAPALI kosar (olculdu: aracli 3/4 dustu). Son sansta ogretmez, gorunur uyariyla gecirir. |
 | `ofis/kabuk.py` | **Komut satırı** — 30 komut (koddan sayıldı, 27.09; 26 yazıyordu ve bayattı): `kur` · `ise-al` · `konus` · `hedef` · `devam` · `ekip` · `hesap` · `guncelle` · `bilgi` · `kural` · `model` · `plan` · `roller` · `ajan` · `gorsel` · `video` · **`not`** · **`durdur`** · `iptal` · `anahtar` · `yetenek` · `kullanim` · `saglik` · `durum` · `bekleyen` · `cevapla` · `onayla` · `yedek` · `geri-al` · `panel`. |
 | `ofis/yedek.py` | **YEDEK** — kod + defter (sqlite yedek API'siyle, WAL'da tutarlı) + ajan çıktıları tek arşivde. Sır ALINMAZ. Atomik, ölçülür (özet + bütünlük), son 30 budanır, ek hedefe (Drive) kopyalanır. Geri yükleme yalnız BOŞ klasöre. Günlük tetik yalnız gerçek defterde. |
-| `ofis/depo.py` | **GİZLİ GITHUB DEPOSU** (`owmerk-code/AgentOfis`, PRIVATE) — kod + defterin METİN hâli (`veri/disari/ofis.sql`) + ajan çıktıları (medya hariç). Üç sert kapı: beklenen adres · PRIVATE · sır taraması (kasa değerleri + anahtar biçimleri). Günlük yedeğin arkasında. |
+| `ofis/depo.py` | **GİZLİ GITHUB DEPOSU** (27.09: `metinden_defter` — metin dökümünden defteri BOŞ yere, geri dönüşü ölçerek kurar; döküm veri göçü sürümünü taşır) (`owmerk-code/AgentOfis`, PRIVATE) — kod + defterin METİN hâli (`veri/disari/ofis.sql`) + ajan çıktıları (medya hariç). Üç sert kapı: beklenen adres · PRIVATE · sır taraması (kasa değerleri + anahtar biçimleri). Günlük yedeğin arkasında. |
 | `ofis/geri_al.py` | **TUR GERİ ALMA** — her turun öncesi/sonrası proje kökünün dışındaki gölge git deposuna işlenir; `geri-al` YALNIZ o turun dosyalarını (ikili dahil) döndürür. Sonradan değişen dosyayı ve koşan işi ezmez (`--zorla` hariç), sebep zorunlu, geri alma da geri alınabilir. |
 | `baslat.bat` | Tek tık açılış — bağımlılık yoksa kurar, ilk açılışta örnek ofisi kurar. |
 
-Testler (`testler/`, hepsi jeton yakmadan koşar) — **2528/2528** (34 dosya, 27.09.2026'da tek tek koşturulup SAYILDI; hepsi GEÇİCİ kökte, gerçek `~/.agentofis`e dokunmadan):
+Testler (`testler/`, hepsi jeton yakmadan koşar) — **2545/2545** (34 dosya, 27.09.2026'da tek tek koşturulup SAYILDI; hepsi GEÇİCİ kökte, gerçek `~/.agentofis`e dokunmadan):
 `duman_baglayici.py` 64 · `duman_cekirdek.py` 90 ·
 `duman_codex_app.py` 68 · `duman_danisma.py` 36 ·
-`duman_degisim.py` 105 · `duman_deneme.py` 53 · `duman_depo.py` 31 ·
+`duman_degisim.py` 105 · `duman_deneme.py` 53 · `duman_depo.py` 48 ·
 `duman_ekip.py` 60 · `duman_geri_al.py` 29 · `duman_gorsel.py` 87 ·
 `duman_guncelleme.py` 66 · `duman_hafiza.py` 56 · `duman_hesap.py` 39 ·
 `duman_klasor.py` 35 · `duman_koltuk.py` 61 · `duman_kullanim.py` 62 ·
@@ -11219,7 +11219,7 @@ kalıyor ya da hiç ölçmeden "ATLANDI" diyordu. Artık kendi geçici
 kasaları ya da sahte anahtarlarıyla koşuyorlar; gerçek kasa bir sınamanın sonucunu
 değiştiremiyor.
 
-Tam takım: **2528/2528** (34 dosya); takım boyunca gerçek `~/.agentofis` dosyalarının özetleri önce/sonra aynı, geride geçici klasör 0.
+Tam takım: **2545/2545** (34 dosya); takım boyunca gerçek `~/.agentofis` dosyalarının özetleri önce/sonra aynı, geride geçici klasör 0.
 
 Testin yazdığı sahte kayıt gerçek `kota.json`'dan silindi. Dosyada başka
 kayıt yoktu; gerçek bir kota dolunca yeniden oluşur.
@@ -11256,3 +11256,95 @@ değişen dosya: YOK** (koşucu bunu ayrıca ölçtü). İki kendi kusurum çık
 - Gerçek bir hesap düşmesi yaşanmadı. Boş yapılandırmayla ölçülen tur,
   "hiç girilmemiş" hâlidir. "Sunucuda iptal edilmiş oturum" hâli şemaya
   göre aynı alanla geliyor, ama canlı görülmedi.
+
+## PROJE KLASÖRÜ SİLİNDİ — GitHub'dan geri kuruldu (27.09.2026)
+
+Kullanıcı aynı makinede başka bir ajan aracını (OpenCode) deniyordu. O
+oturum 04:10'da `Desktop` içinde `agentofis` adlı bir Tauri projesi kurmak
+istedi ve sırayla şunları koştu (OpenCode'un kendi günlüğünden okundu; o
+oturumda her izin `*` ile sormadan onaylanıyordu):
+
+```
+npx create-tauri-app@latest agentofis ... --yes      (cwd: Desktop)
+Remove-Item -Recurse -Force "C:\Users\pc\Desktop\agentofis"
+    resolved="C:\Users\pc\Desktop\AgentOfis"          <- BIZIM klasor
+npx create-tauri-app@latest agentofis ... --yes
+npm install ...                                       (bizim klasore)
+```
+
+**Windows büyük/küçük harf ayırmaz:** `agentofis` = `AgentOfis`. Bütün
+proje — kod, `.git`, defter, çıktılar — geri dönüşüm kutusuna gitmeden
+silindi, yerine boş bir Tauri iskeleti kuruldu. Aynı oturum dört dakika
+sonra işi `Desktop\agent-system\agentofis`'e taşıdı; bizim klasörde
+yarım iskeleti bıraktı. Kullanıcı oturumu son anda durdurdu.
+
+### Ne güvendeydi — ve NEDEN
+
+| Ne | Nerede | Durum |
+|---|---|---|
+| Kod + bütün git geçmişi + etiketler | gizli GitHub deposu | **tam** — son gönderim silinmeden 34 dk önce |
+| Defter (metin) | GitHub `veri/disari/ofis.sql` | **tam** — 26.09 07:08'den beri defter değişmemişti |
+| Git'e girmeyenler (eski defter yedekleri, örnek ofis, `clewase-review`) | 26.09 ZIP (bilgisayar + Drive) | geri kondu |
+| `.playwright-mcp/` (rakip ekran görüntüleri, video dökümleri) | **hiçbir yerde** | **KAYIP** — yedek bilerek atlıyordu (70 MB); bulguların kendisi bu dosyada yazılı |
+
+> **GitHub'a gitmemiş iş, var olmayan iştir.** Kurtaran şey her
+> commit'in hemen gönderilmesiydi; ZIP 22 saat eskiydi.
+
+### Geri kurulum — ve kurarken yaptığım İKİ hata
+
+1. Yarım iskelet **silinmedi**, `Desktop\AgentOfis-opencode-kopya`'ya
+   taşındı (kullanıcının denemesinin çıktısı; kararı onun).
+2. `git clone` → sistem git'i `core.autocrlf=true` olduğu için 50 dosya
+   satır sonu değişmiş geldi. Yerel ayar `false` yapılıp dosyalar depodan
+   **bayt bayt** yeniden açıldı; silinen yerel `user.name/email` geri kondu.
+3. Defter metinden kuruldu — **ve bozuk kuruldu:** dökümü `read_text` ile
+   okudum; o, metin DEĞERLERİNİN içindeki `\r\n`'leri de `\n`'e çevirir.
+   **339 karakter sessizce kayboldu, `integrity_check` "ok" dedi.**
+   Yakalayan tek şey geri dönüş ölçümüydü: kurulan defterin dökümü
+   GitHub'daki metinle bayt bayt aynı değildi. Satır sonu çevrilmeden
+   yeniden kuruldu → **bayt bayt aynı.**
+4. **Veri göçü sürümü kaybolmuştu:** `iterdump` `PRAGMA user_version`
+   taşımıyor. Asıl defter 1'deydi, kurulan 0'dan başlıyordu → E11 göçü
+   yeniden koşacaktı. Elle 1 yapıldı.
+
+> *Tutarlı bir defter, doğru bir defter değildir.* Kayıp veri tutarlı
+> bir defter bırakır; bütünlük denetimi onu göremez. Görebilen tek şey
+> **geri dönüş karşılaştırması**dır.
+
+### İki kusur koda taşındı — elle yapılan bir daha yapılmasın
+
+- `depo.defteri_metne_yaz` artık son satır olarak
+  `PRAGMA user_version=N;` yazıyor.
+- **`depo.metinden_defter`** + `kabuk yedek metinden [dökum] --hedef
+  <yeni yol> [--surum N]`: satır sonu çevirmeden okur, `.part`'a kurar,
+  bütünlüğü VE **geri dönüşü** ölçer (metin birebir geri gelmezse
+  REDDEDER), canlı defterin üstüne yazmaz. Eski biçimde sürüm yoksa
+  bunu söyler.
+
+### Bu bir PROVAYDI — istenmeden
+
+PLAN E83 ("yeni bilgisayara geri kurulum provası") F9'daydı; kaza onu
+bugüne çekti ve iki kusur gösterdi, ikisi de yalnız gerçek bir geri
+kurulumda görülebilirdi. *Bir yolu koşturmadıysan onun için hiçbir şey
+bilmiyorsun* — yedek yolu için de geçerli.
+
+### Kullanıcıya düşen (tavsiye, ofisin yetkisi dışında)
+
+- Başka ajan araçlarını **kendi klasörlerinde** ve **sormadan onaylama
+  kapalı** koştur. O oturum ayrıca Rust kurdu (`rustup`) ve
+  `Desktop\nemotron 3ultra`'yı sildi. Ofisin kendi kapısı aynı
+  `Remove-Item`'ı insana sorardı.
+
+Sınamalar: `duman_depo` 31 → **48** (CRLF'li değer, sürüm, canlıyı ezmeme,
+eski biçim, elle bozulmuş metin, bozuk SQL). Dört mutasyonun dördü ateş
+etti. `duman_panel_senaryo` iki yarış kapandı (bildirim beklenmeden okunuyordu;
+sınama Chrome'u güncelleyici çalıştırıp `%TEMP%`'e artık bırakıyordu).
+
+### AÇIK KALAN
+
+- Günlük gönderim defteri en fazla **24 saat** geriden taşıyor. Bugün
+  kayıp olmadı çünkü defter değişmemişti; ofis gerçek işte koşarken bir
+  günlük hafıza gidebilirdi. Gönderim sıklığı (ör. her halka sonunda)
+  ayrı karar.
+- `.playwright-mcp` yedeğe girmiyor (bilinçli, 70 MB). Kalıcı araştırma
+  malzemesi oradan çıkarılıp `calisma/` altına konmalı.

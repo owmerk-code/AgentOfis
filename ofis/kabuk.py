@@ -1510,6 +1510,25 @@ def komut_yedek(a) -> None:
             yaz(f"{r['dosya']} dosya acildi: {r['hedef']} ({r['zaman']} yedegi)")
             yaz("  Canli ofis DEGISMEDI. Once bu klasorde dene; sonra "
                 "canliyla degistirmek senin kararin.")
+        elif a.eylem == "metinden":
+            # Defteri GitHub'daki metin dokumunden kurar -- BOS yere, olculerek
+            # (27.09: proje klasoru silindi, elle kurulum iki hata yapti).
+            from ofis import depo
+            if not a.hedef:
+                raise SystemExit("kullanim: yedek metinden [dokum.sql] --hedef <yeni defter yolu> [--surum N]")
+            kaynak = Path(a.yol) if a.yol else depo.PROJE_KOKU / depo.DISARI
+            try:
+                r = depo.metinden_defter(kaynak, Path(a.hedef), surum=a.surum)
+            except depo.DepoHatasi as exc:
+                raise SystemExit(f"Geri kurulum: {exc}")
+            yaz(f"Defter kuruldu: {r['hedef']} (butunluk ok, metin BIREBIR geri geldi)")
+            yaz("  " + ", ".join(f"{t} {n}" for t, n in sorted(r["tablo"].items()) if n))
+            if r["surum_kaynagi"] == "yok":
+                yaz("  DIKKAT: dokumde veri gocu surumu yok -- gocler bir sonraki acilista "
+                    "YENIDEN kosar. Biliyorsan --surum N ile ver.")
+            else:
+                yaz(f"  veri gocu surumu {r['surum']} ({r['surum_kaynagi']})")
+            yaz("  Canli ofis DEGISMEDI. Degistirmek senin kararin.")
         elif a.eylem == "github":
             from ofis import depo
             try:
@@ -2028,13 +2047,15 @@ def ayristirici() -> argparse.ArgumentParser:
                    help="ret icin ZORUNLU gerekce")
     o.set_defaults(islev=komut_onayla)
 
-    yd = alt.add_parser("yedek", help="YEDEK -- al / liste / dogrula / geri-yukle / hedef")
+    yd = alt.add_parser("yedek", help="YEDEK -- al / liste / dogrula / geri-yukle / hedef / github / metinden")
     yd.add_argument("eylem", choices=["al", "liste", "dogrula", "geri-yukle",
-                                      "hedef", "github"])
+                                      "hedef", "github", "metinden"])
     yd.add_argument("yol", nargs="?", default=None,
                     help="arsiv yolu (dogrula/geri-yukle) ya da ekle|cikar (hedef)")
     yd.add_argument("--hedef", default=None, help="klasor")
     yd.add_argument("--neden", default=None, help="yedegin nedeni (orn. faz-F1)")
+    yd.add_argument("--surum", type=int, default=None,
+                    help="metinden: eski dokumde veri gocu surumu")
     yd.set_defaults(islev=komut_yedek)
 
     ga = alt.add_parser("geri-al", help="bir ajan TURUNU geri al (yalniz o turun dosyalari)")
