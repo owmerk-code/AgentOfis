@@ -142,7 +142,7 @@ Motor bir adaptör, model bir ayar, arayüz bir istemci.
 
 ## Kod durumu
 
-Yazıldı ve **duman testlerinden geçti** (2643/2643, 27.09.2026):
+Yazıldı ve **duman testlerinden geçti** (2653/2653, 27.09.2026):
 
 | Dosya | Ne yapar |
 |---|---|
@@ -198,7 +198,7 @@ Yazıldı ve **duman testlerinden geçti** (2643/2643, 27.09.2026):
 | `ofis/geri_al.py` | **TUR GERİ ALMA** — her turun öncesi/sonrası proje kökünün dışındaki gölge git deposuna işlenir; `geri-al` YALNIZ o turun dosyalarını (ikili dahil) döndürür. Sonradan değişen dosyayı ve koşan işi ezmez (`--zorla` hariç), sebep zorunlu, geri alma da geri alınabilir. |
 | `baslat.bat` | Tek tık açılış — bağımlılık yoksa kurar, ilk açılışta örnek ofisi kurar. |
 
-Testler (`testler/`, hepsi jeton yakmadan koşar) — **2643/2643** (35 dosya, 27.09.2026'da tek tek koşturulup SAYILDI; hepsi GEÇİCİ kökte, gerçek `~/.agentofis`e dokunmadan):
+Testler (`testler/`, hepsi jeton yakmadan koşar) — **2653/2653** (35 dosya, 27.09.2026'da tek tek koşturulup SAYILDI; hepsi GEÇİCİ kökte, gerçek `~/.agentofis`e dokunmadan):
 `duman_baglayici.py` 64 · `duman_cekirdek.py` 100 ·
 `duman_codex_app.py` 68 · `duman_danisma.py` 36 ·
 `duman_degisim.py` 105 · `duman_deneme.py` 53 · `duman_depo.py` 48 ·
@@ -208,7 +208,7 @@ Testler (`testler/`, hepsi jeton yakmadan koşar) — **2643/2643** (35 dosya, 2
 `duman_lider.py` 44 · `duman_mcp.py` 137 · `duman_motor.py` 113 ·
 `duman_motor_saglik.py` 55 ·
 `duman_not.py` 76 ·
-`duman_orkestra.py` 57 · `duman_panel.py` 340 ·
+`duman_orkestra.py` 57 · `duman_panel.py` 350 ·
 `duman_panel_senaryo.py` 20 · `duman_riskli.py` 198 · `duman_matris.py` 37 ·
 `duman_roller.py` 37 · `duman_saglik.py` 37 · `duman_sohbet.py` 94 ·
 `duman_tarayici.py` 155 · `duman_tavan.py` 27 · `duman_video.py` 35 ·
@@ -11512,3 +11512,16 @@ ortaya çıktı, HEAD'deki biçime döndürüldü.
   `guncelleme.py` deneme turuna eklenmeli.
 
 Toplam **2643/2643** (35 dosya, ölçülen).
+
+### Rayda yenilenme zamanı (27.09.2026)
+
+Kullanıcı: *"limiti biten ne zaman yenilecek bilgisi de eklesek."* Panel
+her pencerenin sağlayıcının bildirdiği yenilenme ANINI alıyor
+(`limitler[].yenilenmeler`); kalan süre istemcide hesaplanıyor
+(`kalanSure`, Node'da çalıştırılarak sınandı), yani dakikalık tazelemede
+geri sayıyor. %75 ve üstündeki pencerenin etiketinde `↻ 1 sa 8 dk`,
+hepsinin ipucunda gün+saat. Geçmiş an boş döner (uydurmaz). İki mutasyon
+ateş etti. Raydaki sayılar kullanıcının claude.ai ve ChatGPT ekranlarıyla
+birebir (codex 5s %100 / 7g %19 · claude %35 / %53 / Fable %10).
+
+Toplam **2653/2653** (35 dosya, ölçülen).

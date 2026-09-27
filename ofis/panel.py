@@ -626,7 +626,13 @@ def _para_durumu(ofis) -> dict:
             limitler.append({
                 "ad": p["motor"] + (f"/{p['hesap']}" if p["hesap"] else ""),
                 "yas_dk": p["yas_dk"],
-                "pencereler": {ad: w["kullanim"] for ad, w in p["pencereler"].items()}})
+                "pencereler": {ad: w["kullanim"] for ad, w in p["pencereler"].items()},
+                # YENILENME ANI (27.09.2026, kullanici: "limiti biten ne zaman
+                # yenilenecek"). Kalan sure istemcide hesaplanir: an mutlak
+                # oldugu icin dakikalik tazelemede sayi kendiliginden geri sayar.
+                "yenilenmeler": {ad: w["yenilenme"].isoformat()
+                                 for ad, w in p["pencereler"].items()
+                                 if not w.get("yenilendi")}})
     except Exception:
         pass
     return {

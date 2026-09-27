@@ -1165,5 +1165,54 @@ _jss = _web.joinpath("panel.js").read_text(encoding="utf-8")
 sina("ise alma cekmecesi sablonlari gosteriyor",
      'al("/api/sablonlar")' in _jss and 'eylem("/api/sablon"' in _jss)
 
+
+print("")
+print("21. LIMIT YENILENME ANI -- 'dolan limit ne zaman acilir'")
+import json as _jy
+from datetime import datetime as _dty, timezone as _tzy
+from ofis.motor.tip import limit_penceresi as _lpy
+_simdi_y = _dty.now(_tzy.utc).timestamp()
+ofis.db.olay_yaz(ofis.proje_id, "tur_ozeti", _jy.dumps({
+    "motor": "codex", "hesap": "", "limit_pencere": _lpy(
+        {"5s": {"kullanim": 1.0, "yenilenme": int(_simdi_y + 4080)},
+         "7g": {"kullanim": 0.19, "yenilenme": int(_simdi_y + 6 * 86400)}},
+        kaynak="sinama")}))
+_py = istemci.get("/api/ofis").json().get("para", {})
+_hy = [h for h in _py.get("limitler", []) if h["ad"] == "codex"]
+sina("rayda hesabin yenilenme anlari var",
+     bool(_hy) and set((_hy[0].get("yenilenmeler") or {})) == {"5s", "7g"},
+     str(_hy)[:300])
+if _hy:
+    _an = _dty.fromisoformat(_hy[0]["yenilenmeler"]["5s"]).timestamp()
+    sina("  an MUTLAK (saglayicinin bildirdigi an)", abs(_an - (_simdi_y + 4080)) < 2)
+_jsy = _web.joinpath("panel.js").read_text(encoding="utf-8")
+sina("dolu pencerede etikette yenilenme isareti + kalan sure",
+     "kalanSure(yen)" in _jsy and "k >= 0.75" in _jsy and "↻" in _jsy)
+if not _node:
+    print("  [ATLANDI] node bulunamadi -- kalanSure OLCULMEDI")
+else:
+    _bas = _jsy.find("function kalanSure(")
+    _govde = _jsy[_bas:_jsy.find("\n}\n", _bas) + 2]
+    _betik = _govde + """
+const T = Date.parse("2026-09-27T12:00:00Z");
+const d = (m) => new Date(T + m * 60000).toISOString();
+console.log(JSON.stringify([kalanSure(d(68), T), kalanSure(d(6*1440+4*60+10), T),
+  kalanSure(d(45), T), kalanSure(d(120), T), kalanSure(d(-5), T), kalanSure(d(1440), T)]));
+"""
+    _c = _sp.run([_node, "-e", _betik], capture_output=True, text=True,
+                 encoding="utf-8", timeout=60)
+    try:
+        _r1 = _jy.loads(_c.stdout.strip().splitlines()[-1])
+    except (ValueError, IndexError):
+        _r1 = None
+    sina("kalanSure calisiyor", _r1 is not None, (_c.stderr or "")[-200:])
+    if _r1:
+        sina("  1 sa 8 dk", _r1[0] == "1 sa 8 dk", str(_r1))
+        sina("  6 gun 4 sa (dakika yuvarlanmaz, gun olunca atilir)", _r1[1] == "6 gün 4 sa", str(_r1))
+        sina("  45 dk", _r1[2] == "45 dk", str(_r1))
+        sina("  tam saat '2 sa'", _r1[3] == "2 sa", str(_r1))
+        sina("  gecmis an BOS (uydurmaz)", _r1[4] == "", str(_r1))
+        sina("  tam gun '1 gün'", _r1[5] == "1 gün", str(_r1))
+
 print(f"\n== sonuc: {GECEN} gecti, {KALAN} kaldi ==")
 sys.exit(1 if KALAN else 0)

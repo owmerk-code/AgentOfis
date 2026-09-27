@@ -298,9 +298,18 @@ function cizSerit() {
     for (const [ad, k] of Object.entries(h.pencereler || {})) {
       const yazi = k == null ? "yenilendi" : "%" + Math.round(k * 100);
       const sinif = k == null ? "" : (k >= 0.9 ? "bekliyor" : (k >= 0.75 ? "dikkat" : ""));
-      const c = oge(yazi, h.ad + " · " + (AD[ad] || ad), sinif);
+      // Dolmak uzere ya da dolu pencerede NE ZAMAN acilacagi etikette durur;
+      // bos pencerede yalniz ipucunda (ray kalabaliklasmasin).
+      const yen = (h.yenilenmeler || {})[ad];
+      const kalan = yen ? kalanSure(yen) : "";
+      const etiket = h.ad + " · " + (AD[ad] || ad) +
+                     (kalan && k != null && k >= 0.75 ? " · ↻ " + kalan : "");
+      const c = oge(yazi, etiket, sinif);
       c.title = "Sağlayıcının kendi bildirdiği doluluk" +
                 (h.yas_dk != null ? ` (${h.yas_dk} dk önce ölçüldü)` : "") +
+                (yen ? `. Yenilenme: ${new Date(yen).toLocaleString("tr",
+                  { weekday: "short", hour: "2-digit", minute: "2-digit" })}` +
+                  (kalan ? ` (${kalan} sonra)` : "") : "") +
                 (ad === "7g_kapi" ? `. Eşikte (%${Math.round((p.kapi_esik || 0.8) * 100)}) pahalı ` +
                  "hakem yükseltmesi kapanır, iş durmaz." :
                  ". Dolmak üzereyse ofis işi diğer hesaba önceden geçirir.");
@@ -2901,6 +2910,17 @@ async function cizKararlar(kap) {
 }
 
 /* ─────────────── bağlam sağlığı ─────────────── */
+
+// Yenilenmeye kalan sure, insanin okudugu bicimde: "1 sa 8 dk", "6 gün 4 sa".
+// Gecmis an bos doner (pencere yenilenmistir; sunucu onu zaten ayri soyler).
+function kalanSure(iso, simdi = Date.now()) {
+  const dk = Math.round((Date.parse(iso) - simdi) / 60000);
+  if (!(dk > 0)) return "";
+  const g = Math.floor(dk / 1440), s = Math.floor((dk % 1440) / 60), d = dk % 60;
+  if (g) return g + " gün" + (s ? " " + s + " sa" : "");
+  if (s) return s + " sa" + (d ? " " + d + " dk" : "");
+  return d + " dk";
+}
 
 // HESAPLAR ve KULLANIM.
 //
