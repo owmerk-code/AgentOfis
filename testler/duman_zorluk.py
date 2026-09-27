@@ -254,54 +254,77 @@ with ofis.db.baglanti() as c:
         "SELECT * FROM olay WHERE tur='uyari' AND govde LIKE '%kapi modeli yok%'")]
 sina("atlanan yukseltme UYARI olarak gorunuyor", len(u) >= 1)
 
-# --------------------------------------------- 7. HAFTALIK KAPI BUTCESI
-print("\n7. haftalik kapi butcesi")
-# Tur basina tavan TEK BIR turun kacmasini onler; haftalik tavan COK
-# SAYIDA MAKUL turun toplamda limiti bitirmesini onler. Kullanicinin
-# yasadigi sey ikincisiydi. Plan Max 5x -- cep var ama sinirsiz degil.
+# --------------------------------------------- 7. FABLE KORUMASI
+print("\n7. fable korumasi -- saglayicinin KENDI yuzdesiyle")
+# 27.09.2026 KARARI: abonelikte dolar yok. Fable'in haftalik payi CLI'in
+# bildirdigi pencereden okunur (`7g_kapi`; eski kayitlarda ham ad
+# `seven_day_overage_included`). Esikte yukseltme kapanir, IS DURMAZ.
 import json as _json                                        # noqa: E402
+import time as _time                                        # noqa: E402
 
 from ofis import butce                                      # noqa: E402
 
 bos = butce.kapi_acik_mi(ofis.db, ofis.proje_id)
-sina("harcama yokken kapi ACIK", bos["acik"])
-sina("harcama sifir", bos["harcanan"] == 0.0)
+sina("olcum yokken kapi ACIK (bilinmeyene gore kapatilmaz)", bos["acik"])
+sina("olcum yokken kullanim None (sifir uydurulmaz)", bos["kullanim"] is None)
+sina("tur siniri iceride bir kacak freni", bos["tur_siniri"] > 0)
+
+_GELECEK = int(_time.time()) + 3 * 86400
 
 
-def _tur_yaz(model, tutar):
-    """Gercek `tur_ozeti` olayinin aynisi -- sayac ONU okuyor."""
-    ofis.db.olay_yaz(ofis.proje_id, "tur_ozeti",
-                     _json.dumps({"model": model, "maliyet_usd": tutar,
-                                  "jeton": 1000, "basarili": True}),
-                     ajan_ad="ceren")
+def _tur_yaz(pencereler, model="claude-haiku-4-5-20251001"):
+    """Gercek `tur_ozeti` olayinin aynisi -- koruma ONU okuyor."""
+    ofis.db.olay_yaz(ofis.proje_id, "tur_ozeti", _json.dumps({
+        "model": model, "jeton": 1000, "basarili": True, "motor": "claude",
+        "limit_pencere": {"kaynak": "s", "pencereler": pencereler}}),
+        ajan_ad="ceren")
 
 
-# Ucuz modeller sayaci ETKILEMEMELI: bu tavan KAPI modeli icin.
-_tur_yaz("claude-sonnet-5", 3.0)
-_tur_yaz("claude-haiku-4-5-20251001", 3.0)
-sina("ucuz model turleri sayaca GIRMIYOR",
-     butce.kapi_acik_mi(ofis.db, ofis.proje_id)["harcanan"] == 0.0)
+# Haiku turu Fable penceresi TASIMAZ: koruma onu gormemeli.
+_tur_yaz({"7g": {"kullanim": 0.95, "yenilenme": _GELECEK}})
+sina("genel haftalik %95 FABLE payi sayilmiyor",
+     butce.kapi_acik_mi(ofis.db, ofis.proje_id)["kullanim"] is None)
 
-# Olaydaki ad TAM model kimligidir (`claude-fable-5-1`), bizim kisa
-# adimiz degil. Tam esitlik arasaydik sayac sessizce SIFIR gosterirdi:
-# harcama olur, sayac gormezdi.
-_tur_yaz("claude-fable-5-1", 1.25)
+# Eski kayit, ham adla -- yine taninmali.
+_tur_yaz({"seven_day_overage_included": {"kullanim": 0.40, "yenilenme": _GELECEK}},
+         model="claude-fable-5-1")
 h = butce.kapi_acik_mi(ofis.db, ofis.proje_id)
-sina("fable turu TAM KIMLIKLE sayildi", h["harcanan"] == 1.25, str(h))
-sina("tavan altinda kapi hala acik", h["acik"])
-sina("kalan dogru hesaplandi",
-     abs(h["kalan"] - (butce.HAFTALIK_TAVAN_USD - 1.25)) < 0.001)
+sina("ham adli eski kayit TANINIYOR", h["kullanim"] == 0.40, str(h))
+sina("esik altinda kapi acik", h["acik"])
 
-_tur_yaz("claude-fable-5-1", butce.HAFTALIK_TAVAN_USD)
+# Daha yeni bir HAIKU turu Fable olcumunu SILMEMELI (yalniz fable turu tasir).
+_tur_yaz({"5s": {"kullanim": 0.1, "yenilenme": _GELECEK}})
+sina("sonraki haiku turu Fable olcumunu silmedi",
+     butce.kapi_acik_mi(ofis.db, ofis.proje_id)["kullanim"] == 0.40)
+from ofis import kullanim as _kul                            # noqa: E402
+_p = [p for p in _kul.son_pencereler(ofis.db, ofis.proje_id) if p["motor"] == "claude"]
+sina("kullanim ekrani da Fable penceresini koruyor",
+     bool(_p) and "7g_kapi" in _p[0]["pencereler"], str(_p[:1]))
+
+_tur_yaz({"7g_kapi": {"kullanim": 0.85, "yenilenme": _GELECEK}},
+         model="claude-fable-5-1")
 dolu = butce.kapi_acik_mi(ofis.db, ofis.proje_id)
-sina("tavan asilinca kapi KAPANIYOR", not dolu["acik"])
-sina("kapanma sebebi soyleniyor", "tavan" in dolu["sebep"].lower())
-# Tavan artik PLANDAN geliyor, sabitten degil -- sebep de dosyayi
-# degil KOMUTU gostermeli. Insanin kodu acmasi gerekmesin.
-sina("sebep tavani NASIL degistirecegini soyluyor",
-     "kabuk plan" in dolu["sebep"], dolu["sebep"])
+sina("esikte (%80) kapi KAPANIYOR", not dolu["acik"])
+sina("kapanma sebebi yuzdeyi soyluyor", "%85" in dolu["sebep"], dolu["sebep"])
+sina("sebep DOLAR soylemiyor", "$" not in dolu["sebep"])
 
-# EN ONEMLI: tavan dolunca IS DURMAZ, yalnizca pahali basamak kapanir.
+# Esik AYAR.
+ofis.db.ayar_yaz(ofis.proje_id, butce.ANAHTAR_ESIK, "0.9")
+sina("esik ayari okunuyor (0.9 -> %85 acik)",
+     butce.kapi_acik_mi(ofis.db, ofis.proje_id)["acik"])
+ofis.db.ayar_yaz(ofis.proje_id, butce.ANAHTAR_ESIK, "bozuk")
+sina("bozuk esik varsayilana dusuyor", butce.kapi_esigi(ofis.db, ofis.proje_id)
+     == butce.KAPI_ESIGI)
+
+# Yenilenmis pencerenin yuzdesiyle KAPATILMAZ.
+_tur_yaz({"7g_kapi": {"kullanim": 0.99, "yenilenme": int(_time.time()) - 60}},
+         model="claude-fable-5-1")
+sina("yenilenmis pencere kapatmiyor",
+     butce.kapi_acik_mi(ofis.db, ofis.proje_id)["acik"])
+_tur_yaz({"7g_kapi": {"kullanim": 0.85, "yenilenme": _GELECEK}},
+         model="claude-fable-5-1")
+
+# EN ONEMLI: pay doluyken IS DURMAZ, yalnizca pahali basamak kapanir.
 g7 = ofis.tahta.gorev_ac("Tavan doluyken", neden="s", ana_hedef="s",
                          kabul_olcutu="y", sahip="cinar")
 ofis.tahta.sahiplen(g7["no"], "cinar", g7["revizyon"])
@@ -323,10 +346,8 @@ try:
     Lider(ofis, motor_fabrikasi=_f).incele(g7["no"], lider_ad="ceren")
 except Exception:
     pass
-sina("tavan doluyken FABLE'A CIKILMADI",
+sina("pay doluyken FABLE'A CIKILMADI",
      _Kaydeden.son.get("model") != "fable", str(_Kaydeden.son.get("model")))
-# Is DURMADI: inceleme liderin KENDI modeliyle kostu. Pahali basamak
-# kapanir, is kapanmaz -- zincirdeki ayni ayrim.
 sina("inceleme yine de KOSTU (is durmadi)",
      _Kaydeden.son.get("model") == "sonnet", str(_Kaydeden.son.get("model")))
 with ofis.db.baglanti() as c:
@@ -335,14 +356,10 @@ with ofis.db.baglanti() as c:
         "AND govde LIKE '%yukseltme ATLANDI%'")]
 sina("atlanan yukseltme GORUNUR", len(at) >= 1)
 
-# Gorunmeyen butce, butce degildir.
 bulgular = ofis.saglik.denetle()["bulgular"]
-sina("saglik kapi butcesini raporluyor",
-     any("Kapi modeli" in b["baslik"] for b in bulgular),
+sina("saglik Fable payini raporluyor",
+     any("Fable" in b["baslik"] for b in bulgular),
      str([b["baslik"] for b in bulgular]))
-
-sina("pencere disi harcama sayilmiyor",
-     butce.haftalik_harcama(ofis.db, ofis.proje_id, gun=0)["usd"] == 0.0)
 
 # ------------------------------------------------- 8. PLAN bir AYAR
 print("\n8. plan KOD DEGIL AYAR")
@@ -353,17 +370,18 @@ from ofis import plan as P                                   # noqa: E402
 
 p0 = ofis.plan
 sina("varsayilan plan max5", p0["claude"] == "max5")
-sina("varsayilan tavan plandan geliyor", p0["kapi_haftalik_usd"] == 5.0)
+sina("max5 planinda fable DAHIL", p0["kapi_dahil"] is True)
 sina("tavansiz kapi VARSAYILAN OLARAK yasak",
      p0["tavansiz_kapi_izinli"] is False)
 
 P.yaz(ofis.db, ofis.proje_id, claude="max20", gpt="pro200")
 p1 = ofis.plan
 sina("plan yukseltildi", p1["claude"] == "max20")
-sina("TAVAN kendiliginden buyudu", p1["kapi_haftalik_usd"] == 20.0)
-# Butce modulu tavani PLANDAN okumali -- sabitten degil.
-sina("butce yeni tavani gordu",
-     butce.kapi_acik_mi(ofis.db, ofis.proje_id)["tavan"] == 20.0)
+sina("max20 planinda fable DAHIL", p1["kapi_dahil"] is True)
+P.yaz(ofis.db, ofis.proje_id, claude="pro")
+sina("Pro planinda fable YOK -> kapi kapali (kredi harcamaz)",
+     not butce.kapi_acik_mi(ofis.db, ofis.proje_id)["acik"])
+P.yaz(ofis.db, ofis.proje_id, claude="max20")
 
 # EN ONEMLI AYRIM: plan yukseltmek ASTRA'yi ACMAZ.
 # Sebep payin darligi degil, kacan turu DURDURACAK bir seyin olmamasi.
@@ -382,7 +400,7 @@ except P.PlanHatasi as exc:
     sina("ret gecerli planlari sayiyor", "max20" in str(exc))
 
 ozet = P.ozet(ofis.plan)
-sina("ozet tavani gosteriyor", "$20.00" in ozet)
+sina("ozet fable durumunu gosteriyor, dolar YOK", "plana dahil" in ozet and not any("$" in x for x in ozet.splitlines() if "fable" in x.lower() or "kapi" in x.lower()), ozet)
 sina("ozet astra kuralini ACIKCA soyluyor",
      "Plan yukseltmek bunu ACMAZ" in ozet)
 

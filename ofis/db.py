@@ -392,6 +392,7 @@ CREATE TABLE IF NOT EXISTS hesap (
     ortam           TEXT NOT NULL DEFAULT '{}', -- JSON: env; anahtar DEGIL referans
     sira            INTEGER NOT NULL DEFAULT 100,  -- nobet zincirindeki sira
     aktif           INTEGER NOT NULL DEFAULT 1, -- limit dolunca kapatilabilir
+    aylik_sinir_usd REAL,                       -- yalniz API hesabi: ayda en cok $
     not_            TEXT NOT NULL DEFAULT '',
     olusturuldu     TEXT NOT NULL,
     guncellendi     TEXT NOT NULL,
@@ -640,6 +641,10 @@ class Veritabani:
         # 20 soru). Tek kademeli onay, kullanicinin sikayet ettigi
         # engellemeye baska bir kapidan geri donmek olurdu.
         ("onay", "kapsam", "TEXT NOT NULL DEFAULT 'eylem'"),
+        # API HESABININ AYLIK DOLAR SINIRI (27.09.2026 karari). Abonelikte
+        # dolar yok; API'de gercek para kesilir ve sinirsiz API hesabi
+        # zincire GIRMEZ. Bos (NULL) = tanimsiz.
+        ("hesap", "aylik_sinir_usd", "REAL"),
     )
 
     def _veri_goc(self, conn) -> None:

@@ -227,6 +227,21 @@ class Motor(ABC):
         Panel bunu ajan ise almadan ONCE sorar: kurulu olmayan bir motora
         ajan atamak, hatayi ilk gorev dagitilana kadar gizler.
         """
+    def limit_oku(self, *, ek_ortam: dict = None) -> dict | None:
+        """Hesabin doluluk yuzdeleri -- TUR KOSMADAN, kota harcamadan.
+
+        Kullanici (27.09.2026): *"hesap abonelik limitleri senkronize
+        olmali, kalan kullanim limitleri surekli guncel olmali."* Once
+        yuzde yalniz ofis TUR KOSTUKCA tazeleniyordu; insan CLI'i elle
+        kullaninca ofisin gordugu sayi bayatliyordu (olculdu: codex 5
+        saatlik pencere %100 doluydu, ofis sabahki %3'u gosteriyordu).
+
+        Donus `limit_penceresi` bicimi ya da `None` = bu motor okuyamaz /
+        okunamadi. Varsayilan `None`: okuyamayan motor UYDURMAZ. Yeni bir
+        motor bunu yazarsa ofis onu da kendiliginden tazeler.
+        """
+        return None
+
     def durum_notu(self) -> str:
         """Musait DEGILSE sebebi + caresi (insana); musaitse bos (E16).
 

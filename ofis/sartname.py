@@ -199,9 +199,11 @@ def denetle(ofis, hedef: str, plan: dict, *, lider_ad: str,
     # metin donduruyor, yani biriktirmesi MUMKUN DEGIL -- o yuzden
     # care tavani olculmus gerceklige cekmek.
     tavan = tavan_usd or VARSAYILAN_TAVAN_USD
-    tavan = min(float(tavan), float(hafta.get("kalan") or tavan))
+    # Haftalik pay saglayicinin yuzdesiyle korunuyor (butce.py, 27.09);
+    # buradaki yalniz TEK turun kacak freni.
+    tavan = float(tavan)
     if tavan <= 0:
-        return _uyar("tavan hesaplanamadi (haftalik pay bitmis olabilir)")
+        return _uyar("tur siniri hesaplanamadi")
 
     try:
         motor = motor_fabrikasi(kapi_motoru)

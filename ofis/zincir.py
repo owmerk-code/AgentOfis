@@ -224,6 +224,8 @@ def zincir_kur(ajan: dict, *, butce_usd=None, zincir=None,
         # ulastirmak -- tahtanin `duraklatilmis_kaynak`iyla ayni desen.
         basamak = {"motor": h["motor"], "model": model,
                    "hesap": h["ad"], "ortam": ortam, "ofis_freni": _fren}
+        if h.get("_api_kalan") is not None:
+            basamak["api_kalan"] = h["_api_kalan"]
         (ayni_motor if ayni else diger_motor).append(basamak)
 
     # Kural 1'in yeri: ajanin KENDI basamagi zincirde ilk siradaysa
@@ -306,7 +308,25 @@ def basamaklari_kur(db, proje_id: str, ajan: dict, *, fabrika=motor_ac,
         if not olur["olur"]:
             alinmayan.append(f"'{h['ad']}' hesabi zincire alinmadi: {olur['sebep']}")
             continue
-        hesaplar.append(dict(h, _cozulmus_ortam=hesap.ortam_coz(h)))
+        api = None
+        if h.get("tur") == "api":
+            # API: gercek para. Sinir yoksa, dolduysa ya da motor tur
+            # basina harcamayi SINIRLAYAMIYORSA zincire girmez -- kapali
+            # kalarak basarisiz olur.
+            try:
+                sinirlar = getattr(fabrika(h["motor"]), "butce_destegi", False)
+            except Exception:
+                sinirlar = False
+            if not sinirlar:
+                alinmayan.append(f"'{h['ad']}' API hesabi zincire alinmadi: "
+                                 f"{h['motor']} tur harcamasini sinirlayamiyor")
+                continue
+            api = hesap.api_kalan(db, proje_id, h)
+            if not api["olur"]:
+                alinmayan.append(f"'{h['ad']}' API hesabi zincire alinmadi: {api['sebep']}")
+                continue
+        hesaplar.append(dict(h, _cozulmus_ortam=hesap.ortam_coz(h),
+                             _api_kalan=api["kalan"] if api else None))
     basamaklar = zincir_kur(ajan, butce_usd=butce_usd, zincir=zincir,
                             fabrika=fabrika, hesaplar=hesaplar,
                             kademe_haritasi=kademe_haritasi)
@@ -423,6 +443,22 @@ def pencereye_gore_sirala(db, proje_id: str, basamaklar: list, *,
         f"ONCEDEN GECIS: {s} -> basamaklari sona alindi; bu tur "
         f"{ilk['motor']}" + (f"/{ilk['model']}" if ilk.get("model") else "")
         + " ile basliyor." for s in sebep.values()]
+
+
+def tur_butcesi(basamak: dict, motor, istenen=None):
+    """Bu turun motora verilecek harcama siniri -- TEK kural, uc cagiran.
+
+    * API hesabi: kalan aylik paydan fazlasi istenemez (gercek para).
+    * Aksi halde `istenen` (ic kacak freni: fable kapisi) yalniz UYGULAYABILEN
+      motora gider; codex tavan gelince turu hic baslatmadan reddeder.
+    * Abonelikte normal turda `None`: limit saglayicinin yuzdesidir.
+    """
+    api = basamak.get("api_kalan")
+    if api is not None:
+        return min(float(api), float(istenen)) if istenen else float(api)
+    if basamak.get("ofis_freni") or not getattr(motor, "butce_destegi", False):
+        return None
+    return istenen
 
 
 def limitte_devret(basamaklar: list, kostur, *, devir) -> tuple:

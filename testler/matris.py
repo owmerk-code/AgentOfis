@@ -97,7 +97,7 @@ HUCRELER = (
     ("tur_ici_not", "tur_ici_mesaj", False, "tur surerken yazilan not ulasir"),
     ("durdurma", "tur_ici_mesaj", False, "tur surerken Durdur turu keser"),
     ("araclar_kapali", "araclar_kapatilabilir", False, "butun araclar kapatilinca hic arac cagrilmaz"),
-    ("butce_tavani", "butce_destegi", False, "tur basina tavanla kosar; uygulayamayan BASLAMADAN reddeder"),
+    ("butce_tavani", "butce_destegi", False, "tur basina dolar tavani (yalniz API hesabi ve Fable kapisi icin; abonelikte limit saglayicinin yuzdesi); uygulayamayan BASLAMADAN reddeder"),
     ("tarayici", "mcp_konusur", False, "JS ile cizilen sayfayi tarayiciyla okur"),
     ("limit_penceresi", None, False, "saglayicinin 5 saat / 7 gun dolulugunu bildirir (bilgi)"),
     ("baglayici", "baglayici_tasir", False, "claude.ai baglayicilari (~225k jeton; varsayilan olculmez)"),

@@ -178,7 +178,12 @@ def claude_pencereleri(bilgi) -> dict | None:
     """
     if not isinstance(bilgi, dict):
         return None
-    adlar = {"five_hour": "5s", "seven_day": "7g"}
+    # `seven_day_overage_included` -> "7g_kapi" (27.09.2026 OLCULDU): yalniz
+    # FABLE turunda geliyor, haiku turunda yok (ayni dakika, ayni hesap).
+    # claude.ai ayarlarindaki ayri "Haftalik -- Fable" cubugunun karsiligi.
+    # Adi saglayicinin; anlami olcumle baglandi, tahminle degil.
+    adlar = {"five_hour": "5s", "seven_day": "7g",
+             "seven_day_overage_included": "7g_kapi"}
     pencereler = {}
     for anahtar, p in (bilgi.get("unifiedWindows") or {}).items():
         if isinstance(p, dict):
@@ -439,6 +444,91 @@ class ClaudeMotoru(Motor):
             sonuc = {"girisli": None, "eposta": "", "plan": ""}
         self._giris_onbellek[dizin] = (an, sonuc)
         return sonuc
+
+    #: Plan limitlerinin adi -> ortak pencere adi. `weekly_scoped` +
+    #: model "Fable" -> `7g_kapi` (turdaki `seven_day_overage_included`in
+    #: karsiligi; ikisi de 27.09'da ayni %10'u verdi).
+    LIMIT_ADLARI = {"session": "5s", "weekly_all": "7g"}
+
+    def limit_oku(self, *, ek_ortam: dict = None) -> dict | None:
+        """`get_usage` kontrol istegi -- MODEL CAGRILMAZ (27.09.2026 olculdu).
+
+        CLI'in SDK kanalinda kullanim sayaclari icin bir istek var: kullanici
+        mesaji gonderilmeden sorulur, cevap ~1,3 sn'de gelir, turun maliyeti
+        0. Donen sayilar claude.ai / VS Code "Account & Usage" ekraniyla
+        AYNI (oturum %20 · haftalik %51 · Fable %10).
+        """
+        if not self.calistirilabilir:
+            return None
+        ortam = ortam_hazirla(os.environ, ek={**TUR_ORTAMI, **(ek_ortam or {})},
+                              izinli=tuple(ek_ortam or ()))
+        import tempfile
+        try:
+            with tempfile.TemporaryDirectory(prefix="ofis-limit-") as dizin:
+                p = subprocess.Popen(
+                    [self.calistirilabilir, "-p", "--input-format", "stream-json",
+                     "--output-format", "stream-json", "--verbose",
+                     "--strict-mcp-config", "--tools", ""],
+                    cwd=dizin, env=ortam, stdin=subprocess.PIPE,
+                    stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True,
+                    encoding="utf-8", errors="replace", creationflags=_PENCERE_YOK)
+                try:
+                    p.stdin.write(json.dumps({
+                        "type": "control_request", "request_id": "limit",
+                        "request": {"subtype": "get_usage", "skip_behaviors": True}}) + "\n")
+                    p.stdin.flush()
+                    cevap = None
+                    bitis = time.monotonic() + 25
+                    while time.monotonic() < bitis:
+                        satir = p.stdout.readline()
+                        if not satir:
+                            break
+                        try:
+                            o = json.loads(satir)
+                        except ValueError:
+                            continue
+                        if (o.get("type") == "control_response"
+                                and (o.get("response") or {}).get("request_id") == "limit"):
+                            cevap = o["response"]
+                            break
+                finally:
+                    try:
+                        p.stdin.close()
+                    except OSError:
+                        pass
+                    try:
+                        p.wait(5)
+                    except subprocess.TimeoutExpired:
+                        p.kill()
+        except (OSError, ValueError):
+            return None
+        if not cevap or cevap.get("subtype") != "success":
+            return None
+        return self.usage_pencereleri(cevap.get("response") or {})
+
+    @classmethod
+    def usage_pencereleri(cls, r: dict) -> dict | None:
+        """`get_usage` cevabi -> ortak bicim. Yuzde 0-100 gelir, 0-1'e cevrilir."""
+        from datetime import datetime
+        pencereler = {}
+        for lim in (r.get("rate_limits") or {}).get("limits") or []:
+            if not isinstance(lim, dict):
+                continue
+            ad = cls.LIMIT_ADLARI.get(lim.get("kind"))
+            if lim.get("kind") == "weekly_scoped":
+                model = (((lim.get("scope") or {}).get("model") or {})
+                         .get("display_name") or "")
+                ad = "7g_kapi" if model.lower() == "fable" else (
+                    "7g_" + model.lower().replace(" ", "_") if model else None)
+            if not ad or not isinstance(lim.get("percent"), (int, float)):
+                continue
+            try:
+                yen = int(datetime.fromisoformat(lim["resets_at"]).timestamp())
+            except (KeyError, TypeError, ValueError):
+                continue
+            pencereler[ad] = {"kullanim": lim["percent"] / 100.0, "yenilenme": yen}
+        return limit_penceresi(pencereler, kaynak="claude CLI (get_usage, tur yok)",
+                               plan=str(r.get("subscription_type") or ""))
 
     def durum_notu(self) -> str:
         """Musait DEGILSE sebebi + caresi; musaitse (ya da bilinmiyorsa) bos."""

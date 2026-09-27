@@ -66,6 +66,8 @@ PARCASI. Bunu soylemeden gostermek, yanlis gosteren bir gosterge olurdu.
 from __future__ import annotations
 
 import json
+import time
+import threading
 from datetime import datetime, timedelta, timezone
 
 #: Haftalik pencerenin yenilendigi gun/saat (UTC). Kullanicinin kendi
@@ -168,19 +170,102 @@ def _zaman(metin: str):
     return z if z.tzinfo else z.replace(tzinfo=timezone.utc)
 
 
+#: Canli olcumun ayar anahtari: `limit_canli:<motor>:<hesap>`. Hesap
+#: basina TEK kayit, her tazelemede UZERINE yazilir -- olay tablosu
+#: buyumez (olay tablosu kayit defteridir, saniye sayaci degil).
+CANLI_ONEK = "limit_canli:"
+#: Iki tazeleme arasi en az bu kadar sn. Okuma kota harcamaz ama her
+#: seferinde bir CLI sureci baslatir (claude ~1,3-2,6 sn, codex ~0,8-2,7).
+TAZELEME_SN = 120
+_TAZELEME_KILIDI = threading.Lock()
+
+
+def _canli_kayitlar(db, proje_id: str) -> list:
+    with db.baglanti() as conn:
+        satirlar = conn.execute(
+            "SELECT anahtar, deger FROM ayar WHERE proje_id = ? AND anahtar LIKE ?",
+            (proje_id, CANLI_ONEK + "%")).fetchall()
+    out = []
+    for r in satirlar:
+        try:
+            veri = json.loads(r["deger"])
+        except (ValueError, TypeError):
+            continue
+        if isinstance(veri, dict):
+            out.append(veri)
+    return out
+
+
+def tazele(db, proje_id: str, *, fabrika=None, zorla: bool = False,
+           en_az_sn: float = None) -> dict:
+    """Her abonelik hesabinin limitini SAGLAYICIDAN TUR KOSMADAN okur.
+
+    Kullanici (27.09.2026): *"kalan kullanim limitleri guncel olmali
+    surekli."* Once yuzde yalniz ofis o hesapla TUR KOSTUKCA tazeleniyordu;
+    insan CLI'i elle kullaninca ofisin gordugu sayi bayatliyordu -- olculdu:
+    codex'in 5 saatlik penceresi %100 doluyken ofis sabahki yuzdeyi
+    gosteriyordu ve onceden gecis o hesaba is vermeye devam ederdi.
+
+    * Okuma kota HARCAMAZ (claude `get_usage`, codex `account/rateLimits`).
+    * Seyreltilir (`TAZELEME_SN`); `zorla` insan istediginde.
+    * Okuyamayan motor (`limit_oku` -> None) UYDURULMAZ: eski olcum yasiyla
+      kalir, bu yazilir.
+    * API hesabi okunmaz: onun siniri dolardir (`hesap.api_kalan`).
+
+    Donus: `{"okundu": [...], "okunamadi": [...], "atlandi": bool}`.
+    """
+    en_az = TAZELEME_SN if en_az_sn is None else en_az_sn
+    if not _TAZELEME_KILIDI.acquire(blocking=False):
+        return {"okundu": [], "okunamadi": [], "atlandi": True,
+                "sebep": "baska bir tazeleme suruyor"}
+    try:
+        simdi_sn = time.time()
+        try:
+            son = float(db.ayar_oku(proje_id, "limit_canli_son", "0") or 0)
+        except (TypeError, ValueError):
+            son = 0.0
+        if not zorla and simdi_sn - son < en_az:
+            return {"okundu": [], "okunamadi": [], "atlandi": True,
+                    "sebep": f"son tazeleme {int(simdi_sn - son)} sn once"}
+        db.ayar_yaz(proje_id, "limit_canli_son", str(simdi_sn))
+        from . import hesap as H
+        if fabrika is None:
+            from .motor import motor_ac as fabrika
+        okundu, okunamadi = [], []
+        for h in H.zincir_hesaplari(db, proje_id):
+            if h.get("tur") != "abonelik" or not h.get("aktif", True):
+                continue
+            try:
+                coz = H.ortam_coz(h)
+                m = fabrika(h["motor"])
+                lp = m.limit_oku(ek_ortam=coz or None)
+            except Exception as exc:      # bir hesabin bozuklugu digerini durdurmaz
+                okunamadi.append(f"{h['ad']}: {str(exc).splitlines()[0][:120]}")
+                continue
+            if not lp or not lp.get("pencereler"):
+                okunamadi.append(f"{h['ad']}: saglayici yuzde vermedi")
+                continue
+            hesap = "" if h["ad"] == h["motor"] else h["ad"]
+            db.ayar_yaz(proje_id, f"{CANLI_ONEK}{h['motor']}:{hesap}", json.dumps({
+                "motor": h["motor"], "hesap": hesap,
+                "olculdu": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+                "limit_pencere": lp}))
+            okundu.append(h["ad"])
+        return {"okundu": okundu, "okunamadi": okunamadi, "atlandi": False}
+    finally:
+        _TAZELEME_KILIDI.release()
+
+
 def son_pencereler(db, proje_id: str, *, simdi_=None) -> list:
     """Her hesap icin EN SON olculen kullanim pencereleri.
 
-    Kaynak `tur_ozeti.limit_pencere` -- saglayicinin KENDI bildirimi,
-    ofisin tahmini degil. Iki kural:
+    IKI kaynak, ikisi de saglayicinin KENDI bildirimi (tahmin degil):
+    `tur_ozeti.limit_pencere` (tur sonunda) ve CANLI okuma (`tazele`, tur
+    kosmadan). Pencere basina hangisi YENIYSE o kazanir.
 
-    * YENILENMIS PENCERENIN YUZDESI GOSTERILMEZ. Olcum 5 saatlik
-      pencere yenilenmeden once alindiysa o yuzde artik YANLIS; "%71"
-      yazmak bayat bir sayiyi canli sanmaya davet olurdu. `yenilendi`
-      der, yuzdeyi `None` birakir.
-    * OLCUMUN YASI HER ZAMAN YAZILIR. Sayi ancak ofis o hesapla bir tur
-      kostugunda tazelenir; insan arada elle kullandiysa gercek daha
-      yuksektir.
+    * YENILENMIS PENCERENIN YUZDESI GOSTERILMEZ. Olcum pencere yenilenmeden
+      once alindiysa o yuzde artik YANLIS; `yenilendi` der, yuzde `None`.
+    * OLCUMUN YASI HER ZAMAN YAZILIR (pencere basina).
 
     Hesap adi normallesir: ajanin kendi basamagi (`""`) ve ortuk hesap
     (motorun kendi adi) AYNI hesaptir -- ayri gostermek, tek hesabi iki
@@ -192,50 +277,73 @@ def son_pencereler(db, proje_id: str, *, simdi_=None) -> list:
             "SELECT govde, olusturuldu FROM olay WHERE proje_id = ? "
             "AND tur = 'tur_ozeti' AND govde LIKE '%limit_pencere%' "
             "ORDER BY id DESC LIMIT 500", (proje_id,)).fetchall()
-    gorulen, cikti = set(), []
-    for r in satirlar:
-        r = dict(r)
+    kayitlar = []           # (olculdu, sira, veri) -- sira: esitlikte tur yeni
+    for i, r in enumerate(satirlar):
         try:
             veri = json.loads(r["govde"])
         except (ValueError, TypeError):
             continue
-        lp = veri.get("limit_pencere") if isinstance(veri, dict) else None
+        if isinstance(veri, dict):
+            kayitlar.append((_zaman(r["olusturuldu"]), -i, veri))
+    for veri in _canli_kayitlar(db, proje_id):
+        kayitlar.append((_zaman(veri.get("olculdu")), 1, veri))
+    en_eski = datetime.min.replace(tzinfo=timezone.utc)
+    kayitlar.sort(key=lambda k: (k[0] or en_eski, k[1]), reverse=True)
+
+    gorulen, cikti = {}, []
+    for olculdu, _, veri in kayitlar:
+        lp = veri.get("limit_pencere")
         if not isinstance(lp, dict) or not isinstance(lp.get("pencereler"), dict):
             continue
         motor = (veri.get("motor") or "").strip() or "(kayitta yok)"
         hesap = (veri.get("hesap") or "").strip()
         if hesap == motor:
             hesap = ""
-        if (motor, hesap) in gorulen:
-            continue                       # daha yenisi zaten alindi
-        gorulen.add((motor, hesap))
-        olculdu = _zaman(r["olusturuldu"])
+        yas = (round((su_an - olculdu).total_seconds() / 60) if olculdu else None)
+        # PENCERE BASINA en yeni olcum (27.09.2026): Fable penceresi
+        # (`7g_kapi`) turda YALNIZ fable turunda gelir; hesabin en yeni
+        # olcumu onu tasimiyorsa eski olcumdeki pencere KENDI yasiyla eklenir.
+        onceki = gorulen.get((motor, hesap))
+        if onceki is not None:
+            for ad, p in lp["pencereler"].items():
+                ad = ESKI_AD.get(ad, ad)
+                if ad in onceki["pencereler"]:
+                    continue
+                w = _pencere(p, su_an)
+                if w:
+                    w["yas_dk"], w["olculdu"] = yas, olculdu
+                    onceki["pencereler"][ad] = w
+            continue
         pencereler = {}
         for ad, p in lp["pencereler"].items():
-            try:
-                yenilenme = datetime.fromtimestamp(int(p["yenilenme"]), timezone.utc)
-                kullanim = float(p["kullanim"])
-            except (KeyError, TypeError, ValueError, OSError):
-                continue
-            kalan = (yenilenme - su_an).total_seconds()
-            pencereler[ad] = {
-                "kullanim": None if kalan <= 0 else kullanim,
-                "yenilendi": kalan <= 0,
-                "yenilenme": yenilenme,
-                "kalan_saat": round(max(kalan, 0) / 3600, 1),
-            }
+            ad = ESKI_AD.get(ad, ad)
+            w = _pencere(p, su_an)
+            if w:
+                w["yas_dk"], w["olculdu"] = yas, olculdu
+                pencereler[ad] = w
         if not pencereler:
             continue
         cikti.append({
             "motor": motor, "hesap": hesap,
             "kaynak": lp.get("kaynak") or "", "plan": lp.get("plan") or "",
             "hal": lp.get("hal") or "",
-            "olculdu": olculdu,
-            "yas_dk": (round((su_an - olculdu).total_seconds() / 60)
-                       if olculdu else None),
+            "olculdu": olculdu, "yas_dk": yas,
             "pencereler": pencereler,
         })
+        gorulen[(motor, hesap)] = cikti[-1]
     return cikti
+
+
+def _pencere(p, su_an):
+    try:
+        yenilenme = datetime.fromtimestamp(int(p["yenilenme"]), timezone.utc)
+        kullanim = float(p["kullanim"])
+    except (KeyError, TypeError, ValueError, OSError):
+        return None
+    kalan = (yenilenme - su_an).total_seconds()
+    return {"kullanim": None if kalan <= 0 else kullanim,
+            "yenilendi": kalan <= 0, "yenilenme": yenilenme,
+            "kalan_saat": round(max(kalan, 0) / 3600, 1)}
 
 
 def _turlar(db, proje_id: str, *, saat: float) -> list:
@@ -339,7 +447,9 @@ def ozet(db, proje_id: str) -> dict:
     }
 
 
-PENCERE_ETIKETI = {"5s": "5 saat", "7g": "7 gun"}
+PENCERE_ETIKETI = {"5s": "5 saat", "7g": "7 gun", "7g_kapi": "Fable (7 gun)"}
+#: 27.09 oncesi kayitlarda Fable penceresi saglayicinin ham adiyla duruyor.
+ESKI_AD = {"seven_day_overage_included": "7g_kapi"}
 
 
 def pencere_metni(p: dict) -> str:
@@ -440,11 +550,9 @@ def metin(db, proje_id: str) -> str:
     s += ["", "OFISIN TUKETTIGI  (senin TOPLAM kullanimin DEGIL)", ""]
     for ad, p in (("son %d saat" % o["oturum_saat"], o["oturum"]),
                   ("son 7 gun", o["hafta"])):
-        maliyet = ("olculemedi" if p["maliyet"] is None
-                   else f"${p['maliyet']:.4f}")
-        ek = f" (+{p['fiyatsiz']} tur fiyatsiz)" if p["fiyatsiz"] else ""
-        s.append(f"  {ad:12} {p['tur']:>3} tur · {p['jeton']:>10,} jeton · "
-                 f"{maliyet}{ek}")
+        # 27.09.2026: abonelikte dolar YAZILMAZ -- olcu jeton ve hesabin
+        # kendi yuzdesi (yukarida). Dolar yalniz API hesabinin satirinda.
+        s.append(f"  {ad:12} {p['tur']:>3} tur · {p['jeton']:>10,} jeton")
         for m, k in sorted(p["motorlar"].items(),
                            key=lambda x: -x[1]["jeton"]):
             s.append(f"       {m:22} {k['tur']:>3} tur · "

@@ -43,7 +43,7 @@ import sqlite3
 from . import butce, degisim, kullanim, plan, roller, tarayici
 from .motor import motor_ac, MotorHatasi
 from .postane import NOT_KURALI, gorev_notlari
-from .zincir import LIDER_ZINCIRI, basamaklari_kur, limitte_devret, lider_devri, ZincirBitti
+from .zincir import LIDER_ZINCIRI, basamaklari_kur, limitte_devret, lider_devri, tur_butcesi, ZincirBitti
 from .tahta import TahtaHatasi, yol_normalle, yollar_cakisir
 
 #: Liderin hukmu. Baska bir sey yazarsa hukum YOK sayilir -- is beklemede
@@ -541,10 +541,9 @@ class Lider:
                     ajan_ad=lider["ad"], gorev_id=gorev["id"])
                 kapi = None
             if kapi:
-                tavan = butce_usd or roller.rol("lider").butce_alt_siniri
-                # Kalan haftalik paydan fazlasini ISTEME: tur basina
-                # tavan, haftalik tavani asmamali.
-                tavan = min(tavan, hafta["kalan"]) if tavan else hafta["kalan"]
+                # TUR SINIRI iceride bir kacak frenidir (27.09.2026): haftalik
+                # pay saglayicinin kendi yuzdesiyle korunuyor (`butce.py`).
+                tavan = butce_usd or hafta["tur_siniri"]
                 if tavan:
                     model = kapi["model"]
                     butce_usd = tavan
@@ -602,8 +601,7 @@ class Lider:
                     + list(gorev.get("ek_klasorler") or [])),
                 # Dolar tavanini yalniz UYGULAYABILEN motor alir; codex
                 # tavan gelince turu hic baslatmadan reddeder.
-                butce_usd=(butce_usd if getattr(motor, "butce_destegi", False)
-                           else None),
+                butce_usd=tur_butcesi(b, motor, butce_usd),
                 zaman_asimi=zaman_asimi,
                 ek_ortam=b.get("ortam") or None,
             ):

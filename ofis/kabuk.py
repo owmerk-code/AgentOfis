@@ -176,7 +176,7 @@ def komut_konus(a) -> None:
     yaz("")
     try:
         for olay in ofis.sohbet.konus(
-                a.mesaj, lider_ad=a.lider or "", butce_usd=a.butce,
+                a.mesaj, lider_ad=a.lider or "", butce_usd=None,
                 zaman_asimi=a.zaman_asimi, azami_tik=a.azami_tik,
                 paralel=a.paralel, izinli_araclar=tuple(a.izin),
                 ek_klasorler=ekler):
@@ -257,7 +257,7 @@ def komut_hedef(a) -> None:
     yaz("Lider planliyor...")
     try:
         plan = ofis.orkestra.hedef_ver(
-            a.hedef, lider_ad=a.lider or "", butce_usd=a.butce,
+            a.hedef, lider_ad=a.lider or "", butce_usd=None,
             zaman_asimi=a.zaman_asimi, ek_klasorler=ekler,
             tarayici_alani=a.web,
             tarayici_yazma=not bool(getattr(a, "web_salt_okur", False)),
@@ -510,7 +510,7 @@ def komut_ekip(a) -> None:
         yaz("Lider kadro dusunuyor...")
         try:
             o = ofis.ekip.oner(a.istek, lider_ad=a.lider or "",
-                               butce_usd=a.butce, zaman_asimi=a.zaman_asimi)
+                               butce_usd=None, zaman_asimi=a.zaman_asimi)
         except EkipHatasi as exc:
             raise SystemExit(f"Oneri alinamadi: {exc}")
         yaz("")
@@ -772,6 +772,10 @@ def komut_hesap(a) -> None:
                 f"{'aktif' if x['aktif'] else 'KAPALI'}")
             if x["ortam"]:
                 yaz(f"     ortam: {', '.join(x['ortam'])}")
+            if x["tur"] == "api":
+                k = _h.api_kalan(ofis.db, ofis.proje_id, x)
+                yaz(f"     bu ay: ${k['harcanan']:.2f} / "
+                    + (f"${k['sinir']:.2f}" if k["sinir"] else "SINIR YOK"))
             if not olur["olur"]:
                 yaz(f"     ! {olur['sebep']}")
         yaz("")
@@ -791,7 +795,8 @@ def komut_hesap(a) -> None:
             ortam[k.strip()] = v.strip()
         try:
             x = _h.ekle(ofis.db, ofis.proje_id, a.ad, a.motor, tur=a.tur,
-                        plan=a.plan, ortam=ortam, sira=a.sira, not_=a.not_)
+                        plan=a.plan, ortam=ortam, sira=a.sira, not_=a.not_,
+                        aylik_sinir_usd=a.aylik_sinir)
         except _h.HesapHatasi as exc:
             raise SystemExit(f"Eklenemedi: {exc}")
         yaz(f"{x['ad']} eklendi ({x['motor']}/{x['tur']}, sira={x['sira']})")
@@ -799,6 +804,16 @@ def komut_hesap(a) -> None:
         yaz(f"  kullanilabilir: {'EVET' if olur['olur'] else 'HAYIR'}")
         if not olur["olur"]:
             yaz(f"  ! {olur['sebep']}")
+        return
+
+    if a.eylem == "sinir":
+        # Yalniz API hesabi: ayda en cok ne kadar dolar (27.09.2026 karari).
+        try:
+            x = _h.ayarla(ofis.db, ofis.proje_id, a.ad,
+                          aylik_sinir_usd=a.aylik_sinir or 0)
+        except _h.HesapHatasi as exc:
+            raise SystemExit(f"Degistirilemedi: {exc}")
+        yaz(f"{x['ad']}: aylik sinir ${x['aylik_sinir_usd']:.2f}")
         return
 
     if a.eylem in ("ac", "kapat"):
@@ -1334,6 +1349,12 @@ def komut_kullanim(a) -> None:
         ofis.db.ayar_yaz(ofis.proje_id, "onceden_gecis",
                          "kapali" if a.gecis == "kapat" else "acik")
         yaz(f"onceden gecis: {'KAPALI' if a.gecis == 'kapat' else 'ACIK'}")
+    # Insan baktiginda sayi CANLI olsun -- saglayicidan okunur, kota harcamaz.
+    t = kullanim.tazele(ofis.db, ofis.proje_id, zorla=True)
+    if t.get("okundu"):
+        yaz(f"limitler saglayicidan okundu: {', '.join(t['okundu'])}")
+    for s in t.get("okunamadi") or []:
+        yaz(f"  okunamadi -- {s} (eski olcum yasiyla gosteriliyor)")
     yaz(kullanim.metin(ofis.db, ofis.proje_id))
 
 
@@ -1659,7 +1680,7 @@ def _dongu_yaz(ofis, a) -> None:
     # hata alti kez cikti. Yeni bayraklar `getattr` ile okunuyor cunku
     # her komut hepsini tanimlamiyor (`konus`ta tarayici alani zaten
     # yok, dolayisiyla gorunurlugun de anlami yok).
-    for adim in ofis.orkestra.kos(azami_tik=a.azami_tik, butce_usd=a.butce,
+    for adim in ofis.orkestra.kos(azami_tik=a.azami_tik, butce_usd=None,
                                   zaman_asimi=a.zaman_asimi,
                                   izinli_araclar=tuple(getattr(a, "izin", None) or ()),
                                   paralel=getattr(a, "paralel", 3),
@@ -1765,7 +1786,6 @@ def ayristirici() -> argparse.ArgumentParser:
     s = alt.add_parser("konus", help="LIDERLE KONUS -- ofisin on kapisi")
     s.add_argument("mesaj")
     s.add_argument("--lider", default="")
-    s.add_argument("--butce", type=float, default=None, help="tur basina $")
     s.add_argument("--zaman-asimi", dest="zaman_asimi", type=float, default=None)
     s.add_argument("--azami-tik", dest="azami_tik", type=int, default=8)
     s.add_argument("--paralel", type=int, default=3,
@@ -1778,7 +1798,6 @@ def ayristirici() -> argparse.ArgumentParser:
     h = alt.add_parser("hedef", help="hedef ver, halkayi dondur")
     h.add_argument("hedef")
     h.add_argument("--lider", default="")
-    h.add_argument("--butce", type=float, default=None, help="tur basina $")
     h.add_argument("--zaman-asimi", dest="zaman_asimi", type=float, default=None)
     h.add_argument("--azami-tik", dest="azami_tik", type=int, default=12)
     h.add_argument("--sadece-plan", dest="sadece_plan", action="store_true",
@@ -1831,7 +1850,6 @@ def ayristirici() -> argparse.ArgumentParser:
     h.set_defaults(islev=komut_hedef)
 
     v = alt.add_parser("devam", help="halkayi kaldigi yerden surdur")
-    v.add_argument("--butce", type=float, default=None)
     v.add_argument("--zaman-asimi", dest="zaman_asimi", type=float, default=None)
     v.add_argument("--azami-tik", dest="azami_tik", type=int, default=12)
     v.add_argument("--paralel", type=int, default=3,
@@ -1863,7 +1881,6 @@ def ayristirici() -> argparse.ArgumentParser:
                     help="`kur`/`red` icin oneri numarasi")
     ek.add_argument("--sebep", default="", help="`red` icin ZORUNLU gerekce")
     ek.add_argument("--lider", default="")
-    ek.add_argument("--butce", type=float, default=None, help="tur basina $")
     ek.add_argument("--zaman-asimi", dest="zaman_asimi", type=float, default=None)
     ek.add_argument("--klasor", default="", help="ajanlarin calisma koku")
     ek.add_argument("--kanat", default="",
@@ -1871,7 +1888,10 @@ def ayristirici() -> argparse.ArgumentParser:
     ek.set_defaults(islev=komut_ekip)
 
     hs = alt.add_parser("hesap", help="HESAPLAR -- motor kimin adina konussun")
-    hs.add_argument("eylem", choices=["liste", "durum", "ekle", "ac", "kapat"])
+    hs.add_argument("eylem", choices=["liste", "durum", "ekle", "ac", "kapat", "sinir"])
+    hs.add_argument("--aylik-sinir", dest="aylik_sinir", type=float, default=None,
+                    help="YALNIZ API hesabi: ayda en cok $ (zorunlu). "
+                         "Abonelikte dolar yok -- limit saglayicinin yuzdesi.")
     hs.add_argument("ad", nargs="?", default="")
     hs.add_argument("--motor", default="claude")
     hs.add_argument("--tur", default="abonelik", choices=["abonelik", "api"])

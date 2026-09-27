@@ -146,7 +146,7 @@ function turOzeti(govde) {
   try {
     const x = JSON.parse(govde);
     const j = x.jeton >= 1000 ? (x.jeton / 1000).toFixed(1) + "k" : x.jeton;
-    return `${j} jeton · $${(x.maliyet_usd || 0).toFixed(3)}` +
+    return `${j} jeton` +
            (x.basarili ? "" : " · başarısız");
   } catch (e) { return ""; }
 }
@@ -284,25 +284,28 @@ function cizSerit() {
   r.append(oge(o.sayim.calisiyor, "çalışıyor"),
            oge(o.sayim.inceleme, "incelemede"));
   if (bekleyen) r.append(oge(bekleyen, "seni bekliyor", "bekliyor"));
-  r.append(el("div", "ray-ayrac"),
-           oge(jeton, "jeton"),
-           oge("$" + o.olcum.maliyet_usd.toFixed(2), "API karşılığı"));
+  r.append(el("div", "ray-ayrac"), oge(jeton, "jeton"));
 
   // PARA GORUNUR OLMALI. Olculdu (21.09.2026): haftalik kapi
   // butcesinin $2,14'u harcanmisti, para kilidi kapaliydi, gorsel
   // kotasi doluydu -- ve panele bakan biri hicbirini goremiyordu.
   // Ofisin kendi kurali: *gorunmeyen butce, butce degildir.*
+  // HESAPLARIN DOLULUGU (27.09.2026): abonelikte dolar yok; saglayicinin
+  // KENDI yuzdesi gosterilir. Olculmeyen hesap cizilmez (uydurulmaz).
   const p = o.para || {};
-  if (p.kapi_tavan) {
-    const oran = (p.kapi_harcanan || 0) / p.kapi_tavan;
-    const d = oge("$" + (p.kapi_harcanan || 0).toFixed(2) + " / $" +
-                  p.kapi_tavan.toFixed(0),
-                  "kapı bütçesi · " + p.kapi_pencere_gun + " gün",
-                  !p.kapi_acik ? "bekliyor" : (oran >= 0.75 ? "dikkat" : ""));
-    d.title = p.kapi_acik
-      ? "Pahalı kapı modeline (fable) bu hafta giden. Dolunca yükseltme kapanır, iş durmaz."
-      : "Haftalık tavan DOLDU — yükseltme kapalı, inceleme liderin kendi modeliyle koşuyor.";
-    r.append(d);
+  const AD = { "5s": "5 sa", "7g": "7 gün", "7g_kapi": "Fable" };
+  for (const h of (p.limitler || [])) {
+    for (const [ad, k] of Object.entries(h.pencereler || {})) {
+      const yazi = k == null ? "yenilendi" : "%" + Math.round(k * 100);
+      const sinif = k == null ? "" : (k >= 0.9 ? "bekliyor" : (k >= 0.75 ? "dikkat" : ""));
+      const c = oge(yazi, h.ad + " · " + (AD[ad] || ad), sinif);
+      c.title = "Sağlayıcının kendi bildirdiği doluluk" +
+                (h.yas_dk != null ? ` (${h.yas_dk} dk önce ölçüldü)` : "") +
+                (ad === "7g_kapi" ? `. Eşikte (%${Math.round((p.kapi_esik || 0.8) * 100)}) pahalı ` +
+                 "hakem yükseltmesi kapanır, iş durmaz." :
+                 ". Dolmak üzereyse ofis işi diğer hesaba önceden geçirir.");
+      r.append(c);
+    }
   }
   if (p.kilit_kapali) {
     const k = oge("KİLİTLİ", "para harcama");
@@ -437,22 +440,9 @@ function kullanimKarti(a) {
     const b = el("div", "kullanim-blok");
     b.append(el("span", "kullanim-etiket", etiket));
     b.append(el("b", "kullanim-jeton", jetonYaz(v.jeton) + " jeton"));
-    if (v.fiyatli) {
-      const p = el("span", "kullanim-para", "$" + v.maliyet_usd.toFixed(4));
-      p.title = "API karsiligi — motorun kendi defterinden okundu, "
-              + "bizim tahminimiz degil.";
-      b.append(p);
-    } else {
-      const p = el("span", "kullanim-para fiyatsiz", "fiyatsız");
-      p.title = "Bu turlarin maliyeti motor tarafindan bildirilmedi. "
-              + "Sahte bir $0 yazmak, bilinmeyeni sifir ilan etmek olurdu.";
-      b.append(p);
-    }
-    if (v.fiyatli && v.fiyatsiz) {
-      const u = el("span", "kullanim-eksik", "+" + v.fiyatsiz + " tur fiyatsız");
-      u.title = "Toplam bu turlari ICERMIYOR.";
-      b.append(u);
-    }
+    // 27.09.2026: abonelikte dolar gosterilmez -- olcu jeton ve
+    // hesabin kendi yuzdesi (pano basligi). Dolar yalniz API hesabinda.
+    b.append(el("span", "kullanim-alt", v.tur + " tur"));
     return b;
   };
   const no = (a.sicil.son_gorev || {}).no;
@@ -1479,8 +1469,7 @@ function ozetSatiri(a) {
   if (s.is) p.append(oge(s.is, "iş"));
   const t = s.son_tur;
   if (t) {
-    if (t.maliyet_usd != null)
-      p.append(oge("$" + t.maliyet_usd.toFixed(3), "son tur"));
+    if (t.jeton) p.append(oge(jetonYaz(t.jeton), "son tur jeton"));
     if (t.model) p.append(oge(t.model.replace("claude-", ""), "model"));
     // BASARISIZ TUR GIZLENMEZ. Olculdu: basarisiz turlar bir donem hic
     // kayda gecmiyordu ve toplam maliyet yaniltiyordu. Kacagin oldugu
@@ -2955,15 +2944,12 @@ async function cizKullanim() {
 
   const pencere = (ad, p) => {
     const s2 = el("div", "kullanim-satir");
-    const maliyet = p.maliyet === null ? "fiyatsiz"
-                  : "$" + Number(p.maliyet).toFixed(4);
     s2.append(el("span", "kullanim-ad", ad));
     s2.append(el("span", "kullanim-sayi",
                  `${p.tur} tur · ${p.jeton.toLocaleString("tr")} jeton`));
-    s2.append(el("span", "kullanim-alt", maliyet));
     kap.append(s2);
   };
-  const PENCERE_AD = { "5s": "5 saat", "7g": "7 gün" };
+  const PENCERE_AD = { "5s": "5 saat", "7g": "7 gün", "7g_kapi": "Fable" };
   for (const p of (k.pencereler || [])) {
     const s3 = el("div", "kullanim-satir");
     s3.append(el("span", "kullanim-ad", p.motor + (p.hesap ? "/" + p.hesap : "")));
@@ -4105,7 +4091,7 @@ $("#ara-kutu").addEventListener("keydown", (e) => {
 $("#komut-surdur").onclick = () => ($("#komut-surdur").dataset.kip === "durdur"
   ? eylem("/api/durdur", {}, (r) => "durdurma istendi — " + r.not)
   : eylem("/api/devam", {},
-      (r) => `halka sürdürülüyor · ${r.acik_is} açık iş · tur tavanı $${r.tavan_usd}`));
+      (r) => `halka sürdürülüyor · ${r.acik_is} açık iş`));
 $("#komut-girdi").addEventListener("keydown",
   (e) => { if (e.key === "Enter") komutGonder(); });
 $("#komut-ses").onclick = () => {
@@ -4125,6 +4111,10 @@ $("#komut-ses").onclick = () => {
   D.yerlesim = yerlesimYukle();
   yerlesimCiz();
   await yenile();
+  // HESAP LIMITLERI SUREKLI GUNCEL (27.09.2026): sunucu iki dakikada bir
+  // saglayicidan okur; bos ofiste olay akmadigi icin ray kendiliginden
+  // tazelenmezdi. Sekme gorunmuyorsa istek atilmaz.
+  setInterval(() => { if (!document.hidden) yenile(); }, 60000);
   D.olaylar = await al("/api/olaylar?adet=300");
   const akis = $("#gunluk-akis");
   D.olaylar.forEach((o) => {

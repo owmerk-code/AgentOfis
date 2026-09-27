@@ -17,10 +17,10 @@ Plan artik `ayar` tablosunda yasiyor ve `kabuk plan` ile degisiyor.
 
 ## Planin BELIRLEDIGI iki sey
 
-1. **Kapi modeline haftalik tavan** (`kapi_haftalik_usd`). Anthropic
-   mutlak sayi yayinlamiyor -- limitler "Pro'nun 5 kati" gibi CARPAN.
-   Biz cevirmeye calismiyoruz; kendi harcamamizi sayiyoruz ve tavani
-   plana gore olceklendiriyoruz. Max 20x, 5x'in dort kati paya sahip.
+1. **Kapi modelinin koruma esigi plandan DEGIL, saglayicinin kendi
+   yuzdesinden gelir** (27.09.2026, `butce.py`). Dolar karsiligi bir
+   haftalik tavan (`kapi_haftalik_usd`) KALDIRILDI: abonelikte dolar
+   yok ve fable payi artik dogrudan olculuyor.
 
 2. **Kapi modeli VAR MI.** Claude Pro'da fable plana DAHIL DEGIL
    (dogrudan krediyle calisir), o yuzden Pro'da otomatik yukseltme
@@ -48,25 +48,17 @@ ANAHTAR_CLAUDE = "plan.claude"
 ANAHTAR_GPT = "plan.gpt"
 ANAHTAR_TAVANSIZ = "plan.tavansiz_kapi_izinli"
 
-#: Claude planlari. `kapi_haftalik_usd`, kapi modeline (fable) haftada
-#: ayrilan API-karsiligi tavan.
-#:
-#: OLCULDU (20.09.2026, gercek ofis gecmisi): kapi turlarin ~%10'unda
-#: atesler (30 turda 3 is ikinci kez geri dondu) ve bir kapi turu
-#: kabaca $0,15-0,60. Bugunku hizla haftada ~$1-2.
-#:
-#: max5 -> $5 : olculen kullanimin 3-5 kati. Gercek durdurucu ama
-#:              normal kullanimda karsina cikmaz.
-#: max20 -> $20 : Max 20x, 5x'in dort kati pay demek.
-#: pro -> 0    : fable Pro'da plana DAHIL DEGIL; otomatik yukseltme
-#:              kapali gelir. Kullanici bilerek acabilir.
+#: Claude planlari. `kapi_dahil`: fable bu plana dahil mi. Pro'da
+#: DEGIL -- orada kredi harcar, otomatik yukseltme kapali gelir.
+#: Payin ne kadarinin kullanildigi plandan degil, saglayicinin kendi
+#: bildiriminden okunur (`butce.kapi_payi`).
 CLAUDE_PLANLARI = {
-    "pro": {"ad": "Claude Pro", "kapi_haftalik_usd": 0.0,
+    "pro": {"ad": "Claude Pro", "kapi_dahil": False,
             "not": "fable plana dahil degil -- dogrudan kredi harcar. "
                    "Otomatik yukseltme KAPALI gelir."},
-    "max5": {"ad": "Claude Max 5x", "kapi_haftalik_usd": 5.0,
+    "max5": {"ad": "Claude Max 5x", "kapi_dahil": True,
              "not": "fable haftalik payin %50'sine kadar dahil."},
-    "max20": {"ad": "Claude Max 20x", "kapi_haftalik_usd": 20.0,
+    "max20": {"ad": "Claude Max 20x", "kapi_dahil": True,
               "not": "fable haftalik payin %50'sine kadar dahil, pay 4 kat."},
 }
 
@@ -115,7 +107,7 @@ def oku(db, proje_id: str) -> dict:
         "claude": c, "gpt": g,
         "claude_ad": CLAUDE_PLANLARI[c]["ad"],
         "gpt_ad": GPT_PLANLARI[g]["ad"],
-        "kapi_haftalik_usd": CLAUDE_PLANLARI[c]["kapi_haftalik_usd"],
+        "kapi_dahil": CLAUDE_PLANLARI[c]["kapi_dahil"],
         "tavansiz_kapi_izinli": tavansiz,
         "claude_not": CLAUDE_PLANLARI[c]["not"],
         "gpt_not": GPT_PLANLARI[g]["not"],
@@ -155,10 +147,14 @@ def ozet(p: dict) -> str:
         f"  gpt    : {p['gpt_ad']:<18} ({p['gpt']})",
         f"           {p['gpt_not']}",
         "",
-        f"  kapi modeli haftalik tavan : ${p['kapi_haftalik_usd']:.2f}",
+        f"  kapi modeli (fable)        : "
+        f"{'plana dahil' if p['kapi_dahil'] else 'plana DAHIL DEGIL'}",
     ]
-    if p["kapi_haftalik_usd"] <= 0:
+    if not p["kapi_dahil"]:
         satir.append("      -> otomatik yukseltme KAPALI (plana dahil degil)")
+    else:
+        satir.append("      -> haftalik payi %80 dolunca yukseltme kapanir "
+                     "(saglayicinin kendi yuzdesiyle; `kullanim` ekraninda)")
     satir += [
         f"  tavansiz kapi modeli       : "
         f"{'IZINLI' if p['tavansiz_kapi_izinli'] else 'YASAK (varsayilan)'}",

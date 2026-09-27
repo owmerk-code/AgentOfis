@@ -142,7 +142,7 @@ Motor bir adaptör, model bir ayar, arayüz bir istemci.
 
 ## Kod durumu
 
-Yazıldı ve **duman testlerinden geçti** (2607/2607, 27.09.2026):
+Yazıldı ve **duman testlerinden geçti** (2643/2643, 27.09.2026):
 
 | Dosya | Ne yapar |
 |---|---|
@@ -198,21 +198,21 @@ Yazıldı ve **duman testlerinden geçti** (2607/2607, 27.09.2026):
 | `ofis/geri_al.py` | **TUR GERİ ALMA** — her turun öncesi/sonrası proje kökünün dışındaki gölge git deposuna işlenir; `geri-al` YALNIZ o turun dosyalarını (ikili dahil) döndürür. Sonradan değişen dosyayı ve koşan işi ezmez (`--zorla` hariç), sebep zorunlu, geri alma da geri alınabilir. |
 | `baslat.bat` | Tek tık açılış — bağımlılık yoksa kurar, ilk açılışta örnek ofisi kurar. |
 
-Testler (`testler/`, hepsi jeton yakmadan koşar) — **2607/2607** (35 dosya, 27.09.2026'da tek tek koşturulup SAYILDI; hepsi GEÇİCİ kökte, gerçek `~/.agentofis`e dokunmadan):
+Testler (`testler/`, hepsi jeton yakmadan koşar) — **2643/2643** (35 dosya, 27.09.2026'da tek tek koşturulup SAYILDI; hepsi GEÇİCİ kökte, gerçek `~/.agentofis`e dokunmadan):
 `duman_baglayici.py` 64 · `duman_cekirdek.py` 100 ·
 `duman_codex_app.py` 68 · `duman_danisma.py` 36 ·
 `duman_degisim.py` 105 · `duman_deneme.py` 53 · `duman_depo.py` 48 ·
 `duman_ekip.py` 60 · `duman_geri_al.py` 29 · `duman_gorsel.py` 87 ·
-`duman_guncelleme.py` 66 · `duman_hafiza.py` 56 · `duman_hesap.py` 39 ·
-`duman_klasor.py` 35 · `duman_koltuk.py` 61 · `duman_kullanim.py` 62 ·
+`duman_guncelleme.py` 66 · `duman_hafiza.py` 56 · `duman_hesap.py` 53 ·
+`duman_klasor.py` 35 · `duman_koltuk.py` 61 · `duman_kullanim.py` 81 ·
 `duman_lider.py` 44 · `duman_mcp.py` 137 · `duman_motor.py` 113 ·
 `duman_motor_saglik.py` 55 ·
 `duman_not.py` 76 ·
-`duman_orkestra.py` 57 · `duman_panel.py` 341 ·
+`duman_orkestra.py` 57 · `duman_panel.py` 340 ·
 `duman_panel_senaryo.py` 20 · `duman_riskli.py` 198 · `duman_matris.py` 37 ·
 `duman_roller.py` 37 · `duman_saglik.py` 37 · `duman_sohbet.py` 94 ·
 `duman_tarayici.py` 155 · `duman_tavan.py` 27 · `duman_video.py` 35 ·
-`duman_yedek.py` 47 · `duman_zincir.py` 71 · `duman_zorluk.py` 57
+`duman_yedek.py` 47 · `duman_zincir.py` 71 · `duman_zorluk.py` 61
 JS: `testler/panel_harita.mjs` (harita) · `testler/panel_yerlesim.mjs`
 (pano yerleşimi) — saf işlevler Node'da ÇALIŞTIRILIR; `duman_panel.py`
 koşturur (sayıları 341'in içinde) · `testler/panel_hafiza.mjs` (hafıza çizgesi)
@@ -11431,4 +11431,84 @@ zorunluların hepsi var" (bkz. PLAN).
   gerçek ofisin iş #31'i (bilge, 06:13–06:34). Bilgisayar kapanınca iş
   `calisiyor`da yarım kaldı; panelden "Sürdür" ile devam eder.
 
-Toplam **2607/2607** (35 dosya, ölçülen).
+Toplam **2643/2643** (35 dosya, ölçülen).
+
+## TEK KAVRAM: HESABIN LİMİTİ — ve limitler artık SÜREKLİ GÜNCEL (27.09.2026)
+
+Kullanıcı: *"api ile model kullanmıyorum, aboneliklerin limitlerini
+kullanıcaz… tavan felan karmaşık geliyor, kalıcı bir çözüm bulalım."*
+Sonra: *"hesap abonelik limitleri senkronize olmalı, kalan kullanım
+limitleri sürekli güncel olmalı."*
+
+### Karar — tek kavram
+
+| Ne | Önce | Şimdi |
+|---|---|---|
+| Abonelik hesabı | "$ API karşılığı", "kapı bütçesi $5/hafta", `--butce` | **sağlayıcının kendi yüzdesi** (5 saat · 7 gün · Fable) + önceden geçiş |
+| Kaçan tur | dolar tavanı | ofisin kendi kaçak freni (`tavan.py`, zaten vardı) |
+| API hesabı | — | **aylık dolar sınırı zorunlu** (`hesap ekle --tur api --aylik-sinir 5`) |
+| Fable koruması | haftalık $5 sayacı | **ölçülen Fable yüzdesi** %80'de kapanır (`kapi_esigi` ayarı) |
+
+- Dolar yalnızca API hesabında görünür. Sınırsız API hesabı açılamaz;
+  abonelik hesabına dolar sınırı yazılamaz (iki yönde de ret). Tur başına
+  API bütçesi tek yerde kurulur: `zincir.tur_butcesi` (kalan aylık paydan
+  fazla isteyemez). Sınırlayamayan motorla API hesabı zincire GİRMEZ.
+- Fable penceresi ölçüldü: turda yalnız Fable turunda gelir
+  (`seven_day_overage_included`, `7g_kapi` olarak saklanır) ve claude.ai'daki
+  "Haftalık — Fable" çubuğuyla aynı sayı.
+- Pro planında Fable yok → kapı kapalı (`plan.kapi_dahil`).
+
+### Limitler neden bayattı
+
+Yüzde yalnız ofis **o hesapla tur koştukça** tazeleniyordu. Ölçüldü:
+Codex'in 5 saatlik penceresi **%100 doluydu** (kullanıcı elle
+kullanmıştı), ofis sabahki yüzdeyi gösteriyordu ve önceden geçiş o
+hesaba iş vermeye devam ederdi. Fable yüzdesi de 24.09'daki bir turdan
+kalmaydı (%3; gerçek %10).
+
+### Çözüm: `Motor.limit_oku()` — tur koşmadan, kota harcamadan
+
+Önce iki aracın tam protokolü okundu, sonra gerçek hesapla ölçüldü:
+
+| Motor | Nasıl | Süre | Sonuç (27.09) |
+|---|---|---|---|
+| Claude | SDK kontrol isteği `get_usage` (kullanıcı mesajı yok, model çağrılmaz) | 1,3–2,6 sn | 5s %20 · 7g %51 · Fable %10 — claude.ai ekranıyla aynı |
+| Codex | app-server `initialize` → `account/rateLimits/read` | 0,8–2,7 sn | 5s **%100** (`rate_limit_reached`) · 7g %19 · plan plus |
+
+- Sözleşmenin varsayılanı `None`: okuyamayan motor **uydurmaz**, eski
+  ölçüm yaşıyla kalır ve bu söylenir. Yeni motor bunu yazarsa ofis onu da
+  kendiliğinden tazeler.
+- Codex **hesabın kendi evinde** okunur: ikinci hesabın yüzdesini
+  birincininki sanmak yanlış gösteren gösterge olurdu.
+- `kullanim.tazele`: hesap başına TEK kayıt (`ayar: limit_canli:<motor>:<hesap>`),
+  her okumada üzerine yazılır — olay tablosu büyümez. Seyreltilir (2 dk);
+  bir hesabın bozukluğu ötekini durdurmaz. API hesabı okunmaz (sınırı dolar).
+- `son_pencereler` iki kaynağı birleştirir (tur sonu + canlı), **pencere
+  başına hangisi yeniyse o**. Fable kapısı (`butce.kapi_payi`) artık bunun
+  üstünde — iki ayrı okuyucu olsaydı biri canlıyı öteki bayatı gösterirdi.
+- Tazeleyenler: panel (arka planda 2 dk'da bir + ray dakikada bir yenilenir;
+  boş ofiste olay akmadığı için ray kendiliğinden tazelenmiyordu) · halka
+  (her tik başında, önceden geçiş taze sayıya baksın) · `kabuk kullanim`
+  (anında, zorla).
+
+### Sınamalar
+
+`duman_kullanim` 62 → **81** · `duman_zorluk` **61** · `duman_hesap` **53**.
+Senkronda dokuz mutasyonun dokuzu ateş etti (seyreltme · API okunsun ·
+canlı kaynak yok sayılsın · sıralama ters · bozuk motor yutulmasın ·
+Fable kapısı canlıyı görmesin · halka tazelemesin · Fable adı ·
+yüzde bölünmesin).
+
+**Yan kayıt:** yama betiklerim iki dosyada satır sonlarını karıştırdı
+(`kullanim.py` CRLF, `butce.py` LF); mutasyon betiği eşleşme bulamayınca
+ortaya çıktı, HEAD'deki biçime döndürüldü.
+
+### AÇIK KALAN
+- Panelde "şimdi tazele" düğmesi yok (2 dk bekleme ya da `kullanim`).
+- Gerçek bir limit dolup önceden geçişin canlı yüzdeyle tetiklendiği bir
+  iş koşulmadı; ölçüm okuma yolunda yapıldı.
+- `get_usage` ve `account/rateLimits/read` resmî belgede değil, araçların
+  kendi şemasından okundu; CLI güncellemesinde bozulabilir →
+  `guncelleme.py` deneme turuna eklenmeli.
+
+Toplam **2643/2643** (35 dosya, ölçülen).

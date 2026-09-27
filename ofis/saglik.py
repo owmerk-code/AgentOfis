@@ -113,34 +113,30 @@ class Saglik:
     # -- denetimler --------------------------------------------------------
 
     def _kapi_butcesi(self) -> list:
-        """Kapi modeline (fable) haftada ne kadar gitti.
+        """Fable'in haftalik payi -- saglayicinin kendi yuzdesiyle.
 
-        Tur basina tavan tek bir turu tutar; bu, COK SAYIDA makul turun
-        toplamini tutar. Kullanicinin plani Max **5x** -- fable haftalik
-        payin %50'sine kadar dahil, yani cep var ama sinirsiz degil.
-
-        Tavana YAKLASMAK da bilgidir: insan ancak gorebildigi seyi
-        yonetir. Sifir harcamada SESSIZ kalinir -- her sey hakkinda
-        konusan gosterge, okunmaz.
+        27.09.2026: dolar karsiligi haftalik tavan kaldirildi (abonelikte
+        dolar yok); pay artik olculuyor (`butce.kapi_payi`). Olculmediyse
+        ya da dusukse SESSIZ kalinir -- her sey hakkinda konusan gosterge
+        okunmaz. Yaklasmak bilgidir, dolmak uyaridir; is her iki halde de
+        DURMAZ.
         """
         h = butce.kapi_acik_mi(self.db, self.proje_id)
-        if h["harcanan"] <= 0:
+        if h["kullanim"] is None:
             return []
-        oran = h["harcanan"] / h["tavan"] if h["tavan"] else 1.0
-        ayrinti = (f"Son {h['pencere_gun']} gunde {h['tur']} kapi turu, "
-                   f"${h['harcanan']:.2f} / ${h['tavan']:.2f}")
+        yuzde = round(h["kullanim"] * 100)
+        ayrinti = (f"Fable haftalik payi %{yuzde} (esik "
+                   f"%{round(h['esik'] * 100)}), yenilenme {h['yenilenme']}")
         if not h["acik"]:
             return [_bulgu(
-                "uyari", "Kapi modeli haftalik tavani DOLDU", ayrinti,
+                "uyari", "Fable haftalik payi esikte", ayrinti,
                 "Yukseltme kapali; inceleme liderin kendi modeliyle kosuyor. "
-                "Is durmuyor. Tavan: ofis/butce.py HAFTALIK_TAVAN_USD")]
-        if oran >= 0.75:
+                "Is durmuyor; pay yenilenince kendiliginden acilir.")]
+        if h["kullanim"] >= 0.6:
             return [_bulgu(
-                "bilgi", "Kapi modeli haftalik tavanina yaklasildi", ayrinti,
-                f"Kalan ${h['kalan']:.2f}. Dolunca yukseltme kendiliginden "
-                "kapanir -- is durmaz.")]
-        return [_bulgu("bilgi", "Kapi modeli kullanimi", ayrinti,
-                       f"Kalan ${h['kalan']:.2f}. Sorun yok, bilgi.")]
+                "bilgi", "Fable haftalik payi yukseliyor", ayrinti,
+                "Esige gelince yukseltme kendiliginden kapanir -- is durmaz.")]
+        return []
 
     def _motorlar(self) -> list:
         musait = musait_motorlar()

@@ -74,7 +74,7 @@ from .koltuk import Koltuk, durdurma_istendi
 from .danisma import Danisma
 from .lider import Lider, LiderHatasi
 from .motor import motor_ac, MotorHatasi
-from .zincir import LIDER_ZINCIRI, basamaklari_kur, limitte_devret, lider_devri, ZincirBitti
+from .zincir import LIDER_ZINCIRI, basamaklari_kur, limitte_devret, lider_devri, tur_butcesi, ZincirBitti
 from .tahta import KilitCakismasi, TahtaHatasi
 
 #: Liderin plani. Kod blogu icinde ya da duz JSON kabul edilir.
@@ -642,8 +642,7 @@ class Orkestra:
             # kapali kalarak basarisiz olur. Burada filtrelemeseydik
             # `hedef --butce 0.5` bir codex liderde planlamayi oldururdu:
             # kullanicinin istedigi tavan, isi hic yapilmamis kilardi.
-            motor_butcesi = (butce_usd if getattr(motor, "butce_destegi", False)
-                             else None)
+            motor_butcesi = tur_butcesi(b, motor, butce_usd)
             for olay in motor.tur_kos(
                 metin, klasor=lider["klasor"], oturum_id="",
                 model=b["model"],
@@ -799,6 +798,16 @@ class Orkestra:
         ozet = {"incelenen": [], "baslatilan": [], "bekleyen": [],
                 "engel": [], "danisilan": [], "ilerleme": False, "paralel": 1}
         self.ofis.tahta.kilit_dusenleri_temizle()
+        # LIMITLER TAZE OLSUN (27.09.2026): onceden gecis zinciri kurarken
+        # hesabin yuzdesine bakar; insan CLI'i elle kullandiysa tur sonu
+        # olcumu bayattir. Seyreltilmis (2 dk), kota harcamaz, patlarsa
+        # halkayi durdurmaz.
+        try:
+            from . import kullanim
+            kullanim.tazele(self.ofis.db, self.ofis.proje_id,
+                            fabrika=self.motor_fabrikasi)
+        except Exception:        # noqa: BLE001 -- olcum isi durdurmaz
+            pass
 
         # a) incelemedekileri lidere incelet
         for g in self.ofis.tahta.liste(durum="inceleme"):

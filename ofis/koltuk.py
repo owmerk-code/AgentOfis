@@ -62,7 +62,7 @@ from .motor import motor_ac, MotorHatasi
 from .motor.tip import TurKanali
 from .postane import NOT_KURALI
 from .tahta import TahtaHatasi
-from .zincir import basamaklari_kur, elenenler, sonraki, ZincirBitti
+from .zincir import basamaklari_kur, elenenler, sonraki, tur_butcesi, ZincirBitti
 
 #: Canli metin en fazla bu kadar saniye bellekte bekler, sonra `olay`a
 #: dokulur. Kisa tutmak tabloyu sisirir, uzun tutmak paneli gecikmeli
@@ -620,8 +620,7 @@ class Koltuk:
                     # freni geciyor ve bu gorunur bir uyari oluyor --
                     # bir kontrolun yerine baskasi geciyorsa insan
                     # bilmeli.
-                    butce_usd=(None if basamak.get("ofis_freni")
-                               else butce_usd),
+                    butce_usd=tur_butcesi(basamak, motor, butce_usd),
                     zaman_asimi=zaman_asimi,
                     mcp_yapilandirma=mcp_yapilandirma,
                     # ROLUN EK IZINLERI + ISE OZEL izinler.

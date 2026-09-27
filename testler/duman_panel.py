@@ -288,9 +288,9 @@ try:
     sina("mesaj LIDERE ulasti", y.json()["alici"] in ("demir", "ruzgar"))
     sina("cevap KOSTUGUNU soyluyor", y.json().get("kosuyor") is True)
     # TAVAN ZORUNLU: panelde klavyenin basinda kimse yok.
-    sina("TUR TAVANI bildiriliyor", y.json().get("tavan_usd") ==
-         _P.PANEL_TUR_TAVANI_USD)
-    sina("  tavan gercek bir sinir (0 degil)", _P.PANEL_TUR_TAVANI_USD > 0)
+    # 27.09 KARARI: abonelikte dolar tavani yok; kacagi ofis freni durdurur.
+    sina("panel turlarinda DOLAR tavani yok", "tavan_usd" not in y.json()
+         and _P.PANEL_TUR_TAVANI_USD is None)
 
     # TEK UCUS: ikinci istek REDDEDILIR. Cift tiklama jetonu ikiye
     # katlar ve iki lider ayni ise ayri kararlar verir.

@@ -90,7 +90,7 @@ except H.HesapHatasi:
 
 # ------------------------------------------------ 2. ANAHTAR SIZMIYOR
 print("\n2. anahtar veritabanina YAZILMIYOR")
-H.ekle(ofis.db, ofis.proje_id, "api-hesap", "sahte", tur="api",
+H.ekle(ofis.db, ofis.proje_id, "api-hesap", "sahte", tur="api", aylik_sinir_usd=5,
        ortam={"SAHTE_API_KEY": "@gizli:SAHTE_ANAHTAR"}, sira=20)
 
 with ofis.db.baglanti() as c:
@@ -274,6 +274,93 @@ sina("gercek codex KOSMADI (sinama limite dokunmuyor)",
      any(getattr(x, "tur", "") == "hata" for x in _olaylar))
 sina("HESABIN KENDI evi hazirlandi (config.toml)",
      (_ev2 / "config.toml").exists(), str(list(_ev2.iterdir())))
+
+
+# ------------------------------------ API HESABININ AYLIK SINIRI (27.09)
+print("\nAPI hesabi -- dolar YALNIZ burada, sinirsiz acilamaz")
+import json as _jz                                            # noqa: E402
+from ofis import zincir as _Z                                 # noqa: E402
+_d2 = tempfile.mkdtemp(prefix="ofis-hesap-api-")
+_o2 = Ofis.proje_ac(Veritabani(Path(_d2) / "o.sqlite3"), "API", amac="a",
+                    basari_olcutu="b")
+try:
+    H.ekle(_o2.db, _o2.proje_id, "api-sinirsiz", "claude", tur="api")
+    sina("SINIRSIZ API hesabi REDDEDILDI", False, "-- kabul edildi!")
+except H.HesapHatasi as exc:
+    sina("SINIRSIZ API hesabi REDDEDILDI", True)
+    sina("  ret ne yapilacagini soyluyor", "--aylik-sinir" in str(exc))
+try:
+    H.ekle(_o2.db, _o2.proje_id, "abon-dolarli", "claude", aylik_sinir_usd=5)
+    sina("aboneligin dolar siniri REDDEDILDI", False)
+except H.HesapHatasi:
+    sina("aboneligin dolar siniri REDDEDILDI", True)
+
+_a = H.ekle(_o2.db, _o2.proje_id, "api-1", "claude", tur="api",
+            aylik_sinir_usd=2.0)
+sina("sinirli API hesabi acildi", _a["aylik_sinir_usd"] == 2.0)
+
+
+def _api_turu(hesap_ad, usd):
+    _o2.db.olay_yaz(_o2.proje_id, "tur_ozeti", _jz.dumps(
+        {"hesap": hesap_ad, "motor": "claude", "maliyet_usd": usd, "jeton": 10}),
+        ajan_ad="x")
+
+
+_api_turu("api-1", 0.5)
+_api_turu("baska-hesap", 9.0)          # baska hesabin harcamasi SAYILMAZ
+_api_turu("api-1", None)                # olculemeyen sifir sayilmaz, ayrica sayilir
+k = H.api_kalan(_o2.db, _o2.proje_id, H.hesap(_o2.db, _o2.proje_id, "api-1"))
+sina("bu ayin harcamasi yalniz O hesaptan", k["harcanan"] == 0.5, str(k))
+sina("kalan dogru", k["olur"] and abs(k["kalan"] - 1.5) < 1e-6, str(k))
+sina("olculemeyen tur ayrica sayiliyor",
+     H.api_harcama(_o2.db, _o2.proje_id, "api-1")["olculemeyen"] == 1)
+
+
+class _Olcer(SahteMotor):
+    butce_destegi = True
+
+
+class _Olcemez(SahteMotor):
+    butce_destegi = False
+
+
+def _fab(olcer):
+    return lambda ad, **_: (_Olcer() if olcer else _Olcemez())
+
+
+_orj_kul = H.kullanilabilir_mi
+H.kullanilabilir_mi = lambda h: {"olur": True, "sebep": ""}
+try:
+    b, u = _Z.basamaklari_kur(_o2.db, _o2.proje_id,
+                              {"ad": "x", "motor": "sahte", "model": "", "meslek": "backend"},
+                              fabrika=_fab(True))
+    api_b = [x for x in b if x.get("hesap") == "api-1"]
+    sina("API basamagi zincirde, kalanini tasiyor",
+         bool(api_b) and abs(api_b[0].get("api_kalan", 0) - 1.5) < 1e-6, str(b))
+    sina("tur butcesi KALANDAN fazla olamaz",
+         abs(_Z.tur_butcesi(api_b[0], _Olcer(), 5.0) - 1.5) < 1e-6 if api_b else False)
+    sina("tur butcesi kucuk istegi korur",
+         _Z.tur_butcesi(api_b[0], _Olcer(), 0.3) == 0.3 if api_b else False)
+    b, u = _Z.basamaklari_kur(_o2.db, _o2.proje_id,
+                              {"ad": "x", "motor": "sahte", "model": "", "meslek": "backend"},
+                              fabrika=_fab(False))
+    sina("SINIRLAYAMAYAN motorla API hesabi zincire GIRMIYOR",
+         not [x for x in b if x.get("hesap") == "api-1"]
+         and any("sinirlayamiyor" in x for x in u), str(u))
+    _api_turu("api-1", 1.6)
+    b, u = _Z.basamaklari_kur(_o2.db, _o2.proje_id,
+                              {"ad": "x", "motor": "sahte", "model": "", "meslek": "backend"},
+                              fabrika=_fab(True))
+    sina("ay dolunca API hesabi zincire GIRMIYOR, sebep gorunur",
+         not [x for x in b if x.get("hesap") == "api-1"]
+         and any("aylik sinir doldu" in x for x in u), str(u))
+finally:
+    H.kullanilabilir_mi = _orj_kul
+
+sina("abonelikte tur butcesi YOK (limit saglayicinin yuzdesi)",
+     _Z.tur_butcesi({"motor": "claude"}, _Olcer(), None) is None)
+sina("sinirlayamayan motora istek GITMEZ",
+     _Z.tur_butcesi({"motor": "codex"}, _Olcemez(), 0.6) is None)
 
 print(f"\n== sonuc: {GECEN} gecti, {KALAN} kaldi ==")
 sys.exit(1 if KALAN else 0)

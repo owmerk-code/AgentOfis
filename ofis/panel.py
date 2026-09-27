@@ -61,18 +61,13 @@ GUVENLI_ADRESLER = ("127.0.0.1", "localhost", "::1")
 SUTUNLAR = ("bekliyor", "hazir", "calisiyor", "inceleme", "bitti")
 
 
-#: PANELDEN baslatilan liderin TUR BASINA tavani.
-#:
-#: Neden zorunlu: kabukta insan `--butce` yazar ve klavyenin basindadir;
-#: panelde bir web dugmesi var ve arkasinda kimse beklemiyor. Tavansiz
-#: bir dugme, kullanicinin koydugunu sandigi sinirin hic olmamasidir.
-#:
-#: Deger OLCULDU, tahmin degil -- is turu profili:
-#:   kod $0,089 · arastirma $0,617 · tarayici $0,670 · dokuman turu $0,68
-#: $1,00 en pahali olculen turun ustunde ama kacmis bir turu durdurur.
-#: Tavani uygulayamayan basamak zincirde zaten ATLANIR ve atlama gorunur
-#: olur -- *para kontrolleri kapali kalarak basarisiz olur.*
-PANEL_TUR_TAVANI_USD = 1.00
+#: PANELDEN baslatilan turlarda DOLAR TAVANI YOK (27.09.2026 karari).
+#: Kullanici abonelik kullaniyor; dolar bir kavram degil. Kacan bir turu
+#: ofisin kendi freni durdurur (`tavan.py`: arac sayisi, cikti hacmi,
+#: birikmis jeton) -- her motorda ayni. Hesabin dolmasini saglayicinin
+#: kendi yuzdesi ve onceden gecis yonetir. Dolar yalniz API HESABININ
+#: aylik sinirinda vardir (`hesap.py`).
+PANEL_TUR_TAVANI_USD = None
 
 #: TEK UCUS nobetcisi. Panelden ayni anda iki lider turu baslatilamaz:
 #: cift tiklama jetonu ikiye katlar ve iki lider ayni ofiste ayni ise
@@ -232,7 +227,7 @@ def _halkayi_kostur(db_yolu, proje_ad: str) -> None:
     olmadigini gorurdu. Komut cubugunda bir kez odenen *"dugme var,
     arkasinda kosturan yok"* hatasinin aynisi.
 
-    Tavan lider turundakiyle ayni (`PANEL_TUR_TAVANI_USD`) ve paralellik
+    Ayarlar lider turundakiyle ayni ve paralellik
     kabuktaki varsayilanla ayni (3) -- iki yuzey ayni halkayi farkli
     ayarla dondurseydi ayni is iki farkli bicimde kosardi.
     """
@@ -617,16 +612,28 @@ def _para_durumu(ofis) -> dict:
     (`gorsel.kota_notu`). Olcmek bir istek harcar ve tam tuketmeye
     calistigimiz seyi tuketirdi.
     """
-    from . import butce as _butce, gorsel as _gorsel
+    from . import butce as _butce, gorsel as _gorsel, kullanim as _k
     try:
         h = _butce.kapi_acik_mi(ofis.db, ofis.proje_id)
     except Exception:
         h = {}
+    # HESAPLARIN DOLULUGU (27.09.2026 karari): abonelikte dolar yok; ust
+    # cubukta saglayicinin KENDI yuzdesi durur. Olculmeyen hesap gosterilmez
+    # (uydurulmaz), yenilenen pencere yuzde yerine "yenilendi" der.
+    limitler = []
+    try:
+        for p in _k.son_pencereler(ofis.db, ofis.proje_id):
+            limitler.append({
+                "ad": p["motor"] + (f"/{p['hesap']}" if p["hesap"] else ""),
+                "yas_dk": p["yas_dk"],
+                "pencereler": {ad: w["kullanim"] for ad, w in p["pencereler"].items()}})
+    except Exception:
+        pass
     return {
-        "kapi_harcanan": h.get("harcanan"),
-        "kapi_tavan": h.get("tavan"),
+        "limitler": limitler,
+        "kapi_kullanim": h.get("kullanim"),
+        "kapi_esik": h.get("esik"),
         "kapi_acik": h.get("acik"),
-        "kapi_pencere_gun": h.get("pencere_gun"),
         "kilit_kapali": _gorsel.ucretsiz_sadece_mi(),
         "gorsel_kota": _gorsel.kota_notu("gemini"),
     }
@@ -1505,8 +1512,7 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
         _KOSU.update(dur=False, calisiyor=True, mesaj="halka surduruluyor")
         threading.Thread(target=_halkayi_kostur, args=(db.yol, proje_ad),
                          daemon=True).start()
-        return {"kosuyor": True, "acik_is": len(acik),
-                "tavan_usd": PANEL_TUR_TAVANI_USD}
+        return {"kosuyor": True, "acik_is": len(acik)}
 
     @uygulama.post("/api/durdur")
     def api_durdur():
@@ -1833,10 +1839,9 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
         1. **TEK UCUS.** Ayni anda ikinci bir lider turu baslatilmaz.
            Cift tiklama jetonu ikiye katlardi ve iki lider ayni ofiste
            ayni ise karar verirdi (Yasa 1'in karar tarafi).
-        2. **TAVAN ZORUNLU.** Panelde klavyenin basinda bekleyen biri
-           yok; her tur `PANEL_TUR_TAVANI_USD` ile kosar. Tavansiz bir
-           web dugmesi, kullanicinin koydugunu sandigi sinirin
-           olmamasidir.
+        2. **KACAK FRENI.** Panelde klavyenin basinda bekleyen biri
+           yok; kontrolden cikan turu ofisin kendi freni durdurur
+           (`tavan.py`). Dolar tavani yok (27.09: abonelik).
         3. **HATA YUTULMAZ.** Arka plan ipliginde patlayan bir sey
            sessizce kaybolurdu; `hata` olayina yazilir ve panele duser.
         """
@@ -1899,7 +1904,6 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
                                web, kabin_cdp),
                          daemon=True).start()
         return {"alici": lider["ad"], "kosuyor": True,
-                "tavan_usd": PANEL_TUR_TAVANI_USD,
                 "tarayici": web, "kabin": bool(kabin_cdp)}
 
     @uygulama.post("/api/ajana-sor")
@@ -1931,8 +1935,7 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
         _DANISMA.update(calisiyor=True, ajan=ajan["ad"])
         threading.Thread(target=_ajana_sor_kostur,
                          args=(db.yol, proje_ad, m["id"]), daemon=True).start()
-        return {"id": m["id"], "ajan": ajan["ad"],
-                "tavan_usd": PANEL_TUR_TAVANI_USD}
+        return {"id": m["id"], "ajan": ajan["ad"]}
 
     @uygulama.get("/api/sohbet")
     def api_sohbet(adet: int = 40):
@@ -2021,6 +2024,7 @@ def kos(adres: str = "127.0.0.1", kapi: int = 8900, db_yolu=None,
         print(f"UYARI: {adres} yerel ya da Tailscale adresi degil.")
     uygulama = olustur(db_yolu, proje_ad)
     _gunluk_yedek_arkada(db_yolu)
+    _limit_tazele_arkada(db_yolu, proje_ad)
     uvicorn.run(uygulama, host=adres, port=kapi, log_level="warning")
 
 
@@ -2053,6 +2057,39 @@ def _gunluk_yedek_arkada(db_yolu) -> None:
             time.sleep(3600)
 
     threading.Thread(target=dongu, name="gunluk-yedek", daemon=True).start()
+
+
+def _limit_tazele_arkada(db_yolu, proje_ad=None) -> None:
+    """Panel acikken hesap limitleri SUREKLI guncel (27.09.2026).
+
+    Kullanici: *"kalan kullanim limitleri guncel olmali surekli."* Iki
+    dakikada bir saglayicidan okunur (kota harcamaz); panel rayi ve
+    onceden gecis ayni kaydi gorur. Seyreltme `kullanim.tazele` icinde --
+    halka da ayni anda tazelerse ikinci okuma yapilmaz.
+    """
+    import threading
+    import time
+    from . import kullanim
+    from .db import VARSAYILAN_YOL
+
+    def dongu():
+        while True:
+            try:
+                db = Veritabani(db_yolu or VARSAYILAN_YOL)
+                with db.baglanti() as c:
+                    if proje_ad:
+                        r = c.execute("SELECT id FROM proje WHERE ad = ?",
+                                      (proje_ad,)).fetchone()
+                    else:
+                        r = c.execute("SELECT id FROM proje WHERE durum='acik' "
+                                      "ORDER BY olusturuldu LIMIT 1").fetchone()
+                if r:
+                    kullanim.tazele(db, r["id"])
+            except Exception:     # noqa: BLE001 -- panel olmesin
+                pass
+            time.sleep(kullanim.TAZELEME_SN)
+
+    threading.Thread(target=dongu, name="limit-tazele", daemon=True).start()
 
 
 if __name__ == "__main__":

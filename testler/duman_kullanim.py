@@ -353,6 +353,131 @@ Veritabani(kok / "goc.sqlite3")
 sina("goc IKINCI KEZ kosmuyor (yeni kayda dokunmadi)", _maliyetler()[5] == 0.0)
 
 
+
+# --------------------------------------- 11. CANLI LIMIT SENKRONU (27.09)
+print("\n11. limitler TUR KOSMADAN tazeleniyor, surekli guncel")
+from ofis import butce as _B                                        # noqa: E402
+from ofis import hesap as _H                                        # noqa: E402
+from ofis.motor.claude import ClaudeMotoru as _CM                   # noqa: E402
+from ofis.motor.sahte import SahteMotor as _SM                      # noqa: E402
+from ofis.motor.tip import limit_penceresi as _lp                   # noqa: E402
+
+_ld = Veritabani(kok / "limit.sqlite3")
+_lo = Ofis.proje_ac(_ld, "Limit", amac="a", basari_olcutu="b", kok_klasor=str(kok))
+_H.ekle(_ld, _lo.proje_id, "claude", "claude")
+_H.ekle(_ld, _lo.proje_id, "codex", "codex")
+_H.ekle(_ld, _lo.proje_id, "api-1", "claude", tur="api", aylik_sinir_usd=3)
+_simdi = datetime.now(timezone.utc)
+_yen = int((_simdi + timedelta(hours=3)).timestamp())
+_SAYAC = {"claude": 0, "codex": 0}
+_DEGER = {"claude": 0.2}
+
+
+class _Okur(_SM):
+    def __init__(self, ad):
+        super().__init__()
+        self._ad = ad
+
+    def limit_oku(self, *, ek_ortam=None):
+        _SAYAC[self._ad] += 1
+        if self._ad == "codex":
+            return None                    # okuyamayan motor
+        return _lp({"5s": {"kullanim": _DEGER["claude"], "yenilenme": _yen},
+                    "7g_kapi": {"kullanim": 0.1, "yenilenme": _yen + 3600}},
+                   kaynak="sahte", plan="max")
+
+
+_fab = lambda ad, **_: _Okur(ad)                                   # noqa: E731
+
+
+def _olay_say():
+    with _ld.baglanti() as c:
+        return c.execute("SELECT COUNT(*) FROM olay").fetchone()[0]
+
+
+# eski bir TUR olcumu: claude %90 -- canli okuma onu ezmeli
+_ld.olay_yaz(_lo.proje_id, "tur_ozeti", json.dumps({
+    "motor": "claude", "hesap": "", "limit_pencere": _lp(
+        {"5s": {"kullanim": 0.9, "yenilenme": _yen},
+         "7g": {"kullanim": 0.4, "yenilenme": _yen + 7200}}, kaynak="tur")}))
+_o0 = _olay_say()
+_t = K.tazele(_ld, _lo.proje_id, fabrika=_fab, zorla=True)
+sina("abonelik hesaplari okundu", _t["okundu"] == ["claude"], str(_t))
+sina("okuyamayan motor UYDURULMADI, soyleniyor",
+     any("codex" in x for x in _t["okunamadi"]), str(_t))
+sina("API hesabi limitten OKUNMADI (onun siniri dolar)",
+     _SAYAC["claude"] == 1, str(_SAYAC))
+sina("olay tablosu BUYUMEDI (tek ayar kaydi)", _olay_say() == _o0)
+_p = {k["motor"]: k for k in K.son_pencereler(_ld, _lo.proje_id)}
+sina("canli okuma eski tur olcumunu EZDI (5s %20)",
+     abs(_p["claude"]["pencereler"]["5s"]["kullanim"] - 0.2) < 1e-9, str(_p))
+sina("canlida olmayan pencere eski olcumden KENDI yasiyla kaldi (7g)",
+     _p["claude"]["pencereler"].get("7g", {}).get("kullanim") == 0.4)
+_kp = _B.kapi_payi(_ld, _lo.proje_id)
+sina("Fable kapisi canli yuzdeyi goruyor (%10)",
+     _kp is not None and abs(_kp["kullanim"] - 0.1) < 1e-9, str(_kp))
+
+_t2 = K.tazele(_ld, _lo.proje_id, fabrika=_fab)
+sina("iki dakika dolmadan tekrar OKUNMUYOR (seyreltme)",
+     _t2["atlandi"] and _SAYAC["claude"] == 1, str(_t2))
+_DEGER["claude"] = 0.55
+K.tazele(_ld, _lo.proje_id, fabrika=_fab, zorla=True)
+_p = {k["motor"]: k for k in K.son_pencereler(_ld, _lo.proje_id)}
+sina("ikinci okuma kaydin UZERINE yazildi (%55)",
+     abs(_p["claude"]["pencereler"]["5s"]["kullanim"] - 0.55) < 1e-9)
+with _ld.baglanti() as _c:
+    _n = _c.execute("SELECT COUNT(*) FROM ayar WHERE anahtar LIKE 'limit_canli:%'"
+                    ).fetchone()[0]
+sina("hesap basina TEK canli kayit", _n == 1, str(_n))
+
+# daha YENI bir tur olcumu canliyi gecer (hangisi yeniyse o)
+import time as _tm                                                   # noqa: E402
+_tm.sleep(1.1)
+_ld.olay_yaz(_lo.proje_id, "tur_ozeti", json.dumps({
+    "motor": "claude", "hesap": "", "limit_pencere": _lp(
+        {"5s": {"kullanim": 0.7, "yenilenme": _yen}}, kaynak="tur")}))
+_p = {k["motor"]: k for k in K.son_pencereler(_ld, _lo.proje_id)}
+sina("daha YENI tur olcumu canli okumayi geciyor (%70)",
+     abs(_p["claude"]["pencereler"]["5s"]["kullanim"] - 0.7) < 1e-9,
+     str(_p["claude"]["pencereler"]["5s"]))
+
+
+class _Patlar(_SM):
+    def limit_oku(self, *, ek_ortam=None):
+        raise RuntimeError("cli coktu")
+
+
+_t3 = K.tazele(_ld, _lo.proje_id, fabrika=lambda ad, **_: _Patlar(), zorla=True)
+sina("okurken patlayan motor tazelemeyi DURDURMUYOR, soyleniyor",
+     not _t3["okundu"] and any("cli coktu" in x for x in _t3["okunamadi"]), str(_t3))
+sina("sozlesmenin varsayilani None (okuyamayan uydurmaz)",
+     _SM().limit_oku() is None)
+
+# Claude get_usage cevabinin cevrimi (27.09'da olculen gercek bicim)
+_iso = (_simdi + timedelta(hours=2)).isoformat()
+_r = _CM.usage_pencereleri({"subscription_type": "max", "rate_limits": {"limits": [
+    {"kind": "session", "percent": 20, "resets_at": _iso},
+    {"kind": "weekly_all", "percent": 51, "resets_at": _iso},
+    {"kind": "weekly_scoped", "scope": {"model": {"display_name": "Fable"}},
+     "percent": 10, "resets_at": _iso},
+    {"kind": "session", "percent": "bozuk", "resets_at": _iso}]}})
+_pc = (_r or {}).get("pencereler", {})
+sina("claude: session -> 5s %20", abs(_pc.get("5s", {}).get("kullanim", -1) - 0.20) < 1e-9, str(_r))
+sina("claude: weekly_all -> 7g %51", abs(_pc.get("7g", {}).get("kullanim", -1) - 0.51) < 1e-9)
+sina("claude: Fable -> 7g_kapi %10", abs(_pc.get("7g_kapi", {}).get("kullanim", -1) - 0.10) < 1e-9)
+sina("claude: plan tasiniyor", (_r or {}).get("plan") == "max")
+sina("claude: bos cevap -> None (uydurmaz)", _CM.usage_pencereleri({}) is None)
+
+# halka her tikte (seyreltilmis) tazeler
+from ofis.orkestra import Orkestra as _Ork                          # noqa: E402
+_ld.ayar_yaz(_lo.proje_id, "limit_canli_son", "0")
+_SAYAC["claude"] = 0
+try:
+    _Ork(_lo, motor_fabrikasi=_fab).tik()
+except Exception as _e:                                              # noqa: BLE001
+    print("   (tik:", _e, ")")
+sina("halka tik basinda limitleri tazeliyor", _SAYAC["claude"] == 1, str(_SAYAC))
+
 print(f"\n== sonuc: {GECEN} gecti, {KALAN} kaldi ==")
 print(f"klasor: {kok}")
 sys.exit(1 if KALAN else 0)

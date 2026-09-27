@@ -1014,6 +1014,61 @@ class CodexMotoru(Motor):
             return {"permissions": (prm.get("permissions") or {}) if izin else {}}
         return {"decision": "decline"}
 
+    def limit_oku(self, *, ek_ortam: dict = None) -> dict | None:
+        """`account/rateLimits/read` -- TUR KOSMADAN (26.09 A2 + 27.09 olculdu).
+
+        app-server ayaga kalkar, `initialize` + tek okuma, kapanir. ~2,7 sn,
+        kota harcamaz. HESABIN KENDI EVINDE okunur: ikinci bir codex hesabinin
+        yuzdesini birincininki sanmak yanlis gosteren gosterge olurdu.
+        """
+        if not self.calistirilabilir:
+            return None
+        ev = (ek_ortam or {}).get("CODEX_HOME") or self._ev_bul()
+        ortam = ortam_hazirla(os.environ, ek={**(ek_ortam or {}), "CODEX_HOME": str(ev)},
+                              izinli=tuple(ek_ortam or ()) + ("CODEX_HOME",))
+        try:
+            p = subprocess.Popen([self.calistirilabilir, "app-server"],
+                                 stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                                 stderr=subprocess.DEVNULL, text=True, encoding="utf-8",
+                                 errors="replace", env=ortam)
+        except OSError:
+            return None
+        sonuc = None
+        try:
+            def yaz(o):
+                p.stdin.write(json.dumps(o) + "\n")
+                p.stdin.flush()
+            yaz({"jsonrpc": "2.0", "id": 1, "method": "initialize",
+                 "params": {"clientInfo": {"name": "agentofis", "version": "1"}}})
+            bitis = time.monotonic() + 25
+            while time.monotonic() < bitis:
+                satir = p.stdout.readline()
+                if not satir:
+                    break
+                try:
+                    o = json.loads(satir)
+                except ValueError:
+                    continue
+                if o.get("id") == 1:
+                    yaz({"jsonrpc": "2.0", "method": "initialized"})
+                    yaz({"jsonrpc": "2.0", "id": 2, "method": "account/rateLimits/read",
+                         "params": {}})
+                elif o.get("id") == 2:
+                    sonuc = (o.get("result") or {}).get("rateLimits")
+                    break
+        except (OSError, ValueError):
+            sonuc = None
+        finally:
+            try:
+                p.stdin.close()
+            except OSError:
+                pass
+            try:
+                p.wait(5)
+            except subprocess.TimeoutExpired:
+                p.kill()
+        return self._app_pencere(sonuc) if sonuc else None
+
     @staticmethod
     def _app_pencere(rl: dict):
         """`account/rateLimits/updated` -> ortak pencere bicimi (`tip.py`)."""

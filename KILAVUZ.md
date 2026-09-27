@@ -174,7 +174,7 @@ DOGURMAZ.
 python -m ofis.kabuk konus --help
 ```
 ```
-usage: python -m ofis.kabuk konus [-h] [--lider LIDER] [--butce BUTCE]
+usage: python -m ofis.kabuk konus [-h] [--lider LIDER]
                                   [--zaman-asimi ZAMAN_ASIMI]
                                   [--azami-tik AZAMI_TIK] [--paralel PARALEL]
                                   [--izin ARAC] [--klasor YOL]
@@ -186,7 +186,6 @@ positional arguments:
 options:
   -h, --help            show this help message and exit
   --lider LIDER
-  --butce BUTCE         tur basina $
   --zaman-asimi ZAMAN_ASIMI
   --azami-tik AZAMI_TIK
   --paralel PARALEL     ayni anda kac is kossun (1 = sirali)
@@ -211,7 +210,7 @@ dondurmeye baslar. Yani `hedef` bir triyaj sunmaz — dogrudan is acar.
 python -m ofis.kabuk hedef --help
 ```
 ```
-usage: python -m ofis.kabuk hedef [-h] [--lider LIDER] [--butce BUTCE]
+usage: python -m ofis.kabuk hedef [-h] [--lider LIDER]
                                   [--zaman-asimi ZAMAN_ASIMI]
                                   [--azami-tik AZAMI_TIK] [--sadece-plan]
                                   [--paralel PARALEL] [--izin ARAC]
@@ -225,7 +224,6 @@ positional arguments:
 options:
   -h, --help            show this help message and exit
   --lider LIDER
-  --butce BUTCE         tur basina $
   --zaman-asimi ZAMAN_ASIMI
   --azami-tik AZAMI_TIK
   --sadece-plan         plani goster, is baslatma
@@ -361,14 +359,13 @@ kosturulmadi)**; bicimi `--help`'ten:
 python -m ofis.kabuk devam --help
 ```
 ```
-usage: python -m ofis.kabuk devam [-h] [--butce BUTCE]
+usage: python -m ofis.kabuk devam [-h]
                                   [--zaman-asimi ZAMAN_ASIMI]
                                   [--azami-tik AZAMI_TIK] [--paralel PARALEL]
                                   [--izin ARAC]
 
 options:
   -h, --help            show this help message and exit
-  --butce BUTCE
   --zaman-asimi ZAMAN_ASIMI
   --azami-tik AZAMI_TIK
   --paralel PARALEL     ayni anda kac is kossun (1 = sirali)
@@ -462,7 +459,7 @@ python -m ofis.kabuk ekip --help
 ```
 ```
 usage: python -m ofis.kabuk ekip [-h] [--no NO] [--sebep SEBEP]
-                                 [--lider LIDER] [--butce BUTCE]
+                                 [--lider LIDER]
                                  [--zaman-asimi ZAMAN_ASIMI] [--klasor KLASOR]
                                  {oner,liste,kur,red} [istek]
 
@@ -475,7 +472,6 @@ options:
   --no NO               `kur`/`red` icin oneri numarasi
   --sebep SEBEP         `red` icin ZORUNLU gerekce
   --lider LIDER
-  --butce BUTCE         tur basina $
   --zaman-asimi ZAMAN_ASIMI
   --klasor KLASOR       ajanlarin calisma koku
 ```
