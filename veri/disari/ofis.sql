@@ -11885,3 +11885,4 @@ CREATE INDEX ix_tur_anlik_proje
 DELETE FROM "sqlite_sequence";
 INSERT INTO "sqlite_sequence" VALUES('olay',3094);
 COMMIT;
+PRAGMA user_version=1;
