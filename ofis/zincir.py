@@ -408,6 +408,31 @@ def pencereye_gore_sirala(db, proje_id: str, basamaklar: list, *,
     notlar = [f"gecis esigi okunamadi, varsayilan kullanildi: {a}" for a in bozuk]
     if not esik:
         return basamaklar, notlar
+    dolu, sebep = esikteki_basamaklar(db, proje_id, basamaklar, esik,
+                                      simdi_=simdi_)
+    if not dolu:
+        return basamaklar, notlar
+    if len(dolu) == len(basamaklar):
+        return basamaklar, notlar + [
+            "ONCEDEN GECIS yapilmadi: zincirdeki butun hesaplar esikte ("
+            + "; ".join(sebep.values()) + ") -- sira degismedi."]
+    yeni = ([b for i, b in enumerate(basamaklar) if i not in dolu]
+            + [b for i, b in enumerate(basamaklar) if i in dolu])
+    ilk = yeni[0]
+    return yeni, notlar + [
+        f"ONCEDEN GECIS: {s} -> basamaklari sona alindi; bu tur "
+        f"{ilk['motor']}" + (f"/{ilk['model']}" if ilk.get("model") else "")
+        + " ile basliyor." for s in sebep.values()]
+
+
+def esikteki_basamaklar(db, proje_id: str, basamaklar: list, esik: dict, *,
+                        simdi_=None) -> tuple:
+    """Hangi basamaklarin hesabi esikte -> `(indisler, {anahtar: sebep})`.
+
+    TEK kural: zincir sirayi buna gore degistirir, panelin hesap panosu
+    ayni cevabi "sonda" diye gosterir. Iki ayri hesap olsaydi panel ofisin
+    yapmadigi bir seyi yapiyor gibi gosterebilirdi.
+    """
     from . import kullanim
     olcum = {(p["motor"], p["hesap"]): p
              for p in kullanim.son_pencereler(db, proje_id, simdi_=simdi_)}
@@ -430,19 +455,7 @@ def pencereye_gore_sirala(db, proje_id: str, basamaklar: list, *,
                     f"pencerenin %{round(k * 100)}'inde (esik "
                     f"%{round(sinir * 100)}, olcum {p.get('yas_dk')} dk once)"))
                 break
-    if not dolu:
-        return basamaklar, notlar
-    if len(dolu) == len(basamaklar):
-        return basamaklar, notlar + [
-            "ONCEDEN GECIS yapilmadi: zincirdeki butun hesaplar esikte ("
-            + "; ".join(sebep.values()) + ") -- sira degismedi."]
-    yeni = ([b for i, b in enumerate(basamaklar) if i not in dolu]
-            + [b for i, b in enumerate(basamaklar) if i in dolu])
-    ilk = yeni[0]
-    return yeni, notlar + [
-        f"ONCEDEN GECIS: {s} -> basamaklari sona alindi; bu tur "
-        f"{ilk['motor']}" + (f"/{ilk['model']}" if ilk.get("model") else "")
-        + " ile basliyor." for s in sebep.values()]
+    return dolu, sebep
 
 
 def tur_butcesi(basamak: dict, motor, istenen=None):

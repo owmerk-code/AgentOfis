@@ -1406,3 +1406,67 @@ details > summary.hf-bas { cursor: pointer; }
 .yigin.buyuk .canli-izle .pano-ic { max-height: none; flex: 1; min-height: 0; }
 .sablon-kart:disabled { opacity: .45; cursor: not-allowed; }
 .sablon-kart:disabled:hover { border-color: var(--cizgi); }
+
+/* ═══════════════ HESAPLAR: ray dugmesi + pano (27.09.2026) ═══════════════
+   Hesap basina bir ince cubuk; rengi o hesabin EN DOLU penceresi. Yazi
+   yalniz sorunu soyler. Hesap sayisi artsa da dugme ayni yeri kaplar. */
+.hesap-hap { display: flex; align-items: center; gap: 9px; padding: 5px 10px;
+  border: 1px solid var(--cizgi-acik); border-radius: var(--koseli);
+  background: var(--zemin-3); color: var(--metin); white-space: nowrap; cursor: pointer; }
+.hesap-hap:hover, .hesap-hap:focus-visible { border-color: var(--vurgu); outline: none; }
+.hap-cubuklar { display: flex; gap: 3px; }
+.hap-cubuk { width: 7px; height: 20px; border-radius: 2px; background: var(--iyi); }
+.hap-cubuk.u { background: var(--uyari); }
+.hap-cubuk.k { background: var(--kotu); }
+.hap-cubuk.g { background: var(--metin-3); }
+.hap-yazi { display: flex; flex-direction: column; line-height: 1.25; font-size: var(--yz-alt); }
+.hap-yazi small { font-size: var(--yz-kucuk); color: var(--metin-2); font-variant-numeric: tabular-nums; }
+.hap-yazi small.hap-k { color: var(--kotu); }
+.hap-yazi small.hap-u { color: var(--uyari); }
+
+.hp-ust { display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  font-size: var(--yz-kucuk); color: var(--metin-2); margin-bottom: 12px; }
+.hp-tazele { font-size: var(--yz-alt); color: var(--metin); background: var(--zemin-3);
+  border: 1px solid var(--cizgi-acik); border-radius: 6px; padding: 4px 10px; }
+.hp-tazele:hover { border-color: var(--vurgu); }
+.hp-tazele:disabled { opacity: .6; }
+.hp-sira { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; padding: 9px 12px;
+  background: var(--zemin-3); border: 1px solid var(--cizgi); border-radius: var(--koseli);
+  font-size: var(--yz-alt); margin-bottom: 6px; }
+.hp-etiket, .hp-grup { font-size: var(--yz-mikro); letter-spacing: .08em; text-transform: uppercase;
+  color: var(--metin-3); font-weight: 600; }
+.hp-ok { color: var(--metin-3); }
+.hp-adim { padding: 1px 8px; border: 1px solid var(--cizgi-acik); border-radius: 5px; }
+.hp-adim.sonda { border-style: dashed; color: var(--metin-2); }
+.hp-grup { padding: 14px 0 4px; }
+.hp-satir { display: grid; grid-template-columns: 170px 1fr; gap: 6px 16px; padding: 12px 0;
+  border-top: 1px solid var(--cizgi); }
+.hp-grup + .hp-satir { border-top: 0; }
+.hp-satir.kapali { opacity: .55; }
+.hp-kim { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.hp-ad { display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  font-size: var(--yz-one); font-weight: 600; }
+.hp-alt { font-size: var(--yz-kucuk); color: var(--metin-2); overflow-wrap: anywhere; }
+.hp-rozet { font-size: var(--yz-mikro); font-weight: 700; letter-spacing: .05em; text-transform: uppercase;
+  padding: 0 6px; border: 1px solid currentColor; border-radius: 4px; }
+.hp-rozet.iyi { color: var(--iyi); }
+.hp-rozet.u { color: var(--uyari); }
+.hp-rozet.k { color: var(--kotu); }
+.hp-rozet.g { color: var(--metin-3); }
+.hp-pencereler { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px 16px; }
+.hp-pen { display: flex; flex-direction: column; gap: 4px; }
+.hp-pen-ust { display: flex; justify-content: space-between; gap: 8px; font-size: var(--yz-alt); }
+.hp-pen-ust b { font-variant-numeric: tabular-nums; }
+.hp-cubuk { position: relative; height: 8px; border-radius: 4px; background: var(--zemin-3); }
+.hp-cubuk i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 4px; background: var(--iyi); }
+.hp-cubuk.u i { background: var(--uyari); }
+.hp-cubuk.k i { background: var(--kotu); }
+.hp-cubuk.bilinmez { background: repeating-linear-gradient(135deg, var(--zemin-3) 0 5px, var(--cizgi-acik) 5px 10px); }
+.hp-esik { position: absolute; top: -3px; bottom: -3px; width: 2px; border-radius: 1px; background: var(--metin-2); }
+.hp-pen-alt { display: flex; justify-content: space-between; gap: 8px; font-size: var(--yz-kucuk);
+  color: var(--metin-2); font-variant-numeric: tabular-nums; }
+.hp-yas { color: var(--metin-3); }
+.hp-sebep { grid-column: 1 / -1; font-size: var(--yz-kucuk); color: var(--metin-2);
+  background: var(--zemin-3); border-radius: 5px; padding: 5px 8px; overflow-wrap: anywhere; }
+.hp-not { margin-top: 16px; font-size: var(--yz-kucuk); color: var(--metin-3); line-height: 1.5; }
+@media (max-width: 640px) { .hp-satir { grid-template-columns: 1fr; } }

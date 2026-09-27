@@ -567,3 +567,178 @@ def metin(db, proje_id: str) -> str:
           "yuksektir (olcumun yasi bu yuzden yazili). OFISIN TUKETTIGI ise",
           "yalniz ofisin kendi turlaridir."]
     return "\n".join(s)
+
+
+# -- HESAP TABLOSU: panelin tek kaynagi (27.09.2026) -------------------------
+
+#: Saglayici adi -- panoda gruplama icin. Bilinmeyen motor KENDI adiyla
+#: gruplanir: yeni bir motor takildiginda arayuz degismez, yalniz satiri
+#: eklenir (kullanici: "ilerde baska hesaplar olacak, karmasik olmasin").
+SAGLAYICI = {"claude": "Anthropic", "codex": "OpenAI", "gemini": "Google"}
+#: Pencere etiketi. Bilinmeyen pencere ham adiyla cizilir -- sabit sutun
+#: YOK; her hesap saglayicinin bildirdigi kadar pencere getirir.
+PANO_ETIKET = {"5s": "5 saat", "7g": "Haftalık", "7g_kapi": "Fable (haftalık)"}
+DIKKAT_ESIGI = 0.75
+
+
+def _durum(pencereler: list) -> tuple:
+    """En dolu olculmus pencere -> (durum, en_yuksek). Olcum yoksa bilinmez."""
+    sayilar = [p["kullanim"] for p in pencereler if p["kullanim"] is not None]
+    if not sayilar:
+        return "olculmedi", None
+    en = max(sayilar)
+    if en >= 0.999:
+        return "dolu", en
+    return ("dikkat" if en >= DIKKAT_ESIGI else "hazir"), en
+
+
+def _kimlik(h: dict, fabrika, plan: str) -> tuple:
+    """Hesabin e-postasi -- motorun KENDI olcumunden; olmazsa bos (uydurulmaz)."""
+    try:
+        m = fabrika(h["motor"])
+        if hasattr(m, "giris_durumu"):
+            g = m.giris_durumu() or {}
+            return g.get("eposta") or "", plan or g.get("plan") or ""
+        if h["motor"] == "codex" and hasattr(m, "_ev_bul"):
+            from .motor.codex import hesap_kimligi
+            ev = (h.get("ortam") or {}).get("CODEX_HOME") or m._ev_bul()
+            k = hesap_kimligi(ev) or {}
+            return k.get("eposta") or "", plan or k.get("plan") or ""
+    except Exception:          # noqa: BLE001 -- kimlik susleme, is degil
+        pass
+    return "", plan
+
+
+def hesap_tablosu(db, proje_id: str, *, ajanlar=None, denetle=None,
+                  fabrika=None, simdi_=None) -> dict:
+    """Butun hesaplar, TEK listede, en acil ustte -- panelin hesap panosu.
+
+    Kullanici (27.09.2026): *"ilerde baska hesaplar da olacak, karmasik
+    olmasin."* Rayda hesap basina cip vardi; hesap sayisi arttikca ray
+    tasardi. Bu tablo ray dugmesini VE panoyu besler -- iki ayri okuyucu
+    olsaydi biri canliyi oteki bayati gosterirdi (`butce.kapi_payi` dersi).
+
+    * Pencereler SABIT SUTUN DEGIL: hesabin olculen pencereleri neyse o.
+      API hesabinda pencere aylik dolardir (`hesap.api_kalan`).
+    * Olculemeyen UYDURULMAZ: `olculmedi`, yuzde `None`.
+    * Kullanilamayan hesap sebebini TASIR (motorun kendi teshisi).
+    * ESIK cizgisi: ofisin o hesabi zincirin SONUNA aldigi doluluk
+      (`zincir.gecis_esikleri`) ya da Fable icin kapi esigi. Ofisin
+      karari gorunur olsun.
+    * `sira`: su anki is sirasi, dolmak uzere olan sonda
+      (`zincir.pencereye_gore_sirala` -- ayni kural, ikinci kopya degil).
+    """
+    from . import hesap as H
+    from . import zincir as Z
+    from . import butce as B
+    denetle = denetle or H.kullanilabilir_mi
+    if fabrika is None:
+        from .motor import motor_ac as fabrika
+    from .motor import kayitli_motorlar
+    _kayitli = set(kayitli_motorlar())
+    tanimli = H.liste(db, proje_id)
+    hesaplar = tanimli or H.varsayilan_hesaplar(db, proje_id)
+
+    olcum = {(p["motor"], p["hesap"]): p
+             for p in son_pencereler(db, proje_id, simdi_=simdi_)}
+    esik, _ = Z.gecis_esikleri(db, proje_id, "isci")
+    esik = dict(esik or {})
+    try:
+        esik[B.PENCERE] = B.kapi_esigi(db, proje_id)
+    except Exception:          # noqa: BLE001 -- esik cizgisi suslemedir
+        pass
+
+    # Ajan -> hesap: ajan motoru secer, hesabi degil; o motorun zincirdeki
+    # ILK aktif hesabi onun kendi basamagidir (zincirin degismez kurali).
+    # Oncelik: motorun kendi adini tasiyan hesap (ajanin kendi basamagi,
+    # ortam kurmaz), yoksa o motorun ilk ABONELIK hesabi, yoksa ilki.
+    ilk = {}
+    for h in sorted((h for h in hesaplar if h.get("aktif", True)),
+                    key=lambda h: (h["ad"] != h["motor"], h.get("tur") == "api")):
+        ilk.setdefault(h["motor"], h["ad"])
+    kullanan = {}
+    for a in ajanlar or []:
+        ad = ilk.get(a.get("motor"))
+        if ad:
+            kullanan.setdefault(ad, []).append(a["ad"])
+
+    satirlar = []
+    for h in hesaplar:
+        hesap_adi = "" if h["ad"] == h["motor"] else h["ad"]
+        p = olcum.get((h["motor"], hesap_adi))
+        pencereler = []
+        if h.get("tur") == "api":
+            k = H.api_kalan(db, proje_id, h)
+            if k.get("sinir"):
+                pencereler.append({
+                    "ad": "ay", "etiket": "Bu ay", "dolar": True,
+                    "kullanim": min(1.0, k["harcanan"] / float(k["sinir"])),
+                    "harcanan": k["harcanan"], "sinir": k["sinir"],
+                    "yenilenme": None, "yas_dk": 0, "esik": None})
+        elif p:
+            for ad, w in p["pencereler"].items():
+                pencereler.append({
+                    "ad": ad, "etiket": PANO_ETIKET.get(ad, ad),
+                    "kullanim": w["kullanim"], "yenilendi": w["yenilendi"],
+                    "yenilenme": None if w["yenilendi"] else w["yenilenme"].isoformat(),
+                    "yas_dk": w.get("yas_dk"), "esik": esik.get(ad)})
+        durum, en = _durum(pencereler)
+        sebep = ""
+        eposta, plan = "", (p or {}).get("plan") or h.get("plan") or ""
+        if not h.get("aktif", True):
+            durum, sebep = "kapali", "zincirden çıkarıldı (hesap kapalı)"
+        elif h["motor"] not in _kayitli:
+            # Motor ofise takili degil (ornek: gemini 24.09'da defterden
+            # cikarildi). Hesap kaydi durur; "kullanilamiyor" diye saymak
+            # insana duzeltemeyecegi bir sorun gosterirdi.
+            durum, sebep = "kapali", f"{h['motor']} motoru ofiste takılı değil"
+        else:
+            try:
+                d = denetle(h)
+            except Exception as exc:          # noqa: BLE001
+                d = {"olur": False, "sebep": f"ölçülemedi: {exc}"}
+            eposta = d.get("eposta") or ""
+            plan = d.get("plan") or plan
+            if not d.get("olur"):
+                durum, sebep = "kullanilamiyor", d.get("sebep") or ""
+        if not eposta and h.get("tur") != "api" and durum != "kapali":
+            eposta, plan = _kimlik(h, fabrika, plan)
+        satirlar.append({
+            "ad": h["ad"], "motor": h["motor"], "hesap": hesap_adi,
+            "saglayici": SAGLAYICI.get(h["motor"], h["motor"]),
+            "tur": h.get("tur") or "abonelik", "plan": plan, "eposta": eposta,
+            "ortuk": bool(h.get("ortuk")), "durum": durum, "sebep": sebep,
+            "en_yuksek": en, "pencereler": pencereler,
+            "kullanan": kullanan.get(h["ad"], []),
+            "yas_dk": (p or {}).get("yas_dk")})
+
+    # IS SIRASI: zincirin kendi kurali, ikinci kopya degil.
+    aktif = [s for s in satirlar if s["durum"] not in ("kapali", "kullanilamiyor")]
+    basamak = [{"motor": s["motor"], "hesap": s["hesap"], "ad": s["ad"]} for s in aktif]
+    sirali, sonda = basamak, set()
+    try:
+        sirali, _ = Z.pencereye_gore_sirala(db, proje_id, basamak, rol="isci",
+                                            simdi_=simdi_)
+        gecis, _ = Z.gecis_esikleri(db, proje_id, "isci")
+        if gecis and len(basamak) > 1:
+            dolu, _ = Z.esikteki_basamaklar(db, proje_id, basamak, gecis,
+                                            simdi_=simdi_)
+            # hepsi esikteyse zincir sirayi DEGISTIRMEZ; "sonda" demek yalan olurdu
+            if len(dolu) < len(basamak):
+                sonda = {basamak[i]["ad"] for i in dolu}
+    except Exception:          # noqa: BLE001 -- sira seridi gostergedir
+        pass
+    sira = [{"ad": b["ad"], "sonda": b["ad"] in sonda} for b in sirali]
+
+    oncelik = {"dolu": 0, "kullanilamiyor": 1, "dikkat": 2, "olculmedi": 3,
+               "hazir": 4, "kapali": 5}
+    satirlar.sort(key=lambda s: (oncelik.get(s["durum"], 9), -(s["en_yuksek"] or 0)))
+    try:
+        son = float(db.ayar_oku(proje_id, "limit_canli_son", "0") or 0)
+    except (TypeError, ValueError):
+        son = 0.0
+    su_an = simdi_ or datetime.now(timezone.utc)
+    return {"hesaplar": satirlar, "sira": sira,
+            "tazelendi_dk": (round((su_an.timestamp() - son) / 60) if son else None),
+            "hazir": sum(1 for s in satirlar if s["durum"] in ("hazir", "dikkat")),
+            "toplam": sum(1 for s in satirlar if s["durum"] != "kapali")}

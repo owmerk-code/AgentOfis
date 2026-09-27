@@ -478,6 +478,84 @@ except Exception as _e:                                              # noqa: BLE
     print("   (tik:", _e, ")")
 sina("halka tik basinda limitleri tazeliyor", _SAYAC["claude"] == 1, str(_SAYAC))
 
+# --------------------------------------- 12. HESAP TABLOSU (27.09)
+print("\n12. HESAP TABLOSU -- tek liste, en acil ustte, pencereler sabit sutun degil")
+_td = Veritabani(kok / "tablo.sqlite3")
+_to = Ofis.proje_ac(_td, "Tablo", amac="a", basari_olcutu="b", kok_klasor=str(kok))
+_H.ekle(_td, _to.proje_id, "claude", "claude")
+_H.ekle(_td, _to.proje_id, "codex", "codex")
+_H.ekle(_td, _to.proje_id, "codex2", "codex")
+_H.ekle(_td, _to.proje_id, "api-1", "claude", tur="api", aylik_sinir_usd=5)
+_H.ekle(_td, _to.proje_id, "eski", "claude")
+# motoru defterden cikarilmis bir hesap (gercekte: gemini, 24.09) -- ekle() izin
+# vermez, bu yuzden kayit sonradan boyle olmus gibi kurulur
+with _td.baglanti() as _c:
+    _c.execute("UPDATE hesap SET motor = 'yokmotor' WHERE ad = 'eski'")
+_H.ekle(_td, _to.proje_id, "kapatilan", "claude")
+_H.ayarla(_td, _to.proje_id, "kapatilan", aktif=False)
+_ty = int((_simdi + timedelta(minutes=68)).timestamp())
+_td.olay_yaz(_to.proje_id, "tur_ozeti", json.dumps({
+    "motor": "codex", "hesap": "", "limit_pencere": _lp(
+        {"5s": {"kullanim": 1.0, "yenilenme": _ty},
+         "7g": {"kullanim": 0.19, "yenilenme": _ty + 86400 * 5}}, kaynak="tur", plan="plus")}))
+_td.olay_yaz(_to.proje_id, "tur_ozeti", json.dumps({
+    "motor": "claude", "hesap": "", "limit_pencere": _lp(
+        {"5s": {"kullanim": 0.35, "yenilenme": _ty},
+         "7g": {"kullanim": 0.53, "yenilenme": _ty + 86400},
+         "7g_kapi": {"kullanim": 0.1, "yenilenme": _ty + 86400}}, kaynak="tur")}))
+_td.olay_yaz(_to.proje_id, "tur_ozeti", json.dumps({
+    "motor": "claude", "hesap": "api-1", "maliyet_usd": 1.2}))
+
+
+def _denetle(h):
+    if h["ad"] == "codex2":
+        return {"olur": False, "sebep": "bu evde giris YOK"}
+    return {"olur": True, "sebep": "", "eposta": h["ad"] + "@ornek"}
+
+
+_tb = K.hesap_tablosu(_td, _to.proje_id, denetle=_denetle,
+                      fabrika=lambda ad, **_: _SM(),
+                      ajanlar=[{"ad": "demir", "motor": "claude"},
+                               {"ad": "cinar", "motor": "codex"}])
+_hs = {h["ad"]: h for h in _tb["hesaplar"]}
+sina("dolu hesap EN USTTE", _tb["hesaplar"][0]["ad"] == "codex",
+     str([h["ad"] for h in _tb["hesaplar"]]))
+sina("dolu pencere 'dolu' sayiliyor", _hs["codex"]["durum"] == "dolu")
+sina("kullanilamayan hesap sebebini TASIYOR",
+     _hs["codex2"]["durum"] == "kullanilamiyor" and "giris" in _hs["codex2"]["sebep"])
+sina("olcumu olmayan hesap 'olculmedi', yuzde UYDURULMUYOR",
+     _hs["codex2"]["en_yuksek"] is None and _hs["codex2"]["pencereler"] == [])
+sina("claude: ucu de pencere (Fable dahil), etiketleriyle",
+     [p["etiket"] for p in _hs["claude"]["pencereler"]]
+     == ["5 saat", "Haftalık", "Fable (haftalık)"], str(_hs["claude"]["pencereler"]))
+sina("esik cizgisi pencereye gore (5s %80, Fable kapi esigi)",
+     _hs["claude"]["pencereler"][0]["esik"] == 0.8
+     and _hs["claude"]["pencereler"][2]["esik"] == _B.kapi_esigi(_td, _to.proje_id))
+_api = _hs["api-1"]["pencereler"]
+sina("API hesabinin penceresi AYLIK DOLAR",
+     len(_api) == 1 and _api[0].get("dolar") and abs(_api[0]["harcanan"] - 1.2) < 1e-9
+     and _api[0]["sinir"] == 5, str(_api))
+sina("takili olmayan motorun hesabi KAPALI (sorun sayilmiyor)",
+     _hs["eski"]["durum"] == "kapali")
+sina("kapatilan hesap KAPALI ve EN ALTTA",
+     _hs["kapatilan"]["durum"] == "kapali"
+     and {h["ad"] for h in _tb["hesaplar"][-2:]} == {"eski", "kapatilan"})
+sina("toplam kapalilari SAYMIYOR, hazir yalniz kullanilabilir",
+     _tb["toplam"] == 4 and _tb["hazir"] == 2, f"{_tb['hazir']}/{_tb['toplam']}")
+sina("ajan motorunun ILK hesabina yaziliyor",
+     _hs["claude"]["kullanan"] == ["demir"] and _hs["codex"]["kullanan"] == ["cinar"]
+     and _hs["codex2"]["kullanan"] == [])
+sina("e-posta denetleyiciden geliyor", _hs["claude"]["eposta"] == "claude@ornek")
+_sira = {s["ad"]: s["sonda"] for s in _tb["sira"]}
+sina("is sirasi: dolu codex SONDA, claude onde",
+     _sira.get("codex") is True and _sira.get("claude") is False
+     and _tb["sira"][-1]["ad"] == "codex", str(_tb["sira"]))
+sina("is sirasinda kullanilamayan/kapali hesap YOK",
+     "codex2" not in _sira and "kapatilan" not in _sira and "eski" not in _sira)
+_yn = _hs["codex"]["pencereler"][0]["yenilenme"]
+sina("yenilenme ani MUTLAK (saglayicinin ani)",
+     _yn and abs(datetime.fromisoformat(_yn).timestamp() - _ty) < 2, str(_yn))
+
 print(f"\n== sonuc: {GECEN} gecti, {KALAN} kaldi ==")
 print(f"klasor: {kok}")
 sys.exit(1 if KALAN else 0)

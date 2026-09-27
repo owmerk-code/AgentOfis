@@ -1186,8 +1186,12 @@ if _hy:
     _an = _dty.fromisoformat(_hy[0]["yenilenmeler"]["5s"]).timestamp()
     sina("  an MUTLAK (saglayicinin bildirdigi an)", abs(_an - (_simdi_y + 4080)) < 2)
 _jsy = _web.joinpath("panel.js").read_text(encoding="utf-8")
-sina("dolu pencerede etikette yenilenme isareti + kalan sure",
-     "kalanSure(yen)" in _jsy and "k >= 0.75" in _jsy and "↻" in _jsy)
+# 27.09: hesap basina cip KALKTI -- rayda tek dugme, ayrinti hesap panosunda.
+sina("rayda hesap basina cip YOK, tek hesap dugmesi var",
+     "p.limitler || []" not in _jsy and 'el("button", "hesap-hap")' in _jsy
+     and "hesapDugmesiCiz(hd" in _jsy)
+sina("dolu pencerenin kalan suresi ozet yazisinda (doluKalan)",
+     "doluKalan(dolu[0]" in _jsy and "↻" in _jsy)
 if not _node:
     print("  [ATLANDI] node bulunamadi -- kalanSure OLCULMEDI")
 else:
@@ -1213,6 +1217,68 @@ console.log(JSON.stringify([kalanSure(d(68), T), kalanSure(d(6*1440+4*60+10), T)
         sina("  tam saat '2 sa'", _r1[3] == "2 sa", str(_r1))
         sina("  gecmis an BOS (uydurmaz)", _r1[4] == "", str(_r1))
         sina("  tam gun '1 gün'", _r1[5] == "1 gün", str(_r1))
+
+print("")
+print("22. HESAP PANOSU -- 'ilerde baska hesaplar olacak, karmasik olmasin'")
+from ofis import hesap as _H22
+_H22.ekle(ofis.db, ofis.proje_id, "codex", "codex")
+# Musaitlik sahte motordan: her ad SAHTE uretir (gercek motora yine uzanilmaz).
+_P.MOTOR_FABRIKASI = lambda ad, **kw: _Sahte(**kw)
+_P._HESAP_ONBELLEK.clear()
+_h22 = istemci.get("/api/hesaplar")
+sina("/api/hesaplar 200", _h22.status_code == 200, _h22.text[:200])
+_t22 = _h22.json() if _h22.status_code == 200 else {}
+_hs22 = {h["ad"]: h for h in _t22.get("hesaplar", [])}
+sina("codex hesabi DOLU (5s %100) ve en ustte",
+     _hs22.get("codex", {}).get("durum") == "dolu"
+     and (_t22.get("hesaplar") or [{}])[0].get("ad") == "codex", str(list(_hs22))[:200])
+sina("kapatilan hesap listede KAPALI (gecmis okunur)",
+     _hs22.get("is-hesabi", {}).get("durum") == "kapali")
+sina("ozet sayilari var", "hazir" in _t22 and "toplam" in _t22 and "sira" in _t22)
+sina("sinamada GERCEK motora uzanilmadi (musaitlik sahte fabrikadan)",
+     all("SINAMA gercek motora" not in (h.get("sebep") or "") or h["durum"] == "kullanilamiyor"
+         for h in _t22.get("hesaplar", [])))
+_z22 = istemci.post("/api/hesaplar/tazele", json={})
+sina("tazele 200 ve okunamayani SOYLUYOR (sahte motor yuzde vermez)",
+     _z22.status_code == 200 and "okunamadi" in _z22.json(), _z22.text[:200])
+_P.MOTOR_FABRIKASI = _yalniz_sahte
+
+if not _node:
+    print("  [ATLANDI] node bulunamadi -- hesap ozeti OLCULMEDI")
+else:
+    def _fn(ad):
+        b = _jsy.find("function " + ad + "(")
+        return _jsy[b:_jsy.find("\n}\n", b) + 2]
+    _betik22 = "".join(_fn(a) for a in ("kalanSure", "doluKalan", "hesapOzetYazi")) + """
+const T = Date.parse("2026-09-27T12:00:00Z");
+const d = (m) => new Date(T + m * 60000).toISOString();
+const dolu = {ad: "codex", durum: "dolu", en_yuksek: 1,
+  pencereler: [{kullanim: 1, yenilenme: d(68)}, {kullanim: 0.19, yenilenme: d(9000)}]};
+const iyi = {ad: "claude", durum: "hazir", en_yuksek: 0.53, pencereler: []};
+const dik = {ad: "claude", durum: "dikkat", en_yuksek: 0.82, pencereler: []};
+const boz = {ad: "codex2", durum: "kullanilamiyor", pencereler: []};
+const kap = {ad: "eski", durum: "kapali", pencereler: []};
+console.log(JSON.stringify([
+  hesapOzetYazi({hesaplar: [dolu, iyi]}, T),
+  hesapOzetYazi({hesaplar: [iyi, kap]}, T),
+  hesapOzetYazi({hesaplar: [dik, iyi]}, T),
+  hesapOzetYazi({hesaplar: [dolu, boz, iyi]}, T),
+  hesapOzetYazi({hesaplar: [kap]}, T),
+]));
+"""
+    _c22 = _sp.run([_node, "-e", _betik22], capture_output=True, text=True,
+                   encoding="utf-8", timeout=60)
+    try:
+        _r22 = _jy.loads(_c22.stdout.strip().splitlines()[-1])
+    except (ValueError, IndexError):
+        _r22 = None
+    sina("hesap ozeti calisiyor", _r22 is not None, (_c22.stderr or "")[-200:])
+    if _r22:
+        sina("  tek dolu hesap: ad + kalan sure", _r22[0] == {"sinif": "k", "yazi": "codex dolu · ↻ 1 sa 8 dk"}, str(_r22[0]))
+        sina("  sorun yoksa 'hepsi rahat' (kapali sayilmaz)", _r22[1]["yazi"] == "hepsi rahat", str(_r22[1]))
+        sina("  dikkat: en dolu yuzde", _r22[2] == {"sinif": "u", "yazi": "claude %82"}, str(_r22[2]))
+        sina("  birden cok sorun SAYILIR", _r22[3]["yazi"] == "1 dolu · codex2 kullanılamıyor", str(_r22[3]))
+        sina("  yalniz kapali hesap -> 'hesap yok'", _r22[4]["yazi"] == "hesap yok", str(_r22[4]))
 
 print(f"\n== sonuc: {GECEN} gecti, {KALAN} kaldi ==")
 sys.exit(1 if KALAN else 0)

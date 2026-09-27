@@ -101,6 +101,40 @@ def _durdurulduysa(o, adi: str) -> bool:
 MOTOR_FABRIKASI = None
 
 
+#: Hesap tablosu onbellegi. Tablo her hesap icin musaitlik sorar (claude
+#: `auth status` onbellekli, codex dosya okur); ray her yenilemede ister.
+#: Tazele dugmesi onbellegi bosaltir.
+_HESAP_ONBELLEK = {}
+HESAP_ONBELLEK_SN = 20
+
+
+def _fabrika_denetle(h: dict) -> dict:
+    """SINAMA yolu: gercek motora uzanmadan musaitlik (`MOTOR_FABRIKASI`)."""
+    m = MOTOR_FABRIKASI(h["motor"])
+    if not m.musait_mi():
+        return {"olur": False, "sebep": m.durum_notu() or "motor kurulu degil"}
+    return {"olur": True, "sebep": ""}
+
+
+def _hesap_tablosu(ofis, *, taze: bool = False) -> dict:
+    """Ray dugmesi VE hesap panosu ayni cevabi okur (iki okuyucu iki an)."""
+    import time
+    from . import kullanim as _k
+    anahtar = (str(ofis.db.yol), ofis.proje_id)
+    kayit = _HESAP_ONBELLEK.get(anahtar)
+    if kayit and not taze and time.time() - kayit[0] < HESAP_ONBELLEK_SN:
+        return kayit[1]
+    with ofis.db.baglanti() as c:
+        ajanlar = [dict(r) for r in c.execute(
+            "SELECT ad, motor FROM ajan WHERE proje_id = ?", (ofis.proje_id,))]
+    tablo = _k.hesap_tablosu(
+        ofis.db, ofis.proje_id, ajanlar=ajanlar,
+        denetle=_fabrika_denetle if MOTOR_FABRIKASI else None,
+        fabrika=MOTOR_FABRIKASI)
+    _HESAP_ONBELLEK[anahtar] = (time.time(), tablo)
+    return tablo
+
+
 def _katla(m: str) -> str:
     """Turkce buyuk/kucuk harf KATLAMASI. `casefold` 'I'yi 'i'ye, 'İ'yi
     'i̇'ye cevirir; Turkce metinde "Iptal" ile "iptal" ayni kelimedir ve
@@ -1027,6 +1061,26 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
                 "WHERE o.proje_id = ? AND o.tur = 'rapor' "
                 "ORDER BY o.id DESC LIMIT ?", (ofis.proje_id, adet)).fetchall()
         return [dict(r) for r in rows]
+
+    @uygulama.get("/api/hesaplar")
+    def api_hesaplar():
+        """Butun hesaplar tek listede: durum, pencereler, is sirasi.
+
+        Kullanici (27.09.2026): *"ilerde baska hesaplar olacak, karmasik
+        olmasin."* Rayda hesap basina cip yerine tek dugme; tiklayinca bu
+        tablo acilir. Olculemeyen uydurulmaz (`olculmedi`).
+        """
+        return _hesap_tablosu(ofis_ac())
+
+    @uygulama.post("/api/hesaplar/tazele")
+    def api_hesaplar_tazele():
+        """Insan istedi: saglayicidan SIMDI oku (kota harcamaz)."""
+        from . import kullanim as _k
+        o = ofis_ac()
+        t = _k.tazele(o.db, o.proje_id, fabrika=MOTOR_FABRIKASI, zorla=True)
+        tablo = _hesap_tablosu(o, taze=True)
+        return {**tablo, "okundu": t.get("okundu", []),
+                "okunamadi": t.get("okunamadi", [])}
 
     @uygulama.get("/api/kullanim")
     def api_kullanim():

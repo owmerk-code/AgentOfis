@@ -293,29 +293,16 @@ function cizSerit() {
   // HESAPLARIN DOLULUGU (27.09.2026): abonelikte dolar yok; saglayicinin
   // KENDI yuzdesi gosterilir. Olculmeyen hesap cizilmez (uydurulmaz).
   const p = o.para || {};
-  const AD = { "5s": "5 sa", "7g": "7 gün", "7g_kapi": "Fable" };
-  for (const h of (p.limitler || [])) {
-    for (const [ad, k] of Object.entries(h.pencereler || {})) {
-      const yazi = k == null ? "yenilendi" : "%" + Math.round(k * 100);
-      const sinif = k == null ? "" : (k >= 0.9 ? "bekliyor" : (k >= 0.75 ? "dikkat" : ""));
-      // Dolmak uzere ya da dolu pencerede NE ZAMAN acilacagi etikette durur;
-      // bos pencerede yalniz ipucunda (ray kalabaliklasmasin).
-      const yen = (h.yenilenmeler || {})[ad];
-      const kalan = yen ? kalanSure(yen) : "";
-      const etiket = h.ad + " · " + (AD[ad] || ad) +
-                     (kalan && k != null && k >= 0.75 ? " · ↻ " + kalan : "");
-      const c = oge(yazi, etiket, sinif);
-      c.title = "Sağlayıcının kendi bildirdiği doluluk" +
-                (h.yas_dk != null ? ` (${h.yas_dk} dk önce ölçüldü)` : "") +
-                (yen ? `. Yenilenme: ${new Date(yen).toLocaleString("tr",
-                  { weekday: "short", hour: "2-digit", minute: "2-digit" })}` +
-                  (kalan ? ` (${kalan} sonra)` : "") : "") +
-                (ad === "7g_kapi" ? `. Eşikte (%${Math.round((p.kapi_esik || 0.8) * 100)}) pahalı ` +
-                 "hakem yükseltmesi kapanır, iş durmaz." :
-                 ". Dolmak üzereyse ofis işi diğer hesaba önceden geçirir.");
-      r.append(c);
-    }
-  }
+  // HESAPLAR TEK DUGME (27.09.2026). Onceden hesap basina, pencere basina
+  // cip vardi; kullanici: "ilerde baska hesaplar olacak, karmasik
+  // olmasin." Artik hesap basina bir ince cubuk + yalniz SORUNU soyleyen
+  // yazi; 2 hesapta da 10 hesapta da ayni yer. Tiklayinca hesap panosu.
+  const hd = el("button", "hesap-hap");
+  hd.type = "button";
+  hd.onclick = hesapPanosuAc;
+  r.append(hd);
+  hesapDugmesiCiz(hd, D.hesaplar);
+  hesaplariAl().then(t => hesapDugmesiCiz(hd, t)).catch(() => {});
   if (p.kilit_kapali) {
     const k = oge("KİLİTLİ", "para harcama");
     k.title = "Ücretli görsel/video üreticileri kapalı. Ajanlar da aşamaz. " +
@@ -2907,6 +2894,207 @@ async function cizKararlar(kap) {
              el("div", "oge-gerekce", x.gerekce));
     kap.append(o);
   }
+}
+
+/* ─────────────── hesaplar: ray dugmesi + pano ─────────────── */
+
+// TEK KAYNAK: `/api/hesaplar`. Ray dugmesi ve pano ayni cevabi okur --
+// iki ayri istek iki ayri ani gosterirdi.
+async function hesaplariAl(taze) {
+  const t = taze ? await yolla("/api/hesaplar/tazele", {}) : await al("/api/hesaplar");
+  D.hesaplar = t;
+  return t;
+}
+
+const HESAP_DURUM = {
+  hazir: { sinif: "", yazi: "hazır" },
+  dikkat: { sinif: "u", yazi: "dikkat" },
+  dolu: { sinif: "k", yazi: "dolu" },
+  kullanilamiyor: { sinif: "g", yazi: "kullanılamıyor" },
+  olculmedi: { sinif: "g", yazi: "ölçülmedi" },
+  kapali: { sinif: "g", yazi: "kapalı" },
+};
+
+// Cubuk rengi: rahat / dikkat / dolu. Olculmeyen gri, uydurulmaz.
+function doluSinif(k) {
+  if (k == null) return "g";
+  return k >= 0.9 ? "k" : (k >= 0.75 ? "u" : "");
+}
+
+// Dolu pencerenin ne zaman acilacagi -- insanin bekledigi tek sayi.
+// Birden cok pencere doluysa EN GEC acilan belirleyicidir.
+function doluKalan(h, simdi) {
+  const w = (h.pencereler || [])
+    .filter(x => x.kullanim != null && x.kullanim >= 0.999 && x.yenilenme)
+    .sort((a, b) => Date.parse(b.yenilenme) - Date.parse(a.yenilenme))[0];
+  return w ? kalanSure(w.yenilenme, simdi) : "";
+}
+
+// Raydaki ozet YALNIZ SORUNU soyler; sorun yoksa "hepsi rahat".
+function hesapOzetYazi(t, simdi) {
+  const hs = (t.hesaplar || []).filter(h => h.durum !== "kapali");
+  const dolu = hs.filter(h => h.durum === "dolu");
+  const bozuk = hs.filter(h => h.durum === "kullanilamiyor");
+  const dikkat = hs.filter(h => h.durum === "dikkat");
+  if (dolu.length === 1 && !bozuk.length) {
+    const k = doluKalan(dolu[0], simdi);
+    return { sinif: "k", yazi: `${dolu[0].ad} dolu` + (k ? ` · ↻ ${k}` : "") };
+  }
+  const parca = [];
+  if (dolu.length) parca.push(`${dolu.length} dolu`);
+  if (bozuk.length) parca.push(bozuk.length === 1 ? `${bozuk[0].ad} kullanılamıyor`
+                                                  : `${bozuk.length} kullanılamıyor`);
+  if (parca.length) return { sinif: "k", yazi: parca.join(" · ") };
+  if (dikkat.length) {
+    const h = dikkat[0];
+    return { sinif: "u", yazi: `${h.ad} %${Math.round((h.en_yuksek || 0) * 100)}` };
+  }
+  if (!hs.length) return { sinif: "", yazi: "hesap yok" };
+  return { sinif: "", yazi: "hepsi rahat" };
+}
+
+function hesapDugmesiCiz(d, t) {
+  d.innerHTML = "";
+  if (!t) { d.append(el("span", "hap-yazi", "Hesaplar …")); return; }
+  const hs = (t.hesaplar || []).filter(h => h.durum !== "kapali");
+  const sira = el("span", "hap-cubuklar");
+  for (const h of hs) {
+    const c = el("i", "hap-cubuk " + ((HESAP_DURUM[h.durum] || {}).sinif || ""));
+    c.title = `${h.ad} · ${(HESAP_DURUM[h.durum] || {}).yazi}` +
+              (h.en_yuksek != null ? ` · en dolu pencere %${Math.round(h.en_yuksek * 100)}` : "");
+    sira.append(c);
+  }
+  const oz = hesapOzetYazi(t);
+  const yazi = el("span", "hap-yazi");
+  yazi.append(el("span", null, `Hesaplar ${t.hazir}/${t.toplam} hazır`),
+              el("small", oz.sinif ? "hap-" + oz.sinif : "", oz.yazi));
+  d.append(sira, yazi);
+  d.title = "Hesap limitleri — tıkla: her hesabın pencereleri, yenilenme zamanı, iş sırası";
+}
+
+function hesapPanosuAc() {
+  D.acikCekmece = { tur: "hesaplar" };
+  cekmeceAc(c => hesapPanosuCiz(c, D.hesaplar));
+  hesaplariAl().then(t => {
+    if ((D.acikCekmece || {}).tur === "hesaplar") hesapPanosuCiz($("#cekmece"), t);
+  }).catch(() => {});
+}
+
+function hesapPanosuCiz(c, t) {
+  c.innerHTML = "";
+  cekBas(c, "HESAPLAR", "Hesap limitleri");
+  if (!t) { c.append(el("div", "bos-yazi", "ölçülüyor…")); return; }
+
+  const ust = el("div", "hp-ust");
+  ust.append(el("span", null, t.tazelendi_dk == null ? "sağlayıcıdan henüz canlı okunmadı"
+                              : `sağlayıcıdan okundu · ${t.tazelendi_dk} dk önce`));
+  const tz = el("button", "hp-tazele", "Şimdi tazele");
+  tz.type = "button";
+  tz.title = "Her hesabın limitini sağlayıcıdan şimdi okur. Kota harcamaz.";
+  tz.onclick = async () => {
+    tz.disabled = true; tz.textContent = "okunuyor…";
+    try {
+      const y = await hesaplariAl(true);
+      hesapPanosuCiz(c, y);
+      const hd = $(".hesap-hap"); if (hd) hesapDugmesiCiz(hd, y);
+      if ((y.okunamadi || []).length)
+        c.append(el("div", "hp-sebep", "okunamadı: " + y.okunamadi.join("; ")));
+    } catch (e) {
+      tz.disabled = false; tz.textContent = "Şimdi tazele";
+      c.append(el("div", "hp-sebep", "tazelenemedi: " + e.message));
+    }
+  };
+  ust.append(tz);
+  c.append(ust);
+
+  // IS SIRASI: zincirin KENDI karari (`zincir.pencereye_gore_sirala`).
+  if ((t.sira || []).length) {
+    const s = el("div", "hp-sira");
+    s.append(el("span", "hp-etiket", "iş sırası şu an"));
+    t.sira.forEach((x, i) => {
+      if (i) s.append(el("span", "hp-ok", "→"));
+      const a = el("span", "hp-adim" + (x.sonda ? " sonda" : ""),
+                   x.ad + (x.sonda ? " (dolmak üzere, sonda)" : ""));
+      if (x.sonda) a.title = "Eşiği geçti: ofis bu hesaba yeni tur vermeden önce " +
+        "ötekileri dener. Silinmez; ötekiler de düşerse yine denenir.";
+      s.append(a);
+    });
+    c.append(s);
+  }
+
+  // SAGLAYICIYA GORE; en acil grup ustte (sunucu aciliyet sirasiyla veriyor).
+  const gruplar = new Map();
+  for (const h of (t.hesaplar || [])) {
+    if (!gruplar.has(h.saglayici)) gruplar.set(h.saglayici, []);
+    gruplar.get(h.saglayici).push(h);
+  }
+  for (const [ad, hs] of gruplar) {
+    c.append(el("div", "hp-grup", ad));
+    for (const h of hs) c.append(hesapSatiri(h));
+  }
+  c.append(el("div", "hp-not",
+    "Yüzdeler hesabın TOPLAMIDIR, sağlayıcının kendi bildirimi (sen elle kullandıysan o da dahil). " +
+    "Çubuktaki ince çizgi: ofisin o hesabı iş sırasının sonuna aldığı eşik. " +
+    "Ölçülemeyen çizgili gri durur, uydurulmaz."));
+}
+
+function hesapSatiri(h) {
+  const st = HESAP_DURUM[h.durum] || HESAP_DURUM.olculmedi;
+  const satir = el("div", "hp-satir" + (h.durum === "kapali" ? " kapali" : ""));
+  const kim = el("div", "hp-kim");
+  const ad = el("div", "hp-ad");
+  ad.append(el("span", null, h.ad), el("span", "hp-rozet " + (st.sinif || "iyi"), st.yazi));
+  kim.append(ad);
+  const alt = [h.eposta, h.plan, h.tur === "api" ? "API" : "abonelik"].filter(Boolean).join(" · ");
+  if (alt) kim.append(el("div", "hp-alt", alt));
+  if ((h.kullanan || []).length) kim.append(el("div", "hp-alt", "kullanan: " + h.kullanan.join(", ")));
+  satir.append(kim);
+
+  const pen = el("div", "hp-pencereler");
+  if (!(h.pencereler || []).length) {
+    const p = el("div", "hp-pen");
+    const u = el("div", "hp-pen-ust");
+    u.append(el("span", null, "limit"), el("b", null, "—"));
+    p.append(u, el("div", "hp-cubuk bilinmez"),
+             el("div", "hp-pen-alt", h.durum === "kapali" ? "" : "henüz ölçülmedi"));
+    pen.append(p);
+  }
+  for (const w of (h.pencereler || [])) pen.append(pencereCubugu(w));
+  satir.append(pen);
+  if (h.sebep) satir.append(el("div", "hp-sebep", h.sebep));
+  return satir;
+}
+
+function pencereCubugu(w) {
+  const p = el("div", "hp-pen");
+  const u = el("div", "hp-pen-ust");
+  const sayi = w.dolar ? `$${Number(w.harcanan).toFixed(2)} / $${Number(w.sinir).toFixed(2)}`
+             : (w.kullanim == null ? "yenilendi" : `%${Math.round(w.kullanim * 100)}`);
+  u.append(el("span", null, w.etiket), el("b", null, sayi));
+  const cb = el("div", "hp-cubuk " + (w.kullanim == null ? "bilinmez" : doluSinif(w.kullanim)));
+  if (w.kullanim != null) {
+    const i = el("i");
+    i.style.width = Math.min(100, w.kullanim * 100) + "%";
+    cb.append(i);
+  }
+  if (w.esik) {
+    const e = el("span", "hp-esik");
+    e.style.left = (w.esik * 100) + "%";
+    e.title = w.ad === "7g_kapi"
+      ? `%${Math.round(w.esik * 100)}: pahalı hakem yükseltmesi kapanır, iş durmaz`
+      : `%${Math.round(w.esik * 100)}: ofis bu hesabı iş sırasının sonuna alır`;
+    cb.append(e);
+  }
+  const a = el("div", "hp-pen-alt");
+  const kalan = w.yenilenme ? kalanSure(w.yenilenme) : "";
+  const zaman = w.yenilenme ? new Date(w.yenilenme).toLocaleString("tr",
+    { weekday: "short", hour: "2-digit", minute: "2-digit" }) : "";
+  a.append(el("span", null, w.kullanim == null && !w.dolar ? "pencere yenilendi, yeniden okunacak"
+               : (kalan ? `↻ ${kalan} (${zaman})` : (zaman ? `↻ ${zaman}` : ""))),
+           el("span", "hp-yas", w.dolar ? "ofisin sayımı"
+               : (w.yas_dk == null ? "" : `${w.yas_dk} dk önce`)));
+  p.append(u, cb, a);
+  return p;
 }
 
 /* ─────────────── bağlam sağlığı ─────────────── */
