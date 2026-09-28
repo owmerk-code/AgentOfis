@@ -536,10 +536,30 @@ class Vekil:
             metin = self._metin(nesne)
             self.durum.sonuctan_ogren(metin)
             alinti = riskli.talimat_suphesi(metin)
+            # YONLENDIRMEYLE DISARI (E24): daraltilmis iste sayfa izinli
+            # olmayan bir siteye tasindiysa (20.09'da olculen gecirgenlik),
+            # o turdaki yazma eylemleri sorulur -- supheyle ayni yol.
+            dis = self._izinsiz_kaynak()
+            if dis and not any(dis in a for a in self.suphe):
+                alinti = alinti + [f"yonlendirmeyle izinsiz siteye cikildi: {dis}"]
             if alinti:
                 nesne = self._suphe_isle(nesne, alinti)
             nesne = self._araclari_suz(nesne)
             self._ajana(nesne)
+
+    def _izinsiz_kaynak(self) -> str:
+        """Daraltilmis iste su anki sayfanin kaynagi izinli degilse onu
+        dondurur; serbest iste (izinli liste bos) hic bir sey."""
+        if not self.izinli:
+            return ""
+        url, _ = self.durum.oku()
+        if not url or not url.startswith(("http://", "https://")):
+            return ""
+        try:
+            kaynak = tarayici.kaynak_normalle(url)
+        except Exception:                       # noqa: BLE001
+            return ""
+        return "" if kaynak in self.izinli else kaynak
 
     def _suphe_isle(self, nesne: dict, alinti: list) -> dict:
         """Sayfa sonucunda talimat benzeri metin: sonucun BASINA uyari,

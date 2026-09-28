@@ -382,6 +382,15 @@ def ozet(kaynaklar, *, profil: str = "", gorunur: bool = False,
 #: ayiklamayi disariya zaten acmaz, ama bu bir YEREL arka kapidir:
 #: makinede kosan her sey o tarayiciyi surebilir. Panelin `0.0.0.0`
 #: reddiyle ayni sinifta bir karar, ve yazili olmasi gerekiyor.
+#:
+#: F3 / E25 (28.09) -- NE KORUNUYOR, NE KORUNMUYOR:
+#:   * WEB SAYFALARI kabini SUREMEZ: Chrome, Origin basligi tasiyan
+#:     WebSocket baglantisini `--remote-allow-origins` verilmedikce
+#:     reddeder. Kabin bu bayragi TASIMAZ (sinaniyor) -- yani insanin
+#:     kendi tarayicisinda acilan kotu niyetli bir site kabine baglanamaz.
+#:   * Kabin VARSAYILAN KAPALI ve AYRI profilde (kisisel Chrome degil).
+#:   * KORUNMAYAN: bu bilgisayarda zaten kosan yerel bir program. Ona
+#:     karsi koruma isletim sisteminin isi; yazili sinir.
 KABIN_KAPISI = 9222
 
 #: Kabin profili proje kokunun DISINDA durur (kasayla ayni klasor):

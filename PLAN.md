@@ -422,7 +422,7 @@ motor deftere girmez.
 **Görevler**
 1. ~~Sayfa talimatı koruması (E22)~~ **BİTTİ (28.09)**: kural (brifing) + işaret (tarayıcı kapısı sonuca uyarı koyar, `talimat_suphesi` deftere) + o tur boyunca sıkılaşma (tıklama, ağ komutu, bağlayıcı kaydı sorulur). 5/5 saldırı kalıbı, 0/4 yanlış alarm.
 2. ~~Anahtar maskeleme (E23)~~ **BİTTİ (28.09)**: defter bağlantısının kendisi her INSERT/UPDATE parametresini maskeler (kasa değerleri + ortam + bilinen biçimler) → `[GIZLI: AD]`. Gerçek defter tarandı: 0 sızıntı.
-3. `evaluate` ve yönlendirme sınırları; CDP kapısının belgelenmesi ve sıkılaştırılması (E24, E25).
+3. ~~evaluate, yönlendirme, CDP (E24, E25)~~ **BİTTİ (28.09)**: ağ isteği ve gizlenmiş kod (fetch, XHR, WebSocket, resim kaynağı, eval, atob, fromCharCode) sorulur; daraltılmış işte yönlendirmeyle izinsiz siteye çıkılırsa o tur sıkılaşır; kabin `--remote-allow-origins` taşımaz (web sayfaları CDP'ye bağlanamaz, sınanıyor). Yazılı sınır: yerel bir program CDP'yi sürebilir.
 4. ~~Denetim kaydı (E27)~~ **BİTTİ (28.09)**: `ofis/denetim.py` + panelde Denetim sekmesi; yeni defter değil, olay + onay tek liste; onayın kapsamı (bir kez / bu iş boyunca) görünür.
 5. Gerçek bir bağlayıcı çağrısı: Shopify deneme mağazasıyla (E26) — **ERTELENDİ (28.09, kullanıcı): mağaza/reklam takımı şimdilik kurulmayacak; mağaza işi başlayınca.**
 6. Kişisel veri politikası ve maskeleme (E79) — **ERTELENDİ (28.09)**: müşteri verisi mağaza bağlanınca gelir; o zaman.

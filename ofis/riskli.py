@@ -226,6 +226,15 @@ KOD_ETKISI = _kur((
     r"method\s*:\s*[\"'](?:post|put|patch|delete)[\"']",
     r"\.open\s*\(\s*[\"'](?:post|put|patch|delete)[\"']",
     r"\bnavigator\s*\.\s*sendbeacon\s*\(",
+    # F3 / E24 (28.09): AG ISTEGI ve GIZLENMIS KOD. Sayfadan veri
+    # disari tasimanin yollari (fetch, XHR, WebSocket, resim kaynagi) ve
+    # ne yaptigi okunamayan kod (eval, Function, atob, fromCharCode).
+    # Okumak icin gerekmezler; gerektiginde bir kez sorulur.
+    r"\bfetch\s*\(", r"xmlhttprequest", r"\bwebsocket\s*\(",
+    r"new\s+image\s*\(", r"\.src\s*=",
+    r"\beval\s*\(", r"\bfunction\s*\(\s*[\"'`]", r"new\s+function\s*\(",
+    r"\batob\s*\(", r"fromcharcode", r"\bimport\s*\(",
+    r"settimeout\s*\(\s*[\"'`]",
 ))
 
 #: Sinif -> (insan adi, risk seviyesi). `postane.onay_iste` risk bekler.
