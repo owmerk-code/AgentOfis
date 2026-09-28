@@ -588,7 +588,7 @@ def _guncelleme_bildir(ofis) -> None:
     _gunluk_yedek(ofis)
     from ofis import guncelleme as G
     G.kontrol_gerekirse(ofis.db, ofis.proje_id)
-    n = len(G.bekleyenler(ofis.db, ofis.proje_id))
+    n = len(G.insana_dusenler(ofis.db, ofis.proje_id))
     if n:
         yaz(f"[!] {n} guncelleme onayini bekliyor -- `guncelle liste`")
         yaz("")
@@ -604,6 +604,59 @@ def komut_guncelle(a) -> None:
     from ofis import guncelleme as G
 
     ofis = ofis_ac(a.db, a.proje)
+    if a.eylem == "otomatik":
+        # OTOMATIK MOD (29.09.2026): ayni aile / takma ad / CLI -> ofis
+        # kendisi dener ve uygular; yeni aile ve dusenler insana duser.
+        secim = (a.no or "durum").lower()
+        if secim in ("ac", "kapat"):
+            G.otomatik_ayarla(ofis.db, ofis.proje_id, secim == "ac")
+            yaz(f"Otomatik guncelleme: {'ACIK' if secim == 'ac' else 'KAPALI'}")
+            return
+        if secim == "durum":
+            yaz(f"Otomatik guncelleme: "
+                f"{'ACIK' if G.otomatik_mi(ofis.db, ofis.proje_id) else 'KAPALI'}")
+            return
+        if secim != "simdi":
+            raise SystemExit("`guncelle otomatik [simdi|ac|kapat]`")
+        yaz("Olculuyor (kataloglar + npm surumleri)...")
+        G.kontrol(ofis.db, ofis.proje_id, npm=not a.npm_yok)
+        sonuc = G.otomatik_ilerle(ofis)
+        if not sonuc:
+            yaz("Otomatik uygulanacak bir sey yok.")
+        for r in sonuc:
+            durum = ("ERTELENDI" if r.get("ertelendi") else
+                     "UYGULANDI" if r.get("basarili") else "DUSTU (sana dustu)")
+            yaz(f"  {durum}: {r.get('ozet', r.get('anahtar'))}")
+            yaz(f"      {r.get('mesaj', '')}")
+        kalan = G.insana_dusenler(ofis.db, ofis.proje_id)
+        if kalan:
+            yaz(f"\n{len(kalan)} karar SANA dustu -- `guncelle liste`")
+        return
+    if a.eylem == "gecmis":
+        liste = G.gecmis(ofis.db, ofis.proje_id)
+        if not liste:
+            yaz("Uygulanmis guncelleme yok.")
+            return
+        for k in liste[-15:]:
+            yaz(f"  #{k['sira']}  {k['zaman'][:16].replace('T', ' ')}  "
+                f"{k.get('ad') or k['motor']}: {k.get('eski')} -> {k.get('yeni')}  "
+                f"[{k.get('veren')}] {k.get('durum')}")
+        yaz("\nGeri almak: `guncelle geri-al <no> --sebep \"...\"`")
+        return
+    if a.eylem == "geri-al":
+        try:
+            r = G.geri_al(ofis, int(a.no), sebep=a.sebep)
+        except (TypeError, ValueError):
+            raise SystemExit("`guncelle geri-al <no>`")
+        except G.GuncellemeHatasi as exc:
+            raise SystemExit(str(exc))
+        yaz(r["mesaj"])
+        return
+    if a.no is not None:
+        try:
+            a.no = int(a.no)
+        except ValueError:
+            raise SystemExit("Numara bir sayi olmali.")
     if a.eylem == "kontrol":
         yaz("Olculuyor (kataloglar + npm surumleri)...")
         sonuc = G.kontrol(ofis.db, ofis.proje_id, npm=not a.npm_yok)
@@ -613,9 +666,17 @@ def komut_guncelle(a) -> None:
         yaz(f"  claude katalogu: {sonuc['olcum'].get('katalog:claude')}")
         yaz(f"  codex listeleri: {sonuc['olcum'].get('katalog:codex')}")
         yaz("")
-        bekleyen = sonuc["oneriler"]
+        bekleyen = G.insana_dusenler(ofis.db, ofis.proje_id)
+        oto = [o for o in sonuc["oneriler"] if o not in bekleyen
+               and G.otomatik_uygulanir_mi(ofis.db, ofis.proje_id, o)]
+        if oto and G.otomatik_mi(ofis.db, ofis.proje_id):
+            yaz(f"{len(oto)} oneri OTOMATIK uygulanacak (deneme turuyla; "
+                "hemen icin `guncelle otomatik simdi`):")
+            for o in oto:
+                yaz(f"  -  {o['ozet']}")
+            yaz("")
     elif a.eylem == "liste":
-        bekleyen = G.bekleyenler(ofis.db, ofis.proje_id)
+        bekleyen = G.insana_dusenler(ofis.db, ofis.proje_id)
     elif a.eylem == "onayla":
         if a.no is None:
             raise SystemExit("`guncelle onayla <no>`")
@@ -644,6 +705,8 @@ def komut_guncelle(a) -> None:
     yaz(f"{len(bekleyen)} oneri SENI bekliyor:")
     for o in bekleyen:
         yaz(f"  #{o['no']}  {o['ozet']}")
+        if o.get("otomatik_dustu"):
+            yaz(f"        OTOMATIK DENEME DUSTU: {o['otomatik_dustu']}")
         if o.get("kademeler"):
             yaz(f"        kademe: {', '.join(o['kademeler'])}")
         if o.get("ajanlar"):
@@ -1932,8 +1995,10 @@ def ayristirici() -> argparse.ArgumentParser:
 
     gu = alt.add_parser("guncelle",
                         help="YENI MODEL / CLI -- ofis fark eder, sen onaylarsin")
-    gu.add_argument("eylem", choices=["kontrol", "liste", "onayla", "reddet"])
-    gu.add_argument("no", nargs="?", type=int, default=None)
+    gu.add_argument("eylem", choices=["kontrol", "liste", "onayla", "reddet",
+                                      "otomatik", "gecmis", "geri-al"])
+    gu.add_argument("no", nargs="?", default=None,
+                    help="oneri/gecmis numarasi; `otomatik` icin: simdi | ac | kapat")
     gu.add_argument("--kademe", default="", choices=["", "hizli", "standart", "guclu"],
                     help="yeni bir AILE hangi kademeye girsin")
     gu.add_argument("--sebep", default="", help="`reddet` icin ZORUNLU")

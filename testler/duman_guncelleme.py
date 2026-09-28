@@ -128,6 +128,10 @@ ofis.kadro.ise_al("cinar", "backend", motor="codex", model="gpt-5.6-sol",
 ofis.kadro.ise_al("yaprak", "backend", motor="claude", model="sonnet",
                   klasor=str(kok / "w"))
 db, pid = ofis.db, ofis.proje_id
+# 1-7. bolumler ONAYLI yolu (otomatik mod KAPALI) olcer; otomatik mod 8.
+# bolumde ayrica sinanir. Varsayilan ACIK -- o da burada sinaniyor.
+sina("otomatik mod VARSAYILAN olarak acik", G.otomatik_mi(db, pid))
+G.otomatik_ayarla(db, pid, False)
 
 # ------------------------------------------------------ 1. efor kurallari
 print("\n1. EFOR -- zorluk belirler, tavan insanin, max YOK")
@@ -400,6 +404,8 @@ sina("ret: kademe ESKI hedefe SABITLENDI",
      R.kademe_haritasi(db, pid)["claude"]["guclu"] == "claude-opus-5-5")
 sina("ret: `opus` yazili ajan da SABITLENDI",
      ofis.kadro.ajan("demir")["model"] == "claude-opus-5-5")
+sina("ret: takma adin SABITI eski hedefte kaldi",
+     G.model_coz(db, pid, "claude", "opus") == "claude-opus-5-5")
 sina("reddedilen bir daha GELMIYOR",
      not any(x["anahtar"] == tk["anahtar"] for x in G.kontrol(db, pid)["oneriler"]))
 
@@ -427,6 +433,173 @@ kod = [x for x in b if x["motor"] == "codex"]
 sina("codex yedegi onaylanan kademe modelini aldi",
      bool(kod) and kod[0]["model"] == R.kademe_haritasi(db, pid)["codex"][
          R.rol("backend").kademe], str(kod))
+
+# ------------------------------------------------ 8. OTOMATIK MOD
+print("\n8. OTOMATIK MOD -- sormadan dener, gorunur uygular, geri alinir")
+
+kok8 = Path(tempfile.mkdtemp(prefix="ofis-guncelleme-oto-"))
+(kok8 / "w").mkdir()
+claude_katalog_yaz()
+codex_katalog_yaz()
+SURUM.update({"claude": "2.1.280", "codex": "0.156.0"})
+NPM.update({"@anthropic-ai/claude-code": "2.1.280", "@openai/codex": "0.156.0"})
+of8 = Ofis.proje_ac(Veritabani(kok8 / "o.sqlite3"), "Oto",
+                    amac="otomatik guncelleme", basari_olcutu="testler gecer")
+of8.kadro.ise_al("lale", "lider", lider_mi=True, motor="claude", model="opus",
+                 klasor=str(kok8 / "w"))
+of8.kadro.ise_al("su", "backend", motor="claude", model="sonnet",
+                 klasor=str(kok8 / "w"))
+of8.kadro.ise_al("ay", "backend", motor="codex", model="gpt-6-sol",
+                 klasor=str(kok8 / "w"))
+d8, p8 = of8.db, of8.proje_id
+
+# ilk olcum: sabit kurulur, oneri yok
+G.kontrol(d8, p8, npm=False)
+sina("ilk olcumde takma ad SABITLENDI (sonnet -> claude-sonnet-5)",
+     d8.ayar_oku(p8, G.TAKMA_AD_ONEKI + "sonnet", "") == "claude-sonnet-5")
+sina("model_coz takma adi SABITE ceviriyor",
+     G.model_coz(d8, p8, "claude", "sonnet") == "claude-sonnet-5")
+sina("model_coz gercek kimlige ve codex'e DOKUNMUYOR",
+     G.model_coz(d8, p8, "claude", "claude-opus-5") == "claude-opus-5"
+     and G.model_coz(d8, p8, "codex", "sonnet") == "sonnet")
+
+# ZINCIR: ajanin turu takma adla degil SABIT kimlikle kurulur
+from ofis.zincir import basamaklari_kur                          # noqa: E402
+_her = lambda ad, **kw: SahteMotor()                             # noqa: E731
+b8, _ = basamaklari_kur(d8, p8, of8.kadro.ajan("su"), fabrika=_her, zincir=())
+sina("zincirin ILK basamagi sabit kimlikle kuruldu",
+     bool(b8) and b8[0]["model"] == "claude-sonnet-5", str(b8[:1]))
+
+# Katalog yeni hedefi gosterdi: ajan KAYMAZ, bu bir ONERI olur
+kat = json.loads((claude_dizin / "k.json").read_text(encoding="utf-8"))
+kat["catalog"]["config"]["models"] = [
+    dict(m, id="claude-sonnet-5-5") if m["id"] == "claude-sonnet-5" else m
+    for m in kat["catalog"]["config"]["models"]] + [
+    {"id": "claude-sonnet-5", "name": "Sonnet 5", "short_name": "Sonnet",
+     "section": "overflow"}]
+(claude_dizin / "k.json").write_text(json.dumps(kat), encoding="utf-8")
+# Gercek ofisteki gibi: standart kademe gpt-6-sol, terra HICBIR yerde
+# kullanilmiyor (yanlis alarmin cikti sahne).
+R.kademe_yaz(d8, p8, "codex", "standart", "gpt-6-sol")
+s8 = G.kontrol(d8, p8, npm=False)
+o8 = {x["anahtar"]: x for x in s8["oneriler"]}
+sina("sonnet kaymasi ONERI oldu", "takma_ad:sonnet:claude-sonnet-5-5" in o8, str(list(o8)))
+sina("kayma varken ajan HALA eski kimlikte (sessiz kayma yok)",
+     G.model_coz(d8, p8, "claude", "sonnet") == "claude-sonnet-5")
+sina("ESKI NESIL (gpt-5.6-terra) 'yeni model' SAYILMADI",
+     not any("gpt-5.6-terra" in k for k in o8), str(list(o8)))
+
+# insana dusenler: otomatik aciksa kayma insana DUSMEZ
+sina("otomatik acikken kayma INSANA DUSMUYOR",
+     not any(x["anahtar"].startswith("takma_ad") for x in G.insana_dusenler(d8, p8)))
+G.otomatik_ayarla(d8, p8, False)
+sina("otomatik KAPALIYKEN insana dusuyor",
+     any(x["anahtar"].startswith("takma_ad") for x in G.insana_dusenler(d8, p8)))
+sina("otomatik kapaliyken otomatik_ilerle HICBIR SEY yapmiyor",
+     G.otomatik_ilerle(of8, fabrika=tamam) == []
+     and G.model_coz(d8, p8, "claude", "sonnet") == "claude-sonnet-5")
+G.otomatik_ayarla(d8, p8, True)
+
+# deneme DUSERSE: eskisi kalir, bir daha otomatik denenmez, insana duser
+r8 = G.otomatik_ilerle(of8, fabrika=bozuk)
+sina("dusen otomatik deneme UYGULANMADI",
+     bool(r8) and not r8[0]["basarili"]
+     and G.model_coz(d8, p8, "claude", "sonnet") == "claude-sonnet-5", str(r8))
+sina("dusen oneri INSANA DUSTU (sebebiyle)",
+     any(x["anahtar"].startswith("takma_ad") and x.get("otomatik_dustu")
+         for x in G.insana_dusenler(d8, p8)))
+sina("dusen oneri bir daha KENDILIGINDEN denenmiyor",
+     G.otomatik_ilerle(of8, fabrika=tamam) == [])
+with d8.baglanti() as c:
+    sina("dusme OLAY olarak gorunur",
+         bool(c.execute("SELECT 1 FROM olay WHERE tur='guncelleme_dustu'").fetchone()))
+
+# insan onaylarsa: takma ad icin de DENEME TURU kosar (once kosmuyordu)
+calisan = []
+
+
+def izle(ad, **kw):
+    calisan.append(ad)
+    return SahteMotor(cevap="OK")
+
+
+no8 = next((x["no"] for x in G.bekleyenler(d8, p8)
+            if x["anahtar"].startswith("takma_ad")), -1)
+try:
+    r = G.uygula(of8, no8, fabrika=izle)
+except G.GuncellemeHatasi as exc:
+    r = {"basarili": False, "mesaj": str(exc)}
+sina("takma ad onayinda DENEME TURU kostu", calisan == ["claude"], str(calisan))
+sina("onaydan sonra ajan YENI kimlikte",
+     bool(r.get("basarili"))
+     and G.model_coz(d8, p8, "claude", "sonnet") == "claude-sonnet-5-5", str(r))
+g = G.gecmis(d8, p8)
+sina("uygulama GECMISE yazildi (eski/yeni, kim)",
+     bool(g) and g[-1]["eski"] == "claude-sonnet-5"
+     and g[-1]["yeni"] == "claude-sonnet-5-5" and g[-1]["veren"] == "insan", str(g[-1:]))
+sina("gorulmemisler arasinda (panel karti)",
+     bool(g) and any(k["sira"] == g[-1]["sira"] for k in G.gorulmemisler(d8, p8)))
+
+# GERI AL: eskisi geri gelir, bir daha kendiliginden gelmez
+if g:
+    G.geri_al(of8, g[-1]["sira"], sebep="kalite dusuk")
+sina("geri alma KARAR kaydina 'geri_alindi' olarak yazildi",
+     d8.ayar_oku(p8, G.KARAR_ONEKI + "takma_ad:sonnet:claude-sonnet-5-5", "")
+     .startswith("geri_alindi"))
+sina("GERI AL: ajan ESKI kimlikte",
+     G.model_coz(d8, p8, "claude", "sonnet") == "claude-sonnet-5")
+sina("geri alinan bir daha ONERILMIYOR",
+     not any(x["anahtar"].startswith("takma_ad:sonnet")
+             for x in G.kontrol(d8, p8, npm=False)["oneriler"]))
+sina("geri alinan otomatikte de UYGULANMIYOR",
+     G.otomatik_ilerle(of8, fabrika=tamam) == []
+     and G.model_coz(d8, p8, "claude", "sonnet") == "claude-sonnet-5")
+try:
+    G.geri_al(of8, g[-1]["sira"] if g else -1)
+    sina("ikinci geri alma REDDEDILIYOR", False)
+except G.GuncellemeHatasi:
+    sina("ikinci geri alma REDDEDILIYOR", True)
+
+# OTOMATIK BASARI: ayni aile (codex) + CLI, sormadan, sirayla (once CLI)
+codex_katalog_yaz(ek=[{"slug": "gpt-7-sol", "visibility": "list", "priority": 0}])
+NPM["@openai/codex"] = "0.158.0"
+G.kontrol(d8, p8)
+r8 = G.otomatik_ilerle(of8, fabrika=tamam)
+sira8 = [x["anahtar"].split(":")[0] for x in r8]
+sina("OTOMATIK: CLI ve ayni aile uygulandi, once CLI",
+     len(r8) >= 2 and all(x.get("basarili") for x in r8)
+     and sira8[0] == "cli" and set(sira8[1:]) == {"model"},
+     str(r8))
+sina("ajan (ay) yeni nesilde", of8.kadro.ajan("ay")["model"] == "gpt-7-sol")
+sina("CLI yeni surumde", SURUM["codex"] == "0.158.0")
+g = G.gecmis(d8, p8)
+sina("otomatik uygulananin VEREN'i ofis", bool(g) and g[-1]["veren"] == "ofis", str(g[-1:]))
+with d8.baglanti() as c:
+    kk = [r2["veren"] for r2 in c.execute(
+        "SELECT veren FROM karar WHERE tur='guncelleme' ORDER BY rowid DESC LIMIT 1")]
+sina("karar gunlugune 'ofis' olarak yazildi (insan onaylamis gibi degil)",
+     kk == ["ofis"], str(kk))
+
+codex_katalog_yaz(ek=[{"slug": "gpt-7-sol", "visibility": "list", "priority": 0},
+                      {"slug": "gpt-7-nova", "visibility": "list", "priority": 1}])
+G.kontrol(d8, p8, npm=False)
+r8 = G.otomatik_ilerle(of8, fabrika=tamam)
+sina("yeni AILE (nova) otomatik UYGULANMADI", not any("nova" in x["anahtar"] for x in r8))
+sina("yeni aile INSANA dustu",
+     any("nova" in x["anahtar"] for x in G.insana_dusenler(d8, p8)))
+
+# IS KOSARKEN CLI DEGISMEZ
+NPM["@openai/codex"] = "0.160.0"
+G.kontrol(d8, p8)
+of8.tahta.gorev_ac("Kosan is", ana_hedef="h", kabul_olcutu="k",
+                   yazma_alani=["x.txt"], acan="lale", neden="sinama")
+with d8.baglanti() as c:
+    c.execute("UPDATE gorev SET durum='calisiyor' WHERE proje_id=?", (p8,))
+r8 = G.otomatik_ilerle(of8, fabrika=tamam)
+sina("is KOSARKEN CLI ertelendi (kurulmadi)",
+     any(x.get("ertelendi") for x in r8) and SURUM["codex"] == "0.158.0", str(r8))
+sina("ertelenen oneri INSANA dusmedi (sonra tekrar denenecek)",
+     not any(x["anahtar"] == "cli:codex:0.160.0" for x in G.insana_dusenler(d8, p8)))
 
 print(f"\n== sonuc: {GECEN} gecti, {KALAN} kaldi")
 sys.exit(1 if KALAN else 0)

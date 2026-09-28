@@ -98,6 +98,13 @@ const OLAY = {
   ise_alindi:    (o) => ["işe alındı", ikinciParca(o.govde), ""],
   hata:          (o) => ["hata", o.govde, "kotu"],
   kabin_acildi:  (o) => ["tarayıcı açıldı", o.govde, ""],
+  // MODEL / CLI GUNCELLEMESI (29.09.2026): otomatik modda her adim
+  // gorunur -- fark edildi, deneme kosuyor, uygulandi/dustu, geri alindi.
+  guncelleme_var:     (o) => ["güncelleme bulundu", o.govde, "dikkat"],
+  guncelleme_basladi: (o) => ["güncelleme deneniyor", o.govde, "dikkat"],
+  guncelleme_uygulandi: (o) => ["güncelleme uygulandı", o.govde, "olumlu"],
+  guncelleme_dustu:   (o) => ["güncelleme düştü", o.govde, "kotu"],
+  guncelleme_geri_alindi: (o) => ["güncelleme geri alındı", o.govde, "dikkat"],
   kabin_kapandi: (o) => ["tarayıcı kapatıldı", o.govde, ""],
   kabin_dustu:   (o) => ["tarayıcı kapandı", o.govde, "kotu"],
   izin:          (o) => ["izin reddedildi", o.govde, "kotu"],
@@ -2644,8 +2651,9 @@ async function cizBekleyenler() {
   const bulgular = (sag.bulgular || [])
     .filter(x => (x.agirlik === "tikali" || x.agirlik === "insan")
                  && !KARTLI.has(x.kod));
-  let on = { ekip: [], guncelleme: [] };
+  let on = { ekip: [], guncelleme: [], uygulanan: [] };
   try { on = await al("/api/oneriler"); } catch (e) { /* olculemedi */ }
+  on.uygulanan = on.uygulanan || [];
 
   const adet = b.sorular.length + b.onaylar.length + bulgular.length
              + on.ekip.length + on.guncelleme.length;
@@ -2655,6 +2663,32 @@ async function cizBekleyenler() {
   bas.append(el("span", null, "SENDEN BEKLENİYOR"));
   if (adet) bas.append(el("span", "sayi", String(adet)));
   kap.append(bas);
+
+  // OTOMATIK UYGULANAN GUNCELLEMELER: senden KARAR beklemez (sayaca
+  // girmez) ama gorulene kadar durur -- sessizce degisen model olmasin.
+  // Kartta ne oldugu, deneme sonucu ve GERI AL.
+  for (const u of on.uygulanan) {
+    const d = el("div", "istek guncelleme-bilgi");
+    const ust = el("div", "istek-bas");
+    ust.append(el("span", "istek-kim", u.veren === "insan" ? "ofis" : "OTOMATİK"),
+               el("span", null, `güncelleme uygulandı · #${u.sira}`));
+    const ne = u.ad ? `${u.ad} (${u.motor})` : u.motor + (u.tur === "cli" ? " CLI" : "");
+    d.append(ust, el("div", "istek-govde", `${ne}: ${u.eski || "—"} → ${u.yeni}`));
+    d.append(el("div", "istek-ayrinti",
+      "Deneme turu geçti" + (u.deneme ? ` (cevap: ${u.deneme})` : "")
+      + ". Eski model silinmedi; beğenmezsen geri al, bir daha kendiliğinden gelmez."));
+    const satir = el("div", "istek-eylem");
+    const tamam = el("button", "dugme", "Tamam");
+    const geri = el("button", "dugme olumsuz", "Geri al");
+    tamam.onclick = () => eylem(`/api/guncelle/gecmis/${u.sira}/goruldu`, {},
+                                `güncelleme #${u.sira} görüldü`);
+    geri.onclick = () => eylem(`/api/guncelle/gecmis/${u.sira}/geri_al`,
+                               { sebep: "panelden geri alindi" },
+                               (r) => r.mesaj || `güncelleme #${u.sira} geri alındı`);
+    satir.append(tamam, geri);
+    d.append(satir);
+    kap.append(d);
+  }
 
   if (!adet) {
     kap.append(el("div", "bekleyen-yok", "Şu an senden beklenen bir şey yok."));
@@ -2721,6 +2755,9 @@ async function cizBekleyenler() {
     ust.append(el("span", "istek-kim", "ofis"),
                el("span", null, `güncelleme · #${g.no}`));
     d.append(ust, el("div", "istek-govde", g.ozet));
+    // Otomatik denendi ve DUSTU: neden sana dustugu gorunsun.
+    if (g.otomatik_dustu)
+      d.append(el("div", "istek-ayrinti", "Otomatik deneme düştü: " + g.otomatik_dustu));
     const ek = [];
     if (g.kademeler && g.kademeler.length) ek.push("kademe: " + g.kademeler.join(", "));
     if (g.ajanlar && g.ajanlar.length) ek.push("ajan: " + g.ajanlar.join(", "));

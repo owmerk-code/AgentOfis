@@ -676,7 +676,13 @@ ofis.db.ayar_yaz(ofis.proje_id, _G.ANAHTAR_BEKLEYEN, _json.dumps([{
     "no": 1, "tur": "model", "motor": "codex", "eski": "a", "yeni": "b",
     "kademeler": [], "ajanlar": [], "sebep": "sinama",
     "anahtar": "model:codex:a->b", "ozet": "codex a -> b (sinama)"}]))
-sina("guncelleme onerisi panele geliyor",
+# OTOMATIK MOD (29.09.2026): ayni aile onerisi insana DUSMEZ (ofis
+# kendisi dener); otomatik kapaliyken eski davranis -- karar insanda.
+_on = istemci.get("/api/oneriler").json()
+sina("otomatik ACIKKEN ayni aile onerisi insana DUSMUYOR",
+     _on["guncelleme"] == [] and _on.get("otomatik") is True, str(_on)[:160])
+_G.otomatik_ayarla(ofis.db, ofis.proje_id, False)
+sina("guncelleme onerisi panele geliyor (otomatik kapali)",
      len(istemci.get("/api/oneriler").json()["guncelleme"]) == 1)
 y = istemci.post("/api/guncelle/1/reddet", json={"sebep": ""})
 sina("gerekcesiz guncelleme reddi REDDEDILIYOR", y.status_code == 400)
@@ -686,6 +692,27 @@ sina("reddedilen guncelleme kuyruktan cikiyor",
      istemci.get("/api/oneriler").json()["guncelleme"] == [])
 y = istemci.post("/api/guncelle/9/onayla", json={"kademe": ""})
 sina("olmayan guncelleme onayi 400 (uydurmuyor)", y.status_code == 400)
+
+# otomatik UYGULANAN kart + GERI AL panelden
+ofis.db.ayar_yaz(ofis.proje_id, _G.TAKMA_AD_ONEKI + "sonnet", "claude-sonnet-5-5")
+ofis.db.ayar_yaz(ofis.proje_id, _G.ANAHTAR_GECMIS, _json.dumps([{
+    "sira": 1, "tur": "takma_ad", "motor": "claude", "ad": "sonnet",
+    "eski": "claude-sonnet-5", "yeni": "claude-sonnet-5-5", "veren": "ofis",
+    "anahtar": "takma_ad:sonnet:claude-sonnet-5-5", "durum": "uygulandi",
+    "goruldu": False, "zaman": "2026-09-29T00:00:00+00:00", "deneme": "OK"}]))
+_on = istemci.get("/api/oneriler").json()
+sina("otomatik UYGULANAN guncelleme kart olarak geliyor",
+     len(_on.get("uygulanan") or []) == 1, str(_on)[:160])
+y = istemci.post("/api/guncelle/gecmis/1/geri_al", json={"sebep": "begenmedim"})
+sina("panelden GERI AL calisiyor", y.status_code == 200
+     and _G.model_coz(ofis.db, ofis.proje_id, "claude", "sonnet") == "claude-sonnet-5",
+     y.text[:160])
+sina("geri alinan kart kalkiyor",
+     istemci.get("/api/oneriler").json()["uygulanan"] == [])
+y = istemci.post("/api/guncelle/gecmis/1/geri_al", json={"sebep": "x"})
+sina("ikinci geri alma 400", y.status_code == 400)
+sina("panel GERI AL yolunu bagliyor", "/geri_al`" in (Path(__file__).resolve()
+     .parent.parent / "web" / "panel.js").read_text(encoding="utf-8"))
 
 # -- panel bunlari GERCEKTEN kullaniyor (besleme sinamasi) ----------------
 _js6 = (Path(__file__).resolve().parent.parent / "web" / "panel.js").read_text(

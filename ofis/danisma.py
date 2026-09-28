@@ -49,6 +49,7 @@ baska varsayimla calisir. Bu yuzden:
 from __future__ import annotations
 
 from . import kullanim, roller
+from .guncelleme import model_coz as _model_coz
 from .motor import motor_ac, MotorHatasi
 from .postane import NOT_KURALI, gorev_notlari
 from .tahta import TahtaHatasi
@@ -255,7 +256,8 @@ class Danisma:
         try:
             for olay in motor.tur_kos(
                 metin, klasor=ajan["klasor"], oturum_id="",
-                model=ajan["model"],
+                # Takma ad ofisin sabitledigi kimlige cevrilir (zincirle ayni).
+                model=_model_coz(self.db, self.proje_id, ajan["motor"], ajan["model"]),
                 efor=roller.tur_eforu(self.db, self.proje_id, ajan["efor"]),
                 yazabilir=False,
                 butce_usd=(butce_usd

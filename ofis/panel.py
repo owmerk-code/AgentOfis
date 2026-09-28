@@ -2056,8 +2056,12 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
     def api_oneriler():
         from . import guncelleme as G
         ofis = ofis_ac()
+        # Otomatik moddaki oneriler insana DUSMEZ; otomatik UYGULANANLAR
+        # ise gorulene kadar kart olarak durur (Geri al dugmesiyle).
         return {"ekip": ofis.ekip.bekleyenler(),
-                "guncelleme": G.bekleyenler(ofis.db, ofis.proje_id)}
+                "guncelleme": G.insana_dusenler(ofis.db, ofis.proje_id),
+                "uygulanan": G.gorulmemisler(ofis.db, ofis.proje_id),
+                "otomatik": G.otomatik_mi(ofis.db, ofis.proje_id)}
 
     @uygulama.get("/api/sablonlar")
     def api_sablonlar():
@@ -2104,6 +2108,24 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
             return G.uygula(ofis_ac(), no, kademe=govde.kademe,
                             fabrika=MOTOR_FABRIKASI)
         except (G.GuncellemeHatasi, R.RolHatasi) as exc:
+            raise HTTPException(400, str(exc))
+
+    @uygulama.post("/api/guncelle/gecmis/{sira}/geri_al")
+    def api_guncelle_geri_al(sira: int, govde: SebepGovdesi):
+        """Uygulanmis guncellemeyi ESKISINE dondurur; bir daha kendiliginden gelmez."""
+        from . import guncelleme as G
+        try:
+            return G.geri_al(ofis_ac(), sira, sebep=govde.sebep)
+        except G.GuncellemeHatasi as exc:
+            raise HTTPException(400, str(exc))
+
+    @uygulama.post("/api/guncelle/gecmis/{sira}/goruldu")
+    def api_guncelle_goruldu(sira: int):
+        from . import guncelleme as G
+        try:
+            o = ofis_ac()
+            return G.goruldu(o.db, o.proje_id, sira)
+        except G.GuncellemeHatasi as exc:
             raise HTTPException(400, str(exc))
 
     @uygulama.post("/api/guncelle/{no}/reddet")
@@ -2322,6 +2344,7 @@ def kos(adres: str = "127.0.0.1", kapi: int = 8900, db_yolu=None,
     uygulama = olustur(db_yolu, proje_ad)
     _gunluk_yedek_arkada(db_yolu)
     _limit_tazele_arkada(db_yolu, proje_ad)
+    _guncelleme_arkada(db_yolu, proje_ad)
     uvicorn.run(uygulama, host=adres, port=kapi, log_level="warning")
 
 
@@ -2354,6 +2377,49 @@ def _gunluk_yedek_arkada(db_yolu) -> None:
             time.sleep(3600)
 
     threading.Thread(target=dongu, name="gunluk-yedek", daemon=True).start()
+
+
+def _guncelleme_arkada(db_yolu, proje_ad=None) -> None:
+    """Panel acikken YENI MODEL / CLI -- fark et ve (otomatik mod aciksa) uygula.
+
+    Kullanici (29.09.2026): *"ofis farkedip bana dusen her seyi kendisi
+    yapsa."* Saatte bir bakilir; asil denetim `kontrol_gerekirse` icinde
+    gunde bir. Uygulama `otomatik_ilerle`: deneme turu gecerse kalici,
+    duserse insana duser; is kosarken CLI degistirilmez. Yalniz GERCEK
+    defterde -- test ve ornek ofis kullanicinin makinesine npm kurmasin.
+    """
+    import threading
+    import time
+    from . import guncelleme as G
+    from . import yedek as Y
+    from .db import VARSAYILAN_YOL
+    if not Y.gercek_defter_mi(db_yolu or VARSAYILAN_YOL):
+        return
+
+    def dongu():
+        time.sleep(60)          # panel once ayaga kalksin
+        while True:
+            try:
+                db = Veritabani(db_yolu or VARSAYILAN_YOL)
+                with db.baglanti() as c:
+                    if proje_ad:
+                        r = c.execute("SELECT ad FROM proje WHERE ad = ?",
+                                      (proje_ad,)).fetchone()
+                    else:
+                        r = c.execute("SELECT ad FROM proje WHERE durum='acik' "
+                                      "ORDER BY olusturuldu LIMIT 1").fetchone()
+                if r:
+                    ofis = Ofis.proje_ac(db, r["ad"])
+                    G.kontrol_gerekirse(ofis.db, ofis.proje_id)
+                    G.otomatik_ilerle(ofis, fabrika=MOTOR_FABRIKASI)
+            except Exception as exc:     # noqa: BLE001 -- panel olmesin
+                try:
+                    db.olay_yaz(None, "uyari", f"Otomatik guncelleme calismadi: {exc}")
+                except Exception:        # noqa: BLE001
+                    pass
+            time.sleep(3600)
+
+    threading.Thread(target=dongu, name="guncelleme", daemon=True).start()
 
 
 def _limit_tazele_arkada(db_yolu, proje_ad=None) -> None:

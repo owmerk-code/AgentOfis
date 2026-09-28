@@ -304,7 +304,8 @@ class Saglik:
         diskte durur, kimse bilmezdi -- "bildirim gelsin" istegi yarim kalirdi.
         """
         from . import guncelleme
-        bekleyen = guncelleme.bekleyenler(self.db, self.proje_id)
+        # Otomatik moddaki oneriler insana DUSMEZ (ofis kendisi dener).
+        bekleyen = guncelleme.insana_dusenler(self.db, self.proje_id)
         if not bekleyen:
             return []
         ozet = "; ".join(f"#{o['no']} {o['ozet']}" for o in bekleyen[:4])

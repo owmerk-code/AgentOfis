@@ -339,6 +339,15 @@ def basamaklari_kur(db, proje_id: str, ajan: dict, *, fabrika=motor_ac,
     basamaklar = zincir_kur(ajan, butce_usd=butce_usd, zincir=zincir,
                             fabrika=fabrika, hesaplar=hesaplar,
                             kademe_haritasi=kademe_haritasi)
+    # TAKMA AD SABITLEME (29.09.2026): `sonnet` gibi takma adlar ofisin
+    # onayladigi gercek kimlige cevrilir. Yoksa CLI guncellendigi an ajan
+    # haber vermeden baska modele kayar (olculdu: katalog Sonnet 5.5
+    # derken CLI hala Sonnet 5'e gidiyordu). Tek yerde -- koltuk, lider ve
+    # planlama hepsi bu kurucudan gecer.
+    from .guncelleme import model_coz
+    for b in basamaklar:
+        if b.get("model"):
+            b["model"] = model_coz(db, proje_id, b.get("motor") or "", b["model"])
     basamaklar, notlar = pencereye_gore_sirala(db, proje_id, basamaklar, rol=rol)
     return basamaklar, alinmayan + notlar
 

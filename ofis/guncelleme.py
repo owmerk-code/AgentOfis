@@ -19,20 +19,36 @@ saglayicinin hesaba acikladigi listeden ogrenir. Liste yoksa ya da
 okunamazsa bu SOYLENIR ("olculemedi"); bos liste "yeni model yok" demek
 degildir.
 
-## Neden OTOMATIK KURMUYOR -- onay sart
+## OTOMATIK MOD (29.09.2026) -- ne kendiliginden, ne insana
 
-Bu projede CLI degisiklikleri ofisi uc kez SESSIZCE bozdu:
-`acceptEdits` davranisi degisti (liste disi komutlar kosmaya basladi),
-`ENABLE_TOOL_SEARCH` etkisiz kaldi, `opus` takma adi haber vermeden
-Opus 5.5'e kaydi. Uc kural bundan cikiyor:
+Kullanici: *"ofis farkedip bana dusen her seyi kendisi yapip guncelleyebilir
+mi, yeni modeli ekleyip uctan uca her sey hazir yapsa daha mi iyi olur?"*
+Once her oneri onaya dusuyordu; olculdu ki kuyruktaki 4 kartin 2'si yanlis
+alarmdi. Insana dusen karar yorucuysa ve yarisi yanlissa kapi ise yaramaz.
 
-1. **FARK ETMEK otomatik, UYGULAMAK onayla.** Oneri `saglik`ta insan
-   agirliginda gorunur (panelin "senden bekleniyor" kuyrugu).
-2. **Once DENEME TURU.** Yeni model kademeye girmeden once kucuk bir
-   gercek tur kosar. Dusmezse kademeye girer; duserse ESKISINDE KALINIR
-   ve sebep yazilir.
-3. **CLI guncellemesi GERI ALINABILIR.** Guncelle -> surumu olc -> deneme
-   turu. Herhangi biri duserse eski surume GERI DONULUR.
+Bu projede CLI degisiklikleri ofisi uc kez SESSIZCE bozdu (`acceptEdits`,
+`ENABLE_TOOL_SEARCH`, `opus` takma adinin haber vermeden Opus 5.5'e
+kaymasi). Otomatik mod bu derslerin USTUNE kurulur, yerine degil:
+
+1. **TAKMA AD SABITLENIR.** Ajanlar `sonnet` gibi takma ad tasir; hangi
+   modele gittigine CLI karar verirse ofisin modeli haber vermeden kayar.
+   Ofis takma adi kendi onayladigi GERCEK kimlige cevirir (`model_coz`,
+   zincirin kurucusunda) -- CLI kendi yonlendirmesini degistirse bile ajan
+   ofisin sectigi modelde kalir. Kayma bir ONERIDIR, olay degil.
+2. **Once DENEME TURU.** Yeni model/surum kucuk bir gercek tur kosar.
+   Dusmezse kalici olur; duserse ESKISINDE KALINIR ve sebep yazilir.
+3. **CLI guncellemesi GERI ALINABILIR.** Guncelle -> surumu olc -> deneme.
+   Duserse eski surume GERI DONULUR. Is kosarken CLI degistirilmez.
+4. **OTOMATIK olanlar** (`OTOMATIK_TURLER`): ayni ailenin yeni nesli,
+   takma adin yeni hedefi, CLI surumu. Deneme gecerse ofis KENDISI
+   uygular ve bunu gorunur yapar (olay + panelde kart + GERI AL).
+   Otomatik deneme duserse bir daha kendiliginden denenmez -- insana
+   duser, sebebiyle.
+5. **INSANA SORULANLAR:** yepyeni bir AILE (hangi kademeye -- bir maliyet
+   karari) ve kapi modelleri (hic kademeye girmez). Otomatik mod bir
+   AYARDIR (`guncelleme:otomatik`), kapatilabilir.
+6. **Geri alinan bir daha kendiliginden GELMEZ** -- karar kaydi onu
+   kapatir; yoksa ofis her gun ayni seyi yeniden uygulardi.
 
 ## Aile kurali -- neyi kendiliginden onerir, neyi SORAR
 
@@ -82,7 +98,17 @@ PAKETLER = {
 ANAHTAR_SON_KONTROL = "guncelleme:son_kontrol"
 ANAHTAR_BEKLEYEN = "guncelleme:bekleyen"
 KARAR_ONEKI = "guncelleme:karar:"
+#: Takma adin OFISIN KULLANDIGI hedefi (sabit). Ilk olcumde katalogdan
+#: yazilir; yalniz onaylanan (ya da otomatik uygulanan) oneri degistirir.
 TAKMA_AD_ONEKI = "guncelleme:takma_ad:"
+TAKMA_ADLAR = ("opus", "sonnet", "haiku")
+ANAHTAR_OTOMATIK = "guncelleme:otomatik"
+ANAHTAR_GECMIS = "guncelleme:gecmis"
+#: Otomatik deneme bir kez duser; ikinci kez kendiliginden denenmez.
+OTOMATIK_DENENDI_ONEKI = "guncelleme:otomatik_dustu:"
+OTOMATIK_TURLER = ("cli", "takma_ad", "model")
+#: Gecmis kaydinin tuttugu en fazla uygulama (panel son olanlari gosterir).
+AZAMI_GECMIS = 50
 
 #: Gunluk denetim. Katalog okumak bedava; `npm view` birkac saniye surer.
 KONTROL_ARALIGI_SAAT = 24
@@ -281,6 +307,23 @@ def _karar(db, proje_id: str, anahtar: str) -> str:
     return db.ayar_oku(proje_id, KARAR_ONEKI + anahtar, "")
 
 
+def model_coz(db, proje_id: str, motor: str, model: str) -> str:
+    """Takma adi ofisin SABITLEDIGI gercek kimlige cevirir.
+
+    Olculdu (29.09.2026): claude.ai katalogu `sonnet`i Sonnet 5.5'e
+    gosterirken CLI hala Sonnet 5'e gidiyordu; CLI guncellendigi an ajan
+    HABER VERMEDEN kayacakti (Opus 5 -> 5.5'te oldugu gibi). Sabit yoksa
+    (ilk olcum henuz yapilmadi) takma ad oldugu gibi gecer -- bilmedigimiz
+    bir kimligi uydurmak, kaymadan daha kotu olurdu.
+    """
+    if motor != "claude" or model not in TAKMA_ADLAR:
+        return model
+    try:
+        return db.ayar_oku(proje_id, TAKMA_AD_ONEKI + model, "") or model
+    except Exception:          # noqa: BLE001 -- zincir kurulumu olmesin
+        return model
+
+
 def oneriler(db, proje_id: str, *, npm: bool = True) -> dict:
     """Bekleyen onerileri OLCER. Karara baglanmislar dahil edilmez.
 
@@ -387,11 +430,21 @@ def oneriler(db, proje_id: str, *, npm: bool = True) -> dict:
         a = aile(motor, mid)
         if not a:
             return False
+        nesiller = []
         for b in bilinen[motor]:
             bb = aile(motor, b)
-            if bb and bb[0] == a[0] and bb[1] >= a[1]:
+            if not bb:
+                continue
+            nesiller.append(bb[1])
+            if bb[0] == a[0] and bb[1] >= a[1]:
                 return True
-        return False
+        # YANLIS ALARM (29.09.2026): gercek ofis gpt-6-* kullaniyor ve
+        # gpt-5.6-terra "yeni model" diye insanin kuyruguna dustu. Aile
+        # bilinmese de kullanilan en yeni NESILDEN eski olan yeni degildir.
+        # Yalniz codex: orada surum numarasi aileler arasi ORTAKTIR
+        # (gpt-<surum>-<aile>). Claude'da yeni bir aile kendi numarasiyla
+        # baslayabilir; onu "eski" saymak gercek yeniyi gizlerdi.
+        return motor == "codex" and bool(nesiller) and a[1] < max(nesiller)
 
     for motor, kat in (("codex", kat_codex), ("claude", kat_claude)):
         for m in kat["modeller"]:
@@ -514,25 +567,105 @@ def _karar_yaz(db, proje_id: str, anahtar: str, deger: str) -> None:
     db.ayar_yaz(proje_id, KARAR_ONEKI + anahtar, deger)
 
 
-def _gunluge(ofis, karar: str, gerekce: str) -> None:
+def _gunluge(ofis, karar: str, gerekce: str, veren: str = "insan") -> None:
     try:
-        ofis.bellek.karar_yaz(karar, gerekce, "insan", tur="guncelleme")
+        ofis.bellek.karar_yaz(karar, gerekce, veren, tur="guncelleme")
     except Exception as exc:
         ofis.db.olay_yaz(ofis.proje_id, "uyari",
                          f"Guncelleme karari gunluge yazilamadi: {exc}")
 
 
-def uygula(ofis, no: int, *, kademe: str = "", fabrika=None) -> dict:
-    """ONAYLANAN oneriyi uygular. Deneme dusmezse kalici olur, duserse geri alinir."""
+# ---------------------------------------------------------------------------
+# Gecmis -- ne uygulandi, geri nasil alinir
+# ---------------------------------------------------------------------------
+
+def gecmis(db, proje_id: str) -> list:
+    """Uygulanan guncellemeler, en yenisi SONDA. Her kayit geri alinabilir."""
+    try:
+        v = json.loads(db.ayar_oku(proje_id, ANAHTAR_GECMIS, "[]") or "[]")
+    except ValueError:
+        return []
+    return v if isinstance(v, list) else []
+
+
+def _gecmise_yaz(db, proje_id: str, kayit: dict) -> dict:
+    liste = gecmis(db, proje_id)
+    kayit = dict(kayit, sira=(max([k.get("sira", 0) for k in liste] or [0]) + 1),
+                 zaman=_dt.datetime.now(_dt.timezone.utc).isoformat(),
+                 durum="uygulandi", goruldu=False)
+    liste.append(kayit)
+    db.ayar_yaz(proje_id, ANAHTAR_GECMIS,
+                json.dumps(liste[-AZAMI_GECMIS:], ensure_ascii=False))
+    return kayit
+
+
+def _gecmisi_guncelle(db, proje_id: str, sira: int, **alan) -> dict:
+    liste = gecmis(db, proje_id)
+    for k in liste:
+        if k.get("sira") == sira:
+            k.update(alan)
+            db.ayar_yaz(proje_id, ANAHTAR_GECMIS, json.dumps(liste, ensure_ascii=False))
+            return k
+    raise GuncellemeHatasi(f"#{sira} numarali uygulanmis guncelleme yok.")
+
+
+def goruldu(db, proje_id: str, sira: int) -> dict:
+    """Insan bildirimi gordu -- kart kalkar, kayit durur."""
+    return _gecmisi_guncelle(db, proje_id, sira, goruldu=True)
+
+
+def gorulmemisler(db, proje_id: str) -> list:
+    return [k for k in gecmis(db, proje_id) if not k.get("goruldu")]
+
+
+# ---------------------------------------------------------------------------
+# Uygulama
+# ---------------------------------------------------------------------------
+
+def _yontem(veren: str) -> str:
+    return "onayla" if veren == "insan" else "otomatik"
+
+
+def uygula(ofis, no: int, *, kademe: str = "", fabrika=None,
+           veren: str = "insan") -> dict:
+    """Oneriyi uygular. Deneme dusmezse kalici olur, duserse eskisi kalir.
+
+    `veren`: "insan" (onay) ya da "ofis" (otomatik mod). Karar gunlugune
+    kimin karari oldugu boyle yazilir -- otomatik uygulanan bir seyi insan
+    onaylamis gibi gostermek yanlis bir kayit olurdu.
+    """
     db, pid = ofis.db, ofis.proje_id
     o = _bul(db, pid, no)
     tur = o["tur"]
+    kim = "Insan onayladi" if veren == "insan" else "OTOMATIK (ofis)"
+    karar_degeri = "onay" if veren == "insan" else "otomatik"
 
     if tur == "takma_ad":
+        # Takma adin yeni hedefi de bir MODEL degisimidir: deneme turu
+        # olmadan kabul etmek, denenmemis modeli butun `sonnet` ajanlarina
+        # vermek olurdu (once boyleydi).
+        deneme = deneme_turu("claude", o["yeni"], fabrika=fabrika)
+        _denemeyi_olc(db, pid, "claude", deneme)
+        if not deneme["basarili"]:
+            db.olay_yaz(pid, "guncelleme_dustu",
+                        f"`{o['ad']}` -> {o['yeni']}: deneme turu DUSTU, "
+                        f"{o['eski']} kullanilmaya devam ediyor. Sebep: {deneme['sebep']}")
+            return {"basarili": False,
+                    "mesaj": f"Deneme turu dustu -- `{o['ad']}` {o['eski']} "
+                             f"olarak kaliyor. Sebep: {deneme['sebep']}"}
         db.ayar_yaz(pid, TAKMA_AD_ONEKI + o["ad"], o["yeni"])
-        _karar_yaz(db, pid, o["anahtar"], "onay")
-        _gunluge(ofis, o["ozet"], "Insan takma adin yeni hedefini kabul etti.")
-        return {"basarili": True, "mesaj": f"`{o['ad']}` -> {o['yeni']} kabul edildi."}
+        _karar_yaz(db, pid, o["anahtar"], karar_degeri)
+        _gunluge(ofis, o["ozet"], f"{kim}; deneme turu gecti ({deneme['cevap']!r}). "
+                 f"`{o['ad']}` kullanan her ajan ve kademe artik {o['yeni']}.", veren)
+        k = _gecmise_yaz(db, pid, {"tur": tur, "motor": "claude", "ad": o["ad"],
+                                   "eski": o["eski"], "yeni": o["yeni"],
+                                   "anahtar": o["anahtar"], "veren": veren,
+                                   "deneme": deneme["cevap"]})
+        db.olay_yaz(pid, "guncelleme_uygulandi",
+                    f"#{k['sira']} `{o['ad']}` {o['eski']} -> {o['yeni']} "
+                    f"({_yontem(veren)}; deneme gecti)")
+        return {"basarili": True, "sira": k["sira"],
+                "mesaj": f"`{o['ad']}` -> {o['yeni']} kullanimda (deneme gecti)."}
 
     if tur in ("model", "yeni_model"):
         hedef_kademeler = list(o.get("kademeler") or [])
@@ -545,11 +678,13 @@ def uygula(ofis, no: int, *, kademe: str = "", fabrika=None) -> dict:
         deneme = deneme_turu(o["motor"], o["yeni"], fabrika=fabrika)
         _denemeyi_olc(db, pid, o["motor"], deneme)
         if not deneme["basarili"]:
-            db.olay_yaz(pid, "uyari",
+            db.olay_yaz(pid, "guncelleme_dustu",
                         f"Deneme turu DUSTU, {o['yeni']} kullanilmadi: {deneme['sebep']}")
             return {"basarili": False,
                     "mesaj": f"Deneme turu dustu -- {o.get('eski') or 'mevcut'} "
                              f"kullanilmaya devam ediyor. Sebep: {deneme['sebep']}"}
+        harita = roller.kademe_haritasi(db, pid).get(o["motor"]) or {}
+        eski_kademe = {k: harita.get(k, "") for k in hedef_kademeler}
         for k in hedef_kademeler:
             roller.kademe_yaz(db, pid, o["motor"], k, o["yeni"])
         degisen = []
@@ -559,12 +694,21 @@ def uygula(ofis, no: int, *, kademe: str = "", fabrika=None) -> dict:
                 degisen.append(ad)
             except Exception as exc:
                 db.olay_yaz(pid, "uyari", f"{ad} gecirilemedi: {exc}")
-        _karar_yaz(db, pid, o["anahtar"], "onay")
+        _karar_yaz(db, pid, o["anahtar"], karar_degeri)
         _gunluge(ofis, o["ozet"],
-                 f"Insan onayladi; deneme turu gecti ({deneme['cevap']!r}). "
+                 f"{kim}; deneme turu gecti ({deneme['cevap']!r}). "
                  f"Kademeler: {', '.join(hedef_kademeler) or '-'}; "
-                 f"ajanlar: {', '.join(degisen) or '-'}.")
+                 f"ajanlar: {', '.join(degisen) or '-'}.", veren)
+        k = _gecmise_yaz(db, pid, {"tur": tur, "motor": o["motor"],
+                                   "eski": o.get("eski") or "", "yeni": o["yeni"],
+                                   "eski_kademe": eski_kademe, "ajanlar": degisen,
+                                   "anahtar": o["anahtar"], "veren": veren,
+                                   "deneme": deneme["cevap"]})
+        db.olay_yaz(pid, "guncelleme_uygulandi",
+                    f"#{k['sira']} {o['motor']} {o.get('eski') or '(yeni aile)'} -> "
+                    f"{o['yeni']} ({_yontem(veren)}; deneme gecti)")
         return {"basarili": True, "kademeler": hedef_kademeler, "ajanlar": degisen,
+                "sira": k["sira"],
                 "mesaj": f"{o['yeni']} kullanimda. Kademeler: "
                          f"{', '.join(hedef_kademeler) or '-'}; ajanlar: "
                          f"{', '.join(degisen) or '-'}."}
@@ -573,34 +717,50 @@ def uygula(ofis, no: int, *, kademe: str = "", fabrika=None) -> dict:
         eski, yeni, paket, motor = o["eski"], o["yeni"], o["paket"], o["motor"]
         rc, cikti = _komut(["npm", "install", "-g", f"{paket}@{yeni}"], 600)
         if rc != 0:
+            db.olay_yaz(pid, "guncelleme_dustu",
+                        f"{motor} CLI {yeni} kurulamadi, {eski} yerinde: {cikti[-200:]}")
             return {"basarili": False,
                     "mesaj": f"Kurulum dustu, {eski} yerinde kaldi: {cikti[-300:]}"}
         olculen = kurulu_surum(motor)
         model = roller.model_sec(motor, "hizli", roller.kademe_haritasi(db, pid))
+        model = model_coz(db, pid, motor, model)
         deneme = (deneme_turu(motor, model, fabrika=fabrika)
                   if olculen == yeni else
                   {"basarili": False, "sebep": f"surum olculdu: {olculen or 'yok'}"})
         _denemeyi_olc(db, pid, motor, deneme)
         if not deneme["basarili"]:
-            rc2, c2 = _komut(["npm", "install", "-g", f"{paket}@{eski}"], 600)
+            _komut(["npm", "install", "-g", f"{paket}@{eski}"], 600)
             geri = kurulu_surum(motor)
-            db.olay_yaz(pid, "uyari",
+            db.olay_yaz(pid, "guncelleme_dustu",
                         f"{motor} {yeni} deneme turunu gecemedi ({deneme['sebep']}); "
                         f"GERI ALINDI -> {geri or 'OLCULEMEDI'}")
             return {"basarili": False,
                     "mesaj": f"{yeni} denemeyi gecemedi, {eski} surumune geri "
                              f"donuldu (olculen: {geri or 'OLCULEMEDI'}). "
                              f"Sebep: {deneme['sebep']}"}
-        _karar_yaz(db, pid, o["anahtar"], "onay")
-        _gunluge(ofis, o["ozet"], f"Insan onayladi; surum olculdu ({olculen}) "
-                                  "ve deneme turu gecti.")
-        return {"basarili": True, "mesaj": f"{motor} CLI {olculen} kuruldu, deneme gecti."}
+        _karar_yaz(db, pid, o["anahtar"], karar_degeri)
+        _gunluge(ofis, o["ozet"], f"{kim}; surum olculdu ({olculen}) "
+                                  "ve deneme turu gecti.", veren)
+        k = _gecmise_yaz(db, pid, {"tur": tur, "motor": motor, "paket": paket,
+                                   "eski": eski, "yeni": olculen,
+                                   "anahtar": o["anahtar"], "veren": veren,
+                                   "deneme": deneme.get("cevap", "")})
+        db.olay_yaz(pid, "guncelleme_uygulandi",
+                    f"#{k['sira']} {motor} CLI {eski} -> {olculen} "
+                    f"({_yontem(veren)}; deneme gecti)")
+        return {"basarili": True, "sira": k["sira"],
+                "mesaj": f"{motor} CLI {olculen} kuruldu, deneme gecti."}
 
     raise GuncellemeHatasi(f"Bilinmeyen oneri turu: {tur}")
 
 
 def reddet(ofis, no: int, sebep: str) -> dict:
-    """Reddeder. Takma adda ret = kademeyi ESKI modele sabitlemek."""
+    """Reddeder. Takma adda ret = ofis ESKI hedefte kalir (sabit degismez).
+
+    Sabit (`TAKMA_AD_ONEKI`) ajanlarin gercekte kostugu kimliktir; ret onu
+    degistirmez. Kademe ve takma adi acikca tasiyan ajanlar da eski kimlige
+    yazilir -- sabit silinse bile ajan kaymasin (iki kat).
+    """
     sebep = (sebep or "").strip()
     if not sebep:
         raise GuncellemeHatasi("Gerekcesiz ret olmaz -- `--sebep` yaz.")
@@ -611,15 +771,137 @@ def reddet(ofis, no: int, sebep: str) -> dict:
         for k, m in (harita.get("claude") or {}).items():
             if m == o["ad"]:
                 roller.kademe_yaz(db, pid, "claude", k, o["eski"])
-        # Takma adi ACIKCA tasiyan ajanlar da sabitlenir -- yalniz kademeyi
-        # sabitlemek, `model=opus` yazili ajani sessizce yeni modelde birakirdi.
         with db.baglanti() as conn:
             adlar = [r["ad"] for r in conn.execute(
                 "SELECT ad FROM ajan WHERE proje_id = ? AND motor = 'claude' "
                 "AND model = ?", (pid, o["ad"])).fetchall()]
         for ad in adlar:
             ofis.kadro.motor_ayarla(ad, model=o["eski"])
-        db.ayar_yaz(pid, TAKMA_AD_ONEKI + o["ad"], o["yeni"])
+        db.ayar_yaz(pid, TAKMA_AD_ONEKI + o["ad"], o["eski"])
     _karar_yaz(db, pid, o["anahtar"], f"ret: {sebep}")
     _gunluge(ofis, f"REDDEDILDI: {o['ozet']}", sebep)
     return {"basarili": True, "mesaj": f"#{no} reddedildi."}
+
+
+def geri_al(ofis, sira: int, *, sebep: str = "", veren: str = "insan") -> dict:
+    """Uygulanmis bir guncellemeyi ESKI haline dondurur.
+
+    Deneme turu gecmis olsa da gercek iste begenilmeyebilir (kalite, kota,
+    uslup). Geri alinan bir daha KENDILIGINDEN gelmez: karar kaydi
+    "geri_alindi" olur -- otomatik mod onu ertesi gun yeniden uygulamasin.
+    """
+    db, pid = ofis.db, ofis.proje_id
+    k = next((x for x in gecmis(db, pid) if x.get("sira") == sira), None)
+    if k is None:
+        raise GuncellemeHatasi(f"#{sira} numarali uygulanmis guncelleme yok.")
+    if k.get("durum") == "geri_alindi":
+        raise GuncellemeHatasi(f"#{sira} zaten geri alinmis.")
+    sebep = (sebep or "").strip() or "insan geri aldi"
+    tur, eski = k["tur"], k.get("eski") or ""
+    if tur == "takma_ad":
+        db.ayar_yaz(pid, TAKMA_AD_ONEKI + k["ad"], eski)
+    elif tur in ("model", "yeni_model"):
+        for kad, m in (k.get("eski_kademe") or {}).items():
+            if m:
+                roller.kademe_yaz(db, pid, k["motor"], kad, m)
+        for ad in k.get("ajanlar") or []:
+            if eski:
+                try:
+                    ofis.kadro.motor_ayarla(ad, model=eski)
+                except Exception as exc:
+                    db.olay_yaz(pid, "uyari", f"{ad} geri alinamadi: {exc}")
+    elif tur == "cli":
+        rc, cikti = _komut(["npm", "install", "-g", f"{k['paket']}@{eski}"], 600)
+        olculen = kurulu_surum(k["motor"])
+        if rc != 0 or olculen != eski:
+            raise GuncellemeHatasi(
+                f"{k['motor']} CLI {eski} surumune donulemedi "
+                f"(olculen: {olculen or 'yok'}): {cikti[-200:]}")
+    _karar_yaz(db, pid, k["anahtar"], f"geri_alindi: {sebep}")
+    _gecmisi_guncelle(db, pid, sira, durum="geri_alindi", goruldu=True,
+                      geri_alma_sebebi=sebep)
+    _gunluge(ofis, f"GERI ALINDI: #{sira} {k.get('yeni')} -> {eski}", sebep, veren)
+    db.olay_yaz(pid, "guncelleme_geri_alindi",
+                f"#{sira} {k.get('ad') or k['motor']} {k.get('yeni')} -> {eski} ({sebep})")
+    return {"basarili": True, "mesaj": f"#{sira} geri alindi: {eski} kullanimda."}
+
+
+# ---------------------------------------------------------------------------
+# Otomatik mod
+# ---------------------------------------------------------------------------
+
+def otomatik_mi(db, proje_id: str) -> bool:
+    return (db.ayar_oku(proje_id, ANAHTAR_OTOMATIK, "ac") or "ac") != "kapali"
+
+
+def otomatik_ayarla(db, proje_id: str, acik: bool) -> None:
+    db.ayar_yaz(proje_id, ANAHTAR_OTOMATIK, "ac" if acik else "kapali")
+
+
+def otomatik_uygulanir_mi(db, proje_id: str, o: dict) -> bool:
+    """Bu oneri insana SORULMADAN uygulanabilir mi."""
+    return (o.get("tur") in OTOMATIK_TURLER
+            and not db.ayar_oku(proje_id, OTOMATIK_DENENDI_ONEKI + o.get("anahtar", ""), ""))
+
+
+def insana_dusenler(db, proje_id: str) -> list:
+    """Insanin karar vermesi gerekenler -- panelin kuyrugu bunu gosterir.
+
+    Otomatik mod aciksa otomatik uygulanabilecek oneriler insana DUSMEZ
+    (ofis onlari kendisi dener); yalniz yeni aileler ve otomatik denemesi
+    DUSMUS olanlar duser. Kapaliysa hepsi insana duser (eski davranis).
+    """
+    liste = bekleyenler(db, proje_id)
+    if not otomatik_mi(db, proje_id):
+        return liste
+    return [dict(o, otomatik_dustu=db.ayar_oku(
+                proje_id, OTOMATIK_DENENDI_ONEKI + o.get("anahtar", ""), ""))
+            for o in liste if not otomatik_uygulanir_mi(db, proje_id, o)]
+
+
+def _kosan_is_var(db, proje_id: str) -> bool:
+    with db.baglanti() as c:
+        return bool(c.execute(
+            "SELECT 1 FROM gorev WHERE proje_id = ? AND durum = 'calisiyor' LIMIT 1",
+            (proje_id,)).fetchone())
+
+
+def otomatik_ilerle(ofis, *, fabrika=None) -> list:
+    """Otomatik uygulanabilecek bekleyen onerileri SIRAYLA uygular.
+
+    Sira: once CLI (yeni model yeni CLI isteyebilir), sonra modeller. Is
+    kosarken CLI DEGISTIRILMEZ -- kosan turun altindan programi cekmek
+    olurdu; ertelenir ve bu SOYLENIR. Donus: her oneri icin sonuc.
+    """
+    db, pid = ofis.db, ofis.proje_id
+    if not otomatik_mi(db, pid):
+        return []
+    sonuclar = []
+    sira = {"cli": 0, "takma_ad": 1, "model": 2}
+    adaylar = sorted((o for o in bekleyenler(db, pid)
+                      if otomatik_uygulanir_mi(db, pid, o)),
+                     key=lambda o: sira.get(o["tur"], 9))
+    for o in adaylar:
+        if o["tur"] == "cli" and _kosan_is_var(db, pid):
+            sonuclar.append({"anahtar": o["anahtar"], "basarili": False,
+                             "ertelendi": True, "ozet": o["ozet"],
+                             "mesaj": "is kosuyor, CLI sonra guncellenecek"})
+            continue
+        # Numaralar her olcumde yeniden verilir: uygulamadan hemen once
+        # guncel numarayi ANAHTARLA bul.
+        guncel = next((x for x in bekleyenler(db, pid)
+                       if x["anahtar"] == o["anahtar"]), None)
+        if guncel is None:
+            continue
+        db.olay_yaz(pid, "guncelleme_basladi",
+                    f"OTOMATIK: {o['ozet']} -- deneme turu kosuyor")
+        try:
+            r = uygula(ofis, guncel["no"], fabrika=fabrika, veren="ofis")
+        except GuncellemeHatasi as exc:
+            r = {"basarili": False, "mesaj": str(exc)}
+        if not r.get("basarili"):
+            # Bir kez duser: bir daha kendiliginden denenmez, insana duser.
+            db.ayar_yaz(pid, OTOMATIK_DENENDI_ONEKI + o["anahtar"],
+                        (r.get("mesaj") or "dustu")[:300])
+        sonuclar.append(dict(r, anahtar=o["anahtar"], ozet=o["ozet"]))
+    return sonuclar
