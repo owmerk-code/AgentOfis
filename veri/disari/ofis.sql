@@ -54,9 +54,9 @@ INSERT INTO "ayar" VALUES('915d303e41ee4cb59fa908401d277926','kademe:codex:hizli
 INSERT INTO "ayar" VALUES('915d303e41ee4cb59fa908401d277926','guncelleme:karar:model:codex:gpt-5.6-luna->gpt-6-luna','onay','2026-09-23T00:21:44+00:00');
 INSERT INTO "ayar" VALUES('915d303e41ee4cb59fa908401d277926','kademe:codex:standart','gpt-6-sol','2026-09-23T00:22:19+00:00');
 INSERT INTO "ayar" VALUES('915d303e41ee4cb59fa908401d277926','guncelleme:karar:cli:gemini:0.60.0','onay','2026-09-24T01:36:44+00:00');
-INSERT INTO "ayar" VALUES('915d303e41ee4cb59fa908401d277926','limit_canli_son','1790566972.4603057','2026-09-28T03:42:52+00:00');
-INSERT INTO "ayar" VALUES('915d303e41ee4cb59fa908401d277926','limit_canli:claude:','{"motor": "claude", "hesap": "", "olculdu": "2026-09-28T03:42:55+00:00", "limit_pencere": {"kaynak": "claude CLI (get_usage, tur yok)", "hal": "", "plan": "max", "pencereler": {"5s": {"kullanim": 0.35, "yenilenme": 1790570999}, "7g": {"kullanim": 0.6, "yenilenme": 1790737199}, "7g_kapi": {"kullanim": 0.12, "yenilenme": 1790737199}}}}','2026-09-28T03:42:55+00:00');
-INSERT INTO "ayar" VALUES('915d303e41ee4cb59fa908401d277926','limit_canli:codex:','{"motor": "codex", "hesap": "", "olculdu": "2026-09-28T03:42:56+00:00", "limit_pencere": {"kaynak": "codex app-server (account/rateLimits)", "hal": "", "plan": "plus", "pencereler": {"5s": {"kullanim": 0.27, "yenilenme": 1790570915}, "7g": {"kullanim": 0.38, "yenilenme": 1791061490}}}}','2026-09-28T03:42:56+00:00');
+INSERT INTO "ayar" VALUES('915d303e41ee4cb59fa908401d277926','limit_canli_son','1790595865.4099197','2026-09-28T11:44:25+00:00');
+INSERT INTO "ayar" VALUES('915d303e41ee4cb59fa908401d277926','limit_canli:claude:','{"motor": "claude", "hesap": "", "olculdu": "2026-09-28T11:44:27+00:00", "limit_pencere": {"kaynak": "claude CLI (get_usage, tur yok)", "hal": "", "plan": "max", "pencereler": {"5s": {"kullanim": 0.09, "yenilenme": 1790609999}, "7g": {"kullanim": 0.62, "yenilenme": 1790737199}, "7g_kapi": {"kullanim": 0.12, "yenilenme": 1790737199}}}}','2026-09-28T11:44:27+00:00');
+INSERT INTO "ayar" VALUES('915d303e41ee4cb59fa908401d277926','limit_canli:codex:','{"motor": "codex", "hesap": "", "olculdu": "2026-09-28T11:42:25+00:00", "limit_pencere": {"kaynak": "codex app-server (account/rateLimits)", "hal": "", "plan": "plus", "pencereler": {"5s": {"kullanim": 0.06, "yenilenme": 1790609963}, "7g": {"kullanim": 0.39, "yenilenme": 1791061490}}}}','2026-09-28T11:42:25+00:00');
 CREATE TABLE brifing (
     id              TEXT PRIMARY KEY,
     gorev_id        TEXT NOT NULL REFERENCES gorev(id),
@@ -12625,6 +12625,7 @@ INSERT INTO "olay" VALUES(3233,'915d303e41ee4cb59fa908401d277926','insan','8b85b
 INSERT INTO "olay" VALUES(3234,'915d303e41ee4cb59fa908401d277926','',NULL,'depo_gonderildi','GitHub: gonderildi 810f617','2026-09-28T02:33:07+00:00');
 INSERT INTO "olay" VALUES(3235,'915d303e41ee4cb59fa908401d277926','',NULL,'yedek_alindi','AgentOfis-yedek-20260928-053255-gunluk.zip · 477 dosya · 1 hedefe YAZILAMADI','2026-09-28T02:33:07+00:00');
 INSERT INTO "olay" VALUES(3236,'915d303e41ee4cb59fa908401d277926','',NULL,'uyari','Yedek G:\Drive''ım\AgentOfis-yedek hedefine yazilamadi: [Errno 28] No space left on device','2026-09-28T02:33:07+00:00');
+INSERT INTO "olay" VALUES(3237,'915d303e41ee4cb59fa908401d277926','',NULL,'konsol_acildi','insan ofis disi terminal acti: claude · C:\Users\pc\Desktop\test','2026-09-28T11:31:06+00:00');
 CREATE TABLE olgu (
     id                  TEXT PRIMARY KEY,
     proje_id            TEXT NOT NULL REFERENCES proje(id),
@@ -12718,6 +12719,6 @@ CREATE INDEX ix_degisim_proje
 CREATE INDEX ix_tur_anlik_proje
     ON tur_anlik (proje_id, olusturuldu DESC);
 DELETE FROM "sqlite_sequence";
-INSERT INTO "sqlite_sequence" VALUES('olay',3236);
+INSERT INTO "sqlite_sequence" VALUES('olay',3237);
 COMMIT;
 PRAGMA user_version=1;
