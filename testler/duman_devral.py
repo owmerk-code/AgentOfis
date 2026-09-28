@@ -405,5 +405,21 @@ try:
 finally:
     _P.TERMINAL_YEREL = _eski
 
+# Klasor verilmezse konsol ana klasorde acilir (kullanici: "proje klasoru
+# acmadan terminali baslatamaz miyim").
+r4 = istemci.post("/api/konsol", json={"klasor": "", "motor": "sahte"})
+sina("klasorsuz konsol ACILIR", r4.status_code == 200, r4.text[:200])
+if r4.status_code == 200:
+    sina("klasorsuz konsol ANA klasorde",
+         Path(r4.json()["klasor"]).resolve() == KS.VARSAYILAN_KLASOR.resolve(), r4.json()["klasor"])
+    istemci.post(f"/api/konsol/{r4.json()['kimlik']}/kapat", json={})
+# Gozat betigi DERLENIR (pencere ACILMAZ: OFIS_GOZAT_DENE).
+import subprocess as _sp
+_o = dict(__import__("os").environ, OFIS_GOZAT_DENE="1")
+_g = _sp.run(["powershell.exe", "-NoProfile", "-STA", "-ExecutionPolicy", "Bypass",
+              "-File", str(KS.GOZAT_BETIK)], capture_output=True, env=_o, timeout=120)
+sina("gozat betigi (modern klasor penceresi) derlenir",
+     _g.returncode == 0 and b"derlendi" in _g.stdout, (_g.stderr or b"")[-300:].decode("utf-8", "replace"))
+
 print(f"\n== sonuc: {GECEN} gecti, {KALAN} kaldi ==")
 sys.exit(1 if KALAN else 0)

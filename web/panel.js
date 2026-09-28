@@ -796,17 +796,18 @@ async function cizKonsol() {
 }
 
 /* Konsol acma formu. Kullanici (28.09): "dosya yolunu yazip acmak
-   yerine daha iyi bir cozum yok mu". Uc yol, yazmak SONUNCUSU:
-   1. ONERILER -- sunucunun defterden cikardigi klasorler (son acilanlar,
-      islere acilmis dis klasorler, Masaustu). Tek tik secer.
-   2. GOZAT -- Windows'un kendi klasor penceresi (panel yerel calisir).
-   3. yol yazmak -- yine mumkun.
+   yerine daha iyi bir cozum yok mu". Sonra: "gozat masaustunden
+   secmeme izin vermeli, alttaki siralama hos degil, klasor acmadan
+   terminali baslatamaz miyim". Bugunku hal:
+   1. GOZAT -- Gezgin'in modern klasor penceresi, Masaustunden baslar.
+   2. ONERILER -- kutuya yazinca tarayicinin oneri menusunde (liste yok).
+   3. BOS birakmak -- sunucu kullanicinin ana klasorunde acar.
    Motor bir DUGMEDIR, acilir liste degil: klasor secildiyse tek tikla acar. */
 function konsolFormu(motorlar, oneriler) {
   const f = el("form", "konsol-form");
   const secili = { yol: D.konsolSonKlasor || "" };
   const k = el("input", "konsol-yol");
-  k.placeholder = "klasör seç ya da yolunu yaz";
+  k.placeholder = "klasör (boş bırakırsan ana klasörde açılır)";
   k.value = secili.yol;
   k.spellcheck = false;
   const not = el("div", "form-ipucu");
@@ -821,7 +822,7 @@ function konsolFormu(motorlar, oneriler) {
   gz.onclick = async () => {
     gz.disabled = true;
     not.classList.remove("uyari");
-    not.textContent = "klasör penceresi açıldı — masaüstünde seç (tarayıcının arkasında kalmış olabilir)";
+    not.textContent = "klasör penceresi açıldı — ekranında seç (görünmüyorsa görev çubuğuna bak)";
     try {
       const r = await yolla("/api/konsol/gozat", { baslangic: k.value.trim() });
       if (r.yol) { k.value = r.yol; isaretle(); not.textContent = "seçildi — şimdi ne açılacağını seç"; }
@@ -833,28 +834,27 @@ function konsolFormu(motorlar, oneriler) {
   ust.append(k, gz);
   f.append(ust);
 
+  // Oneriler LISTE olarak cizilmez (kullanici: "alttaki siralama hos
+  // degil") -- kutuya yazmaya baslayinca tarayicinin kendi oneri
+  // menusunde cikar.
   if ((oneriler || []).length) {
-    const liste = el("div", "konsol-oneriler");
-    const NEDEN = { son: "son açılan", is: "bir işe açılmış", masaustu: "Masaüstü" };
+    const dl = el("datalist");
+    dl.id = "konsol-oneri-listesi";
     for (const o of oneriler) {
-      const b = el("button", "konsol-oneri");
-      b.type = "button";
-      b.dataset.yol = o.yol;
-      b.title = `${o.yol}  (${NEDEN[o.neden] || o.neden})`;
-      b.append(el("span", "konsol-oneri-ad", "▸ " + o.ad), el("span", "konsol-oneri-neden", NEDEN[o.neden] || ""));
-      b.onclick = () => { k.value = o.yol; isaretle(); k.focus(); };
-      b.ondblclick = () => { k.value = o.yol; ac(D.konsolSonMotor || motorlar[0]); };
-      liste.append(b);
+      const s = el("option");
+      s.value = o.yol;
+      dl.append(s);
     }
-    f.append(liste);
+    k.setAttribute("list", dl.id);
+    f.append(dl);
   }
 
   const adlar = { powershell: "PowerShell", claude: "Claude Code", codex: "Codex" };
   const dugmeler = el("div", "konsol-motorlar");
   const tumu = [];
   const ac = async (motor) => {
+    // Klasor bos birakilabilir: sunucu kullanicinin ana klasorunde acar.
     const yol = k.value.trim();
-    if (!yol) { not.textContent = "önce bir klasör seç"; not.classList.add("uyari"); return; }
     tumu.forEach((d) => { d.disabled = true; });
     not.classList.remove("uyari");
     not.textContent = "açılıyor…";

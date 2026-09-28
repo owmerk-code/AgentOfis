@@ -52,6 +52,8 @@ def _ofis_kokunde_mi(ofis, yol: Path) -> bool:
 
 def ac(ofis, klasor: str, motor: str = KABUK, *, fabrika=motor_ac,
        sutun: int = 120, satir: int = 32) -> dict:
+    if not (klasor or "").strip():
+        klasor = str(VARSAYILAN_KLASOR)
     try:
         yol = _klasor.klasor_dogrula(klasor)
     except Exception as exc:              # noqa: BLE001 -- sebep insana
@@ -153,23 +155,17 @@ def oneriler(ofis) -> list:
     return sonuc[:AZAMI_ONERI + 8]
 
 
-#: Windows'un kendi klasor secme penceresi. Panel YEREL calisir (konsol
-#: yalniz bu bilgisayardan acilir), bu yuzden pencere insanin masaustunde
-#: acilir. `TopMost` sahip form: yoksa pencere tarayicinin ARKASINDA
-#: acilip "bir sey olmadi" sandirirdi.
-_GOZAT_PS = r"""
-Add-Type -AssemblyName System.Windows.Forms
-$f = New-Object System.Windows.Forms.Form
-$f.TopMost = $true; $f.ShowInTaskbar = $false; $f.Opacity = 0
-$d = New-Object System.Windows.Forms.FolderBrowserDialog
-$d.Description = 'Konsol hangi klasorde acilsin?'
-$d.ShowNewFolderButton = $true
-if ($env:OFIS_GOZAT_BASLANGIC) { $d.SelectedPath = $env:OFIS_GOZAT_BASLANGIC }
-if ($d.ShowDialog($f) -eq 'OK') {
-  [Console]::OutputEncoding = [Text.Encoding]::UTF8
-  [Console]::Write($d.SelectedPath)
-}
-"""
+#: Windows'un kendi klasor secme penceresi -- Gezgin'in MODERN secicisi
+#: (sol kenarda Masaustu/Belgeler, adres cubugu). Eski agac penceresini
+#: kullanici begenmedi (28.09). Panel YEREL calisir; pencere insanin
+#: masaustunde, `TopMost` bir sahip formun ustunde acilir -- yoksa
+#: tarayicinin ARKASINDA kalip "bir sey olmadi" sandirirdi. Baslangic
+#: verilmezse Masaustu. Betik ayri dosyada: icinde C# var.
+GOZAT_BETIK = Path(__file__).with_name("gozat.ps1")
+
+#: Klasor verilmezse konsol burada acilir (kullanici: "proje klasoru
+#: acmadan terminali baslatamaz miyim").
+VARSAYILAN_KLASOR = Path.home()
 
 
 def gozat(baslangic: str = "", zaman_asimi: float = 600.0) -> str:
@@ -182,7 +178,8 @@ def gozat(baslangic: str = "", zaman_asimi: float = 600.0) -> str:
         ortam["OFIS_GOZAT_BASLANGIC"] = baslangic
     try:
         r = subprocess.run(
-            ["powershell.exe", "-NoProfile", "-STA", "-Command", _GOZAT_PS],
+            ["powershell.exe", "-NoProfile", "-STA", "-ExecutionPolicy", "Bypass",
+             "-File", str(GOZAT_BETIK)],
             capture_output=True, timeout=zaman_asimi, env=ortam,
             creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
     except (OSError, subprocess.TimeoutExpired) as exc:
