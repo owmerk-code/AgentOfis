@@ -142,7 +142,7 @@ Motor bir adaptör, model bir ayar, arayüz bir istemci.
 
 ## Kod durumu
 
-Yazıldı ve **duman testlerinden geçti** (2687/2687, 28.09.2026):
+Yazıldı ve **duman testlerinden geçti** (2693/2693, 28.09.2026):
 
 | Dosya | Ne yapar |
 |---|---|
@@ -198,7 +198,7 @@ Yazıldı ve **duman testlerinden geçti** (2687/2687, 28.09.2026):
 | `ofis/geri_al.py` | **TUR GERİ ALMA** — her turun öncesi/sonrası proje kökünün dışındaki gölge git deposuna işlenir; `geri-al` YALNIZ o turun dosyalarını (ikili dahil) döndürür. Sonradan değişen dosyayı ve koşan işi ezmez (`--zorla` hariç), sebep zorunlu, geri alma da geri alınabilir. |
 | `baslat.bat` | Tek tık açılış — bağımlılık yoksa kurar, ilk açılışta örnek ofisi kurar. |
 
-Testler (`testler/`, hepsi jeton yakmadan koşar) — **2687/2687** (35 dosya, 28.09.2026'da tek tek koşturulup SAYILDI; hepsi GEÇİCİ kökte, gerçek `~/.agentofis`e dokunmadan):
+Testler (`testler/`, hepsi jeton yakmadan koşar) — **2693/2693** (35 dosya, 28.09.2026'da tek tek koşturulup SAYILDI; hepsi GEÇİCİ kökte, gerçek `~/.agentofis`e dokunmadan):
 `duman_baglayici.py` 64 · `duman_cekirdek.py` 100 ·
 `duman_codex_app.py` 71 · `duman_danisma.py` 36 ·
 `duman_degisim.py` 105 · `duman_deneme.py` 53 · `duman_depo.py` 48 ·
@@ -211,8 +211,8 @@ Testler (`testler/`, hepsi jeton yakmadan koşar) — **2687/2687** (35 dosya, 2
 `duman_orkestra.py` 57 · `duman_panel.py` 366 ·
 `duman_panel_senaryo.py` 20 · `duman_riskli.py` 198 · `duman_matris.py` 37 ·
 `duman_roller.py` 37 · `duman_saglik.py` 37 · `duman_sohbet.py` 94 ·
-`duman_tarayici.py` 155 · `duman_tavan.py` 27 · `duman_video.py` 35 ·
-`duman_yedek.py` 47 · `duman_zincir.py` 71 · `duman_zorluk.py` 61
+`duman_tarayici.py` 155 · `duman_tavan.py` 32 · `duman_video.py` 35 ·
+`duman_yedek.py` 47 · `duman_zincir.py` 72 · `duman_zorluk.py` 61
 JS: `testler/panel_harita.mjs` (harita) · `testler/panel_yerlesim.mjs`
 (pano yerleşimi) — saf işlevler Node'da ÇALIŞTIRILIR; `duman_panel.py`
 koşturur (sayıları 341'in içinde) · `testler/panel_hafiza.mjs` (hafıza çizgesi)
@@ -11620,3 +11620,53 @@ işçi + Codex lider **7/7**.
 
 Yan kayıt: koşu çıkış kodu 3 verdi — Codex sandbox'ının `.pytest_cache`
 klasörleri (bilinen, yazılı sınır: yönetici izni ister), 2 geçici klasör.
+
+
+## TAM SET CODEX'LE — 15/15, ters devir ölçüldü (28.09.2026)
+
+Kullanıcı: *"Claude ve Codex ikisi de agent sisteminde tam donanımlı
+çalışacak."* Tam deneme seti işçi **ve** lider Codex'teyken koşuldu
+(işçi gpt-6-luna, lider gpt-6-sol).
+
+İlk koşu **13/15**, Codex kotası 5 saat **+11** · hafta **+2** puan.
+Kalan iki işin ikisi de ajanın kusuru DEĞİLDİ:
+
+| İş | Sebep | Düzeltme |
+|---|---|---|
+| D06 (3 varyant) | Codex dosyayı **BOM**'lu yazdı (Windows PowerShell 5 `Set-Content -Encoding utf8`); ilk başlık `^##` ile eşleşmedi → ölçüm aracı 2 saydı, dosyada 3 vardı | Codex sistem ekine *"BOM'suz yaz"*; deneme doğrulayıcıları `utf-8-sig` okur (aynı dosya: sig ile 3, düz ile 2) |
+| D08 (kapak görseli) | `tasarim` rolünün uyarısı **bayattı**: *"görsel üretimi sağlayıcı bakiyesi bekliyor"* (25.09'dan beri yanlış). Codex kelimesi kelimesine uydu, `gorsel_iste` ile insana sordu; Claude cümleyi görmezden gelip üretmişti | Uyarı: *"önce `gorsel_uret` ile kendin üret; `gorsel_iste` yalnız üretici yok / kota dolu ise"* |
+
+> Bayat bir cümle, onu DİKKATLE okuyan modeli yanıltır. Claude'un
+> yanlışı atlaması şanstı; Codex'in doğru uygulaması hatayı gösterdi.
+
+Düzeltmeden sonra D06 ve D08 gerçek Codex'le **geçti** (5s +4, hafta +1).
+**Codex işçi + Codex lider: 15/15.**
+
+### Ters devir ölçüldü (E07)
+D13 artık işçinin KENDİ motorunu limite çarptırıyor (önce "sahte →
+gerçek" ölçüyordu, hangi motorun devraldığı zincirin sırasına kalmıştı).
+Codex işçi limite çarptı → **Claude devraldı** ($0,14), biten adım
+tekrarlanmadı, iş kapandı.
+
+### Aynı gün kapanan F2 maddeleri
+- **E08 — lider turlarında kaçak freni.** Fren yalnız işçide vardı.
+  `tavan.lider_freni` (tek yardımcı, iki çağıran: inceleme + triyaj/
+  planlama/rapor): kesilen tur görünür uyarı + başarısız `tur_ozeti`,
+  hüküm uygulanmaz. Yolda: `lider.incele` içinde `tavan` adlı yerel
+  değişken modülü gölgeleyecekti → `kapi_siniri`. Sınama 5. bölüm;
+  fren koparılınca 3 ateş.
+- **E09 — boş zincir = yedek YOK.** `zincir or VARSAYILAN` boş demeti
+  varsayılana düşürüyordu. İlk sınama ATEŞ ETMEDİ (sahte fabrika
+  varsayılan basamakları zaten reddediyordu); her adı kabul eden
+  fabrikayla sahne düzeltildi, ateş etti.
+- **E10 — rollout taraması ölçüldü:** 93 kayıtta 3,7 ms; app-server
+  kipinde yalnız yedek yol. Değişiklik gerekmedi.
+
+Yan kayıt: `duman_orkestra` bir koşuda 1 kaldı, üç tekrarda 57/57 —
+dalgalanıyor, sebebi bilinmiyor (açık).
+
+### Drive sorusu (kullanıcı: "15 GB doldu")
+Ölçüldü: Drive'da bizim klasör **16 MB** (3 yedek); "Drive'ım"da başka
+bir şey yok. 15 GB, Gmail + Fotoğraflar + Drive'ın ORTAK kotası; dolduran
+biz değiliz. Obsidian gerekmez (rakip de kullanmıyor); hafıza zaten
+GitHub'da metin olarak, günlük geçmişiyle.

@@ -141,7 +141,7 @@ def d03_dogrula(kok, ofis, bag):
     if not yol.exists():
         return s
     p = _Etiketler()
-    p.feed(yol.read_text(encoding="utf-8", errors="replace"))
+    p.feed(yol.read_text(encoding="utf-8-sig", errors="replace"))
     et = p.etiketler
     s.append(("<h1> var", any(t == "h1" for t, _ in et), ""))
     oz = sum(1 for _, a in et if "ozellik" in (a.get("class") or "").split())
@@ -220,7 +220,7 @@ def d04_dogrula(kok, ofis, bag):
     s = [("surumler.md var", yol.exists(), "")]
     if not yol.exists():
         return s
-    metin = yol.read_text(encoding="utf-8", errors="replace")
+    metin = yol.read_text(encoding="utf-8-sig", errors="replace")
     satirlar = metin.splitlines()
     for surum, tarih in D04_GERCEK.items():
         satir = next((l for l in satirlar if re.search(
@@ -302,7 +302,7 @@ def d06_dogrula(kok, ofis, bag):
     s = [("aciklama.md var", yol.exists(), "")]
     if not yol.exists():
         return s
-    metin = yol.read_text(encoding="utf-8", errors="replace")
+    metin = yol.read_text(encoding="utf-8-sig", errors="replace")
     v = _varyantlar(metin)
     s.append(("tam 3 varyant", len(v) == 3, f"{len(v)}"))
     uzun = [len(_kelimeler(x)) for x in v]
@@ -391,7 +391,7 @@ def d07_dogrula(kok, ofis, bag):
     if not yol.exists():
         return s
     bloklar = re.findall(r"```(?:bash|sh|shell|console|powershell|ps1|cmd)?\s*\n(.*?)```",
-                         yol.read_text(encoding="utf-8", errors="replace"), re.S)
+                         yol.read_text(encoding="utf-8-sig", errors="replace"), re.S)
     komutlar = []
     for b in bloklar:
         for l in b.splitlines():
@@ -584,7 +584,7 @@ def d12_fikstur(kok, bag):
 
 def d12_dogrula(kok, ofis, bag):
     yol = kok / "kunye.md"
-    metin = yol.read_text(encoding="utf-8", errors="replace") if yol.exists() else ""
+    metin = yol.read_text(encoding="utf-8-sig", errors="replace") if yol.exists() else ""
     hexler = {h.upper() for h in re.findall(r"#[0-9A-Fa-f]{6}\b", metin)}
     return [("once SORDU (uydurmadi)", bag.get("soruldu", 0) >= 1,
              f"cevaplanan soru: {bag.get('soruldu', 0)}"),
@@ -670,7 +670,7 @@ def d13_dogrula(kok, ofis, bag):
     for i in (1, 2, 3):
         p = kok / f"adim{i}.txt"
         s.append((f"adim{i}.txt = {i}", p.exists()
-                  and p.read_text(encoding="utf-8").strip() == str(i), ""))
+                  and p.read_text(encoding="utf-8-sig").strip() == str(i), ""))
     a1 = kok / "adim1.txt"
     s.append(("biten adim TEKRARLANMADI (adim1 degismedi)",
               a1.exists() and a1.stat().st_mtime_ns == bag.get("adim1_zaman"), ""))

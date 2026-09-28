@@ -52,7 +52,7 @@ def _iddia_sayisi(yol: Path) -> int:
     if not yol.exists():
         return 0
     return len(re.findall(r"^\s*(assert\b|with\s+pytest\.raises)",
-                          yol.read_text(encoding="utf-8", errors="replace"),
+                          yol.read_text(encoding="utf-8-sig", errors="replace"),
                           re.M))
 
 
@@ -439,7 +439,7 @@ def _gozcu_sar(tetik_kur):
 
 
 def _satirlar(p: Path) -> list:
-    return [s.strip() for s in p.read_text(encoding="utf-8").splitlines() if s.strip()]
+    return [s.strip() for s in p.read_text(encoding="utf-8-sig").splitlines() if s.strip()]
 
 
 #: Adimlar arasinda bekleme: not/durdurma ISIN ORTASINA dussun. Olmasa kucuk

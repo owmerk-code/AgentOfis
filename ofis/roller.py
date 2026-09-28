@@ -494,8 +494,13 @@ ROLLER = {r.ad: r for r in (
                      "gosterildi.",
        kademe="standart",
        butce_alt_siniri=0.20,
-       uyari="Gorsel URETIMI saglayici bakiyesi bekliyor (`ofis/gorsel.py`). "
-             "Ekran goruntusu kaniti (tarayici) bugun calisiyor."),
+       # 28.09.2026: burada "gorsel uretimi saglayici bakiyesi bekliyor"
+       # yaziyordu -- 25.09'dan beri BAYATTI (gorsel ChatGPT aboneliginden
+       # uretiliyor). Codex ajan cumleyi kelimesi kelimesine uyguladi ve
+       # gorseli insana sordu; Claude gormezden gelip uretmisti.
+       uyari="Gorseli ONCE `gorsel_uret` ile KENDIN uret (abonelikten, "
+             "para kilidine takilmaz). `gorsel_iste` yalniz `gorsel_uret` "
+             "uretici yok / kota dolu derse."),
 
     _r("video", "ICERIK",
        "Hareketli icerik: reklam klibi, sosyal medya videosu, urun "

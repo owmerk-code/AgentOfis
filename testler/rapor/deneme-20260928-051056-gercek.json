@@ -1,0 +1,106 @@
+{
+ "zaman": "20260928-051056",
+ "ayar": {
+  "kip": "gercek",
+  "motor": "codex",
+  "model": "gpt-6-luna",
+  "lider_model": "gpt-6-sol",
+  "lider_motor": "codex",
+  "kota_fark": {
+   "codex": {
+    "5s": 4.0,
+    "7g": 1.0
+   }
+  },
+  "tur_tavani": 0.6
+ },
+ "sonuclar": [
+  {
+   "no": "D06",
+   "ad": "Urun aciklamasi, 3 varyant",
+   "kip": "gercek",
+   "motor": "codex",
+   "model": "gpt-6-luna",
+   "olcutler": [
+    {
+     "olcut": "aciklama.md var",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "tam 3 varyant",
+     "gecti": true,
+     "not": "3"
+    },
+    {
+     "olcut": "her varyant 40-90 kelime",
+     "gecti": true,
+     "not": "[46, 45, 49]"
+    },
+    {
+     "olcut": "her varyantta 'bambu'",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "yasak ifade YOK",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "varyantlar FARKLI (kelime benzerligi < 0,6)",
+     "gecti": true,
+     "not": "0.22"
+    }
+   ],
+   "halka": "Butun isler kapandi.",
+   "durum": "gecti",
+   "tur": 2,
+   "jeton": 276500,
+   "maliyet_usd": null,
+   "fiyatsiz_tur": 2,
+   "kanit": 1,
+   "insana_soru": 0,
+   "istekler": [],
+   "kapi_durdurdu": 0,
+   "kapi_olaylari": [],
+   "sure_sn": 68.3
+  },
+  {
+   "no": "D08",
+   "ad": "Kapak gorseli uret",
+   "kip": "gercek",
+   "motor": "codex",
+   "model": "gpt-6-luna",
+   "olcutler": [
+    {
+     "olcut": "kapak.png gecerli PNG",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "genislik >= 512 px",
+     "gecti": true,
+     "not": "(1254, 1254)"
+    },
+    {
+     "olcut": "kanit tahtada",
+     "gecti": true,
+     "not": "2"
+    }
+   ],
+   "halka": "Butun isler kapandi.",
+   "durum": "gecti",
+   "tur": 2,
+   "jeton": 402271,
+   "maliyet_usd": null,
+   "fiyatsiz_tur": 2,
+   "kanit": 2,
+   "insana_soru": 0,
+   "istekler": [],
+   "kapi_durdurdu": 0,
+   "kapi_olaylari": [],
+   "sure_sn": 148.2
+  }
+ ]
+}

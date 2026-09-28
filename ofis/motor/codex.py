@@ -197,7 +197,12 @@ SISTEM_EKI_ORTAK = (
     "uzun bir iste savrulursan geri donup oku. "
     "Turkce yaz. "
     "Yalniz brifingdeki YAZMA ALANI icine yaz -- disina cikma; o alanlar "
-    "baska ajanlara kilitli olabilir."
+    "baska ajanlara kilitli olabilir. "
+    # 28.09.2026 olculdu: Windows PowerShell 5 `Set-Content -Encoding utf8`
+    # dosyanin basina BOM koyuyor (D06, D14). Baslik sayan, JSON okuyan,
+    # betik calistiran her tuketici bundan etkilenir.
+    "Dosyalari UTF-8 BOM'SUZ yaz: `Set-Content -Encoding utf8` BOM ekler; "
+    "`apply_patch` ya da `[IO.File]::WriteAllText(yol, metin)` kullan."
 )
 
 #: Codex'in `--append-system-prompt` karsiligi yoktur; sistem ekini metnin
