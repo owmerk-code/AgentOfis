@@ -80,6 +80,18 @@ _KOSU = {"calisiyor": False, "mesaj": "", "dur": False}
 _DANISMA = {"calisiyor": False, "ajan": ""}
 
 
+def _onaylar_giris_ile(onaylar: list) -> list:
+    """Giris isteklerine ayristirilmis `giris` alanini ekler (kart onu cizer)."""
+    from . import giris as _giris
+    out = []
+    for o in onaylar:
+        v = _giris.ayristir(o)
+        if v is not None:
+            o = {**o, "giris": {**v, "talimat": _giris.insan_talimati(v)}}
+        out.append(o)
+    return out
+
+
 def _durdurulduysa(o, adi: str) -> bool:
     """YUMUSAK DURDURMA: insan istediyse kosan tur BITINCE yenisi baslamaz.
 
@@ -1520,7 +1532,7 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
         # tamamen gizlemek ise ofisi sessiz kilardi.
         return {"sorular": ofis.postane.insan_bekleyenler(),
                 "danisilanlar": ofis.postane.ajana_bekleyenler(),
-                "onaylar": ofis.postane.bekleyen_onaylar()}
+                "onaylar": _onaylar_giris_ile(ofis.postane.bekleyen_onaylar())}
 
     # -- insanin mudahalesi ------------------------------------------------
 
@@ -1570,6 +1582,17 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
         if govde.kapsam not in ("eylem", "is"):
             raise HTTPException(400, "kapsam 'eylem' ya da 'is' olmali.")
         ofis = ofis_ac()
+        from . import giris as _giris
+        # GIRIS ISTEGI siradan onay gibi cevaplanamaz: "yaptim" OLCULUR
+        # ve is kabine/baglayiciya tasinir. Arka kapidan gecmesin.
+        if any(o["id"] == onay_id and _giris.giris_mi(o)
+               for o in ofis.postane.bekleyen_onaylar()):
+            try:
+                r = _giris.cevapla(ofis, onay_id, yapildi=govde.onayla,
+                                   not_=govde.not_)
+            except _giris.GirisHatasi as exc:
+                raise HTTPException(400, str(exc))
+            return {**dict(r or {}), **_surdur_gerekirse(ofis, govde.surdur)}
         try:
             r = ofis.postane.onay_cevapla(
                 onay_id, onayla=govde.onayla, not_=govde.not_,

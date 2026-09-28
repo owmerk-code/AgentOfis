@@ -248,7 +248,28 @@ SINIFLAR = {
     "sistem":   ("SISTEM DEGISIKLIGI", "yuksek"),
     # F3 / E22: talimat supheli icerik goruldukten SONRA yapilan eylem.
     "suphe":    ("TALIMAT SUPHESI SONRASI EYLEM", "yuksek"),
+    # 28.09: sifre / dogrulama kodu alanina AJANIN yazmasi. Sifre ajanin
+    # elinde olmamali (bkz. giris.py); oradaysa bir yerden sizmistir.
+    "kimlik":   ("SIFRE / KIMLIK BILGISI YAZMA", "yuksek"),
 }
+
+#: Kimlik alani: sifre, dogrulama kodu, kart. Dile bagli ama alan adi
+#: Playwright'in erisilebilirlik adindan gelir ("Password", "Sifre").
+KIMLIK_ALANI = [re.compile(k) for k in (
+    r"password", r"passwd", r"\bsifre", r"\bparola", r"passcode",
+    r"\b2fa\b", r"\botp\b", r"one[\s-]*time", r"verification\s*code",
+    r"dogrulama\s*kod", r"guvenlik\s*kod", r"\bpin\b",
+    r"card\s*number", r"kart\s*numara", r"\bcvv\b", r"\bcvc\b",
+    r"\biban\b", r"secret", r"api[\s_-]*key",
+)]
+
+#: Brifinge her turda giren kural: giris gerekince ne yapilir.
+GIRIS_KURALI = (
+    "GIRIS GEREKIRSE: bir site, hesap ya da baglayici oturum acma, uyelik, "
+    "dogrulama kodu ya da 2FA istiyorsa `giris_iste` cagir ve DUR. Sifreyi "
+    "patrondan ISTEME, forma YAZMA, tahmin etme, dosyalarda ya da ortamda "
+    "ARAMA. Patron kendisi girer; sonraki turda onun oturumuyla devam "
+    "edersin. (Ofis sifre alanina yazmayi zaten durdurur.)")
 
 #: Hangi araclar denetlenir. Gezinme ve OKUMA burada YOK: onlari
 #: durdurmak tam da kullanicinin "sacma" dedigi sey olurdu.
@@ -350,6 +371,24 @@ def degerlendir(arac: str, argumanlar: dict, *, url: str = "",
     # degisir ("Yayinla dugmesi" / "button"), sayfadaki ad degismez.
     kimlik = (sayfa_metni.strip()
               or ((argumanlar or {}).get("element") or "").strip() or baglam)
+
+    # SIFRE ALANI: yazilan DEGER karta da olaya da girmez -- yalniz alanin
+    # adi. Hedef metni `text`/`value` tasir; burada onsuz kurulur.
+    if arac in ("browser_type", "browser_fill_form"):
+        a = argumanlar or {}
+        adlar = [a.get("element") or "", sayfa_metni or ""]
+        for alan in (a.get("fields") or []):
+            if isinstance(alan, dict):
+                adlar += [str(alan.get("name") or ""), str(alan.get("type") or "")]
+        ad_metni = " | ".join(x for x in adlar if x)
+        bulunan = _esles(sadelestir(ad_metni), KIMLIK_ALANI)
+        if bulunan:
+            b = _bulgu("kimlik", bulunan, arac, ad_metni, url, kimlik)
+            b["sebep"] = ("Ajan bir SIFRE / KIMLIK alanina yazmak istedi. "
+                          "Sifre ajanin elinde olmamali: girisi patron "
+                          "kendisi yapar (`giris_iste`). Yazilan deger bu "
+                          "karta bilerek konmadi.")
+            return b
 
     for sinif, kaliplar in (("para", PARA), ("silme", SILME),
                             ("yayin", YAYIN), ("gonderim", GONDERIM)):
@@ -737,6 +776,14 @@ def _arac_bulgu(sinif: str, bulunan: str, arac: str, girdi_metni: str) -> dict:
     }
 
 
+#: E80: tarayicinin kendi ciktisi ajanin isi degildir; silmeye kalkmasi
+#: her turda patrona gereksiz bir "geri alinamaz silme" sorusu dusuruyordu.
+TARAYICI_ARTIK = (
+    "`.playwright-mcp/` klasoru tarayicinin KENDI ciktisidir (anlik "
+    "goruntu, konsol). Senin isin degil, ofis onu olcmez: SILME, "
+    "temizlemeye calisma, kanita koyma.")
+
+
 def brifing_blogu(tarayici_var: bool = False, *, serbest: bool = False) -> str:
     """Ajanin brifingine giren blok.
 
@@ -765,6 +812,8 @@ def brifing_blogu(tarayici_var: bool = False, *, serbest: bool = False) -> str:
         "yaz ve turu bitir.",
         "",
         DIS_ICERIK_KURALI,
+        "",
+        GIRIS_KURALI,
     ]
     # TARAYICI CUMLESI BAYATLAMISTI (24.09.2026): "yalniz beyan edilmis
     # kaynaklara gidebilirsin, baska site icin soru_sor" diyordu -- oysa
@@ -779,6 +828,8 @@ def brifing_blogu(tarayici_var: bool = False, *, serbest: bool = False) -> str:
             "bak -- terminaldeki Claude Code gibi. Yalniz riskli EYLEM "
             "(yayina alma, silme, odeme, gonderme) patrona sorulur. Yalniz "
             "sayfa metni gerekiyorsa WebFetch daha ucuzdur.",
+            "",
+            TARAYICI_ARTIK,
         ]
     elif tarayici_var:
         parcalar += [
@@ -786,6 +837,8 @@ def brifing_blogu(tarayici_var: bool = False, *, serbest: bool = False) -> str:
             "Tarayicin bu isin sitelerine DARALTILMIS. Baska bir siteye "
             "gitmen gerekiyorsa `browser_navigate` ile git: ofis patrona "
             "sorar, onaylanirsa bir SONRAKI turda acilir.",
+            "",
+            TARAYICI_ARTIK,
         ]
     return chr(10).join(parcalar) + chr(10)
 

@@ -142,7 +142,7 @@ sina("initialized bildiriminden sonra sunucu AYAKTA",
 
 y = s.cagir("tools/list")
 adlar = [a["name"] for a in y["result"]["tools"]]
-sina("on uc arac yayinlaniyor", len(adlar) == 13, f"-- {adlar}")
+sina("on dort arac yayinlaniyor (giris_iste dahil)", len(adlar) == 14 and "giris_iste" in adlar, f"-- {adlar}")
 # `izin_sor` ajanin cagirdigi bir arac DEGIL: CLI'in izin
 # kancasi. Yine de yayinlanmak ZORUNDA -- CLI onu ada gore
 # arar ve bulamazsa izin gerektiren her cagri sessizce reddedilir.

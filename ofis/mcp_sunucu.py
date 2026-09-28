@@ -297,6 +297,30 @@ def arac_onay_iste(oturum: Oturum, args: dict) -> str:
             "SIMDI DUR: eylemi YAPMA, turu burada bitir.")
 
 
+def arac_giris_iste(oturum: Oturum, args: dict) -> str:
+    """Bir hesaba giris gerekiyor: insan girer, ajan bekler (28.09.2026).
+
+    SIFRE AJANA GECMEZ: bu arac sifre ALMAZ, yalniz NEREYE ve NEDEN
+    girilmesi gerektigini alir. Kayit onay defterine duser; bekleme,
+    kilit ve surdurme onayla ayni yoldan isler.
+    """
+    from ofis import giris as _giris
+    if oturum.gorev_no is None:
+        return "HATA: giris istegi bir ise baglidir; bu turda gorev yok."
+    try:
+        _giris.iste(oturum.ofis, oturum.ajan_ad, oturum.gorev_no,
+                    tur=str(args.get("tur") or "web"),
+                    hizmet=str(args.get("hizmet") or ""),
+                    adres=str(args.get("adres") or ""),
+                    neden=str(args.get("neden") or ""))
+    except _giris.GirisHatasi as exc:
+        return f"HATA: {exc}"
+    return ("Giris istegi patrona iletildi. Patron kendisi girecek; sifreyi "
+            "sen ISTEME, yazma, tahmin etme.\n"
+            "SIMDI DUR: buraya kadar yaptiklarini `kanit_ekle` ile yaz ve "
+            "turu bitir. Giris yapilinca kaldigin yerden surdurulecek.")
+
+
 def arac_gorev_ac(oturum: Oturum, args: dict) -> str:
     """Yalnizca LIDER gorev acabilir.
 
@@ -1078,6 +1102,32 @@ ARACLAR = [
             "required": ["eylem"],
         },
         "islev": arac_onay_iste,
+    },
+    {
+        "name": "giris_iste",
+        "description": (
+            "Bir siteye, hesaba ya da baglayiciya GIRIS (oturum acma, "
+            "uyelik, dogrulama kodu, 2FA) gerekiyorsa bunu cagir ve DUR. "
+            "Patron kendisi girer; sen sifre ISTEME, YAZMA, TAHMIN ETME, "
+            "baska yerden bulmaya calisma. Tur: 'web' (bir sitenin girisi; "
+            "adres ver -- patron paylasilan tarayicida girer, sonra sen "
+            "onun oturumuyla devam edersin), 'baglayici' (claude.ai "
+            "baglayicisi, hizmet = baglayici adi), 'diger'."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "tur": {"type": "string", "description": "web | baglayici | diger"},
+                "hizmet": {"type": "string",
+                           "description": "Hangi hizmet/hesap (orn. 'Shopify yonetim')."},
+                "adres": {"type": "string",
+                          "description": "web icin giris sayfasinin adresi."},
+                "neden": {"type": "string",
+                          "description": "Bu is icin neden giris gerektigi."},
+            },
+            "required": ["hizmet", "neden"],
+        },
+        "islev": arac_giris_iste,
     },
     {
         "name": "gorsel_uret",

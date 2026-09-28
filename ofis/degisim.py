@@ -59,6 +59,10 @@ ATLANAN_KLASOR = frozenset({
     ".git", ".hg", ".svn", "__pycache__", ".pytest_cache", ".mypy_cache",
     ".ruff_cache", ".venv", "venv", "env", "node_modules", "dist", "build",
     ".next", ".cache", ".idea", ".vscode", ".claude",
+    # E80 (28.09): Playwright'in kendi ciktisi (anlik goruntu, konsol).
+    # Olculunce "beyan disi yazma" gorunuyor ve ajan onu SILMEK icin
+    # patrona onay soruyordu (D09, D18) -- gurultu, onay yorgunlugu.
+    ".playwright-mcp",
 })
 ATLANAN_UZANTI = frozenset({".pyc", ".pyo", ".pyd", ".so", ".dll", ".exe"})
 

@@ -851,6 +851,51 @@ class Tahta:
                          ajan_ad=kapatan, gorev_id=gorev["id"])
         return self.gorev(no)
 
+    def giris_uygula(self, no: int, *, kaynak: str = "",
+                     baglayici_ad: str = "") -> dict:
+        """Insan bir girisi YAPTI: isi o girisi gorecek hale getirir.
+
+        `kaynak` (web): is PAYLASILAN KABINE tasinir, kaynak tarayici
+        alanina eklenir, tiklama acilir (riskli eylem yine onaya duser).
+        Ajanin kendi tarayicisi ayri ve oturumsuz bir profildir; insanin
+        girisini ancak kabin gosterir. Kabin yalniz insanin isaret ettigi
+        kaynaklara acilir -- isaret eden burada insanin kendi onayidir.
+
+        `baglayici_ad` (baglayici): ise eklenir. Cagiran onu OLCMUS
+        olmalidir (`giris.cevapla`); burada ikinci kez olculmez.
+
+        Yetki genislemesidir: sessizce olmaz, olaya yazilir.
+        """
+        g = self.gorev(no)
+        if g["durum"] in (BITTI, IPTAL):
+            raise TahtaHatasi(f"#{no} {g['durum']}: kapanmis ise giris uygulanmaz.")
+        alan = list(g.get("tarayici_alani") or [])
+        baglar = list(g.get("baglayicilar") or [])
+        notlar = []
+        kabin = 1 if g.get("tarayici_kabin") else 0
+        yazma = 1 if g.get("tarayici_yazma") else 0
+        if kaynak:
+            k = tarayici.kaynak_normalle(kaynak)
+            if k not in alan:
+                alan.append(k)
+            kabin, yazma = 1, 1
+            notlar.append(f"tarayici PAYLASILAN KABINE tasindi ({k}, tiklayabilir)")
+        if baglayici_ad and baglayici_ad not in baglar:
+            baglar.append(baglayici_ad)
+            notlar.append(f"baglayici acildi: {baglayici_ad}")
+        if not notlar:
+            return g
+        with self.db.baglanti() as conn:
+            conn.execute(
+                "UPDATE gorev SET tarayici_alani = ?, tarayici_kabin = ?, "
+                "tarayici_yazma = ?, baglayicilar = ?, guncellendi = ? "
+                "WHERE id = ?",
+                (json.dumps(alan, ensure_ascii=False), kabin, yazma,
+                 json.dumps(baglar, ensure_ascii=False), simdi(), g["id"]))
+        self.db.olay_yaz(self.proje_id, "giris_uygulandi",
+                         f"#{no}: " + " · ".join(notlar), gorev_id=g["id"])
+        return self.gorev(no)
+
     def iptal_et(self, no: int, *, sebep: str, iptal_eden: str) -> dict:
         """Isi IPTAL eder ve KILITLERINI BIRAKIR.
 
@@ -908,6 +953,21 @@ class Tahta:
             # "basarisiz tur kilidi birakir" kuralinin ayni gerekcesi.
             conn.execute("DELETE FROM yazma_kilidi WHERE gorev_id = ?",
                          (gorev["id"],))
+            # BEKLEYEN ISTEKLER KAPANIR (28.09.2026, duman_giris gosterdi):
+            # iptal edilmis isin onay karti ve sorusu insanin "senden
+            # bekleniyor" kuyrugunda KALIYORDU -- artik hicbir ise
+            # yaramayan bir karar isteniyordu. Silinmez, kapatilir:
+            # gecmis okunur kalir, sebep yazilir.
+            not_ = f"is iptal edildi: {sebep}"[:500]
+            an = simdi()
+            kapanan = conn.execute(
+                "UPDATE onay SET durum = 'reddedildi', cevap_notu = ?, "
+                "cevaplandi = ? WHERE gorev_id = ? AND durum = 'bekliyor'",
+                (not_, an, gorev["id"])).rowcount
+            kapanan += conn.execute(
+                "UPDATE mesaj SET cevap = ?, cevaplandi = ? WHERE gorev_id = ? "
+                "AND mod = 'bekleyen' AND cevaplandi IS NULL",
+                ("(" + not_ + ")", an, gorev["id"])).rowcount
 
         # Bu isi bekleyenler var mi diye bakilir: bekleyen bir is, artik
         # asla gelmeyecek bir sonucu bekliyor olabilir. Coz(me)mek degil
@@ -915,7 +975,8 @@ class Tahta:
         self._bagimlilari_coz()
         self.db.olay_yaz(
             self.proje_id, "iptal",
-            f"#{no} {gorev['baslik']} iptal edildi: {sebep}",
+            f"#{no} {gorev['baslik']} iptal edildi: {sebep}"
+            + (f" ({kapanan} bekleyen istek kapandi)" if kapanan else ""),
             ajan_ad=iptal_eden, gorev_id=gorev["id"])
         return self.gorev(no)
 

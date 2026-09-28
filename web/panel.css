@@ -446,6 +446,11 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .istek-govde { font-size: var(--yz-alt); line-height: 1.45; }
 .istek-ayrinti { font-size: var(--yz-kucuk); color: var(--metin-3); margin-top: 5px; }
 .istek-eylem { display: flex; gap: 6px; margin-top: 10px; }
+/* Giris karti: not girdisi kendi satirinda, dugmeler altinda. */
+.istek.giris .istek-eylem { flex-wrap: wrap; }
+.istek.giris .istek-eylem input { flex: 1 1 100%; }
+.giris-ne summary { cursor: pointer; color: var(--metin-2); }
+.giris-ne > div { margin-top: 4px; }
 .istek-eylem input {
   flex: 1; min-width: 0; background: var(--zemin); color: var(--metin);
   border: 1px solid var(--cizgi); border-radius: var(--koseli);

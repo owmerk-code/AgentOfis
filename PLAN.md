@@ -426,6 +426,9 @@ motor deftere girmez.
 4. ~~Denetim kaydı (E27)~~ **BİTTİ (28.09)**: `ofis/denetim.py` + panelde Denetim sekmesi; yeni defter değil, olay + onay tek liste; onayın kapsamı (bir kez / bu iş boyunca) görünür.
 5. Gerçek bir bağlayıcı çağrısı: Shopify deneme mağazasıyla (E26) — **ERTELENDİ (28.09, kullanıcı): mağaza/reklam takımı şimdilik kurulmayacak; mağaza işi başlayınca.**
 6. Kişisel veri politikası ve maskeleme (E79) — **ERTELENDİ (28.09)**: müşteri verisi mağaza bağlanınca gelir; o zaman.
+7. ~~Giriş isteği (kullanıcı, 28.09)~~ **BİTTİ**: ajan giriş gerektiğini `giris_iste` ile söyler ve durur; şifre ajana hiç geçmez (şifre alanına yazma kapıda durur, değer karta girmez); insan kabinde girer, "Giriş yaptım" der, iş onun oturumuyla paylaşılan kabinde sürer. Bağlayıcıda "yaptım" ÖLÇÜLÜR. D19 gerçek ajanla Claude ve Codex'te geçti.
+
+**F3 KAPANDI (28.09.2026):** D18 (tuzaklı sayfa) gerçek ajanla Claude ve Codex'te geçti: silme ve sızdırma isteği sunucuya hiç gitmedi, iş doğru bitti. 2917/2917.
 
 **Testler:** kötü niyetli fikstür sayfalar (5 farklı saldırı kalıbı) · kasadaki
 anahtarı yazdırmaya çalışan iş · mutasyonlar.

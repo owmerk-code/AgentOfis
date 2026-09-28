@@ -2328,12 +2328,18 @@ async function kabinDurum() {
   try { return await al("/api/kabin"); } catch (e) { return { acik: false }; }
 }
 
-async function kabinAc() {
+async function kabinAc(url) {
+  // Giris karti bir ADRESLE acar; kabin zaten aciksa o adrese gider.
+  if (url && K.acik) {
+    panoSec("tarayici");
+    kabinYolla({ tur: "git", url });
+    return;
+  }
   const et = $("#kabin-etiket");
   et.textContent = "açılıyor…";
   let d;
   try {
-    d = await yolla("/api/kabin/ac", { url: "about:blank" });
+    d = await yolla("/api/kabin/ac", { url: url || "about:blank" });
   } catch (e) {
     // UYDURMAZ: acilmadiysa sebebi gorunur olur.
     et.textContent = "tarayıcı";
@@ -2750,6 +2756,54 @@ async function cizBekleyenler() {
   }
 
   for (const a of b.onaylar) {
+    // GIRIS ISTEGI: sifre ajana gecmez; insan kendisi girer, "yaptim" der.
+    if (a.giris) {
+      const g = a.giris;
+      const o = el("div", "istek onay giris");
+      const ust = el("div", "istek-bas");
+      ust.append(el("span", "istek-kim", a.isteyen),
+                 el("span", null, "giriş istiyor"),
+                 el("span", "istek-risk", g.tur === "web" ? "SİTE" :
+                    g.tur === "baglayici" ? "BAĞLAYICI" : "DİĞER"));
+      if (a.gorev_no) ust.append(el("span", null, "#" + a.gorev_no));
+      o.append(ust, el("div", "istek-govde", g.hizmet + (g.adres ? " — " + g.adres : "")),
+               el("div", "istek-ayrinti", g.neden));
+      // Talimat uzun: kuyruk kutusu sabit yukseklikte, dugmeler kesiliyordu
+      // (tarayicida olculdu). Acilir; ilk kez gorenin okuyacagi yer.
+      const ne = el("details", "istek-ayrinti giris-ne");
+      ne.append(el("summary", null, "Ne yapacaksın? (şifreyi ajana yazma)"),
+                el("div", null, g.talimat));
+      o.append(ne);
+      const satir = el("div", "istek-eylem");
+      const girdi = el("input");
+      girdi.placeholder = "Not (\u201cYapamam\u201d için zorunlu)";
+      if (g.tur === "web" && g.adres) {
+        const kab = el("button", "dugme", "Kabinde aç");
+        kab.title = "Paylaşılan tarayıcıda giriş sayfasını açar; şifreyi SEN yazarsın.";
+        kab.onclick = () => kabinAc(g.adres);
+        satir.append(kab);
+      }
+      const ver = el("button", "dugme olumlu", "Giriş yaptım");
+      ver.title = g.tur === "baglayici"
+        ? "Ofis bağlandığını ÖLÇER; bağlı değilse kabul etmez."
+        : "İş senin oturumunla sürer (paylaşılan kabinde).";
+      const red = el("button", "dugme olumsuz", "Yapamam");
+      ver.onclick = () => eylem(`/api/onay/${a.id}`,
+        { onayla: true, not_: girdi.value, kapsam: "eylem" }, "giriş yapıldı — iş sürüyor");
+      red.onclick = () => {
+        if (!girdi.value.trim()) {
+          girdi.placeholder = "Gerekçe zorunlu — ajan neden girilmediğini bilmeli";
+          return girdi.focus();
+        }
+        eylem(`/api/onay/${a.id}`, { onayla: false, not_: girdi.value },
+              "giriş yapılmadı — gerekçe ajana iletilecek");
+      };
+      satir.prepend(girdi);
+      satir.append(ver, red);
+      o.append(satir);
+      kap.append(o);
+      continue;
+    }
     const o = el("div", "istek onay");
     const ust = el("div", "istek-bas");
     ust.append(el("span", "istek-kim", a.isteyen),

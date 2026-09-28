@@ -1433,7 +1433,20 @@ def komut_bekleyen(a) -> None:
             + (f" (#{s['gorev_no']})" if s["gorev_no"] else ""))
         yaz(f"       {s['govde']}")
         yaz(f"       cevapla: python -m ofis.kabuk cevapla {s['id'][:8]} \"...\"")
+    from ofis import giris as _giris
     for o in onaylar:
+        v = _giris.ayristir(o)
+        if v is not None:
+            yaz(f"[giris] {o['id'][:8]}  {o['isteyen']}  #{o.get('gorev_no') or '?'}"
+                f"  {v['hizmet']} ({v['tur']})")
+            if v.get("adres"):
+                yaz(f"       adres : {v['adres']}")
+            yaz(f"       neden : {v['neden']}")
+            yaz(f"       yap   : {_giris.insan_talimati(v)}")
+            yaz(f"       yaptim: python -m ofis.kabuk onayla {o['id'][:8]}")
+            yaz(f"       yapamam: python -m ofis.kabuk onayla {o['id'][:8]} "
+                "--hayir --not \"gerekce\"")
+            continue
         yaz(f"[onay] {o['id'][:8]}  {o['isteyen']}  risk: {o['risk']}")
         yaz(f"       {o['eylem']}")
         if o["ayrinti"]:
@@ -1456,7 +1469,21 @@ def komut_cevapla(a) -> None:
 
 def komut_onayla(a) -> None:
     ofis = ofis_ac(a.db, a.proje)
-    tam = _kimlik_coz(ofis.postane.bekleyen_onaylar(), a.kimlik, "onay")
+    bekleyen = ofis.postane.bekleyen_onaylar()
+    tam = _kimlik_coz(bekleyen, a.kimlik, "onay")
+    from ofis import giris as _giris
+    kayit = next((o for o in bekleyen if o["id"] == tam), None)
+    if kayit and _giris.giris_mi(kayit):
+        # GIRIS: "yaptim" olculur, is kabine/baglayiciya tasinir.
+        try:
+            _giris.cevapla(ofis, tam, yapildi=not a.hayir, not_=a.not_ or "")
+        except _giris.GirisHatasi as exc:
+            raise SystemExit(f"Cevaplanamadi: {exc}")
+        yaz("Giris yapildi olarak isaretlendi." if not a.hayir
+            else "Giris yapilmadi; gerekce ajana iletilecek.")
+        yaz("Halkayi surdurmek icin:")
+        yaz("  python -m ofis.kabuk devam")
+        return
     kapsam = "is" if getattr(a, "is_boyunca", False) else "eylem"
     try:
         sonuc = ofis.postane.onay_cevapla(tam, onayla=not a.hayir,
