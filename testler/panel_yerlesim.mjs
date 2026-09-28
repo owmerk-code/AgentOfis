@@ -169,14 +169,14 @@ const esit = (a, b) => JSON.stringify(duz(a)) === JSON.stringify(duz(b));
        esit(konum(a, "kod"), [0, 0]) && a.sutunlar[0].yiginlar[0].secili === "kod", bozukluk(a));
   sina("sekme: terminal sutunu tek yigina iner", a.sutunlar[1].yiginlar.length === 1);
 
-  const b = Y.panoTasi(v, "hesap", { sutun: 0, yigin: 0, yer: "ust" });
-  sina("ust: hesap ofisin USTUNE yeni yigin",
-       esit(konum(b, "hesap"), [0, 0]) && esit(konum(b, "ofis"), [0, 1]), bozukluk(b));
+  const b = Y.panoTasi(v, "yetenek", { sutun: 0, yigin: 0, yer: "ust" });
+  sina("ust: yetenek ofisin USTUNE yeni yigin",
+       esit(konum(b, "yetenek"), [0, 0]) && esit(konum(b, "ofis"), [0, 1]), bozukluk(b));
   sina("ust: bolunen yigin yuku ikiye paylasilir (toplam korunur)",
        Math.abs(b.sutunlar[0].yiginlar[0].yuk + b.sutunlar[0].yiginlar[1].yuk - 1) < 1e-9);
 
-  const c = Y.panoTasi(v, "hesap", { sutun: 0, yigin: 0, yer: "alt" });
-  sina("alt: hesap ofisin ALTINA", esit(konum(c, "hesap"), [0, 1]));
+  const c = Y.panoTasi(v, "yetenek", { sutun: 0, yigin: 0, yer: "alt" });
+  sina("alt: yetenek ofisin ALTINA", esit(konum(c, "yetenek"), [0, 1]));
 
   const d = Y.panoTasi(v, "kod", { sutun: 0, yigin: 0, yer: "sol" });
   sina("sol: kod EN SOLDA yeni sutun", esit(konum(d, "kod"), [0, 0]) &&

@@ -2974,6 +2974,9 @@ function hesapDugmesiCiz(d, t) {
 
 function hesapPanosuAc() {
   D.acikCekmece = { tur: "hesaplar" };
+  cizKullanim().then(() => {
+    if ((D.acikCekmece || {}).tur === "hesaplar") hesapPanosuCiz($("#cekmece"), D.hesaplar);
+  });
   cekmeceAc(c => hesapPanosuCiz(c, D.hesaplar));
   hesaplariAl().then(t => {
     if ((D.acikCekmece || {}).tur === "hesaplar") hesapPanosuCiz($("#cekmece"), t);
@@ -3032,10 +3035,32 @@ function hesapPanosuCiz(c, t) {
     c.append(el("div", "hp-grup", ad));
     for (const h of hs) c.append(hesapSatiri(h));
   }
+  c.append(hesapTuketim(D.kullanim));
   c.append(el("div", "hp-not",
     "Yüzdeler hesabın TOPLAMIDIR, sağlayıcının kendi bildirimi (sen elle kullandıysan o da dahil). " +
     "Çubuktaki ince çizgi: ofisin o hesabı iş sırasının sonuna aldığı eşik. " +
     "Ölçülemeyen çizgili gri durur, uydurulmaz."));
+}
+
+// OFISIN TUKETTIGI: yalniz ofisin kendi turlari (hesabin toplami DEGIL).
+// Olcum yoksa "olculmedi" der, sifir uydurmaz.
+function hesapTuketim(k) {
+  const b = el("div", "hp-tuketim");
+  b.append(el("div", "hp-grup", "Ofisin tükettiği"));
+  if (!k || k.hata || !k.oturum) {
+    b.append(el("div", "hp-alt", k && k.hata ? k.hata : "henüz ölçülmedi"));
+    return b;
+  }
+  const satir = (ad, p) => {
+    const s = el("div", "hp-tk-satir");
+    s.append(el("span", null, ad),
+             el("b", null, `${p.tur} tur · ${Number(p.jeton).toLocaleString("tr")} jeton`));
+    b.append(s);
+  };
+  satir(`son ${k.oturum_saat} saat`, k.oturum);
+  satir("son 7 gün", k.hafta);
+  b.append(el("div", "hp-alt", "Yalnız OFİSİN kendi turları; sen elle kullandıysan o burada yok."));
+  return b;
 }
 
 function hesapSatiri(h) {
@@ -3120,64 +3145,17 @@ function kalanSure(iso, simdi = Date.now()) {
 // bildirimi, olcumun yasiyla); tur/jeton satirlari yalniz OFISIN
 // kendi turlari. Yenilenmis pencerenin eski yuzdesi GOSTERILMEZ --
 // bayat bir sayiyi canli sanmaya davet olurdu.
+// 28.09: ayri "Hesap" panosu KALDIRILDI -- hesap listesi hesap panosunun
+// (ray dugmesi) tekrariydi. Bu olcum artik ekrana kendi cizmez: pano
+// basliklarindaki hesap rozetini besler ve "ofisin tukettigi" satirlari
+// hesap panosunun altinda gosterilir (`hesapTuketim`).
 async function cizKullanim() {
-  const kap = $("#kullanim");
-  if (!kap) return;
   let k;
   try { k = await al("/api/kullanim"); } catch (e) { return; }
   // Pano basliklari da ayni olcumu gosterir -- ayri bir istek degil,
   // ayni cevap (iki istek iki farkli ani gosterirdi).
   D.pencereler = k.pencereler || [];
-  kap.innerHTML = "";
-  if (k.hata) {
-    // Olcum patlarsa SESSIZ kalinmaz.
-    kap.append(el("div", "baglam-bas", "HESAPLAR"),
-               el("div", "kullanim-not", k.hata));
-    return;
-  }
-  const bas = el("div", "baglam-bas");
-  bas.append(el("span", null, "HESAPLAR"),
-             el("span", null, `yenilenme ~${k.yenilenme.kalan_saat} sa`));
-  kap.append(bas);
-
-  for (const h of (k.hesaplar || [])) {
-    const s1 = el("div", "kullanim-satir");
-    const durum = h.bagli === true ? "bagli"
-                : h.bagli === false ? "kopuk" : "bilinmiyor";
-    s1.append(el("span", "kullanim-ad", h.motor));
-    s1.append(el("span", "rozet r-" + durum, durum.toUpperCase()));
-    if (h.plan) s1.append(el("span", "kullanim-alt", h.plan));
-    kap.append(s1);
-  }
-
-  const pencere = (ad, p) => {
-    const s2 = el("div", "kullanim-satir");
-    s2.append(el("span", "kullanim-ad", ad));
-    s2.append(el("span", "kullanim-sayi",
-                 `${p.tur} tur · ${p.jeton.toLocaleString("tr")} jeton`));
-    kap.append(s2);
-  };
-  const PENCERE_AD = { "5s": "5 saat", "7g": "7 gün", "7g_kapi": "Fable" };
-  for (const p of (k.pencereler || [])) {
-    const s3 = el("div", "kullanim-satir");
-    s3.append(el("span", "kullanim-ad", p.motor + (p.hesap ? "/" + p.hesap : "")));
-    const parca = Object.entries(p.pencereler).map(([ad, w]) =>
-      (PENCERE_AD[ad] || ad) + " " + pencereYazi(w) + (w.yenilendi ? "" : ` · ${w.kalan_saat} sa`));
-    s3.append(el("span", "kullanim-sayi", parca.join("  ·  ")));
-    s3.append(el("span", "kullanim-alt",
-                 p.yas_dk == null ? "yaşı ?" : `${p.yas_dk} dk önce`));
-    s3.title = `${p.kaynak}${p.plan ? " · plan " + p.plan : ""} — hesabın TOPLAMI`;
-    kap.append(s3);
-  }
-  if (!(k.pencereler || []).length)
-    kap.append(el("div", "kullanim-not",
-                  "limit yüzdesi henüz ölçülmedi — ofis bu hesaplarla tur koştukça dolar"));
-
-  pencere(`son ${k.oturum_saat} sa`, k.oturum);
-  pencere("son 7 gun", k.hafta);
-
-  // EN ONEMLI SATIR: neyi OLCMEDIGIMIZ.
-  kap.append(el("div", "kullanim-not", k.not));
+  D.kullanim = k;
 }
 
 function cizBaglam() {
@@ -3675,7 +3653,6 @@ const PANOLAR = {
   raporlar: { ad: "Raporlar", sayac: "" },
   hafiza:   { ad: "Hafıza",   sayac: "" },
   kararlar: { ad: "Kararlar", sayac: "" },
-  hesap:    { ad: "Hesap",    sayac: "" },
   yetenek:  { ad: "Yetenek",  sayac: "" },
 };
 
@@ -3694,7 +3671,7 @@ function yerlesimVarsayilan() {
         yiginlar: [{ yuk: 1, panolar: ["tarayici"], secili: "tarayici" }] },
       { gen: 0.8, kapali: false,
         yiginlar: [{ yuk: 1, secili: "gorevler",
-                     panolar: ["gorevler", "raporlar", "hafiza", "kararlar", "hesap",
+                     panolar: ["gorevler", "raporlar", "hafiza", "kararlar",
                                "yetenek"] }] },
     ],
   };
