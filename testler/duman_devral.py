@@ -374,5 +374,36 @@ try:
 except KS.KonsolHatasi as exc:
     sina("PowerShell konsolu acilir", False, str(exc))
 
+# ------------------------------------------------------------------ 7
+print("\n-- 7. KONSOL ONERILERI: yol YAZMADAN acmak --")
+# Son acilan klasor oneride; ofis koku ve var olmayan klasor ONERILMEZ
+# (tiklaninca reddedilecek oneri, olmayan bir dugme cizmektir).
+# Sahne: kokun kendisi de bir kez "acilmis" gibi deftere yazilir -- oneri
+# suzgeci yoksa kok listeye girerdi (sahne sinira ULASMALI).
+db.olay_yaz(ofis.proje_id, "konsol_acildi",
+            f"insan ofis disi terminal acti: powershell · {kok}")
+on = istemci.get("/api/konsol").json().get("oneriler", [])
+yollar = [o["yol"].lower() for o in on]
+sina("son acilan konsol klasoru oneride (son)",
+     any(o["yol"].lower() == str(dis.resolve()).lower() and o["neden"] == "son" for o in on),
+     str(on)[:300])
+sina("ofis koku ve alti ONERILMEZ",
+     not any(y == str(kok.resolve()).lower() or y.startswith(str(kok.resolve()).lower() + "\\")
+             for y in yollar), str(yollar)[:300])
+sina("oneriler tekrarsiz", len(yollar) == len(set(yollar)))
+db.olay_yaz(ofis.proje_id, "konsol_acildi",
+            "insan ofis disi terminal acti: powershell · C:\\yok\\boyle-bir-klasor-yok")
+on2 = istemci.get("/api/konsol").json().get("oneriler", [])
+sina("var olmayan klasor ONERILMEZ",
+     not any("boyle-bir-klasor-yok" in o["yol"] for o in on2))
+_eski = _P.TERMINAL_YEREL
+_P.TERMINAL_YEREL = ("127.0.0.1",)
+try:
+    r3 = istemci.post("/api/konsol/gozat", json={})
+    sina("yerel olmayan istemci klasor penceresi ACAMAZ: 403", r3.status_code == 403,
+         str(r3.status_code))
+finally:
+    _P.TERMINAL_YEREL = _eski
+
 print(f"\n== sonuc: {GECEN} gecti, {KALAN} kaldi ==")
 sys.exit(1 if KALAN else 0)

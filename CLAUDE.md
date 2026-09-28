@@ -11782,3 +11782,20 @@ Bu sabah 05:33'teki günlük yedeğin Drive kopyası yazılamadı
 sağlam. Ayrıca C: sürücüsünde ~1 GB boş kaldı ve bir sınama
 `database or disk is full` ile düştü; benim ölçüm artıklarım
 (%TEMP% altında 20 klasör) silindi. İkisi de kullanıcının kararı.
+### İkinci tur — kullanıcı: "terminal gibi gözükmüyor, konsol daha kullanılabilir olmalı" (28.09.2026)
+
+- **Pano artık bir terminal penceresi** (`.pano.term`): kart düzeni
+  (özet şeridi + kullanım kartı) terminal kipinde kalktı; aynı ölçüm
+  alttaki **durum satırına** indi (`durumSatiri`: kilit · #iş · kanıt ·
+  tur · jeton). Ajanın sözü `● metin` (**kalın** çizilir, yıldız yok),
+  araç `● Araç(ne)`, turun başı `> …` istem satırı, not kutusu `>`
+  istemi. Okunur kip eski kart düzenini korur.
+- **Konsol yol yazdırmıyor:** öneriler defterden (`konsol.oneriler`:
+  son açılanlar · işlere açılmış dış klasörler · Masaüstü; var olmayan
+  ve ofis kökü ELENİR), **Gözat…** Windows'un kendi klasör penceresi
+  (`POST /api/konsol/gozat`, yalnız yerel; TopMost), motor seçimi
+  açılır liste değil düğme (klasör + tek tık). Gözat penceresi gerçek
+  masaüstünde açıldığı için sınamada AÇILMADI; betiği ayrıştırıldı.
+- `duman_devral` 65 → **70**; mutasyon (öneriden ofis kökü süzgeci
+  kalksın) ateş etti. Toplam **2763/2763**.
+

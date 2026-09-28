@@ -1676,7 +1676,26 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
         from . import terminal as _tr
         return {"konsollar": _ks.liste(), "pty": _tr.pty_durumu() or "hazir",
                 "motorlar": ["powershell"] + sorted(
-                    m for m, var in musait_motorlar().items() if var and m != "sahte")}
+                    m for m, var in musait_motorlar().items() if var and m != "sahte"),
+                "oneriler": _ks.oneriler(ofis_ac())}
+
+    @uygulama.post("/api/konsol/gozat")
+    async def api_konsol_gozat(istek: Request):
+        # Pencere INSANIN masaustunde acilir: yalniz bu bilgisayardan.
+        if istek.client and istek.client.host not in TERMINAL_YEREL:
+            raise HTTPException(403, "Klasor secme yalniz bu bilgisayardan.")
+        from . import konsol as _ks
+        try:
+            govde = await istek.json()
+        except ValueError:
+            govde = {}
+        baslangic = str((govde or {}).get("baslangic") or "")
+        try:
+            yol = await asyncio.get_running_loop().run_in_executor(
+                None, lambda: _ks.gozat(baslangic))
+        except _ks.KonsolHatasi as exc:
+            raise HTTPException(400, str(exc)) from exc
+        return {"yol": yol}
 
     @uygulama.post("/api/konsol/{kimlik}/kapat")
     def api_konsol_kapat(kimlik: str):

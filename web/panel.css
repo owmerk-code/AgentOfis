@@ -1514,3 +1514,59 @@ details > summary.hf-bas { cursor: pointer; }
 .konsol-form { padding: 10px; display: flex; flex-direction: column; gap: 8px; }
 .konsol-satir { display: flex; gap: 6px; }
 .konsol-satir input { flex: 1; min-width: 0; }
+
+/* TERMINAL PENCERESI (28.09, ikinci tur). Kullanici: "ajan panolari
+   terminal gibi gozukmuyor". Kart duzeni (ozet seridi + kullanim karti)
+   terminal kipinde KALKTI, bilgisi alttaki durum satirina indi; pano
+   bastan sona tek bir terminal penceresi: baslik cubugu, akis, istem
+   kutusu, durum satiri. Hepsi es aralikli yazi. */
+.pano.term { background: #0c0c0c; border-color: #262626; border-radius: 6px; }
+.pano.term .pano-bas { background: #181818; border-bottom: 1px solid #262626;
+  padding: 5px 10px; gap: 7px; font-family: "Cascadia Mono", Consolas, monospace; }
+.pano.term .pano-ad { font-size: 12px; font-weight: 700; color: #e6e6e6; }
+.pano.term .pano-meslek, .pano.term .pano-oda, .pano.term .pano-limit,
+.pano.term .pano-gecmis { font-size: 10.5px; }
+.pano.term .pano-gorev { background: transparent; color: #8b949e; padding: 0; font-size: 11px; }
+.pano.term .pano-motor { font-size: 10px; }
+.pano.term .pano-ic { background: #0c0c0c; color: #cccccc; padding: 8px 10px 6px;
+  font: 12px/1.55 "Cascadia Mono", Consolas, monospace; }
+.canli-izle .pano.term .pano-ic { max-height: 360px; min-height: 140px; }
+.pano.term .t-satir { margin: 0 0 2px; }
+.pano.term .t-metin { color: #e6e6e6; margin: 6px 0 6px; }
+.pano.term .t-metin .t-imi { color: #e6e6e6; }
+.pano.term .t-metin b { color: #ffffff; }
+.pano.term .t-arac { margin-top: 6px; }
+.pano.term .t-arac .t-imi { color: #3fb950; }
+.pano.term .t-istem { color: #9da5b4; background: #1a1a1a; border-radius: 3px;
+  padding: 1px 6px; margin: 8px 0 4px; }
+.pano.term .t-istem .t-imi { color: #6e7681; }
+.pano.term .pano-not { margin: 6px 8px 4px; border: 1px solid #333; border-radius: 5px;
+  align-items: center; background: #0c0c0c; }
+.pano.term .pano-not input { font-family: "Cascadia Mono", Consolas, monospace;
+  font-size: 12px; padding: 5px 8px 5px 4px; }
+.pano.term .pano-not input:focus { background: transparent; }
+.pano.term .pano-not:focus-within { border-color: #6e7681; }
+.t-istem-imi { color: #8b949e; padding-left: 8px; font-family: "Cascadia Mono", Consolas, monospace; }
+.t-durum { display: flex; flex-wrap: wrap; gap: 2px 12px; flex: none;
+  padding: 4px 10px 6px; font: 10.5px/1.4 "Cascadia Mono", Consolas, monospace;
+  color: #6e7681; background: #0c0c0c; }
+.t-durum .t-kilit { color: #d4a04f; }
+.t-durum .t-iyi { color: #3fb950; }
+.t-durum .t-hata { color: #f85149; }
+
+/* KONSOL formu: oneriler + Gozat + motor dugmeleri. */
+.konsol-form { overflow-y: auto; }
+.konsol-yol { font-family: "Cascadia Mono", Consolas, monospace; font-size: 12px;
+  background: #0c0c0c; color: var(--metin); border: 1px solid var(--cizgi); border-radius: 5px; padding: 6px 8px; outline: none; }
+.konsol-yol:focus { border-color: var(--vurgu); }
+.konsol-oneriler { display: flex; flex-direction: column; gap: 2px; max-height: 260px; overflow-y: auto;
+  border: 1px solid var(--cizgi); border-radius: 6px; padding: 4px; }
+.konsol-oneri { display: flex; justify-content: space-between; gap: 8px; text-align: left;
+  background: transparent; border: 0; border-radius: 4px; color: var(--metin-2);
+  padding: 4px 8px; cursor: pointer; font: 12px "Cascadia Mono", Consolas, monospace; }
+.konsol-oneri:hover { background: var(--zemin-3); color: var(--metin); }
+.konsol-oneri.secili { background: rgba(232,131,58,.14); color: var(--metin); outline: 1px solid var(--vurgu); }
+.konsol-oneri-ad { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.konsol-oneri-neden { color: var(--metin-3); font-size: 10.5px; flex: none; }
+.konsol-motorlar { display: flex; gap: 6px; flex-wrap: wrap; }
+.konsol-motor { flex: 1; min-width: 110px; }

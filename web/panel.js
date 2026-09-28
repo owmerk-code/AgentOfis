@@ -429,10 +429,19 @@ function terminalSatiri(o) {
     case "izin":
       s.classList.add("t-hata"); ekle("t-imi", "  ⎿ ✗ "); ekle(null, kes(g, 200)); return s;
     case "cikti": case "rapor": {
-      const metin = D.okunurKip ? raporTemiz(g) : g;
-      if (!metin.trim()) return null;
+      // Ajanin SOZU: Claude Code'daki gibi beyaz nokta + metin; **kalin**
+      // kalin cizilir, yildizlar gosterilmez. KANIT satirlari zaten ayri
+      // kayit, burada tekrarlanmaz.
+      const metin = raporTemiz(g).trim();
+      if (!metin) return null;
       s.classList.add("t-metin");
-      ekle(null, kes(metin.trim(), 900));
+      ekle("t-imi", "● ");
+      const govde = el("span", "t-soz");
+      kes(metin, 900).split(/(\*\*[^*\n]+\*\*)/).forEach((p) => {
+        if (/^\*\*[^*]+\*\*$/.test(p)) govde.append(el("b", null, p.slice(2, -2)));
+        else if (p) govde.append(document.createTextNode(p.replace(/^#{1,4} /gm, "")));
+      });
+      s.append(govde);
       return s;
     }
     case "kanit": s.classList.add("t-iyi"); ekle("t-imi", "✓ "); ekle(null, "kanıt: " + kes(g, 200)); return s;
@@ -442,14 +451,25 @@ function terminalSatiri(o) {
     case "dosya_canli": s.classList.add("t-sonuk"); ekle("t-imi", "✎ "); ekle(null, kes(g, 200)); return s;
     case "hata": case "uyari": case "ret": case "ders":
       s.classList.add("t-hata"); ekle("t-imi", "✗ "); ekle(null, kes(g, 300)); return s;
-    case "soru": case "onay_istendi": case "cevap":
-      s.classList.add("t-bekle"); ekle("t-imi", "? "); ekle(null, kes(g, 300)); return s;
+    case "soru": case "onay_istendi": case "cevap": {
+      s.classList.add("t-bekle"); ekle("t-imi", "? ");
+      const govde = el("span");
+      kes(g, 300).split(/(\*\*[^*\n]+\*\*)/).forEach((p) => {
+        if (/^\*\*[^*]+\*\*$/.test(p)) govde.append(el("b", null, p.slice(2, -2)));
+        else if (p) govde.append(document.createTextNode(p));
+      });
+      s.append(govde);
+      return s;
+    }
     case "not": case "not_iletildi":
       s.classList.add("t-bekle"); ekle("t-imi", "✉ "); ekle(null, kes(g, 300)); return s;
     case "tur_ozeti":
-      s.classList.add("t-sonuk"); ekle(null, "── tur bitti · " + turOzeti(g)); return s;
-    case "brifing": case "sahiplenildi":
-      s.classList.add("t-sonuk"); ekle("t-imi", "› "); ekle(null, kes(g, 200)); return s;
+      s.classList.add("t-sonuk"); ekle(null, "✻ tur bitti · " + turOzeti(g)); return s;
+    case "sahiplenildi":
+      // Turun BASI: terminalde kullanicinin istemi gibi okunur.
+      s.classList.add("t-istem"); ekle("t-imi", "> "); ekle(null, kes(g, 200)); return s;
+    case "brifing":
+      s.classList.add("t-sonuk"); ekle("t-imi", "  ⎿ "); ekle(null, kes(g, 200)); return s;
     default:
       return null;
   }
@@ -549,7 +569,11 @@ function hesapPenceresi(motor, hesap) {
 
 function panoKur(a, secenek) {
   const s = secenek || {};
-  const p = el("div", "pano" + (s.sinif ? " " + s.sinif : ""));
+  // TERMINAL KIPI (varsayilan): pano bastan sona bir terminal penceresi --
+  // baslik cubugu, akis, istem kutusu, durum satiri. Okunur kip eski
+  // kart duzenini korur (orada aranan sey okumak, terminal degil).
+  const term = !D.okunurKip;
+  const p = el("div", "pano" + (term ? " term" : "") + (s.sinif ? " " + s.sinif : ""));
   const bas = el("div", "pano-bas");
   // DURUM NOKTASI: canli mi gecmis mi. Rakipte de basligin ilk ogesi
   // bu ve isi ayni -- "bu pano su an akiyor mu" sorusu bir bakista
@@ -646,9 +670,12 @@ function panoKur(a, secenek) {
       : "— bu oturumda çıktı yok —"));
   }
 
-  p.append(bas, ozetSatiri(a));
-  const kart = kullanimKarti(a);
-  if (kart) p.append(kart);
+  p.append(bas);
+  if (!term) {
+    p.append(ozetSatiri(a));
+    const kart = kullanimKarti(a);
+    if (kart) p.append(kart);
+  }
   if (!s.gecmis && devralinmisMi(a.gorev_no)) {
     // Is INSANDA: akis yerine gercek terminal, not yerine "geri ver".
     p.classList.add("devralindi");
@@ -660,6 +687,9 @@ function panoKur(a, secenek) {
   // YAZMA SATIRI yalniz elinde IS olan ajanda: not verilmis bir isin
   // yonunu duzeltir, is dagitmaz (yeni is lidere yazilir).
   if (!s.gecmis && a.gorev_no) p.append(notSatiri(a));
+  // Terminal kipinde sicil (kilit, kanit, tur, jeton) DURUM SATIRINA iner:
+  // bilgi kaybolmaz, yalniz akisin onunu kapatmaz.
+  if (term) p.append(durumSatiri(a));
   D.panolar[a.ad] = ic;
   return p;
 }
@@ -755,7 +785,7 @@ async function cizKonsol() {
   if (r.pty && r.pty !== "hazir") {
     govde.append(el("div", "form-ipucu uyari", r.pty));
   } else if (D.konsolForm || !D.konsollar.length) {
-    govde.append(konsolFormu(r.motorlar || ["powershell"]));
+    govde.append(konsolFormu(r.motorlar || ["powershell"], r.oneriler || []));
   } else if (D.konsolSecili) {
     govde.append(terminalAlani("k:" + D.konsolSecili, `/ws/konsol/${D.konsolSecili}`,
       "[terminal kapandı — sekmedeki × ile kaldırabilirsin]"));
@@ -765,45 +795,96 @@ async function cizKonsol() {
   kap.append(ust, govde);
 }
 
-function konsolFormu(motorlar) {
+/* Konsol acma formu. Kullanici (28.09): "dosya yolunu yazip acmak
+   yerine daha iyi bir cozum yok mu". Uc yol, yazmak SONUNCUSU:
+   1. ONERILER -- sunucunun defterden cikardigi klasorler (son acilanlar,
+      islere acilmis dis klasorler, Masaustu). Tek tik secer.
+   2. GOZAT -- Windows'un kendi klasor penceresi (panel yerel calisir).
+   3. yol yazmak -- yine mumkun.
+   Motor bir DUGMEDIR, acilir liste degil: klasor secildiyse tek tikla acar. */
+function konsolFormu(motorlar, oneriler) {
   const f = el("form", "konsol-form");
-  f.append(el("div", "form-ipucu",
-    "Ofisten bağımsız bir terminal: senin terminalin, işin kaydına girmez " +
-    "(yalnız açıldı/kapandı yazılır). Ofisin çalışma klasöründe açılmaz — " +
-    "orada ajanlar çalışır; bir işe elle girmek için o işi 'Devral'."));
-  const k = el("input");
-  k.placeholder = "klasör — ör. C:/Users/pc/Desktop/projem";
-  k.value = D.konsolSonKlasor || "";
+  const secili = { yol: D.konsolSonKlasor || "" };
+  const k = el("input", "konsol-yol");
+  k.placeholder = "klasör seç ya da yolunu yaz";
+  k.value = secili.yol;
   k.spellcheck = false;
-  const m = el("select");
-  const adlar = { powershell: "PowerShell", claude: "Claude Code", codex: "Codex" };
-  for (const ad of motorlar) {
-    const o = el("option", null, adlar[ad] || ad);
-    o.value = ad;
-    m.append(o);
-  }
-  const d = el("button", "dugme olumlu", "Aç");
-  d.type = "submit";
   const not = el("div", "form-ipucu");
-  f.onsubmit = async (e) => {
-    e.preventDefault();
-    d.disabled = true;
+  const isaretle = () => {
+    for (const b of f.querySelectorAll(".konsol-oneri"))
+      b.classList.toggle("secili", b.dataset.yol.toLowerCase() === k.value.trim().toLowerCase());
+  };
+  k.oninput = isaretle;
+  const gz = el("button", "dugme", "Gözat…");
+  gz.type = "button";
+  gz.title = "Windows'un klasör seçme penceresini açar";
+  gz.onclick = async () => {
+    gz.disabled = true;
+    not.classList.remove("uyari");
+    not.textContent = "klasör penceresi açıldı — masaüstünde seç (tarayıcının arkasında kalmış olabilir)";
+    try {
+      const r = await yolla("/api/konsol/gozat", { baslangic: k.value.trim() });
+      if (r.yol) { k.value = r.yol; isaretle(); not.textContent = "seçildi — şimdi ne açılacağını seç"; }
+      else not.textContent = "vazgeçildi";
+    } catch (err) { not.textContent = err.message; not.classList.add("uyari"); }
+    gz.disabled = false;
+  };
+  const ust = el("div", "konsol-satir");
+  ust.append(k, gz);
+  f.append(ust);
+
+  if ((oneriler || []).length) {
+    const liste = el("div", "konsol-oneriler");
+    const NEDEN = { son: "son açılan", is: "bir işe açılmış", masaustu: "Masaüstü" };
+    for (const o of oneriler) {
+      const b = el("button", "konsol-oneri");
+      b.type = "button";
+      b.dataset.yol = o.yol;
+      b.title = `${o.yol}  (${NEDEN[o.neden] || o.neden})`;
+      b.append(el("span", "konsol-oneri-ad", "▸ " + o.ad), el("span", "konsol-oneri-neden", NEDEN[o.neden] || ""));
+      b.onclick = () => { k.value = o.yol; isaretle(); k.focus(); };
+      b.ondblclick = () => { k.value = o.yol; ac(D.konsolSonMotor || motorlar[0]); };
+      liste.append(b);
+    }
+    f.append(liste);
+  }
+
+  const adlar = { powershell: "PowerShell", claude: "Claude Code", codex: "Codex" };
+  const dugmeler = el("div", "konsol-motorlar");
+  const tumu = [];
+  const ac = async (motor) => {
+    const yol = k.value.trim();
+    if (!yol) { not.textContent = "önce bir klasör seç"; not.classList.add("uyari"); return; }
+    tumu.forEach((d) => { d.disabled = true; });
+    not.classList.remove("uyari");
     not.textContent = "açılıyor…";
     try {
-      const r = await yolla("/api/konsol", { klasor: k.value.trim(), motor: m.value });
-      D.konsolSonKlasor = k.value.trim();
+      const r = await yolla("/api/konsol", { klasor: yol, motor });
+      D.konsolSonKlasor = yol;
+      D.konsolSonMotor = motor;
       D.konsolSecili = r.kimlik;
       D.konsolForm = false;
       cizKonsol();
     } catch (err) {
       not.textContent = err.message;
       not.classList.add("uyari");
-      d.disabled = false;
+      tumu.forEach((d) => { d.disabled = false; });
     }
   };
-  const satir = el("div", "konsol-satir");
-  satir.append(k, m, d);
-  f.append(satir, not);
+  for (const ad of motorlar) {
+    const d = el("button", "dugme konsol-motor" + (ad === (D.konsolSonMotor || motorlar[0]) ? " olumlu" : ""),
+                 "▶ " + (adlar[ad] || ad));
+    d.type = "button";
+    d.onclick = () => ac(ad);
+    tumu.push(d);
+    dugmeler.append(d);
+  }
+  f.append(dugmeler, not);
+  f.append(el("div", "form-ipucu sonuk",
+    "Ofisten bağımsız: işin kaydına girmez (yalnız açıldı/kapandı yazılır). " +
+    "Ofisin çalışma klasöründe açılmaz — bir işe elle girmek için o işi 'Devral'."));
+  f.onsubmit = (e) => { e.preventDefault(); ac(D.konsolSonMotor || motorlar[0]); };
+  setTimeout(isaretle, 0);
   return f;
 }
 
@@ -895,6 +976,7 @@ function geriVerSatiri(a) {
    gonderildi demek, ulasti demek DEGILDIR (panel uydurmaz). */
 function notSatiri(a) {
   const f = el("form", "pano-not");
+  if (!D.okunurKip) f.append(el("span", "t-istem-imi", ">"));
   const g = el("input");
   g.placeholder = `${a.ad}'a not (#${a.gorev_no}) — "dur, şunu değiştir" · Enter`;
   g.maxLength = 1000;
@@ -1749,6 +1831,33 @@ function haritaKur(ajanlar, kanat) {
    Ve pano basligi bizim OLCEBILDIGIMIZ, rakipte OLMAYAN seyi tasir:
    yazma kilidi alani, kanit sayisi, turun maliyeti. Gucumuz vardi,
    ekranda yoktu. */
+
+/* Terminalin alt durum satiri -- Claude Code'un status line'i gibi, tek
+   satir. Icerik ozetSatiri + kullanimKarti ile AYNI olcum (ikinci bir
+   hesap yok): yazma kilidi (Yasa 1) ve kanit sayisi burada da gorunur. */
+function durumSatiri(a) {
+  const s = a.sicil || {};
+  const d = el("div", "t-durum");
+  const parca = (metin, sinif, ipucu) => {
+    const x = el("span", sinif || null, metin);
+    if (ipucu) x.title = ipucu;
+    d.append(x);
+  };
+  if (s.kilit && s.kilit.length)
+    parca("\u{1F512} " + s.kilit.join(" · "), "t-kilit", "Bu ajan bu yolları KİLİTLİ tutuyor (yazma kilidi).");
+  if (s.son_gorev) {
+    parca(`#${s.son_gorev.no} ${s.son_gorev.durum}`, null, s.son_gorev.baslik);
+    if (s.son_gorev.kanit) parca(`${s.son_gorev.kanit} kanıt`, "t-iyi");
+  }
+  if (s.tur) parca(`${s.tur} tur`);
+  const t = s.son_tur;
+  if (t && t.jeton) parca(`son ${jetonYaz(t.jeton)}`);
+  const k = s.kullanim;
+  if (k && k.tum && k.tum.jeton) parca(`toplam ${jetonYaz(k.tum.jeton)} jeton`);
+  if (t && t.basarili === false) parca("son tur düştü", "t-hata");
+  if (!d.children.length) parca("henüz iş yapmadı", "t-sonuk");
+  return d;
+}
 
 function ozetSatiri(a) {
   const s = a.sicil || {};
