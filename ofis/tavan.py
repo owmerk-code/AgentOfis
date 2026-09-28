@@ -63,6 +63,8 @@ devam etmek de, isi olu birakmak da yanlis olurdu.
 
 from __future__ import annotations
 
+import json
+
 #: Kacak freni varsayilanlari. Hepsi OLCULMUS is profillerinden:
 #:
 #:     kod (GuvenKart QA)        241.571 jeton ·  ~10 arac cagrisi
@@ -141,6 +143,32 @@ class KacakFreni:
         return {"arac": self.arac, "harf": self.harf,
                 "azami_arac": self.azami_arac,
                 "azami_cikti_harf": self.azami_cikti_harf}
+
+
+def lider_freni(db, proje_id: str, fren: KacakFreni, olay, *, ajan_ad: str,
+                gorev_id: str = None, motor: str = "", hesap: str = "",
+                yol: str = "lider") -> dict | None:
+    """Lider turlarinda (triyaj, planlama, rapor, inceleme) kacak freni.
+
+    28.09.2026 (PLAN E08): fren yalniz ISCI turunda (koltuk) vardi; lider
+    turu donguye girse hicbir sey onu kesmezdi -- ve lider codex'e
+    devrettiginde dolar tavani da yok. Cagiran her olayda cagirir; fren
+    asildiysa GORUNUR bir uyari yazar, kesilen turu da OLCER (kesilen tur
+    da bir harcamadir; `bitti` hic gelmeyecegi icin tur_ozeti burada
+    yazilir) ve basarisiz `ek`i dondurur -- cagiran dongudan cikar.
+    Asilmadiysa `None`.
+    """
+    fren.olay(olay.tur, olay.govde or "")
+    sebep = fren.asildi_mi()
+    if not sebep:
+        return None
+    from . import kullanim
+    db.olay_yaz(proje_id, "uyari", sebep + " " + json.dumps(fren.olcum()),
+                ajan_ad=ajan_ad, gorev_id=gorev_id)
+    ek = {"basarili": False, "sebep": "kacak freni", "hata": sebep}
+    kullanim.tur_ozeti_yaz(db, proje_id, ek, ajan_ad=ajan_ad,
+                           gorev_id=gorev_id, motor=motor, hesap=hesap, yol=yol)
+    return ek
 
 
 def gorev_jetonu(db, proje_id: str, gorev_id: str) -> int:

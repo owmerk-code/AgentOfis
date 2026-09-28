@@ -642,15 +642,24 @@ class _LimitliIlkMotor(SahteMotor):
 
 
 def d13_fabrika_sar(fabrika, bag, kok):
-    """Iscinin ILK basamagi ('sahte' motor) birinci adimi yapip limit
-    carpar; zincir sonraki basamaga (gercek motor) devreder.
+    """Iscinin KENDI motoru (ilk basamak) birinci adimi yapip limite carpar;
+    zincir sonraki basamaga -- BASKA bir motora -- devreder.
 
-    Isci 'sahte' motorla ise alinir: kadro yalniz kayitli motor adini
-    kabul eder ve ilk basamagi ayirt etmenin tek kararli yolu budur (lider
-    de claude kosuyor; "ilk claude cagrisi" hangisi, belirsizdi).
+    28.09.2026: once isci 'sahte' ise aliniyordu, yani olculen sey
+    "sahte -> gercek" devriydi; hangi gercek motorun devraldigi zincirin
+    sirasina kalmisti ve "codex dolunca claude devralir mi" hic
+    sorulmamisti. Artik isci kosunun motoruyla (`--motor codex`) ise
+    alinir ve O motor limite carpar: codex -> claude yonu olculur.
+
+    Limit atilana kadar o motorun HER yaratilisi limitli dondurulur:
+    zincir musaitlik sorarken de fabrikayi cagirir, "ilk cagri" belirsizdir.
+    Lider ayni motoru kullansa bile isciden SONRA kosar (is dogrudan
+    tahtaya acilir), o sirada limit coktan atilmistir.
     """
+    ilk = bag.get("isci_motor") or "sahte"
+
     def sarili(ad, **a):
-        if ad == "sahte" and not bag.get("limit_atildi"):
+        if ad == ilk and not bag.get("limit_atildi"):
             return _LimitliIlkMotor(kok, bag)
         return fabrika(ad, **a)
     return sarili
@@ -672,8 +681,9 @@ def d13_dogrula(kok, ofis, bag):
             "SELECT govde FROM olay WHERE proje_id=? AND tur='tur_ozeti' AND ajan_ad='isci'",
             (ofis.proje_id,))]
     s.append(("limit gorundu ve devredildi", devir >= 1, f"{devir}"))
+    ilk = bag.get("isci_motor") or "sahte"
     s.append(("isi BASKA motor bitirdi",
-              any(m and m != "sahte" for m in motorlar), str(motorlar)))
+              any(m and m != ilk for m in motorlar), str(motorlar)))
     return s
 
 
@@ -718,6 +728,5 @@ ISLER = {
                 insan_cevabi=D12_CEVAP),
     "D13": dict(ad="Tur ortasinda limit (enjekte)", set="tam", fikstur=d13_fikstur,
                 gorev=D13_GOREV, dogrula=d13_dogrula, kuru_iyi=d13_kuru_iyi,
-                kuru_kotu=d13_kuru_kotu, fabrika_sar=d13_fabrika_sar,
-                isci_motor="sahte"),
+                kuru_kotu=d13_kuru_kotu, fabrika_sar=d13_fabrika_sar),
 }

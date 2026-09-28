@@ -139,6 +139,7 @@ def is_kos(no: str, *, kip: str, motor: str, model: str, lider_model: str,
                           model=lider_model if gercek else "")
         for ad in iscler:
             isci_motor = tanim.get("isci_motor") or (motor if gercek else "sahte")
+            bag.setdefault("isci_motor", isci_motor)
             ofis.kadro.ise_al(ad, rol, klasor=str(kok), motor=isci_motor,
                               model=model if (gercek and isci_motor == motor) else "",
                               kanat_id=kanat)

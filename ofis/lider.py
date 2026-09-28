@@ -40,7 +40,7 @@ import json
 import re
 import sqlite3
 
-from . import butce, degisim, kullanim, plan, roller, tarayici
+from . import butce, degisim, kullanim, plan, roller, tarayici, tavan
 from .motor import motor_ac, MotorHatasi
 from .postane import NOT_KURALI, gorev_notlari
 from .zincir import LIDER_ZINCIRI, basamaklari_kur, limitte_devret, lider_devri, tur_butcesi, ZincirBitti
@@ -543,14 +543,15 @@ class Lider:
             if kapi:
                 # TUR SINIRI iceride bir kacak frenidir (27.09.2026): haftalik
                 # pay saglayicinin kendi yuzdesiyle korunuyor (`butce.py`).
-                tavan = butce_usd or hafta["tur_siniri"]
-                if tavan:
+                # Ad `kapi_siniri`: `tavan` bu dosyada MODULDUR (kacak freni).
+                kapi_siniri = butce_usd or hafta["tur_siniri"]
+                if kapi_siniri:
                     model = kapi["model"]
-                    butce_usd = tavan
+                    butce_usd = kapi_siniri
                     self.db.olay_yaz(
                         self.proje_id, "yukseltme",
                         f"#{no} {ret_sayisi}. kez geri dondu -> inceleme "
-                        f"{lider['motor']}/{model} ile, tavan ${tavan:.2f}",
+                        f"{lider['motor']}/{model} ile, tavan ${kapi_siniri:.2f}",
                         ajan_ad=lider["ad"], gorev_id=gorev["id"])
             else:
                 # Atlanan yukseltme de GORUNUR olmali: gorunmeyen bosluk,
@@ -584,6 +585,7 @@ class Lider:
         def kostur(b):
             motor = self.motor_fabrikasi(b["motor"])
             parcalar, ek = [], {}
+            fren = tavan.KacakFreni()
             for olay in motor.tur_kos(
                 metin,
                 klasor=inceleme_klasoru,
@@ -605,6 +607,12 @@ class Lider:
                 zaman_asimi=zaman_asimi,
                 ek_ortam=b.get("ortam") or None,
             ):
+                kesildi = tavan.lider_freni(
+                    self.db, self.proje_id, fren, olay, ajan_ad=lider["ad"],
+                    gorev_id=gorev["id"], motor=b["motor"],
+                    hesap=b.get("hesap") or "", yol="inceleme")
+                if kesildi:
+                    return kesildi, []
                 if olay.tur == "metin":
                     parcalar.append(olay.govde)
                 elif olay.tur == "bitti":

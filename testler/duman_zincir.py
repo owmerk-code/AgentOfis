@@ -89,6 +89,14 @@ basamaklar_yok = zincir_kur(ajan, zincir=[("yokmotor", "")],
 sina("kurulu olmayan motor zincire ALINMIYOR",
      all(b["motor"] != "yokmotor" for b in basamaklar_yok))
 
+# BOS zincir = "yedek YOK" (E09). Once `zincir or VARSAYILAN` bos demeti de
+# varsayilana dusuruyordu: istenen ayar sessizce yok sayiliyordu.
+# Fabrika HER adi kabul eder: yoksa varsayilan zincirin basamaklari
+# fabrikada elenir ve fark hic gorunmez (ilk surum boyle ates etmedi).
+_bos = zincir_kur(ajan, zincir=(), fabrika=lambda ad, **k: SahteMotor(**k))
+sina("BOS zincir: yalniz ajanin kendi basamagi (varsayilana DUSMEZ)",
+     [(b["motor"], b["model"]) for b in _bos] == [("sahte", "opus")], str(_bos))
+
 # --------------------------------------------------------------------------
 print("\n2. BUTCE KAPISI -- atlamak YOK, OFIS FRENI var")
 # SOZLESME DEGISTI (22.09.2026). Onceden: tavan uygulayamayan basamak

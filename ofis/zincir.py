@@ -99,6 +99,15 @@ def _butce_kaldirir_mi(motor_ad: str, fabrika) -> bool:
         return False
 
 
+def _zincir_listesi(zincir) -> tuple:
+    """`None` = varsayilan zincir; BOS demet = "yedek YOK" (bilincli secim).
+
+    Once `zincir or VARSAYILAN_ZINCIR` yaziyordu: bos demet de varsayilana
+    dusuyordu, yani "bu ajan yalniz kendi motorunda kossun" demenin yolu
+    yoktu ve istenen ayar sessizce yok sayiliyordu (PLAN E09)."""
+    return VARSAYILAN_ZINCIR if zincir is None else tuple(zincir)
+
+
 def zincir_kur(ajan: dict, *, butce_usd=None, zincir=None,
                fabrika=motor_ac, hesaplar=None, kademe_haritasi=None) -> list:
     """Bu ajan icin denenecek basamaklari sirayla verir.
@@ -113,7 +122,7 @@ def zincir_kur(ajan: dict, *, butce_usd=None, zincir=None,
     gorulen = set()
 
     kendi = (ajan.get("motor") or "", ajan.get("model") or "")
-    aday_listesi = [kendi] + [a for a in (zincir or VARSAYILAN_ZINCIR)]
+    aday_listesi = [kendi] + [a for a in _zincir_listesi(zincir)]
 
     # Rolun kademesi: MODELSIZ yedek basamak hesabin varsayilanina
     # dusmesin diye (bkz. asagidaki kural 3). Genel zincir de hesaplar
@@ -243,7 +252,7 @@ def elenenler(ajan: dict, *, butce_usd=None, zincir=None,
     sonuc = []
     gorulen = set()
     kendi = (ajan.get("motor") or "", ajan.get("model") or "")
-    for motor_ad, model in [kendi] + [a for a in (zincir or VARSAYILAN_ZINCIR)]:
+    for motor_ad, model in [kendi] + [a for a in _zincir_listesi(zincir)]:
         if not motor_ad:
             continue
         anahtar = (motor_ad, model)

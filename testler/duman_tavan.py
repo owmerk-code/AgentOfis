@@ -227,6 +227,55 @@ sina("yerine gecen kontrol SOYLENDI",
 sina("tur yine de KOSTU (atlanmadi)",
      any(o["tur"] == "tur_bitti" for o in olay4))
 
+# ------------------------------------------------- 5. LIDER TURU (E08)
+print("\n5. LIDER TURUNDA da kacak freni (28.09: yalniz iscide vardi)")
+from ofis import Lider as _Lider
+
+
+class _DonguLider(SahteMotor):
+    """Inceleme turunda sonsuz arac cagiran lider."""
+
+    def tur_kos(self, metin, **ayar):
+        for i in range(T.VARSAYILAN_AZAMI_ARAC + 50):
+            yield MotorOlayi("arac", "Read")
+        yield MotorOlayi("metin", "KARAR: kapat")
+        yield MotorOlayi("bitti", "", {"basarili": True})
+
+
+ofis.kadro.ise_al("lale", "lider", lider_mi=True, motor="sahte", klasor=str(kok))
+g7 = ofis.tahta.gorev_ac("Incelenecek", neden="n", ana_hedef="h",
+                         kabul_olcutu="k", yazma_alani=["l7"])
+list(Koltuk(ofis, motor_fabrikasi=lambda a, **k: SahteMotor(
+    cevap="Bitti." + chr(10) + "KANIT dosya: x -> y")).akit(g7["no"], "cinar", zaman_asimi=30))
+sina("sahne: is incelemede", ofis.tahta.gorev(g7["no"])["durum"] == "inceleme",
+     ofis.tahta.gorev(g7["no"])["durum"])
+_ld = _Lider(ofis, motor_fabrikasi=lambda a, **k: _DonguLider())
+_h7 = _ld.incele(g7["no"], lider_ad="lale", zaman_asimi=30)
+with ofis.db.baglanti() as _c:
+    _u7 = [r[0] for r in _c.execute(
+        "SELECT govde FROM olay WHERE proje_id=? AND tur='uyari' AND ajan_ad='lale'",
+        (ofis.proje_id,))]
+    _t7 = [json.loads(r[0] or "{}") for r in _c.execute(
+        "SELECT govde FROM olay WHERE proje_id=? AND tur='tur_ozeti' AND ajan_ad='lale'",
+        (ofis.proje_id,))]
+sina("dongudeki inceleme KESILDI ve SOYLENDI",
+     any("Kacak freni" in (u or "") for u in _u7), str(_u7)[:200])
+sina("kesilen hukum UYGULANMADI (is kapanmadi)",
+     ofis.tahta.gorev(g7["no"])["durum"] == "inceleme", ofis.tahta.gorev(g7["no"])["durum"])
+sina("kesilen tur OLCULDU (basarisiz tur_ozeti)",
+     any(t.get("basarili") is False and t.get("yol") == "inceleme" for t in _t7), str(_t7)[:200])
+
+# Ters yon: normal lider turu frenlenmez.
+g8 = ofis.tahta.gorev_ac("Normal inceleme", neden="n", ana_hedef="h",
+                         kabul_olcutu="k", yazma_alani=["l8"])
+list(Koltuk(ofis, motor_fabrikasi=lambda a, **k: SahteMotor(
+    cevap="Bitti." + chr(10) + "KANIT dosya: x -> y")).akit(g8["no"], "cinar", zaman_asimi=30))
+_ln = _Lider(ofis, motor_fabrikasi=lambda a, **k: SahteMotor(cevap="KARAR: kapat"))
+_ln.incele(g8["no"], lider_ad="lale", zaman_asimi=30)
+sina("normal inceleme FRENLENMEDI (is kapandi)",
+     ofis.tahta.gorev(g8["no"])["durum"] == "bitti", ofis.tahta.gorev(g8["no"])["durum"])
+
+
 print(f"\n== sonuc: {GECEN} gecti, {KALAN} kaldi ==")
 print(f"klasor: {kok}")
 sys.exit(1 if KALAN else 0)

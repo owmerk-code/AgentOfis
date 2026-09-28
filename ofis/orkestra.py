@@ -68,7 +68,7 @@ import json
 import re
 from concurrent.futures import ThreadPoolExecutor
 
-from . import baglayici, kullanim, roller, sartname, tarayici
+from . import baglayici, kullanim, roller, sartname, tarayici, tavan
 from .klasor import klasorleri_dogrula, metinler
 from .koltuk import Koltuk, durdurma_istendi
 from .danisma import Danisma
@@ -643,6 +643,7 @@ class Orkestra:
             # `hedef --butce 0.5` bir codex liderde planlamayi oldururdu:
             # kullanicinin istedigi tavan, isi hic yapilmamis kilardi.
             motor_butcesi = tur_butcesi(b, motor, butce_usd)
+            fren = tavan.KacakFreni()
             for olay in motor.tur_kos(
                 metin, klasor=lider["klasor"], oturum_id="",
                 model=b["model"],
@@ -655,6 +656,11 @@ class Orkestra:
                 butce_usd=motor_butcesi, zaman_asimi=zaman_asimi,
                 ek_ortam=b.get("ortam") or None,
             ):
+                kesildi = tavan.lider_freni(
+                    self.db, self.proje_id, fren, olay, ajan_ad=lider["ad"],
+                    motor=b["motor"], hesap=b.get("hesap") or "", yol="lider")
+                if kesildi:
+                    return kesildi, []
                 if olay.tur == "metin":
                     parcalar.append(olay.govde)
                 elif olay.tur == "bitti":
