@@ -599,6 +599,10 @@ class Veritabani:
         self.yol = (Path(yol) if yol else VARSAYILAN_YOL).expanduser().resolve()
         self.yol.parent.mkdir(parents=True, exist_ok=True)
         self._kilit = threading.RLock()
+        self._say_kilit = threading.Lock()
+        self._bekleyen = 0
+        self._derinlik = 0
+        self._conn = None
         self._kur()
 
     def _kur(self) -> None:
@@ -678,20 +682,56 @@ class Veritabani:
                 conn.execute(
                     f"ALTER TABLE {tablo} ADD COLUMN {sutun} {tanim}")
 
+    #: YUK OLCUMU (E73, 28.09.2026): her cagri YENI baglanti aciyordu
+    #: (~1,7 ms) ve kilit bu sure boyunca tutuluyordu. 25 ajan ayni anda
+    #: kosunca kilit 12 saniyelik kosunun 9,6 saniyesinde doluydu ve
+    #: duvar saati tek turun 4,6 kati cikti.
+    #:
+    #: Cozum: SIRADA BEKLEYEN VARKEN baglanti acik kalir ve bir sonrakine
+    #: devredilir; kimse beklemiyorsa bugunku gibi KAPANIR. Neden hep acik
+    #: degil: Windows acik dosyayi kilitler -- sinamalarin gecici klasoru,
+    #: yedegin geri yuklemesi, kullanicinin dosyayi tasimasi takilirdi.
+    #: Tek basina calisan yol (panel, kabuk, sinama) eskisiyle AYNI kalir.
+    #: Kilit ve siralama degismez; yalniz acma bedeli kalabalikta odenmez.
+    def _baglan(self):
+        conn = sqlite3.connect(str(self.yol), timeout=30.0, check_same_thread=False)
+        conn.row_factory = sqlite3.Row
+        conn.execute("PRAGMA foreign_keys=ON")
+        return conn
+
     @contextmanager
     def baglanti(self):
-        with self._kilit:
-            conn = sqlite3.connect(str(self.yol), timeout=30.0)
-            conn.row_factory = sqlite3.Row
-            conn.execute("PRAGMA foreign_keys=ON")
+        with self._say_kilit:
+            self._bekleyen += 1
+        try:
+            self._kilit.acquire()
+        finally:
+            with self._say_kilit:
+                self._bekleyen -= 1
+        try:
+            dis = self._derinlik == 0
+            if dis and self._conn is None:
+                self._conn = self._baglan()
+            conn = self._conn
+            self._derinlik += 1
             try:
                 yield conn
-                conn.commit()
+                if dis:
+                    conn.commit()
             except Exception:
-                conn.rollback()
+                if dis:
+                    conn.rollback()
                 raise
             finally:
-                conn.close()
+                self._derinlik -= 1
+                if dis:
+                    with self._say_kilit:
+                        bekleyen = self._bekleyen
+                    if not bekleyen:
+                        self._conn = None
+                        conn.close()
+        finally:
+            self._kilit.release()
 
     def ayar_oku(self, proje_id: str, anahtar: str, varsayilan: str = "") -> str:
         with self.baglanti() as conn:

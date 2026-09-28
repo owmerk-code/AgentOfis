@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import _temizlik  # noqa: F401 -- gecici klasorleri siler (E05); ILK ice aktarma
 
+import os
 import sys
 import tempfile
 from pathlib import Path
@@ -640,6 +641,66 @@ try:
     sina("bos girdiler atlanir (alan yok -> gorev acilir)", True)
 except TahtaHatasi as exc:
     sina("bos girdiler atlanir (alan yok -> gorev acilir)", False, str(exc))
+
+# ------------------------------------------------------------------
+print("\n-- DEFTER BAGLANTISI (E73): kalabalikta devredilir, bosta KAPANIR --")
+import threading as _th
+import time as _tm
+_k = Path(tempfile.mkdtemp(prefix="ofis-db-"))
+_d = Veritabani(_k / "b.sqlite3")
+with _d.baglanti() as _c:
+    _c.execute("CREATE TABLE t (i INTEGER)")
+sina("bosta baglanti ACIK KALMAZ", _d._conn is None)
+try:
+    os.replace(_k / "b.sqlite3", _k / "c.sqlite3")
+    os.replace(_k / "c.sqlite3", _k / "b.sqlite3")
+    _tasindi = True
+except OSError as _e:
+    _tasindi = False
+sina("bosta dosya KILITLI degil (Windows): tasinabiliyor", _tasindi)
+
+_goruldu = {"yeniden": 0}
+_orj = _d._baglan
+def _say_baglan():
+    _goruldu["yeniden"] += 1
+    return _orj()
+_d._baglan = _say_baglan
+
+def _yazar(i):
+    for j in range(20):
+        with _d.baglanti() as _c:
+            _c.execute("INSERT INTO t VALUES (?)", (i * 100 + j,))
+            _tm.sleep(0.001)
+
+_is = [_th.Thread(target=_yazar, args=(i,)) for i in range(8)]
+for _t in _is:
+    _t.start()
+for _t in _is:
+    _t.join()
+with _d.baglanti() as _c:
+    _n = _c.execute("SELECT COUNT(*) FROM t").fetchone()[0]
+sina("8 iplik x 20 yazma: HICBIRI kaybolmadi", _n == 160, str(_n))
+sina("kalabalikta baglanti DEVREDILDI (160 kullanima cok daha az acilis)",
+     _goruldu["yeniden"] < 120, str(_goruldu["yeniden"]))
+sina("kalabalik bitince baglanti KAPANDI", _d._conn is None)
+
+# Ic ice kullanim: tek islem. Dis blok hata verirse ic yazma da geri alinir.
+try:
+    with _d.baglanti() as _c:
+        with _d.baglanti() as _c2:
+            _c2.execute("INSERT INTO t VALUES (-1)")
+        raise RuntimeError("dis hata")
+except RuntimeError:
+    pass
+with _d.baglanti() as _c:
+    _m = _c.execute("SELECT COUNT(*) FROM t WHERE i=-1").fetchone()[0]
+sina("ic ice: dis hata ic yazmayi da GERI ALIR", _m == 0, str(_m))
+with _d.baglanti() as _c:
+    with _d.baglanti() as _c2:
+        _c2.execute("INSERT INTO t VALUES (-2)")
+with _d.baglanti() as _c:
+    _m = _c.execute("SELECT COUNT(*) FROM t WHERE i=-2").fetchone()[0]
+sina("ic ice: basarili blok KALICI", _m == 1, str(_m))
 
 print(f"\n== sonuc: {GECEN} gecti, {KALAN} kaldi ==")
 print(f"veritabani: {gecici}")

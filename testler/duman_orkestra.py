@@ -557,6 +557,15 @@ sina("eski sahip BASARISIZ fazda ise secilmiyor",
      _sork._uygun_ajan(_sahne("t5", "y", "butce tavani doldu")) == "acinar")
 
 
+# --------------------------------------------------------------------------
+print("\n9. YUK (E73): 12 ajan AYNI ANDA -- her is biter, hata yok")
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import olcum_yuk as _Y
+_r = _Y.olc(12, 0.02)
+sina("12 isin 12'si de incelemeye ulasti", _r["incelemede"] == 12, str(_r["durumlar"]))
+sina("hic hata olayi yok", _r["hata_olayi"] == 0, str(_r["hata_olayi"]))
+sina("12'si de paralel baslatildi", _r["baslatilan"] == 12 and _r["paralel"] == 12, str(_r))
+
 print(f"\n== sonuc: {GECEN} gecti, {KALAN} kaldi ==")
 print(f"klasor: {kok}")
 sys.exit(1 if KALAN else 0)

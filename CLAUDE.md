@@ -11799,3 +11799,24 @@ sağlam. Ayrıca C: sürücüsünde ~1 GB boş kaldı ve bir sınama
 - `duman_devral` 65 → **70**; mutasyon (öneriden ofis kökü süzgeci
   kalksın) ateş etti. Toplam **2763/2763**.
 
+
+## F2 KAPANDI (28.09.2026) — motor kartı, yük testi
+
+- **Dürüst motor kartı (E60)** `ofis/motor_karti.py`: hücre listesi
+  (`HUCRELER`) artık TEK yerde; matris ve panel aynı listeyi okur.
+  Kart matrisin son ÖLÇÜMÜNDEN gelir; ölçüm yoksa iddia "ölçülmedi" der,
+  bayrak ölçümden sonra değiştiyse "yeniden ölçülmeli". Panelde motor
+  rozetine tıklanınca açılır. Pano başlığındaki limit rozeti hangi
+  HESAPTAN yediğini yazar (E63).
+- **Yük testi (E73)** `testler/olcum_yuk.py` — jeton yakmaz. Ölçüldü:
+  25 ajan aynı anda 13,9 sn (tek tur 3,0 sn), defter kilidi 12 sn'lik
+  koşunun 9,6 sn'sinde doluydu. Sebep: `Veritabani.baglanti` HER
+  çağrıda yeni bağlantı açıyordu (~1,7 ms okuma, ~9 ms yazma, kilit
+  bu süre tutuluyor). Düzeltme: **sırada bekleyen varken** bağlantı
+  devredilir, kimse beklemiyorsa KAPANIR (hep açık kalsaydı Windows
+  dosyayı kilitler: mutasyonda geçici klasörler silinemedi). İç içe
+  kullanım tek işlem. Sonuç 25 ajan **5,9 sn**, hata 0. `synchronous`
+  (diske yazma güvencesi) DEĞİŞMEDİ.
+- **E12 açık:** kabin kaydı hazır ama 24.09'dan beri kabin hiç açılmadı.
+- Sınamalar: `duman_cekirdek` +7 · `duman_matris` +10 · `duman_orkestra`
+  +3 (12 ajan yükü); mutasyonlar ateş etti. Toplam **2786**.

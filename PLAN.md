@@ -390,12 +390,12 @@ kararı). Yerine **motor matrisi** buraya girdi: eklenti motorlarının kapısı
 3. ~~Tur sürerken mesaj + gerçek Durdur (E17)~~ **BİTTİ (27.09):** not tur sürerken ulaşır (Claude 6 sn, Codex anında), Durdur koşan turu keser, Sürdür kaldığı yerden devam eder; D14 ve D17 iki motorda gerçek turla geçti.
 4. ~~**Motor matrisi**~~ **BİTTİ (27.09):** Claude KABUL, Codex KABUL (Codex'te tavan/araç kapatma/bağlayıcı dürüstçe "yok"; B3 bu yüzden "aynı" değil "yalansız + zorunlular tam" okunur). Yolda iki delik kapandı: codex'in sarılı `rm`i kapıya sorulmuyordu; `yazma_alani ["."]` kilitsiz iş açıyordu. Eski not: `testler/matris.py` (T3, E59) — yazılmamıştı (27.09 ölçüldü: dosya yok). Motor × yetenek, her hücre tek kısa gerçek tur; bayrağın iddiası ile turun sonucu ayrışırsa hücre KALIR. Claude ve Codex ile kurulur; sahte bir "yalancı motor" matriste kalmalı (B5).
 4b. ~~**Tek kavram: hesabın limiti**~~ **BİTTİ (27.09):** abonelikte dolar yok (`--butce`, "kapı bütçesi", "$ API karşılığı" kalktı); Fable koruması ölçülen Fable yüzdesiyle (%80); API hesabı aylık dolar sınırıyla. **Limitler sürekli güncel:** `Motor.limit_oku` tur koşmadan okur (Claude `get_usage`, Codex `account/rateLimits/read`, kota harcamaz); panel 2 dk'da bir, halka her tik başında, `kullanim` komutu anında tazeler.
-5. Panel: terminal görünümlü pano (renk, araç, diff), yazma satırı, Devral / Ofise geri ver (E18).
-6. Lider turuna kaçak freni ve hesap ortamı sınaması (E08); boş zincir tuzağı (E09); rollout tarama maliyeti (E10); kabin ölüm kaydı (E12).
-7. Devir yönleri: claude→codex ölçüldü; **codex→claude** gerçek sahte-limitle (E07).
-8. Dürüst motor kartı: matris sonucu panelde (E60) · terminal başlığında hesap adı (E63).
-9. Yük testi: 25 sahte ajanla paralel koşu, darboğaz ölçümü (E73). Çözüm gerekirse F6'da.
-10. Tam deneme seti Codex işçiyle (bugüne kadar yalnız hızlı set).
+5. ~~Panel: terminal görünümlü pano, yazma satırı, Devral (E18)~~ **BİTTİ (28.09)** + Konsol (öneri, Gözat, klasörsüz açılış).
+6. ~~E08 · E09 · E10~~ **BİTTİ (28.09)**. E12: kayıt düzeneği hazır (`kabin_dustu` + `~/.agentofis/kabin.log`) ama 24.09'dan beri kabin hiç açılmadı → sebep ölçülemedi, AÇIK.
+7. ~~Devir yönleri (E07)~~ **BİTTİ (28.09)**: codex→claude gerçek turla.
+8. ~~Dürüst motor kartı (E60) · başlıkta hesap adı (E63)~~ **BİTTİ (28.09)**: motor rozetine tıkla; hücreler matrisin ölçümünden, iddia "ölçülmedi" der.
+9. ~~Yük testi (E73)~~ **BİTTİ (28.09)**: `testler/olcum_yuk.py`. 25 ajan 13,9 sn → **5,9 sn** (tek tur 3,0): darboğaz her çağrıda yeni SQLite bağlantısıydı; bağlantı artık sırada bekleyen varken devrediliyor, boşta kapanıyor. Diske yazma güvencesi değişmedi.
+10. ~~Tam deneme seti Codex işçiyle~~ **BİTTİ (28.09)**: 15/15.
 
 **Testler:** T3 motor matrisi · D01–D17 **Claude'da ve Codex'te** · D13 iki devir yönünde ·
 T6: K1 (tur ortasında süreç öldürme) ve K6 (oturum düşmesi).
