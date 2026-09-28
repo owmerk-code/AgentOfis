@@ -54,9 +54,9 @@ INSERT INTO "ayar" VALUES('915d303e41ee4cb59fa908401d277926','kademe:codex:hizli
 INSERT INTO "ayar" VALUES('915d303e41ee4cb59fa908401d277926','guncelleme:karar:model:codex:gpt-5.6-luna->gpt-6-luna','onay','2026-09-23T00:21:44+00:00');
 INSERT INTO "ayar" VALUES('915d303e41ee4cb59fa908401d277926','kademe:codex:standart','gpt-6-sol','2026-09-23T00:22:19+00:00');
 INSERT INTO "ayar" VALUES('915d303e41ee4cb59fa908401d277926','guncelleme:karar:cli:gemini:0.60.0','onay','2026-09-24T01:36:44+00:00');
-INSERT INTO "ayar" VALUES('915d303e41ee4cb59fa908401d277926','limit_canli_son','1790562746.3803034','2026-09-28T02:32:26+00:00');
-INSERT INTO "ayar" VALUES('915d303e41ee4cb59fa908401d277926','limit_canli:claude:','{"motor": "claude", "hesap": "", "olculdu": "2026-09-28T02:32:30+00:00", "limit_pencere": {"kaynak": "claude CLI (get_usage, tur yok)", "hal": "", "plan": "max", "pencereler": {"5s": {"kullanim": 0.24, "yenilenme": 1790571000}, "7g": {"kullanim": 0.59, "yenilenme": 1790737200}, "7g_kapi": {"kullanim": 0.12, "yenilenme": 1790737200}}}}','2026-09-28T02:32:30+00:00');
-INSERT INTO "ayar" VALUES('915d303e41ee4cb59fa908401d277926','limit_canli:codex:','{"motor": "codex", "hesap": "", "olculdu": "2026-09-28T02:32:31+00:00", "limit_pencere": {"kaynak": "codex app-server (account/rateLimits)", "hal": "", "plan": "plus", "pencereler": {"5s": {"kullanim": 0.22, "yenilenme": 1790570915}, "7g": {"kullanim": 0.38, "yenilenme": 1791061490}}}}','2026-09-28T02:32:31+00:00');
+INSERT INTO "ayar" VALUES('915d303e41ee4cb59fa908401d277926','limit_canli_son','1790566595.1358194','2026-09-28T03:36:35+00:00');
+INSERT INTO "ayar" VALUES('915d303e41ee4cb59fa908401d277926','limit_canli:claude:','{"motor": "claude", "hesap": "", "olculdu": "2026-09-28T03:36:37+00:00", "limit_pencere": {"kaynak": "claude CLI (get_usage, tur yok)", "hal": "", "plan": "max", "pencereler": {"5s": {"kullanim": 0.34, "yenilenme": 1790570999}, "7g": {"kullanim": 0.6, "yenilenme": 1790737199}, "7g_kapi": {"kullanim": 0.12, "yenilenme": 1790737199}}}}','2026-09-28T03:36:37+00:00');
+INSERT INTO "ayar" VALUES('915d303e41ee4cb59fa908401d277926','limit_canli:codex:','{"motor": "codex", "hesap": "", "olculdu": "2026-09-28T03:36:39+00:00", "limit_pencere": {"kaynak": "codex app-server (account/rateLimits)", "hal": "", "plan": "plus", "pencereler": {"5s": {"kullanim": 0.24, "yenilenme": 1790570915}, "7g": {"kullanim": 0.38, "yenilenme": 1791061490}}}}','2026-09-28T03:36:39+00:00');
 CREATE TABLE brifing (
     id              TEXT PRIMARY KEY,
     gorev_id        TEXT NOT NULL REFERENCES gorev(id),
@@ -12622,6 +12622,9 @@ INSERT INTO "olay" VALUES(3230,'915d303e41ee4cb59fa908401d277926','bilge','8b85b
 INSERT INTO "olay" VALUES(3231,'915d303e41ee4cb59fa908401d277926','bilge','8b85bc1326004304a5c48da383b8b5c6','kanit','#31 terminal: node cinar/testler/test_ofis_yurume.mjs (yeniden dogrulama)','2026-09-27T03:34:44+00:00');
 INSERT INTO "olay" VALUES(3232,'915d303e41ee4cb59fa908401d277926','bilge','8b85bc1326004304a5c48da383b8b5c6','arac_sonuc','Kanit eklendi: [terminal] node cinar/testler/test_ofis_yurume.mjs (yeniden dogrulama) (#31 icin toplam 4 kanit).','2026-09-27T03:34:44+00:00');
 INSERT INTO "olay" VALUES(3233,'915d303e41ee4cb59fa908401d277926','insan','8b85bc1326004304a5c48da383b8b5c6','iptal','#31 Ofis ekranı: boştaki ajan rastgele yürür, iş alınca masasına döner iptal edildi: Patron: is ornek olarak yazilmisti, gerek yok','2026-09-27T15:41:31+00:00');
+INSERT INTO "olay" VALUES(3234,'915d303e41ee4cb59fa908401d277926','',NULL,'depo_gonderildi','GitHub: gonderildi 810f617','2026-09-28T02:33:07+00:00');
+INSERT INTO "olay" VALUES(3235,'915d303e41ee4cb59fa908401d277926','',NULL,'yedek_alindi','AgentOfis-yedek-20260928-053255-gunluk.zip · 477 dosya · 1 hedefe YAZILAMADI','2026-09-28T02:33:07+00:00');
+INSERT INTO "olay" VALUES(3236,'915d303e41ee4cb59fa908401d277926','',NULL,'uyari','Yedek G:\Drive''ım\AgentOfis-yedek hedefine yazilamadi: [Errno 28] No space left on device','2026-09-28T02:33:07+00:00');
 CREATE TABLE olgu (
     id                  TEXT PRIMARY KEY,
     proje_id            TEXT NOT NULL REFERENCES proje(id),
@@ -12715,6 +12718,6 @@ CREATE INDEX ix_degisim_proje
 CREATE INDEX ix_tur_anlik_proje
     ON tur_anlik (proje_id, olusturuldu DESC);
 DELETE FROM "sqlite_sequence";
-INSERT INTO "sqlite_sequence" VALUES('olay',3233);
+INSERT INTO "sqlite_sequence" VALUES('olay',3236);
 COMMIT;
 PRAGMA user_version=1;
