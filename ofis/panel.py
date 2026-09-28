@@ -1679,6 +1679,13 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
                     m for m, var in musait_motorlar().items() if var and m != "sahte"),
                 "oneriler": _ks.oneriler(ofis_ac())}
 
+    @uygulama.get("/api/motor_karti")
+    def api_motor_karti():
+        """Durust motor karti (E60): her motor neyi yapar, neyi YAPAMAZ --
+        motor matrisinin son olcumunden; olcum yoksa 'olculmedi' der."""
+        from . import motor_karti as _mk
+        return {"kartlar": _mk.kartlar(fabrika=MOTOR_FABRIKASI or motor_ac)}
+
     @uygulama.post("/api/konsol/gozat")
     async def api_konsol_gozat(istek: Request):
         # Pencere INSANIN masaustunde acilir: yalniz bu bilgisayardan.

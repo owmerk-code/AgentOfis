@@ -1570,3 +1570,21 @@ details > summary.hf-bas { cursor: pointer; }
 .konsol-oneri-neden { color: var(--metin-3); font-size: 10.5px; flex: none; }
 .konsol-motorlar { display: flex; gap: 6px; flex-wrap: wrap; }
 .konsol-motor { flex: 1; min-width: 110px; }
+
+/* DURUST MOTOR KARTI (E60). */
+.mk-kart { border: 1px solid var(--cizgi); border-radius: 8px; padding: 10px 12px; margin: 10px 0; }
+.mk-kart.secili { border-color: var(--vurgu); }
+.mk-bas { display: flex; align-items: center; gap: 8px; font-size: var(--yz-one); }
+.mk-rozet { font-size: var(--yz-mikro); border: 1px solid currentColor; border-radius: 4px; padding: 1px 6px; }
+.mk-rozet.iyi { color: var(--iyi); } .mk-rozet.kotu { color: var(--kotu); }
+.mk-alt { font-size: var(--yz-kucuk); color: var(--metin-3); margin: 4px 0 8px; }
+.mk-tablo { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 14px; }
+.mk-satir { display: flex; align-items: baseline; gap: 7px; font-size: var(--yz-alt); cursor: help; }
+.mk-imi { width: 12px; text-align: center; font-weight: 700; }
+.mk-ad { flex: 1; color: var(--metin-2); }
+.mk-durum { font-size: var(--yz-mikro); }
+.mk-imi.iyi, .mk-durum.iyi { color: var(--iyi); }
+.mk-imi.kotu, .mk-durum.kotu { color: var(--kotu); }
+.mk-imi.uyari, .mk-durum.uyari { color: var(--uyari); }
+.mk-imi.sonuk, .mk-durum.sonuk { color: var(--metin-3); }
+@media (max-width: 640px) { .mk-tablo { grid-template-columns: 1fr; } }

@@ -120,5 +120,50 @@ M.son_olcumu_yaz({"motor": "hic-olculmemis", "hucreler": {"tur": {"durum": "var"
 kayit = json.loads(M.SON_OLCUM.read_text(encoding="utf-8"))
 sina("onceki tam olcum yoksa parca YAZILMAZ (tam sanilmasin)", "hic-olculmemis" not in kayit)
 
+# ------------------------------------------------------------ motor karti
+print("\n-- MOTOR KARTI (E60): olcumden gelir, iddiadan degil --")
+from ofis import motor_karti as MK   # noqa: E402
+
+
+class _KartMotor:
+    ad = "kartsiz"
+    izin_kancasi = True          # iddia ediyor
+    tur_ici_mesaj = False        # dürüstçe yok
+    araclar_kapatilabilir = False
+    butce_destegi = False
+    mcp_konusur = True
+    baglayici_tasir = False
+
+    def musait_mi(self):
+        return True
+
+    def durum_notu(self):
+        return ""
+
+
+def _fab(ad):
+    return _KartMotor()
+
+
+k0 = MK.kart("kartsiz", None, _fab)
+h0 = {h["ad"]: h["durum"] for h in k0["hucreler"]}
+sina("olcum yokken iddia edilen yetenek 'olculmedi' (iddia olcum degildir)",
+     h0["onay_kapisi"] == "olculmedi", str(h0))
+sina("olcum yokken bildirilmeyen yetenek 'yok'", h0["tur_ici_not"] == "yok", str(h0))
+sina("olcum yokken zorunlu hucre de 'olculmedi'", h0["tur"] == "olculmedi", str(h0))
+sina("olcum yokken hukum yok, olculdu=False", k0["hukum"] is None and not k0["olculdu"])
+olc = {"hucreler": {"tur": {"durum": "var", "not": "x"},
+                    "onay_kapisi": {"durum": "YALAN", "not": "kapi durdurmadi"},
+                    "tarayici": {"durum": "var", "not": "ok"}},
+       "bayraklar": {"izin_kancasi": True, "mcp_konusur": False},
+       "hukum": {"karar": "RED"}, "zaman": "2026-09-28T10:00:00", "model": "m"}
+h1 = {h["ad"]: h["durum"] for h in MK.kart("kartsiz", olc, _fab)["hucreler"]}
+sina("olculen 'var' karta gecer", h1["tur"] == "var")
+sina("YALAN gizlenmez", h1["onay_kapisi"] == "YALAN", str(h1))
+sina("bayrak olcumden sonra degistiyse 'bayat'", h1["tarayici"] == "bayat", str(h1))
+sina("kartta her hucre var (tek liste)", len(MK.kart("kartsiz", olc, _fab)["hucreler"]) == len(M.HUCRELER))
+sina("matris ile kart AYNI hucre listesini kullanir", M.HUCRELER is MK.HUCRELER)
+sina("sahte motor kartlarda YOK", all(x["motor"] != "sahte" for x in MK.kartlar()))
+
 print(f"\n== sonuc: {GECEN} gecti, {KALAN} kaldi ==")
 sys.exit(1 if KALAN else 0)

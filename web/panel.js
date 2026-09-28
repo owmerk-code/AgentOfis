@@ -322,9 +322,62 @@ function cizSerit() {
     // Uydurmaz: kurulu mu degil mi OLCULUR.
     const d = el("div", "motor-rozet" + (acik ? " acik" : ""));
     d.append(el("i"), el("span", null, ad));
-    d.title = acik ? ad + " bu makinede kurulu" : ad + " bulunamadı";
+    d.title = (acik ? ad + " bu makinede kurulu" : ad + " bulunamadı") +
+              (ad === "sahte" ? "" : " — tıkla: neyi yapar, neyi yapamaz");
+    if (ad !== "sahte") { d.style.cursor = "pointer"; d.onclick = () => motorKartiAc(ad); }
     m.append(d);
   }
+}
+
+/* DURUST MOTOR KARTI (E60). Motorlar esit degil ve bu GIZLENMEZ:
+   her hucre motor matrisinin son OLCUMUNDEN gelir. Adaptorun "tasirim"
+   iddiasi olcum degildir -- olculmemisse "ölçülmedi" yazar. "yok" kusur
+   degil durust bildirim, "YALAN" kusurdur. */
+const KART_DURUM = {
+  var: ["✓", "iyi", "var"], yok: ["–", "sonuk", "yok"], bilgi: ["i", "sonuk", "bilgi"],
+  YALAN: ["✗", "kotu", "YALAN"], KALDI: ["✗", "kotu", "kaldı"], hata: ["?", "uyari", "ölçüm düştü"],
+  olculemedi: ["?", "uyari", "ölçülemedi"], olculmedi: ["?", "uyari", "ölçülmedi"],
+  bayat: ["?", "uyari", "yeniden ölçülmeli"],
+};
+async function motorKartiAc(secili) {
+  D.acikCekmece = { tur: "motor" };
+  cekmeceAc(c => { cekBas(c, "MOTORLAR", "Motor kartı"); c.append(el("div", "bos-yazi", "ölçülüyor…")); });
+  let r;
+  try { r = await al("/api/motor_karti"); }
+  catch (e) { return cekmeceAc(c => { cekBas(c, "MOTORLAR", "Motor kartı"); c.append(el("div", "bos-yazi", "okunamadı: " + e.message)); }); }
+  if ((D.acikCekmece || {}).tur !== "motor") return;
+  cekmeceAc(c => {
+    cekBas(c, "MOTORLAR", "Motor kartı — neyi yapar, neyi yapamaz");
+    c.append(el("div", "hp-not",
+      "Her satır motor matrisinin GERÇEK ölçümünden gelir. “yok” kusur değildir, " +
+      "motor dürüstçe yapamadığını söylüyor ve ofis o işi ona vermez. “ölçülmedi”: " +
+      "adaptör iddia ediyor ama henüz sınanmadı (testler/matris.py)."));
+    const kartlar = (r.kartlar || []).slice().sort((a, b) => (a.motor === secili ? -1 : b.motor === secili ? 1 : 0));
+    for (const k of kartlar) {
+      const b = el("div", "mk-kart" + (k.motor === secili ? " secili" : ""));
+      const bas = el("div", "mk-bas");
+      bas.append(el("b", null, k.motor));
+      bas.append(el("span", "mk-rozet " + (k.kurulu ? "iyi" : "kotu"), k.kurulu ? "kullanılabilir" : "kullanılamıyor"));
+      if (k.hukum) bas.append(el("span", "mk-rozet " + (k.hukum === "KABUL" ? "iyi" : "kotu"), "matris: " + k.hukum));
+      b.append(bas);
+      b.append(el("div", "mk-alt", k.olculdu
+        ? `son ölçüm ${String(k.zaman || "").replace("T", " ")} · ${k.model || ""}`
+        : "bu motor matristen hiç geçmedi — satırlar ölçüm değil"));
+      if (k.durum_notu) b.append(el("div", "hp-sebep", k.durum_notu));
+      const t = el("div", "mk-tablo");
+      for (const h of k.hucreler) {
+        const [imi, sinif, yazi] = KART_DURUM[h.durum] || ["?", "uyari", h.durum];
+        const s = el("div", "mk-satir");
+        s.title = `${h.ne}\n\n${h.not}`;
+        s.append(el("span", "mk-imi " + sinif, imi), el("span", "mk-ad", h.ad_tr + (h.zorunlu ? " *" : "")),
+                 el("span", "mk-durum " + sinif, yazi));
+        t.append(s);
+      }
+      b.append(t);
+      c.append(b);
+    }
+    c.append(el("div", "hp-not", "* zorunlu yetenek: eksikse motor deftere girmez."));
+  });
 }
 
 /* ─────────────── ofis görünümü ─────────────── */
@@ -603,7 +656,10 @@ function panoKur(a, secenek) {
       .map(([ad, w]) => `${ad} ${pencereYazi(w)}`);
     const dolu = Object.values(pen.pencereler)
       .some(w => w.kullanim != null && w.kullanim >= 0.8);
-    const r = el("span", "pano-limit" + (dolu ? " dolu" : ""), parca.join(" · "));
+    // E63: HANGI HESAPTAN yedigi basta yazar -- iki codex hesabi varsa
+    // yuzdeyi yanlis hesaba baglamak kolaydir.
+    const hesapAd = pen.hesap || pen.motor;
+    const r = el("span", "pano-limit" + (dolu ? " dolu" : ""), `${hesapAd}: ${parca.join(" · ")}`);
     r.title = `${pen.motor}${pen.hesap ? "/" + pen.hesap : ""} hesabının TOPLAM kullanımı — ` +
       (pen.yas_dk == null ? "ölçüm yaşı bilinmiyor" : `${pen.yas_dk} dk önce ölçüldü`) +
       ` (${pen.kaynak || "sağlayıcı bildirimi"})`;

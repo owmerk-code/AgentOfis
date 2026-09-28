@@ -85,24 +85,8 @@ from ofis.yollar import OFIS_EVI                  # noqa: E402
 RAPOR = Path(__file__).resolve().parent / "rapor"
 SON_OLCUM = OFIS_EVI / "motor_matris.json"
 
-#: (ad, bayrak, zorunlu, ne olculur). Bayrak None: her motordan beklenir.
-HUCRELER = (
-    ("tur", None, True, "tur kosar, biter, jeton olculur"),
-    ("dosya_yazar", None, True, "istenen dosyayi istenen icerikle yazar"),
-    ("komut_kosar", None, True, "kabuk komutu kosar, modelin bilemeyecegi ciktiyi getirir"),
-    ("kanit", None, True, "kanit tahtaya duser (bayrak kanali secer: MCP ya da metin koprusu)"),
-    ("kafa_yazamaz", None, True, "yazabilir=False iken dosya YAZILMAZ (Yasa 5)"),
-    ("oturum_surer", None, True, "ayni oturum ikinci turda ilk turu hatirlar (Surdur)"),
-    ("onay_kapisi", "izin_kancasi", False, "riskli komut ofise sorulur, KOSMAZ"),
-    ("tur_ici_not", "tur_ici_mesaj", False, "tur surerken yazilan not ulasir"),
-    ("durdurma", "tur_ici_mesaj", False, "tur surerken Durdur turu keser"),
-    ("araclar_kapali", "araclar_kapatilabilir", False, "butun araclar kapatilinca hic arac cagrilmaz"),
-    ("butce_tavani", "butce_destegi", False, "tur basina dolar tavani (yalniz API hesabi ve Fable kapisi icin; abonelikte limit saglayicinin yuzdesi); uygulayamayan BASLAMADAN reddeder"),
-    ("tarayici", "mcp_konusur", False, "JS ile cizilen sayfayi tarayiciyla okur"),
-    ("limit_penceresi", None, False, "saglayicinin 5 saat / 7 gun dolulugunu bildirir (bilgi)"),
-    ("baglayici", "baglayici_tasir", False, "claude.ai baglayicilari (~225k jeton; varsayilan olculmez)"),
-)
-ZORUNLU = tuple(h[0] for h in HUCRELER if h[2])
+#: Hucre tanimi TEK yerde: panelin durust motor karti ayni listeyi okur.
+from ofis.motor_karti import HUCRELER, ZORUNLU   # noqa: E402
 
 #: Motorun hizli kademesi (gercek kosunun varsayilani). Kod varsayilani
 #: degil OLCULEN: codex'te F2 turlari gpt-6-luna ile kostu.
