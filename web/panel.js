@@ -2816,7 +2816,7 @@ async function cizSekme() {
   // Raporlar / Hafiza / Kararlar artik AYRI panolar: her biri kendi
   // kabina cizilir ve yalniz EKRANDAYSA cizilir.
   const ciz = { raporlar: cizRaporlar, hafiza: cizHafiza, kararlar: cizKararlar,
-                yetenek: cizYetenek, sohbet: cizSohbet };
+                yetenek: cizYetenek, sohbet: cizSohbet, denetim: cizDenetim };
   // Konsol kendi kabini SILMEDEN cizer (terminal dugumu tasinir).
   if (panoAcik("konsol")) cizKonsol();
   for (const [p, f] of Object.entries(ciz)) {
@@ -2833,6 +2833,44 @@ async function cizSekme() {
     kap.textContent = "";
     await f(kap);
   }
+}
+
+/* DENETIM (F3 / E27): "kim, neyi, hangi yetkiyle yapti". Sunucu yeni kayit
+   tutmaz; olay + onay tablolarini tek listeye toplar. Burada yalniz suzgec
+   ve okunur cizim var -- karar yok. */
+const DENETIM_SINIF = { "": "hepsi", yetki: "yetki", kapi: "kapı", geri: "geri alma · yedek" };
+async function cizDenetim(kap) {
+  const secili = D.denetimSinif || "";
+  let r;
+  try { r = await al("/api/denetim?azami=200" + (secili ? "&sinif=" + secili : "")); }
+  catch (e) { return kap.append(el("div", "form-ipucu uyari", "denetim okunamadı: " + e.message)); }
+  const oz = r.ozet || {};
+  const ust = el("div", "dn-ust");
+  for (const [s, ad] of Object.entries(DENETIM_SINIF)) {
+    const sayi = s ? (oz[s] || 0) : ((oz.yetki || 0) + (oz.kapi || 0) + (oz.geri || 0));
+    const b = el("button", "dn-suz" + (s === secili ? " secili" : ""), `${ad} ${sayi}`);
+    b.onclick = () => { D.denetimSinif = s; kap.textContent = ""; cizDenetim(kap); };
+    ust.append(b);
+  }
+  kap.append(ust);
+  kap.append(el("div", "hp-not",
+    "Ofisin kendi kaydı: yetki açılışları (klasör, tarayıcı, bağlayıcı, terminal), " +
+    "kapının kararları (sorulan, reddedilen, kullanılan onay, talimat şüphesi) ve " +
+    "geri almalar. Yeni bir defter değil; olay ve onay kayıtlarının tek listesi."));
+  const liste = el("div", "dn-liste");
+  if (!(r.satirlar || []).length) liste.append(el("div", "bos-yazi", "bu süzgeçte kayıt yok"));
+  for (const x of r.satirlar || []) {
+    const s = el("div", "dn-satir " + x.sinif);
+    const zaman = (x.zaman || "").replace("T", " ").slice(5, 16);
+    s.append(el("span", "dn-zaman", zaman), el("span", "dn-kim", x.kim),
+             el("span", "dn-ne", x.ne + (x.gorev_no ? ` · #${x.gorev_no}` : "")));
+    if (x.yetki) s.append(el("span", "dn-yetki", x.yetki));
+    const a = el("div", "dn-ayrinti", x.ayrinti || "");
+    a.title = x.ayrinti || "";
+    s.append(a);
+    liste.append(s);
+  }
+  kap.append(liste);
 }
 
 /* YETENEK. Tarama CLI surumlerini alt surecle olcer (~0,7 sn, olculdu):
@@ -4156,6 +4194,7 @@ const PANOLAR = {
   hafiza:   { ad: "Hafıza",   sayac: "" },
   kararlar: { ad: "Kararlar", sayac: "" },
   yetenek:  { ad: "Yetenek",  sayac: "" },
+  denetim:  { ad: "Denetim",  sayac: "" },
 };
 
 /* Varsayilan, bugune kadarki sabit duzenin AYNISI: kullanicinin
@@ -4174,7 +4213,7 @@ function yerlesimVarsayilan() {
       { gen: 0.8, kapali: false,
         yiginlar: [{ yuk: 1, secili: "gorevler",
                      panolar: ["gorevler", "raporlar", "hafiza", "kararlar",
-                               "yetenek"] }] },
+                               "yetenek", "denetim"] }] },
     ],
   };
 }

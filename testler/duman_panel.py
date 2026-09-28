@@ -997,7 +997,7 @@ else:
 # var, acilista duzen onarilir, sabit izgara geri gelmedi.
 _html = _web.joinpath("index.html").read_text(encoding="utf-8")
 sina("panolar DEPODA dogar (yeniden cizilmez, tasinir)",
-     'id="pano-depo"' in _html and _html.count('class="pano-govde"') == 11)
+     'id="pano-depo"' in _html and _html.count('class="pano-govde"') == 12)
 # 28.09: ayri Hesap panosu KALDIRILDI (hesap panosunun tekrariydi); ondan
 # kalan iki bilgi yerine tasindi, kaybolmadi.
 sina("ayri Hesap panosu YOK", 'data-pano="hesap"' not in _html

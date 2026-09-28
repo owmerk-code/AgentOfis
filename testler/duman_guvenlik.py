@@ -231,5 +231,38 @@ db.olay_yaz(ofis.proje_id, "basladi", "sonraki tur", ajan_ad="isci", gorev_id=g2
 sina("YENI turda suphe SIFIRLANIR: curl yine serbest",
      karar("Bash", {"command": "curl -s https://ornek.com/baska"}) == "allow")
 
+print("\n-- 7. DENETIM KAYDI (E27): kim, neyi, hangi yetkiyle --")
+from ofis import denetim   # noqa: E402
+satir = denetim.kayit(ofis)
+turler = {x["tur"] for x in satir}
+sina("talimat suphesi denetimde (kapi)", "talimat_suphesi" in turler, str(turler))
+sina("ise alma denetimde (yetki)", "ise_alindi" in turler)
+onaylar = [x for x in satir if x["tur"] == "onay"]
+sina("onay tablosu denetimde (hangi yetkiyle)", bool(onaylar), str(len(onaylar)))
+# Onay verilince kapsami ("bir kez" / "bu is boyunca") gorunur.
+_on = ofis.postane.onay_iste("isci", "Yayinla dugmesi", risk="yuksek", gorev_no=2)
+ofis.postane.onay_cevapla(_on["id"], onayla=True, not_="tamam", kapsam="is")
+_x = [x for x in denetim.kayit(ofis, sinif="kapi") if x["tur"] == "onay"
+      and "Yayinla" in x["ayrinti"]]
+sina("onaylanan kart kapsamiyla: 'bu is boyunca'", bool(_x) and _x[0].get("yetki") == "bu iş boyunca",
+     str(_x[:1]))
+sina("patronun notu denetimde", bool(_x) and "tamam" in _x[0]["ayrinti"])
+sina("sinif suzgeci: yalniz 'yetki'", all(x["sinif"] == "yetki" for x in denetim.kayit(ofis, sinif="yetki")))
+sina("ajan suzgeci", all(x["kim"] == "isci" for x in denetim.kayit(ofis, ajan="isci")))
+sina("gorev suzgeci: #2", all(x["gorev_no"] == 2 for x in denetim.kayit(ofis, gorev_no=2)))
+db.olay_yaz(ofis.proje_id, "konsol_acildi", "insan ofis disi terminal acti: powershell · C:/x")
+sina("konsol INSANIN eylemi olarak yazilir",
+     any(x["tur"] == "konsol_acildi" and x["kim"] == "insan" for x in denetim.kayit(ofis)))
+_z = [x["zaman"] for x in denetim.kayit(ofis)]
+sina("en yeni ONCE", _z == sorted(_z, reverse=True))
+sina("maskeleme denetimde de gecerli (anahtar gorunmez)",
+     all(DEGER not in x["ayrinti"] for x in denetim.kayit(ofis)))
+from fastapi.testclient import TestClient   # noqa: E402
+from ofis import panel as _P                # noqa: E402
+_ist = TestClient(_P.olustur(str(db.yol), "Guv"))
+_r = _ist.get("/api/denetim?sinif=kapi")
+sina("panel ucu /api/denetim calisir", _r.status_code == 200 and _r.json()["satirlar"], str(_r.status_code))
+sina("panel ucu yanlis sinifi REDDEDER", _ist.get("/api/denetim?sinif=uydurma").status_code == 400)
+
 print(f"\n== sonuc: {GECEN} gecti, {KALAN} kaldi ==")
 sys.exit(1 if KALAN else 0)

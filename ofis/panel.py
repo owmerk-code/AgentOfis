@@ -1679,6 +1679,18 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
                     m for m, var in musait_motorlar().items() if var and m != "sahte"),
                 "oneriler": _ks.oneriler(ofis_ac())}
 
+    @uygulama.get("/api/denetim")
+    def api_denetim(sinif: str = "", ajan: str = "", gorev: int = None, azami: int = 300):
+        """Denetim kaydi (F3 / E27): kim, neyi, hangi yetkiyle. Yeni kayit
+        tutmaz; olay + onay tablolarini tek listeye toplar."""
+        from . import denetim as _dn
+        if sinif and sinif not in _dn.SINIFLAR:
+            raise HTTPException(400, f"sinif: {', '.join(_dn.SINIFLAR)} ya da bos")
+        ofis = ofis_ac()
+        s = _dn.kayit(ofis, sinif=sinif, ajan=ajan, gorev_no=gorev,
+                      azami=max(1, min(int(azami), 1000)))
+        return {"satirlar": s, "ozet": _dn.ozet(_dn.kayit(ofis))}
+
     @uygulama.get("/api/motor_karti")
     def api_motor_karti():
         """Durust motor karti (E60): her motor neyi yapar, neyi YAPAMAZ --

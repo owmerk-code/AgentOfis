@@ -1588,3 +1588,22 @@ details > summary.hf-bas { cursor: pointer; }
 .mk-imi.uyari, .mk-durum.uyari { color: var(--uyari); }
 .mk-imi.sonuk, .mk-durum.sonuk { color: var(--metin-3); }
 @media (max-width: 640px) { .mk-tablo { grid-template-columns: 1fr; } }
+
+/* DENETIM (F3 / E27). */
+.dn-ust { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 6px; }
+.dn-suz { background: transparent; border: 1px solid var(--cizgi); border-radius: 12px;
+  color: var(--metin-2); padding: 2px 9px; font-size: var(--yz-kucuk); cursor: pointer; }
+.dn-suz.secili { border-color: var(--vurgu); color: var(--metin); }
+.dn-liste { display: flex; flex-direction: column; gap: 1px; margin-top: 8px; }
+.dn-satir { display: grid; grid-template-columns: 78px 60px 1fr auto; gap: 2px 8px;
+  padding: 5px 6px; border-left: 2px solid var(--cizgi); font-size: var(--yz-alt); }
+.dn-satir.yetki { border-left-color: var(--bilgi); }
+.dn-satir.kapi { border-left-color: var(--uyari); }
+.dn-satir.geri { border-left-color: var(--metin-3); }
+.dn-zaman { color: var(--metin-3); font-variant-numeric: tabular-nums; font-size: var(--yz-kucuk); }
+.dn-kim { color: var(--metin-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dn-ne { color: var(--metin); }
+.dn-yetki { font-size: var(--yz-mikro); color: var(--iyi); border: 1px solid currentColor;
+  border-radius: 4px; padding: 0 5px; align-self: center; }
+.dn-ayrinti { grid-column: 2 / -1; color: var(--metin-3); font-size: var(--yz-kucuk);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
