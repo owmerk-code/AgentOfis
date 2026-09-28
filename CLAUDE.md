@@ -142,7 +142,7 @@ Motor bir adaptör, model bir ayar, arayüz bir istemci.
 
 ## Kod durumu
 
-Yazıldı ve **duman testlerinden geçti** (2684/2684, 28.09.2026):
+Yazıldı ve **duman testlerinden geçti** (2687/2687, 28.09.2026):
 
 | Dosya | Ne yapar |
 |---|---|
@@ -198,9 +198,9 @@ Yazıldı ve **duman testlerinden geçti** (2684/2684, 28.09.2026):
 | `ofis/geri_al.py` | **TUR GERİ ALMA** — her turun öncesi/sonrası proje kökünün dışındaki gölge git deposuna işlenir; `geri-al` YALNIZ o turun dosyalarını (ikili dahil) döndürür. Sonradan değişen dosyayı ve koşan işi ezmez (`--zorla` hariç), sebep zorunlu, geri alma da geri alınabilir. |
 | `baslat.bat` | Tek tık açılış — bağımlılık yoksa kurar, ilk açılışta örnek ofisi kurar. |
 
-Testler (`testler/`, hepsi jeton yakmadan koşar) — **2684/2684** (35 dosya, 28.09.2026'da tek tek koşturulup SAYILDI; hepsi GEÇİCİ kökte, gerçek `~/.agentofis`e dokunmadan):
+Testler (`testler/`, hepsi jeton yakmadan koşar) — **2687/2687** (35 dosya, 28.09.2026'da tek tek koşturulup SAYILDI; hepsi GEÇİCİ kökte, gerçek `~/.agentofis`e dokunmadan):
 `duman_baglayici.py` 64 · `duman_cekirdek.py` 100 ·
-`duman_codex_app.py` 68 · `duman_danisma.py` 36 ·
+`duman_codex_app.py` 71 · `duman_danisma.py` 36 ·
 `duman_degisim.py` 105 · `duman_deneme.py` 53 · `duman_depo.py` 48 ·
 `duman_ekip.py` 60 · `duman_geri_al.py` 29 · `duman_gorsel.py` 87 ·
 `duman_guncelleme.py` 66 · `duman_hafiza.py` 56 · `duman_hesap.py` 53 ·
@@ -11578,3 +11578,45 @@ bayatlar). Sekmeye özgü iki bilgi kaybolmadı, yerine taşındı:
 
 Eski kayıtlı düzende "hesap" panosu yerleşim onarımıyla atılıyor (bilinmeyen
 pano kuralı). Gerçek defterin kopyasında tarayıcıda ölçüldü. **2684/2684.**
+
+
+## CODEX LİDER İLK GERÇEK İŞTE — ve kotanın gerçek bedeli (28.09.2026)
+
+Kullanıcı: *"gerçek testlerle ilerlesek çok limit yer mi?"* Tahmin değil
+ölçüm istendi. `deneme.py` artık koşunun başında ve sonunda hesapların
+limit yüzdesini okuyor (`kota_oku`, tur koşmadan) ve farkı rapora yazıyor;
+lider de Codex olabiliyor (`--lider-motor`).
+
+### Ölçülen bedel — tamamen Codex (işçi gpt-6-luna, lider gpt-6-sol)
+
+| Koşu | İş | Jeton | Codex kotası |
+|---|---|---|---|
+| hızlı set | 7 | ~4,7 M | **5 saat +2 puan · hafta +0** |
+| D14 (saklı, tekrar) | 1 | ~1,2 M | ölçülen fark 0 |
+| D14 + D17 düzeltmeden sonra | 2 | ~1,8 M | 5 saat +1 · hafta +0 |
+
+Claude kotasına dokunulmadı. Yani gerçek testle ilerlemenin kota bedeli,
+Codex tarafında **küçük**; yüzde tam sayı yuvarlandığı için tek iş
+çoğu zaman 0 görünüyor.
+
+### Bulunan hata — Codex'in mesajları birbirine YAPIŞIYORDU
+
+İlk koşu 7'de 5 geçti; D14 ve D17'de ajanın işi DOĞRUYDU ama iş Codex
+liderin incelemesinde kaldı: *"KARAR satiri yok"*. Codex bir turda birden
+çok tamamlanmış mesaj yazıyor (ara açıklama + son cevap); adaptör onları
+ayırıcısız veriyordu, tüketiciler `""` ile birleştiriyordu →
+`...bakacagim.KARAR: kapat`. Satır başı arayan hüküm deseni onu görmüyordu.
+Claude'da hiç görünmedi (metin blokları arasında boşluk var). Aynı yapışma
+işçinin durum notunda da vardı.
+
+Düzeltme kaynağında (`codex._mesaj_parcasi`, iki kip): ilk mesajdan
+sonrakilere paragraf ayırıcı. Ayrıca hükümsüz inceleme artık **liderin
+yazdığının sonunu** kayda düşürüyor — bu sefer sebep görünmediği için
+ayrı bir koşu gerekti. `duman_codex_app` 8b (3 sınama); düzeltme geri
+alınınca 2 ateş etti (`'Kanitlara bakacagim.KARAR: kapat'`).
+
+Düzeltmeden sonra D14 ve D17 gerçek Codex'le **geçti** → hızlı set Codex
+işçi + Codex lider **7/7**.
+
+Yan kayıt: koşu çıkış kodu 3 verdi — Codex sandbox'ının `.pytest_cache`
+klasörleri (bilinen, yazılı sınır: yönetici izni ister), 2 geçici klasör.

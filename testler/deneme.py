@@ -105,7 +105,8 @@ def _kullaniciya_ac(klasor: Path) -> None:
 
 
 def is_kos(no: str, *, kip: str, motor: str, model: str, lider_model: str,
-           tur_tavani: float, azami_tik: int, sakla: bool = False) -> dict:
+           tur_tavani: float, azami_tik: int, sakla: bool = False,
+           lider_motor: str = "claude") -> dict:
     tanim = ISL.ISLER[no]
     sonuc = {"no": no, "ad": tanim["ad"], "kip": kip, "motor": motor,
              "model": model if kip == "gercek" else "", "olcutler": []}
@@ -134,7 +135,7 @@ def is_kos(no: str, *, kip: str, motor: str, model: str, lider_model: str,
         iscler = ["isci"] + [f"isci{i}" for i in range(2, tanim.get("isci_sayisi", 1) + 1)]
         gercek = kip == "gercek"
         ofis.kadro.ise_al("lale", "lider", lider_mi=True, kanat_id=kanat,
-                          klasor=str(kok), motor="claude" if gercek else "sahte",
+                          klasor=str(kok), motor=lider_motor if gercek else "sahte",
                           model=lider_model if gercek else "")
         for ad in iscler:
             isci_motor = tanim.get("isci_motor") or (motor if gercek else "sahte")
@@ -252,6 +253,46 @@ def _olcumler(ofis) -> dict:
             "kapi_durdurdu": len(kapi), "kapi_olaylari": kapi}
 
 
+def kota_oku(motorlar) -> dict:
+    """Hesaplarin limit yuzdesi -- TUR KOSMADAN, kota harcamadan.
+
+    Kullanici (28.09.2026): gercek testlerle ilerleyelim ama "cok limit
+    yer mi?" Cevap tahmin degil OLCUM olsun: koşunun basinda ve sonunda
+    okunur, fark rapora yazilir. Okunamayan motor None -- uydurulmaz.
+    """
+    sonuc = {}
+    for m in motorlar:
+        try:
+            lp = motor_ac(m).limit_oku()
+        except Exception:               # noqa: BLE001 -- olcum isi durdurmaz
+            lp = None
+        sonuc[m] = (lp or {}).get("pencereler") if lp else None
+    return sonuc
+
+
+def kota_farki(once: dict, sonra: dict) -> dict:
+    """Pencere basina yuzde puan farki. Arada pencere YENILENDIYSE (yenilenme
+    ani degisti ya da yuzde dustu) fark hesaplanmaz, 'yenilendi' denir --
+    yenilenmis pencerenin farki anlamsizdir."""
+    fark = {}
+    for m, p0 in once.items():
+        p1 = (sonra or {}).get(m)
+        if not p0 or not p1:
+            fark[m] = None
+            continue
+        fark[m] = {}
+        for ad, w0 in p0.items():
+            w1 = p1.get(ad) or {}
+            k0, k1 = w0.get("kullanim"), w1.get("kullanim")
+            if k0 is None or k1 is None:
+                fark[m][ad] = None
+            elif w0.get("yenilenme") != w1.get("yenilenme") or k1 < k0:
+                fark[m][ad] = "yenilendi"
+            else:
+                fark[m][ad] = round((k1 - k0) * 100, 1)
+    return fark
+
+
 def rapor_yaz(sonuclar: list, ayar: dict) -> Path:
     RAPOR.mkdir(exist_ok=True)
     zaman = _dt.datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -262,6 +303,7 @@ def rapor_yaz(sonuclar: list, ayar: dict) -> Path:
     satir = [f"# Deneme seti — {zaman} — {ayar['kip']}", "",
              f"motor: {ayar['motor']} · model: {ayar['model']} · lider: "
              f"{ayar['lider_model']} · tur tavani: ${ayar['tur_tavani']}", "",
+             *_kota_satirlari(ayar),
              "| No | Is | Durum | Tur | Jeton | Maliyet | Kanit | Insana soru | Sure |",
              "|---|---|---|---|---|---|---|---|---|"]
     for s in sonuclar:
@@ -293,6 +335,22 @@ def rapor_yaz(sonuclar: list, ayar: dict) -> Path:
     return RAPOR / f"{ad}.md"
 
 
+def _kota_satirlari(ayar: dict) -> list:
+    f = ayar.get("kota_fark")
+    if not f:
+        return []
+    out = ["## Kotadan giden (hesabin toplami, yuzde puan)", ""]
+    for m, p in f.items():
+        if p is None:
+            out.append(f"- {m}: olculemedi")
+            continue
+        out.append(f"- {m}: " + " · ".join(
+            f"{ad} " + (v if isinstance(v, str) else ("olculemedi" if v is None else f"+{v}"))
+            for ad, v in p.items()))
+    out += ["", "Not: yuzde hesabin TOPLAMIDIR; kosu sirasinda elle kullandiysan o da dahil.", ""]
+    return out
+
+
 def main() -> int:
     a = argparse.ArgumentParser(description="AgentOfis deneme seti")
     a.add_argument("--hizli", action="store_true")
@@ -303,6 +361,7 @@ def main() -> int:
     a.add_argument("--motor", default="claude")
     a.add_argument("--model", default="haiku")
     a.add_argument("--lider-model", default="sonnet")
+    a.add_argument("--lider-motor", default="claude")
     a.add_argument("--tur-tavani", type=float, default=0.60)
     a.add_argument("--azami-tik", type=int, default=4)
     a.add_argument("--rapor-yok", action="store_true")
@@ -323,12 +382,15 @@ def main() -> int:
         return 2
 
     kipler = ["kuru_iyi", "kuru_kotu"] if ar.kuru else ["gercek"]
+    kota_motor = [] if ar.kuru else sorted({ar.motor, ar.lider_motor})
+    kota_once = kota_oku(kota_motor) if kota_motor else {}
     sonuclar, bozuk = [], 0
     for no in secim:
         for kip in kipler:
             s = is_kos(no, kip=kip, motor=ar.motor, model=ar.model,
                        lider_model=ar.lider_model, tur_tavani=ar.tur_tavani,
-                       azami_tik=ar.azami_tik, sakla=ar.sakla)
+                       azami_tik=ar.azami_tik, sakla=ar.sakla,
+                       lider_motor=ar.lider_motor)
             sonuclar.append(s)
             beklenen = {"kuru_iyi": "gecti", "kuru_kotu": "kaldi"}.get(kip)
             isaret = ""
@@ -345,10 +407,15 @@ def main() -> int:
                 print("      HATA:", s["hata"])
             if s.get("saklandi"):
                 print("      SAKLANDI:", s["saklandi"])
+    kota_fark = kota_farki(kota_once, kota_oku(kota_motor)) if kota_motor else {}
+    if kota_fark:
+        print("\nkotadan giden (yuzde puan):", json.dumps(kota_fark, ensure_ascii=False))
     if not ar.rapor_yok:
         yol = rapor_yaz(sonuclar, {"kip": "kuru" if ar.kuru else "gercek",
                                    "motor": ar.motor, "model": ar.model,
                                    "lider_model": ar.lider_model,
+                                   "lider_motor": ar.lider_motor,
+                                   "kota_fark": kota_fark,
                                    "tur_tavani": ar.tur_tavani})
         print("\nrapor:", yol)
     if ar.kuru:

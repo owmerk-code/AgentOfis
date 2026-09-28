@@ -369,6 +369,19 @@ def codex_pencereleri(ev: str, oturum_id: str) -> dict | None:
                            plan=str(son.get("plan_type") or ""))
 
 
+
+def _mesaj_parcasi(durum: dict, metin: str) -> str:
+    """Codex bir turda BIRDEN COK tamamlanmis mesaj yazar (ara aciklama +
+    son cevap) ve her biri AYRI bir ogedir. Tuketiciler parcalari ""
+    ile birlestirir; ayirici olmadan "...edecegim.KARAR: kapat" olur ve
+    satir basi arayan desenler (lider KARAR, DURUM) hukmu GORMEZ --
+    28.09.2026 gercek kosuda olculdu: Codex lider isi dogru inceledi, is
+    "KARAR satiri yok" diye incelemede kaldi. Ilk mesajdan sonrakilere
+    paragraf ayirici eklenir; mesajin kendisine dokunulmaz."""
+    if durum.get("metin") and metin:
+        return "\n\n" + metin
+    return metin
+
 class CodexMotoru(Motor):
     """`codex exec` komutunu tur basina bir surec olarak kosturur."""
 
@@ -1415,7 +1428,7 @@ class CodexMotoru(Motor):
         tamam = yontem == "item/completed"
         if cins == "agentMessage":
             if tamam:
-                parca = str(oge.get("text") or "")
+                parca = _mesaj_parcasi(durum, str(oge.get("text") or ""))
                 durum["metin"].append(parca)
                 olaylar.append(MotorOlayi("metin", parca))
             return olaylar
@@ -1693,7 +1706,7 @@ class CodexMotoru(Motor):
 
         if cins == "agent_message":
             if tamamlandi:
-                parca = str(oge.get("text") or "")
+                parca = _mesaj_parcasi(durum, str(oge.get("text") or ""))
                 durum["metin"].append(parca)
                 olaylar.append(MotorOlayi("metin", parca))
             return olaylar

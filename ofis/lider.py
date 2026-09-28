@@ -641,8 +641,13 @@ class Lider:
                       isci_ad: str) -> dict:
         eslesme = KARAR_DESENI.search(hukum or "")
         if not eslesme:
+            # Liderin NE yazdigi kayda duser: hukumsuz kalan inceleme
+            # sebebi gorulmeden duzeltilemez (28.09: gorulemedigi icin
+            # codex'in mesaj birlestirme hatasi ayri bir kosu istedi).
+            ozet = " ".join((hukum or "").split())[-400:] or "(bos)"
             return self._belirsiz(
-                no, "Lider acik bir hukum yazmadi (KARAR satiri yok).")
+                no, "Lider acik bir hukum yazmadi (KARAR satiri yok). "
+                    f"Yazdiginin sonu: {ozet}")
 
         yon = eslesme.group(1).lower()
         gerekce = (eslesme.group(2) or "").strip()

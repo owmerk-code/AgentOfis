@@ -332,6 +332,21 @@ try:
     tsi = istekler(gelen, "turn/start")
     sina("efor turn/start'a gitti (dusuk -> low)", bool(tsi) and tsi[0]["params"].get("effort") == "low")
 
+    # ------------------------------------------------------------ 8b
+    print("\n8b. IKI MESAJ AYRI kalir (28.09: KARAR satiri gorunmuyordu)")
+    ol, ek, gelen = kos("iki_mesaj", [
+        {"bildirim": "item/completed", "params": {"item": {"type": "agentMessage",
+                                                           "text": "Kanitlara bakacagim."}}},
+        {"bildirim": "item/completed", "params": {"item": {"type": "agentMessage",
+                                                           "text": "KARAR: kapat"}}},
+        {"bitir": "completed"}])
+    from ofis.lider import KARAR_DESENI
+    _birlesik = "".join(o.govde for o in ol if o.tur == "metin")
+    sina("ikinci mesaj yeni paragrafta basliyor", "\n\nKARAR: kapat" in _birlesik, repr(_birlesik))
+    sina("liderin hukum deseni birlesik metinde KARARI buluyor",
+         bool(KARAR_DESENI.search(_birlesik)), repr(_birlesik))
+    sina("ilk mesaja ayirici EKLENMEZ", _birlesik.startswith("Kanitlara"), repr(_birlesik))
+
     # ------------------------------------------------------------ 9
     print("\n9. ZAMAN ASIMI: interrupt gonderilir")
     ol, ek, gelen = kos("asili", [{"asili": True}], zaman_asimi=4)
