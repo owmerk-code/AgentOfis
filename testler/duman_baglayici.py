@@ -421,6 +421,63 @@ try:
 finally:
     B.SORUN_DEFTERI = _eski_defter
 
+# -- ONBELLEK DISKTE + LIDER BEKLEMEZ (29.09.2026) ------------------------
+# Olculdu: liderin "naber"e cevabinin ~20 sn'si bu olcumdu. Onbellek yalniz
+# bellekteydi; panel/kabuk her acilista bastan olcuyordu.
+print("\nONBELLEK -- diskte kalici, lider beklemiyor, bayat arkada tazeleniyor")
+import json
+import time as _time
+_eski_olc = B._olc
+_sayac = {"n": 0}
+
+
+def _yavas_olc(zaman_asimi=90):
+    _sayac["n"] += 1
+    _time.sleep(1.5)
+    return {"Shopify": {"bagli": True, "url": "https://x"},
+            "Canva": {"bagli": False, "url": "https://y"}}
+
+
+B._olc = _yavas_olc
+try:
+    B.onbellegi_bosalt()
+    d = B.durum()
+    sina("hic olcum yokken BIR KEZ olculdu", _sayac["n"] == 1 and d["Shopify"]["bagli"])
+    sina("olcum DISKE yazildi", B._disk_yolu().is_file())
+    B._ONBELLEK["an"] = None
+    B._ONBELLEK["veri"] = None          # yeni surec gibi: bellek bos
+    t0 = _time.time()
+    blok = B.lider_blogu()
+    gecen = _time.time() - t0
+    sina("YENI SURECTE lider BEKLEMEDI (diskten okudu)",
+         gecen < 1.0 and _sayac["n"] == 1, f"{gecen:.2f} sn, olcum={_sayac['n']}")
+    sina("  blok olcum zamanini soyluyor", "olculdu:" in blok and "Shopify" in blok)
+    # bayat olcum: lider yine beklemez, arka planda TEK tazeleme
+    with open(B._disk_yolu(), encoding="utf-8") as fh:
+        k = json.load(fh)
+    k["an"] = "2020-01-01T00:00:00+00:00"
+    B._disk_yolu().write_text(json.dumps(k), encoding="utf-8")
+    B._ONBELLEK["an"] = None
+    B._ONBELLEK["veri"] = None
+    t0 = _time.time()
+    B.lider_blogu()
+    B.lider_blogu()                     # ikinci cagri ikinci tazeleme ACMAZ
+    gecen = _time.time() - t0
+    sina("BAYAT olcumde de lider BEKLEMEDI", gecen < 1.0, f"{gecen:.2f} sn")
+    for _ in range(40):
+        if not B._TAZELEME["kosuyor"]:
+            break
+        _time.sleep(0.1)
+    sina("bayat olcum ARKADA tazelendi (tek kez)", _sayac["n"] == 2, str(_sayac["n"]))
+    sina("tazelenen olcum diskte yeni", not B.olcum_zamani().startswith("2020"))
+    B.durum(taze=True)
+    sina("taze=True BEKLEYEREK olcuyor (giris istegi yolu)", _sayac["n"] == 3)
+    B.onbellegi_bosalt()
+    sina("onbellegi bosaltmak diski de siliyor", not B._disk_yolu().is_file())
+finally:
+    B._olc = _eski_olc
+    B.onbellegi_bosalt()
+
 print("")
 print(f"== sonuc: {GECEN} gecti, {KALAN} kaldi ==")
 sys.exit(1 if KALAN else 0)

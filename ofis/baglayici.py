@@ -61,6 +61,9 @@ Ve aciklik **ISIN** ozelligidir, ajanin degil: is biter, aciklik biter.
 from __future__ import annotations
 
 import subprocess
+import threading
+import os
+import json
 
 #: Ajanin izin listesine eklenecek onek. Hesabin baglayicilari ajana
 #: `mcp__claude_ai_<Ad>__<arac>` olarak gorunuyor (olculdu).
@@ -119,37 +122,88 @@ class BaglayiciHatasi(RuntimeError):
 
 
 #: Olcum ONBELLEGI. `claude mcp list` saglik denetimi yapiyor ve
-#: ~15 sn suruyor; her sohbet mesajinda odenemez. Ama onbellek SESSIZ
+#: ~15-20 sn suruyor; her sohbet mesajinda odenemez. Ama onbellek SESSIZ
 #: olmaz: `olcum_zamani()` ne zaman olculdugunu soyler, boylece kimse
 #: bayat bir sayiyi canli sanmaz.
+#:
+#: OLCULDU (29.09.2026): liderin "naber"e cevabi 29 sn surdu ve bunun
+#: ~20 sn'si model DUSUNMEYE BASLAMADAN once bu olcumdu. Onbellek yalniz
+#: surecin BELLEGINDEYDI: panel yeniden acilinca ve kabuktaki her `konus`ta
+#: olcum bastan yapiliyordu. Artik DISKTE de durur ve lider onu
+#: BEKLEMEDEN okur; bayatsa arka planda tazelenir.
 _ONBELLEK = {"an": None, "veri": None}
+
+#: Bu sureden eski olcum arka planda tazelenir (lider yine BEKLEMEZ, eski
+#: olcumu zamaniyla gorur). Baglayici durumu dakikalar icinde degismez;
+#: degistiginde insan zaten `claude mcp login` yapmistir ve o yol
+#: (giris istegi) TAZE olcer.
+BAYAT_SN = 30 * 60
+_TAZELEME = {"kosuyor": False}
+_KILIT = threading.Lock()
+
+
+def _disk_yolu():
+    from .yollar import ofis_evi
+    return ofis_evi() / "baglayici_durum.json"
+
+
+def _diskten_oku() -> bool:
+    try:
+        d = json.loads(_disk_yolu().read_text(encoding="utf-8"))
+        if isinstance(d, dict) and isinstance(d.get("veri"), dict) and d.get("an"):
+            _ONBELLEK["an"], _ONBELLEK["veri"] = d["an"], d["veri"]
+            return True
+    except (OSError, ValueError):
+        pass
+    return False
+
+
+def _diske_yaz() -> None:
+    """Atomik: yarim yazilmis bir dosya bir sonraki acilisi yaniltmasin."""
+    try:
+        yol = _disk_yolu()
+        yol.parent.mkdir(parents=True, exist_ok=True)
+        gecici = yol.with_suffix(".part")
+        gecici.write_text(json.dumps({"an": _ONBELLEK["an"], "veri": _ONBELLEK["veri"]},
+                                     ensure_ascii=False), encoding="utf-8")
+        os.replace(gecici, yol)
+    except OSError:
+        pass     # yazamamak isi DURDURMAZ -- bir sonraki olcum yine dener
 
 
 def olcum_zamani() -> str:
     """Onbellekteki olcum NE ZAMAN alindi. Bos ise hic olculmemis."""
+    if _ONBELLEK["an"] is None:
+        _diskten_oku()
     return _ONBELLEK["an"] or ""
+
+
+def olcum_yasi_sn() -> float | None:
+    an = olcum_zamani()
+    if not an:
+        return None
+    try:
+        from datetime import datetime, timezone
+        t = datetime.fromisoformat(an)
+        if t.tzinfo is None:
+            t = t.replace(tzinfo=timezone.utc)
+        return (datetime.now(timezone.utc) - t).total_seconds()
+    except ValueError:
+        return None
 
 
 def onbellegi_bosalt() -> None:
     """Kullanici `claude mcp login` calistirdiktan sonra cagrilir."""
     _ONBELLEK["an"] = None
     _ONBELLEK["veri"] = None
+    try:
+        _disk_yolu().unlink()
+    except OSError:
+        pass
 
 
-def durum(zaman_asimi: int = 90, *, taze: bool = False) -> dict:
-    """`claude mcp list` koşturur ve GERCEK durumu doner.
-
-    Sabit bir liste tutmuyoruz. Tutsaydik kullanici bir baglayiciyi
-    baglayinca ya da yetkisi dolunca liste bayatlardi -- ve bu dosyada
-    zaten bir kez yasandi: "Shopify yetkisi dolmus" diye yazili olan
-    sey olculdugunde **bagliydi**.
-
-    Doner: `{ad: {"bagli": bool, "url": str}}`. Komut kosturulamazsa
-    BOS doner ve cagiran bunu "bilinmiyor" diye ele alir -- olcemedigimize
-    "iyi" demeyiz.
-    """
-    if not taze and _ONBELLEK["veri"] is not None:
-        return dict(_ONBELLEK["veri"])
+def _olc(zaman_asimi: int = 90) -> dict:
+    """`claude mcp list`i GERCEKTEN kosturur. Sinamada bu islev degistirilir."""
     try:
         p = subprocess.run(["claude", "mcp", "list"], capture_output=True,
                            text=True, encoding="utf-8", errors="replace",
@@ -168,16 +222,66 @@ def durum(zaman_asimi: int = 90, *, taze: bool = False) -> dict:
             "bagli": "Connected" in kalan or chr(10004) in kalan,
             "url": kalan.split(" - ")[0].strip(),
         }
+    return sonuc
+
+
+def _sorunlari_isle(sonuc: dict) -> dict:
     # DORDUNCU HAL: bagli gorunuyor ama son GERCEK cagri dustu.
     # Bu bilgi `claude mcp list`ten gelmez -- ancak bir ajan o araci
     # gercekten cagirip basarisiz oldugunda ogrenilir (bkz. sorun_yaz).
+    # Onbellekten okunurken de YENIDEN islenir: sorun hafizasi olcumden
+    # bagimsiz degisir.
     for ad, kayit in sonuc.items():
-        kayit["sorun"] = sorun_notu(ad) if kayit["bagli"] else None
+        kayit["sorun"] = sorun_notu(ad) if kayit.get("bagli") else None
+    return sonuc
+
+
+def durum(zaman_asimi: int = 90, *, taze: bool = False) -> dict:
+    """GERCEK baglayici durumu. `taze=True` olcumu BEKLER.
+
+    Sabit bir liste tutmuyoruz. Tutsaydik kullanici bir baglayiciyi
+    baglayinca ya da yetkisi dolunca liste bayatlardi -- ve bu dosyada
+    zaten bir kez yasandi: "Shopify yetkisi dolmus" diye yazili olan
+    sey olculdugunde **bagliydi**.
+
+    Doner: `{ad: {"bagli": bool, "url": str}}`. Komut kosturulamazsa
+    BOS doner ve cagiran bunu "bilinmiyor" diye ele alir -- olcemedigimize
+    "iyi" demeyiz. Onbellek (bellek, yoksa disk) varsa beklemeden doner;
+    hic olcum yoksa bir kez BEKLEYEREK olcer.
+    """
+    if not taze:
+        if _ONBELLEK["veri"] is None:
+            _diskten_oku()
+        if _ONBELLEK["veri"] is not None:
+            return _sorunlari_isle({a: dict(v) for a, v in _ONBELLEK["veri"].items()})
+    sonuc = _olc(zaman_asimi)
     if sonuc:
         from .db import simdi
         _ONBELLEK["an"] = simdi()
-        _ONBELLEK["veri"] = dict(sonuc)
-    return sonuc
+        _ONBELLEK["veri"] = {a: {"bagli": v["bagli"], "url": v["url"]}
+                             for a, v in sonuc.items()}
+        _diske_yaz()
+    return _sorunlari_isle(sonuc)
+
+
+def arkada_tazele() -> bool:
+    """Olcum bayatsa arka planda tazeler; BEKLEMEZ. Ayni anda tek tazeleme."""
+    yas = olcum_yasi_sn()
+    if yas is not None and yas < BAYAT_SN:
+        return False
+    with _KILIT:
+        if _TAZELEME["kosuyor"]:
+            return False
+        _TAZELEME["kosuyor"] = True
+
+    def is_():
+        try:
+            durum(taze=True)
+        finally:
+            _TAZELEME["kosuyor"] = False
+
+    threading.Thread(target=is_, name="baglayici-tazele", daemon=True).start()
+    return True
 
 
 def lider_blogu(mevcut: dict = None) -> str:
@@ -203,7 +307,13 @@ def lider_blogu(mevcut: dict = None) -> str:
     var, CLI listesinde HIC YOK. Iki ayri kimlik deposu. Ofis CLI
     uzerinden kostugu icin **gecerli olan CLI'in gordugudur.**
     """
-    d = durum() if mevcut is None else mevcut
+    # BEKLEMEZ: onbellek (bellek/disk) okunur, bayatsa arka planda
+    # tazelenir. Liderin her mesaji ~20 sn olcumu bekliyordu (olculdu).
+    if mevcut is None:
+        d = durum()
+        arkada_tazele()
+    else:
+        d = mevcut
     if not d:
         return ("## BAGLAYICILAR\n\nOLCULEMEDI -- `claude mcp list` "
                 "kosmadi. Bir baglayici gerekiyorsa VARSAYMA, insana sor.")
