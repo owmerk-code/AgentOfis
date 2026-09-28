@@ -767,6 +767,21 @@ def arac_video_iste(oturum: Oturum, args: dict) -> str:
         "ucretsiz API katmani YOK, para yanar.)",
     ])
 
+def _tur_suphesi(oturum) -> str:
+    """Bu gorevin SU ANKI turunda `talimat_suphesi` olayi var mi? Varsa
+    ilk alintiyi dondurur. Tur siniri: gorevin son `basladi` olayi."""
+    if oturum.gorev_no is None:
+        return ""
+    ofis = oturum.ofis
+    gid = ofis.tahta.gorev(oturum.gorev_no)["id"]
+    with ofis.db.baglanti() as c:
+        bas = c.execute("SELECT COALESCE(MAX(rowid), 0) FROM olay WHERE gorev_id=? "
+                        "AND tur='basladi'", (gid,)).fetchone()[0]
+        r = c.execute("SELECT govde FROM olay WHERE gorev_id=? AND tur='talimat_suphesi' "
+                      "AND rowid > ? ORDER BY rowid DESC LIMIT 1", (gid, bas)).fetchone()
+    return (r["govde"] or "suphe")[:200] if r else ""
+
+
 def arac_izin_sor(oturum: Oturum, args: dict) -> str:
     """CLI'IN IZIN KANCASI -- ofisin TEK kapisi, her yuzey icin.
 
@@ -827,6 +842,23 @@ def arac_izin_sor(oturum: Oturum, args: dict) -> str:
         # kontrolleri bu projede her zaman "fail closed" olur.
         return ret(f"Ofis kapisi degerlendirme yapamadi ({exc}). Guvenli "
                    "tarafta kaliyoruz: bu eylem YAPILMADI.")
+
+    # SUPHE SONRASI SIKILASMA (F3 / E22). Bu turda tarayici kapisi talimat
+    # benzeri bir dis icerik gorduyse (`talimat_suphesi` olayi), normalde
+    # serbest ya da yalniz kaydedilen DISARI CIKABILEN eylemler sorulur:
+    # ag komutu (curl, iwr...) ve baglayicida kayit. Yerel dosya yazma
+    # serbest kalir (geri alinabilir, disk olcumu goruyor).
+    aday = ((bulgu is None and arac in riskli.KABUK_ARACLARI
+             and riskli.AG_KOMUTU.search(str(girdi.get("command") or "")))
+            or (bulgu is not None and not bulgu.get("sorulur")))
+    if aday:
+        try:
+            alinti = _tur_suphesi(oturum)
+        except Exception:
+            alinti = None
+        if alinti:
+            bulgu = riskli.suphe_bulgusu(
+                arac, str(girdi.get("command") or girdi)[:200], alinti)
 
     if bulgu is None:
         return izin()

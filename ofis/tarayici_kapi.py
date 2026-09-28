@@ -491,6 +491,9 @@ class Vekil:
         self._kendi_sayac = 0
         self._kendi_bekleyen: dict = {}
         self._kendi_kilit = threading.Lock()
+        # F3 / E22: bu turda gorulen TALIMAT SUPHELI icerik (alintilar).
+        # Doluysa denetlenen her tarayici eylemi patrona sorulur.
+        self.suphe: list = []
         self.cocuk = subprocess.Popen(
             cocuk_argv, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
             stderr=None, text=True, encoding="utf-8", errors="replace",
@@ -530,9 +533,31 @@ class Vekil:
                     bekleyen["yanit"] = nesne
                     bekleyen["olay"].set()
                 continue                        # ajana GITMEZ
-            self.durum.sonuctan_ogren(self._metin(nesne))
+            metin = self._metin(nesne)
+            self.durum.sonuctan_ogren(metin)
+            alinti = riskli.talimat_suphesi(metin)
+            if alinti:
+                nesne = self._suphe_isle(nesne, alinti)
             nesne = self._araclari_suz(nesne)
             self._ajana(nesne)
+
+    def _suphe_isle(self, nesne: dict, alinti: list) -> dict:
+        """Sayfa sonucunda talimat benzeri metin: sonucun BASINA uyari,
+        deftere `talimat_suphesi` (insan gorur), tur boyu sikilasma."""
+        self.suphe.extend(alinti)
+        if self.ofis.hazir:
+            try:
+                self.ofis.db.olay_yaz(
+                    self.ofis.proje_id, "talimat_suphesi",
+                    "sayfada talimat benzeri metin: " + " | ".join(a[:120] for a in alinti),
+                    ajan_ad=self.ofis.ajan, gorev_id=self.ofis.gorev_id)
+            except Exception:                   # noqa: BLE001 -- uyari yine gider
+                pass
+        sonuc = nesne.get("result")
+        if isinstance(sonuc, dict) and isinstance(sonuc.get("content"), list):
+            sonuc["content"] = ([{"type": "text", "text": riskli.suphe_uyarisi(alinti)}]
+                                + sonuc["content"])
+        return nesne
 
     @staticmethod
     def _metin(nesne: dict) -> str:
@@ -663,6 +688,13 @@ class Vekil:
                 f"Tarayici kapisi degerlendirme yapamadi ({exc}). Guvenli "
                 "tarafta kaliyoruz: bu eylem yapilmadi. Lidere danis.")))
             return
+
+        # SUPHE SONRASI SIKILASMA (E22): bu turda sayfa ajani kandirmaya
+        # calismis olabilir; normalde serbest olan tiklama/yazma sorulur.
+        if bulgu is None and self.suphe and arac in riskli.DENETLENEN:
+            bulgu = riskli.suphe_bulgusu(
+                arac, sayfa_metni or json.dumps(argumanlar, ensure_ascii=False)[:200],
+                self.suphe[0])
 
         if bulgu is None:
             self._cocuga(satir)                 # serbest, aynen gecer
