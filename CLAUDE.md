@@ -11727,3 +11727,58 @@ HEAD'e göre satır satır geri kuruldu (fark 425 satıra indi).
   klasörü için de çıkabilir (Claude güveni kullanıcının ayarında tutar;
   ofis onu yazmıyor — insan bir kez cevaplar).
 - Telefon yüzeyinde terminal bilinçli olarak YOK.
+
+## TERMİNAL GÖRÜNÜMÜ + KONSOL (28.09.2026)
+
+Kullanıcı (VS Code / PowerShell ekranlarıyla): *"ajanlar çalışırken
+terminalleri normal terminal gibi görünsün… ofisten bağımsız herhangi
+bir terminali açıp kullanabilecek miyim?"*
+
+### 1. Ajan panoları terminal diliyle okunur
+
+Ajanlar yine SESSİZ kipte koşuyor (onay kapısı, kanıt, limit devri,
+Durdur buna bağlı); değişen yalnız GÖSTERİM: `● Bash(komut)` /
+`  ⎿ sonuç` / `✓ kanıt` / `± disk farkı` / `✗ hata` / `? soru` /
+`── tur bitti`. Uydurma yok: defterde ne varsa o. Eksik olan tek şey
+aracın NE yaptığıydı — koltuk artık `arac` olayına motorun özetini
+(komut, dosya, adres; ≤300 harf) ikinci satır olarak yazıyor. Okunur
+kip anahtarı duruyor. Yazılabilir gerçek terminal hâlâ yalnız
+**Devral**'da.
+
+### 2. KONSOL — ofisten bağımsız terminal (`ofis/konsol.py`)
+
+Terminal sütununda yeni pano: klasör + PowerShell / Claude Code / Codex
+seç → gerçek terminal (Devral'ın ConPTY + xterm yolu). Birden çok
+konsol sekme olur.
+
+- **Ofisin çalışma kökünde ve altında AÇILMAZ:** orada ajanlar çalışır
+  ve yazma kilidi bu terminali göremez (Yasa 1). İşe elle girmek =
+  Devral.
+- Klasör kapıdan geçer (`klasor_dogrula`); yalnız bu bilgisayardan (403).
+- Kayda yalnız `konsol_acildi` / `konsol_kapandi` düşer; içi ofisin
+  kaydı değil.
+- Devral ile konsol AYNI köprüyü kullanır (`_terminal_kopru`,
+  `terminalAlani(anahtar, wsYol)`); konsol ucu devralınan işin
+  terminalini açamaz, tersi de.
+- Pano yeniden çizilirken terminal düğümü TAŞINIR, yeniden kurulmaz
+  (tarayıcıda ölçüldü: iki yeniden çizimden sonra ekran duruyor).
+
+**Ölçülen kusur:** kapanışta yarım satırı silmek için gönderilen Ctrl+U
+PowerShell'de HARF olarak yazılıyor, `exit` "komut bulunamadı" oluyor
+ve terminal zorla kapanıyordu. `Terminal(satir_temizle=…)`: CLI'larda
+Ctrl+U (ölçülmüş), PowerShell'de Esc (ölçüldü, yarım satırla bile
+düzgün kapanıyor). Mutasyon (PowerShell'de yine Ctrl+U) ateş etti.
+
+`duman_devral` 47 → **65**; `duman_panel` pano sayısı 11.
+
+Toplam **2758/2758** (36 dosya, ölçülen). Tarayıcıda (defter kopyası,
+8911): terminal görünümü, konsol açma, komut, yeniden çizimde ekranın
+korunması, ofis kökü reddi, kapatma ölçüldü.
+
+### Yan bulgu — Drive dolu
+
+Bu sabah 05:33'teki günlük yedeğin Drive kopyası yazılamadı
+(`No space left on device`, G:). Bilgisayar ve GitHub kopyaları
+sağlam. Ayrıca C: sürücüsünde ~1 GB boş kaldı ve bir sınama
+`database or disk is full` ile düştü; benim ölçüm artıklarım
+(%TEMP% altında 20 klasör) silindi. İkisi de kullanıcının kararı.

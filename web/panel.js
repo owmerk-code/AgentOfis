@@ -119,6 +119,8 @@ const OLAY = {
   devral:        (o) => ["işi insana verdi (devral)", sagdanKes(o.govde), "dikkat"],
   devral_bitti:  (o) => ["iş ajana geri verildi", sagdanKes(o.govde), "olumlu"],
   devral_dokum:  (o) => ["terminal dökümü kaydedildi", "", ""],
+  konsol_acildi: (o) => ["ofis dışı terminal açıldı", o.govde, ""],
+  konsol_kapandi:(o) => ["ofis dışı terminal kapandı", o.govde, ""],
 };
 
 /* Olay govdesi cogu zaman "<ajan>: <sey>" ya da "#3 baslik -> ajan"
@@ -389,10 +391,76 @@ const OKUNUR_TURLER = new Set([
   "hata", "izin", "ret", "ders", "not", "not_iletildi",
 ]);
 
+/* TERMINAL GORUNUMU (28.09.2026). Kullanici: "ajanlar calisirken
+   terminalleri normal terminal gibi gorunsun" (VS Code / PowerShell
+   ekranlari). Ajanlar arka planda SESSIZ kipte kosmaya devam eder -- onay
+   kapisi, kanit, limit devri, Durdur hep ona bagli; gosterim ise bir
+   terminal oturumunun diliyle: `● Arac(ne)` / `  ⎿ sonuc`. Gercek,
+   yazilabilir terminal "Devral"dadir. Hicbir sey UYDURULMAZ: defterde
+   ne varsa o cizilir; komut bilinmiyorsa yalniz arac adi yazilir. */
+function aracAdi(ad) {
+  const m = /^mcp__(.+?)__(.+)$/.exec(ad || "");
+  return m ? `${m[1].replace(/^claude_ai_/, "")}.${m[2]}` : (ad || "araç");
+}
+
+function terminalSatiri(o) {
+  const g = o.govde || "";
+  const s = el("div", "t-satir");
+  const ekle = (sinif, metin) => { s.append(el("span", sinif, metin)); };
+  switch (o.tur) {
+    case "arac": {
+      const i = g.indexOf("\n");
+      const ad = i >= 0 ? g.slice(0, i) : g;
+      const ne = i >= 0 ? g.slice(i + 1) : "";
+      s.classList.add("t-arac");
+      ekle("t-imi", "● ");
+      ekle("t-ad", aracAdi(ad));
+      if (ne) ekle("t-ne", "(" + kes(ne, 180) + ")");
+      return s;
+    }
+    case "arac_sonuc": {
+      const satirlar = g.split(/\r?\n/).filter((x) => x.trim()).slice(0, 4);
+      if (!satirlar.length) return null;
+      s.classList.add("t-sonuc");
+      ekle("t-imi", "  ⎿ ");
+      ekle(null, satirlar.map((x) => kes(x, 160)).join("\n     "));
+      return s;
+    }
+    case "izin":
+      s.classList.add("t-hata"); ekle("t-imi", "  ⎿ ✗ "); ekle(null, kes(g, 200)); return s;
+    case "cikti": case "rapor": {
+      const metin = D.okunurKip ? raporTemiz(g) : g;
+      if (!metin.trim()) return null;
+      s.classList.add("t-metin");
+      ekle(null, kes(metin.trim(), 900));
+      return s;
+    }
+    case "kanit": s.classList.add("t-iyi"); ekle("t-imi", "✓ "); ekle(null, "kanıt: " + kes(g, 200)); return s;
+    case "incelemede": case "kapandi":
+      s.classList.add("t-iyi"); ekle("t-imi", "✓ "); ekle(null, (o.tur === "kapandi" ? "iş kapandı: " : "incelemeye verdi: ") + kes(g, 160)); return s;
+    case "degisim": s.classList.add("t-diff"); ekle("t-imi", "± "); ekle(null, kes(g, 200)); return s;
+    case "dosya_canli": s.classList.add("t-sonuk"); ekle("t-imi", "✎ "); ekle(null, kes(g, 200)); return s;
+    case "hata": case "uyari": case "ret": case "ders":
+      s.classList.add("t-hata"); ekle("t-imi", "✗ "); ekle(null, kes(g, 300)); return s;
+    case "soru": case "onay_istendi": case "cevap":
+      s.classList.add("t-bekle"); ekle("t-imi", "? "); ekle(null, kes(g, 300)); return s;
+    case "not": case "not_iletildi":
+      s.classList.add("t-bekle"); ekle("t-imi", "✉ "); ekle(null, kes(g, 300)); return s;
+    case "tur_ozeti":
+      s.classList.add("t-sonuk"); ekle(null, "── tur bitti · " + turOzeti(g)); return s;
+    case "brifing": case "sahiplenildi":
+      s.classList.add("t-sonuk"); ekle("t-imi", "› "); ekle(null, kes(g, 200)); return s;
+    default:
+      return null;
+  }
+}
+
 function panoSatiri(o) {
   const sinif = PANO_SINIF[o.tur];
   if (sinif === undefined) return null;
   if (D.okunurKip && !OKUNUR_TURLER.has(o.tur)) return null;
+  // Terminal kipi (varsayilan): terminal oturumu diliyle ciz.
+  if (!D.okunurKip) return terminalSatiri(o);
   const okunur = olayOku(o);
   const satir = el("div", sinif);
   // Okunur kipte ajanin kendi metni KESILMEZ: takip etmek icin
@@ -636,6 +704,109 @@ async function geriVer(no, not) {
   cizCanli();
 }
 
+/* KONSOL (28.09.2026): ofisten BAGIMSIZ, insanin kendi terminali --
+   VS Code'daki terminal gibi. Klasor secilir (ofisin calisma kokunde
+   ACILMAZ: orada ajanlar calisir ve yazma kilidi bu terminali goremez),
+   PowerShell ya da Claude/Codex acilir. Birden cok konsol sekme olur.
+   Pano yeniden cizilirken terminal dugumu TASINIR, yeniden kurulmaz:
+   yazilan komut ve ekran kaybolmaz. */
+async function cizKonsol() {
+  const kap = $("#pano-konsol");
+  if (!kap) return;
+  let r;
+  try { r = await al("/api/konsol"); }
+  catch (e) { kap.textContent = ""; return kap.append(el("div", "form-ipucu uyari", "konsol okunamadı: " + e.message)); }
+  D.konsollar = r.konsollar || [];
+  const canli = D.konsollar.filter((k) => k.canli);
+  if (D.konsolSecili && !D.konsollar.some((k) => k.kimlik === D.konsolSecili))
+    D.konsolSecili = null;
+  if (!D.konsolSecili && canli.length) D.konsolSecili = canli[canli.length - 1].kimlik;
+  // Kapanmis sekmelerin terminalini birak.
+  for (const a of Object.keys(D.term || {}))
+    if (a.startsWith("k:") && !D.konsollar.some((k) => "k:" + k.kimlik === a))
+      terminalKapat(a);
+
+  const ust = el("div", "konsol-ust");
+  for (const k of D.konsollar) {
+    const s = el("button", "konsol-sekme" + (k.kimlik === D.konsolSecili ? " secili" : "")
+                  + (k.canli ? "" : " kapali"));
+    const kisa = (k.klasor || "").split(/[\\/]/).filter(Boolean).pop() || k.klasor;
+    s.textContent = `${k.motor} · ${kisa}`;
+    s.title = `${k.motor} — ${k.klasor}` + (k.canli ? "" : " (kapandı)");
+    s.onclick = () => { D.konsolSecili = k.kimlik; cizKonsol(); };
+    const x = el("span", "konsol-x", "×");
+    x.title = "Bu terminali kapat";
+    x.onclick = async (e) => {
+      e.stopPropagation();
+      try { await yolla(`/api/konsol/${k.kimlik}/kapat`, {}); }
+      catch (err) { bildir("konsol kapatılamadı: " + err.message, "kotu"); }
+      terminalKapat("k:" + k.kimlik);
+      if (D.konsolSecili === k.kimlik) D.konsolSecili = null;
+      cizKonsol();
+    };
+    s.append(x);
+    ust.append(s);
+  }
+  const yeni = el("button", "konsol-sekme konsol-yeni", "+ terminal");
+  yeni.onclick = () => { D.konsolForm = !D.konsolForm; cizKonsol(); };
+  ust.append(yeni);
+
+  const govde = el("div", "konsol-govde");
+  if (r.pty && r.pty !== "hazir") {
+    govde.append(el("div", "form-ipucu uyari", r.pty));
+  } else if (D.konsolForm || !D.konsollar.length) {
+    govde.append(konsolFormu(r.motorlar || ["powershell"]));
+  } else if (D.konsolSecili) {
+    govde.append(terminalAlani("k:" + D.konsolSecili, `/ws/konsol/${D.konsolSecili}`,
+      "[terminal kapandı — sekmedeki × ile kaldırabilirsin]"));
+  }
+  // Terminal dugumu yerinden SOKULUR, yenisi kurulmaz (DOM tasima xterm'i bozmaz).
+  kap.textContent = "";
+  kap.append(ust, govde);
+}
+
+function konsolFormu(motorlar) {
+  const f = el("form", "konsol-form");
+  f.append(el("div", "form-ipucu",
+    "Ofisten bağımsız bir terminal: senin terminalin, işin kaydına girmez " +
+    "(yalnız açıldı/kapandı yazılır). Ofisin çalışma klasöründe açılmaz — " +
+    "orada ajanlar çalışır; bir işe elle girmek için o işi 'Devral'."));
+  const k = el("input");
+  k.placeholder = "klasör — ör. C:/Users/pc/Desktop/projem";
+  k.value = D.konsolSonKlasor || "";
+  k.spellcheck = false;
+  const m = el("select");
+  const adlar = { powershell: "PowerShell", claude: "Claude Code", codex: "Codex" };
+  for (const ad of motorlar) {
+    const o = el("option", null, adlar[ad] || ad);
+    o.value = ad;
+    m.append(o);
+  }
+  const d = el("button", "dugme olumlu", "Aç");
+  d.type = "submit";
+  const not = el("div", "form-ipucu");
+  f.onsubmit = async (e) => {
+    e.preventDefault();
+    d.disabled = true;
+    not.textContent = "açılıyor…";
+    try {
+      const r = await yolla("/api/konsol", { klasor: k.value.trim(), motor: m.value });
+      D.konsolSonKlasor = k.value.trim();
+      D.konsolSecili = r.kimlik;
+      D.konsolForm = false;
+      cizKonsol();
+    } catch (err) {
+      not.textContent = err.message;
+      not.classList.add("uyari");
+      d.disabled = false;
+    }
+  };
+  const satir = el("div", "konsol-satir");
+  satir.append(k, m, d);
+  f.append(satir, not);
+  return f;
+}
+
 function terminalKapat(no) {
   const x = (D.term || {})[no];
   if (!x) return;
@@ -646,7 +817,12 @@ function terminalKapat(no) {
   delete D.term[no];
 }
 
-function terminalAlani(no) {
+/* Gercek terminal alani. Devral (`no` = gorev no) ve Konsol (`anahtar`
+   = "k:<kimlik>") AYNI yolu kullanir: iki kopya olsaydi biri duzeltilir
+   oteki unutulurdu. */
+function terminalAlani(no, wsYol, kapandiMetni) {
+  wsYol = wsYol || `/ws/terminal/${no}`;
+  kapandiMetni = kapandiMetni || "[terminal kapandı — 'Ofise geri ver' ile ajana dön]";
   D.term = D.term || {};
   if (D.term[no]) return D.term[no].el;
   const kutu = el("div", "pano-terminal");
@@ -668,7 +844,7 @@ function terminalAlani(no) {
     term.loadAddon(fit);
     term.open(kutu);
     x.term = term;
-    const ws = new WebSocket(`ws://${location.host}/ws/terminal/${no}`);
+    const ws = new WebSocket(`ws://${location.host}${wsYol}`);
     x.ws = ws;
     const boyut = () => {
       try { fit.fit(); } catch (e) { return; }
@@ -679,7 +855,7 @@ function terminalAlani(no) {
     ws.onmessage = (m) => {
       let v; try { v = JSON.parse(m.data); } catch (e) { return; }
       if (v.tur === "veri") term.write(v.govde || "");
-      else if (v.tur === "kapandi") term.write("\r\n\x1b[33m[terminal kapandı — 'Ofise geri ver' ile ajana dön]\x1b[0m\r\n");
+      else if (v.tur === "kapandi") term.write("\r\n\x1b[33m" + kapandiMetni + "\x1b[0m\r\n");
       else if (v.tur === "hata") term.write("\r\n\x1b[31m" + (v.govde || "hata") + "\x1b[0m\r\n");
     };
     ws.onclose = () => { x.ws = null; };
@@ -2476,6 +2652,8 @@ async function cizSekme() {
   // kabina cizilir ve yalniz EKRANDAYSA cizilir.
   const ciz = { raporlar: cizRaporlar, hafiza: cizHafiza, kararlar: cizKararlar,
                 yetenek: cizYetenek, sohbet: cizSohbet };
+  // Konsol kendi kabini SILMEDEN cizer (terminal dugumu tasinir).
+  if (panoAcik("konsol")) cizKonsol();
   for (const [p, f] of Object.entries(ciz)) {
     if (!panoAcik(p)) continue;
     const kap = $("#pano-" + p);
@@ -3354,6 +3532,7 @@ const PANO_SINIF = {
   soru: "bekleme", onay_istendi: "bekleme", cevap: "bekleme",
   tur_ozeti: "sonuk", ders: "kotu",
   not: "bekleme", not_iletildi: "kanit",
+  degisim: "kanit", dosya_canli: "sonuk",
 };
 
 function ajanAc(ad) {
@@ -3804,6 +3983,7 @@ const PANOLAR = {
   ofis:     { ad: "Ofis",     sayac: "sayac-ofis" },
   terminal: { ad: "Terminal", sayac: "sayac-canli" },
   sohbet:   { ad: "Sohbet",   sayac: "" },
+  konsol:   { ad: "Konsol",   sayac: "" },
   kod:      { ad: "Kod",      sayac: "sayac-kod" },
   tarayici: { ad: "Tarayıcı", sayac: "sayac-kabin" },
   gorevler: { ad: "Görevler", sayac: "sayac-tahta" },
@@ -3822,7 +4002,7 @@ function yerlesimVarsayilan() {
       { gen: 1.1, kapali: false,
         yiginlar: [{ yuk: 1, panolar: ["ofis"], secili: "ofis" }] },
       { gen: 1.62, kapali: false,
-        yiginlar: [{ yuk: 0.66, panolar: ["terminal", "sohbet"], secili: "terminal" },
+        yiginlar: [{ yuk: 0.66, panolar: ["terminal", "sohbet", "konsol"], secili: "terminal" },
                    { yuk: 0.34, panolar: ["kod"], secili: "kod" }] },
       { gen: 1.6, kapali: false,
         yiginlar: [{ yuk: 1, panolar: ["tarayici"], secili: "tarayici" }] },

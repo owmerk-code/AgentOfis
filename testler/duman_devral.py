@@ -291,5 +291,88 @@ sina("xterm.js panelden servis ediliyor (yerel, internetsiz)", v.status_code == 
 v2 = istemci.get("/varlik/../ofis/panel.py")
 sina("varlik yolu klasor disina CIKAMAZ", v2.status_code == 404, str(v2.status_code))
 
+# ------------------------------------------------------------------ 6
+print("\n-- 6. KONSOL: ofisten bagimsiz terminal --")
+from ofis import konsol as KS
+
+# Ofisin calisma kokunde ve onun ALTINDA acilmaz (yazma kilidi goremez).
+r = istemci.post("/api/konsol", json={"klasor": str(kok), "motor": "sahte"})
+sina("ofis kokunde konsol REDDEDILIR", r.status_code == 400 and "koku" in r.text, r.text[:160])
+(kok / "alt").mkdir(exist_ok=True)
+r = istemci.post("/api/konsol", json={"klasor": str(kok / "alt"), "motor": "sahte"})
+sina("ofis kokunun ALTINDA da reddedilir", r.status_code == 400, r.text[:160])
+r = istemci.post("/api/konsol", json={"klasor": str(kok / "yok-boyle"), "motor": "sahte"})
+sina("var olmayan klasor reddedilir", r.status_code == 400, r.text[:160])
+
+dis = Path(tempfile.mkdtemp(prefix="ofis-konsol-"))
+r = istemci.post("/api/konsol", json={"klasor": str(dis), "motor": "sahte"})
+sina("ofis disi klasorde konsol ACILIR", r.status_code == 200, r.text[:200])
+kk = r.json().get("kimlik", "") if r.status_code == 200 else ""
+ls = istemci.get("/api/konsol").json()
+sina("konsol listesinde, canli", any(k["kimlik"] == kk and k["canli"] for k in ls["konsollar"]),
+     str(ls)[:200])
+sina("liste powershell'i sunar", "powershell" in ls.get("motorlar", []), str(ls.get("motorlar")))
+sina("devralinan is konsol listesine KARISMAZ",
+     all(k["kimlik"].startswith("konsol-") for k in ls["konsollar"]))
+if kk:
+    bekle(lambda: "SAHTE TERMINAL" in (TR.al(kk) or {"terminal": t})["terminal"].dokum())
+    with istemci.websocket_connect(f"/ws/konsol/{kk}") as ws:
+        ilk = ws.receive_json()
+        sina("konsol WS: once ekran gecmisi", ilk["tur"] == "veri", str(ilk)[:120])
+        ws.send_json({"tur": "girdi", "govde": "konsoldan\r"})
+        gordu = False
+        for _ in range(40):
+            try:
+                m = ws.receive_json()
+            except Exception:                # noqa: BLE001 -- KALDI say, cokme
+                break
+            if m["tur"] == "veri" and "YANKI: konsoldan" in TR.duz_metin(m["govde"]):
+                gordu = True
+                break
+        sina("konsol WS: yazilan gitti, yankisi geldi", gordu)
+# Konsol kimligi ile /ws/terminal (devral koprusu) karistirilamaz, tersi de.
+with istemci.websocket_connect(f"/ws/konsol/{gid}") as ws:
+    m = ws.receive_json()
+    sina("devralinan isin terminali konsol ucundan ACILMAZ", m["tur"] == "hata", str(m)[:120])
+_eski = _P.TERMINAL_YEREL
+_P.TERMINAL_YEREL = ("127.0.0.1",)
+try:
+    r2 = istemci.post("/api/konsol", json={"klasor": str(dis), "motor": "sahte"})
+    sina("yerel olmayan istemci konsol acamaz: 403", r2.status_code == 403, str(r2.status_code))
+    if kk:
+        with istemci.websocket_connect(f"/ws/konsol/{kk}") as ws:
+            m = ws.receive_json()
+            sina("yerel olmayan istemci konsol WS: REDDEDILIR", m["tur"] == "hata", str(m)[:120])
+finally:
+    _P.TERMINAL_YEREL = _eski
+if kk:
+    kp = istemci.post(f"/api/konsol/{kk}/kapat", json={})
+    sina("konsol DUZGUN kapanir", kp.status_code == 200 and kp.json().get("kapanis") == "duzgun",
+         kp.text[:160])
+    sina("kapanan konsol listeden kalkar",
+         not any(k["kimlik"] == kk for k in istemci.get("/api/konsol").json()["konsollar"]))
+kp2 = istemci.post("/api/konsol/konsol-yok/kapat", json={})
+sina("olmayan konsolu kapatmak 400", kp2.status_code == 400)
+with db.baglanti() as c:
+    turler = [x["tur"] for x in c.execute(
+        "SELECT tur FROM olay WHERE tur LIKE 'konsol_%' ORDER BY rowid")]
+sina("kayda gecer: acildi + kapandi (yalniz bunlar)",
+     turler == ["konsol_acildi", "konsol_kapandi"], str(turler))
+# PowerShell konsolu gercekten acilir ve 'exit' ile duzgun kapanir.
+try:
+    ps = KS.ac(ofis, str(dis), "powershell")
+    bekle(lambda: len(TR.al(ps["kimlik"])["terminal"].dokum()) > 5, sn=15)
+    TR.al(ps["kimlik"])["terminal"].yaz("echo konsol-ps-42\r")
+    sina("PowerShell konsolu komut kosar",
+         bekle(lambda: "konsol-ps-42" in TR.duz_metin(TR.al(ps["kimlik"])["terminal"].dokum())
+               .replace("echo konsol-ps-42", ""), sn=15))
+    # Insan satiri YARIM birakmis olabilir; kapanis yine duzgun olmali
+    # (PowerShell'de Ctrl+U harf olarak yaziliyordu, olculdu).
+    TR.al(ps["kimlik"])["terminal"].yaz("yarimkalan")
+    time.sleep(0.5)
+    sina("PowerShell konsolu (yarim satirla) duzgun kapanir",KS.kapat(ofis, ps["kimlik"])["kapanis"] == "duzgun")
+except KS.KonsolHatasi as exc:
+    sina("PowerShell konsolu acilir", False, str(exc))
+
 print(f"\n== sonuc: {GECEN} gecti, {KALAN} kaldi ==")
 sys.exit(1 if KALAN else 0)

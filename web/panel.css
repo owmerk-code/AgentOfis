@@ -1484,3 +1484,33 @@ details > summary.hf-bas { cursor: pointer; }
 .devral-rozet { font-size: var(--yz-mikro); font-weight: 700; letter-spacing: .06em;
   color: var(--vurgu); border: 1px solid var(--vurgu); border-radius: 3px;
   padding: 1px 5px; flex: none; }
+
+/* TERMINAL GORUNUMU (28.09): ajan panosu bir terminal oturumu gibi okunur. */
+.pano-ic:not(.okunur) { background: #0d0f13; color: #c9d1d9; }
+.t-satir { white-space: pre-wrap; word-break: break-word; }
+.t-imi { color: #6e7681; }
+.t-arac .t-imi { color: #3fb950; }
+.t-arac .t-ad { color: #e6edf3; font-weight: 600; }
+.t-arac .t-ne { color: #8b949e; }
+.t-sonuc { color: #8b949e; }
+.t-metin { color: #e6edf3; margin: 2px 0 4px; }
+.t-iyi { color: #3fb950; }
+.t-diff { color: #d29922; }
+.t-hata { color: #f85149; }
+.t-bekle { color: #bc8cff; }
+.t-sonuk { color: #6e7681; }
+
+/* KONSOL (28.09): ofisten bagimsiz terminal. */
+.konsol-alan { display: flex; flex-direction: column; height: 100%; min-height: 0; padding: 0; }
+.konsol-ust { display: flex; gap: 4px; flex-wrap: wrap; padding: 6px 8px; border-bottom: 1px solid var(--cizgi, #2a2f38); }
+.konsol-sekme { background: #161a21; color: #c9d1d9; border: 1px solid #2a2f38; border-radius: 4px; padding: 2px 8px; font-size: var(--yz-kucuk, 11px); cursor: pointer; }
+.konsol-sekme.secili { border-color: var(--vurgu, #e8833a); color: #fff; }
+.konsol-sekme.kapali { opacity: .55; text-decoration: line-through; }
+.konsol-x { margin-left: 6px; color: #8b949e; }
+.konsol-x:hover { color: #f85149; }
+.konsol-yeni { border-style: dashed; }
+.konsol-govde { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.konsol-govde .pano-terminal { flex: 1; min-height: 160px; }
+.konsol-form { padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+.konsol-satir { display: flex; gap: 6px; }
+.konsol-satir input { flex: 1; min-width: 0; }

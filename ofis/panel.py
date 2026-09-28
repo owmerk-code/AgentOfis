@@ -412,6 +412,13 @@ class GeriVerGovdesi(BaseModel):
 TERMINAL_YEREL = ("127.0.0.1", "::1", "localhost", "testclient")
 
 
+class KonsolGovdesi(BaseModel):
+    klasor: str = ""
+    motor: str = "powershell"
+    sutun: int = 120
+    satir: int = 32
+
+
 class SebepGovdesi(BaseModel):
     """Ret ve iptal icin. Sebep ZORUNLU -- cekirdek zaten reddediyor;
     burada ayrica alan olmasi, panelin onu SORMASI icin."""
@@ -1648,7 +1655,58 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
                                    "govde": "Bu is icin acik terminal yok."})
             await soket.close()
             return
-        t = acik["terminal"]
+        await _terminal_kopru(soket, acik["terminal"])
+
+    # -- KONSOL: ofisten bagimsiz terminal (28.09) -----------------------
+    @uygulama.post("/api/konsol")
+    def api_konsol_ac(govde: KonsolGovdesi, istek: Request):
+        if istek.client and istek.client.host not in TERMINAL_YEREL:
+            raise HTTPException(403, "Terminal yalniz bu bilgisayardan acilir.")
+        from . import konsol as _ks
+        try:
+            return _ks.ac(ofis_ac(), govde.klasor, govde.motor,
+                          fabrika=MOTOR_FABRIKASI or motor_ac,
+                          sutun=govde.sutun, satir=govde.satir)
+        except _ks.KonsolHatasi as exc:
+            raise HTTPException(400, str(exc)) from exc
+
+    @uygulama.get("/api/konsol")
+    def api_konsol_liste():
+        from . import konsol as _ks
+        from . import terminal as _tr
+        return {"konsollar": _ks.liste(), "pty": _tr.pty_durumu() or "hazir",
+                "motorlar": ["powershell"] + sorted(
+                    m for m, var in musait_motorlar().items() if var and m != "sahte")}
+
+    @uygulama.post("/api/konsol/{kimlik}/kapat")
+    def api_konsol_kapat(kimlik: str):
+        from . import konsol as _ks
+        try:
+            return _ks.kapat(ofis_ac(), kimlik)
+        except _ks.KonsolHatasi as exc:
+            raise HTTPException(400, str(exc)) from exc
+
+    @uygulama.websocket("/ws/konsol/{kimlik}")
+    async def ws_konsol(soket: WebSocket, kimlik: str):
+        from . import terminal as _tr
+        await soket.accept()
+        if soket.client and soket.client.host not in TERMINAL_YEREL:
+            await soket.send_json({"tur": "hata",
+                                   "govde": "Terminal yalniz bu bilgisayardan acilir."})
+            await soket.close()
+            return
+        acik = _tr.al(kimlik)
+        if not acik or not acik.get("konsol") or not acik["terminal"].canli():
+            await soket.send_json({"tur": "hata", "govde": "Bu konsol kapali."})
+            await soket.close()
+            return
+        await _terminal_kopru(soket, acik["terminal"])
+
+    async def _terminal_kopru(soket: WebSocket, t):
+        """Terminal <-> panel koprusu (devral ve konsol AYNI kopruyu
+        kullanir -- iki kopya olsaydi biri duzeltilir oteki unutulurdu).
+        Sozluk kucuk: `girdi` ve `boyut`; bilinmeyen tur dusurulur."""
+        from . import terminal as _tr
         dongu = asyncio.get_running_loop()
         kuyruk: asyncio.Queue = asyncio.Queue()
 

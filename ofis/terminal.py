@@ -65,7 +65,8 @@ class Terminal:
     """Tek bir gercek terminal oturumu."""
 
     def __init__(self, argv: list, *, klasor: str, ortam: dict = None,
-                 kapat_girdisi: str = "", sutun: int = 120, satir: int = 32):
+                 kapat_girdisi: str = "", sutun: int = 120, satir: int = 32,
+                 satir_temizle: str = "\x15"):
         durum = pty_durumu()
         if durum:
             raise TerminalHatasi(durum)
@@ -78,6 +79,10 @@ class Terminal:
             raise TerminalHatasi(f"terminal acilamadi: {exc}") from exc
         self.argv = list(argv)
         self.kapat_girdisi = kapat_girdisi or ""
+        #: Yarim satiri silen tus. CLI'larda Ctrl+U (olculdu); PowerShell'de
+        #: Ctrl+U harf olarak yazilir ve 'exit' "komut bulunamadi" olur --
+        #: orada Esc (olculdu 28.09).
+        self.satir_temizle = satir_temizle or ""
         self.acildi = time.time()
         self._tampon: list = []
         self._boy = 0
@@ -169,7 +174,8 @@ class Terminal:
                 try:
                     # Satirda yarim kalmis bir girdi varsa once temizlenir
                     # (Ctrl+U); sonra kapanis komutu.
-                    self._p.write("\x15")
+                    if self.satir_temizle:
+                        self._p.write(self.satir_temizle)
                     for ch in self.kapat_girdisi:
                         self._p.write(ch)
                     time.sleep(0.5)
@@ -209,6 +215,11 @@ def kaydet(anahtar: str, terminal: Terminal, **ek) -> None:
 def al(anahtar: str) -> dict | None:
     with _ACIK_KILIT:
         return _ACIK.get(anahtar)
+
+
+def hepsi() -> list:
+    with _ACIK_KILIT:
+        return list(_ACIK.items())
 
 
 def cikar(anahtar: str) -> dict | None:

@@ -837,7 +837,16 @@ class Koltuk:
                                 baglayici.sorunu_temizle(hedef)
                         son_arac = None
 
-                    yield self._olay(olay.tur, olay.govde, olay.ek,
+                    # ARAC SATIRI: deftere yalniz ADI yaziliyordu ("Bash");
+                    # hangi komutun kostugu, hangi dosyaya dokunuldugu
+                    # motorun olayinda VARDI ama panel yenilenince
+                    # kayboluyordu. Terminal gorunumu (28.09) onu ister:
+                    # ilk satir arac, ikinci satir NE. Ilk satiri okuyan
+                    # eski tuketiciler bozulmaz.
+                    _govde = olay.govde
+                    if olay.tur == "arac" and (olay.ek or {}).get("ozet"):
+                        _govde = f"{olay.govde}\n{str(olay.ek['ozet'])[:300]}"
+                    yield self._olay(olay.tur, _govde, olay.ek,
                                      ajan_ad=ajan_ad, gorev_id=gorev["id"])
             except MotorHatasi as exc:
                 # Motor hic baslayamadi (kurulu degil, klasor yok, kimlik bozuk).
