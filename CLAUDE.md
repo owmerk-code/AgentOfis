@@ -11921,3 +11921,56 @@ Toplam **2917/2917** (38 dosya).
 - Rastgele bir hizmetin API anahtarını ajanın kullanması (anahtar
   enjeksiyonu) bilinçli olarak yok: anahtar ajana verilmez; yalnız
   ofisin kendi araçları kasadan okur. Gerekirse ayrı karar.
+
+## MODEL GÜNCELLEMESİ OTOMATİK — Sonnet 5.5 uçtan uca (29.09.2026)
+
+Kullanıcı: *"ofis farkedip bana düşen her şeyi kendisi yapıp güncelleyebilir
+mi, yeni modeli ekleyip uçtan uca her şey hazır yapsa daha mı iyi olur?"*
+Önce her öneri onaya düşüyordu ve kuyruktaki 4 kartın **2'si yanlış
+alarmdı** (claude.ai kataloğu "sonnet değişti" diyordu, CLI hâlâ Sonnet
+5'e gidiyordu · gpt-5.6-terra eski nesil olduğu hâlde "yeni" sayılıyordu).
+
+### Ölçülen asıl tehlike — takma ad sessizce kayıyordu
+`system/init` ile ($0) ölçüldü: CLI 2.1.282'de `sonnet` → claude-sonnet-5;
+CLI 2.1.284'e güncellendiği an → claude-sonnet-5-5. Yani CLI güncellemesi
+bütün `sonnet` ajanlarını **haber vermeden** yeni modele geçirirdi (Opus
+5 → 5.5 bir kez böyle olmuştu).
+
+### Kurulan (`ofis/guncelleme.py`)
+- **Sabitleme:** `model_coz` takma adı ofisin onayladığı gerçek kimliğe
+  çevirir; zincirin tek kurucusunda (`basamaklari_kur`) ve danışmada.
+- **Otomatik mod** (ayar `guncelleme:otomatik`, varsayılan açık): aynı
+  ailenin yeni nesli · takma adın yeni hedefi · CLI sürümü → deneme turu
+  geçerse ofis KENDİSİ uygular (`veren=ofis` olarak günlüğe). Düşerse bir
+  daha kendiliğinden denenmez, sebebiyle insana düşer. Yeni AİLE ve kapı
+  modelleri insana sorulur. İş koşarken CLI değiştirilmez.
+- **Takma ad onayında da deneme turu** (önce koşmuyordu).
+- **Geçmiş + Geri al:** her uygulama kaydedilir; panelde "OTOMATİK ·
+  güncelleme uygulandı" kartı (Tamam / Geri al). Geri alınan bir daha
+  kendiliğinden gelmez. Kabuk: `guncelle otomatik [simdi|ac|kapat]` ·
+  `guncelle gecmis` · `guncelle geri-al <no>`.
+- **Süreçler arası kilit** (defterde, INSERT çatışması atomik, 30 dk bayat).
+  GERÇEK TEST gösterdi: panelin arka plan denetimi ile kabuk AYNI ANDA
+  koştu ve codex CLI iki kez kuruldu.
+- Panel saatte bir denetler (yalnız gerçek defterde).
+
+### Gerçek test (gerçek ofis, kullanıcı panelde izledi)
+| Adım | Sonuç |
+|---|---|
+| claude CLI 2.1.282 → 2.1.284 | otomatik, deneme geçti |
+| codex CLI 0.156 → 0.158 | otomatik, deneme geçti (çift kurulum → kilit) |
+| `sonnet` → claude-sonnet-5-5 | otomatik, deneme geçti (5.578 jeton) |
+| Kolay iş (#32, deniz) | **Haiku'da** koştu — zorluk=kolay → hızlı kademe; kural doğru işledi |
+| Orta iş (#33, bilge) | **claude-sonnet-5-5**, ilk turda 6 kanıt, Opus 5.5 lider KAPAT. Sayılar bağımsız denetlendi: birebir. |
+
+Kapatılan: `codex2` ve `gemini` hesapları zincirden çıkarıldı (her turda
+uyarı gürültüsü). Sınamalar: `duman_guncelleme` 104 · `duman_panel` 372;
+10 mutasyonun 10'u ateş etti (4'ü önce sessizdi — ikisi yanlış kurulmuş
+mutasyon, ikisi sahnesi eksik sınama; düzeltildi).
+
+### AÇIK KALAN
+- **Kendi başarı defterimiz (F4/E28):** dış puan tabloları yalnız ilk
+  yerleştirmeye yol gösterir. Artificial Analysis'e göre Opus 5.5 xhigh
+  (56) Fable 5.1 max'ı (53) geçiyor ve ucuz: **kapı modelinin Fable'dan
+  Opus 5.5'e geçmesi** ölçülerek değerlendirilmeli.
+- Deneme turu yalnız "cevap veriyor mu"yu ölçer; araç kullanımını ölçmez.
