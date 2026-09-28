@@ -601,5 +601,24 @@ sina("is KOSARKEN CLI ertelendi (kurulmadi)",
 sina("ertelenen oneri INSANA dusmedi (sonra tekrar denenecek)",
      not any(x["anahtar"] == "cli:codex:0.160.0" for x in G.insana_dusenler(d8, p8)))
 
+# SURECLER ARASI KILIT (gercek testte olculdu: panel + kabuk ayni anda
+# calisti, codex CLI iki kez kuruldu)
+with d8.baglanti() as c:
+    c.execute("UPDATE gorev SET durum='hazir' WHERE proje_id=?", (p8,))
+d8.ayar_yaz(p8, G.ANAHTAR_KILIT, "baska-surec")
+onceki = SURUM["codex"]
+r8 = G.otomatik_ilerle(of8, fabrika=tamam)
+sina("baska surec kilidi tutarken HICBIR SEY uygulanmadi",
+     len(r8) == 1 and r8[0].get("ertelendi") and SURUM["codex"] == onceki, str(r8))
+sina("baskasinin kilidine DOKUNULMADI",
+     d8.ayar_oku(p8, G.ANAHTAR_KILIT, "") == "baska-surec")
+with d8.baglanti() as c:
+    c.execute("UPDATE ayar SET guncellendi = ? WHERE proje_id = ? AND anahtar = ?",
+              ("2020-01-01T00:00:00+00:00", p8, G.ANAHTAR_KILIT))
+r8 = G.otomatik_ilerle(of8, fabrika=tamam)
+sina("BAYAT kilit devralindi ve is yapildi",
+     any(x.get("basarili") for x in r8) and SURUM["codex"] == "0.160.0", str(r8))
+sina("is bitince kilit BIRAKILDI", d8.ayar_oku(p8, G.ANAHTAR_KILIT, "") == "")
+
 print(f"\n== sonuc: {GECEN} gecti, {KALAN} kaldi")
 sys.exit(1 if KALAN else 0)

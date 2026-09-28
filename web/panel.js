@@ -2676,7 +2676,9 @@ async function cizBekleyenler() {
     d.append(ust, el("div", "istek-govde", `${ne}: ${u.eski || "—"} → ${u.yeni}`));
     d.append(el("div", "istek-ayrinti",
       "Deneme turu geçti" + (u.deneme ? ` (cevap: ${u.deneme})` : "")
-      + ". Eski model silinmedi; beğenmezsen geri al, bir daha kendiliğinden gelmez."));
+      + (u.tur === "cli"
+         ? ". Beğenmezsen geri al: eski sürüm yeniden kurulur, bu sürüm bir daha kendiliğinden gelmez."
+         : ". Eski model silinmedi; beğenmezsen geri al, bir daha kendiliğinden gelmez.")));
     const satir = el("div", "istek-eylem");
     const tamam = el("button", "dugme", "Tamam");
     const geri = el("button", "dugme olumsuz", "Geri al");

@@ -866,7 +866,67 @@ def _kosan_is_var(db, proje_id: str) -> bool:
             (proje_id,)).fetchone())
 
 
+ANAHTAR_KILIT = "guncelleme:kilit"
+#: Kilit bu sureden eskiyse sahibinin oldugu varsayilir (CLI kurulumu +
+#: deneme turlari olculdu: birkac dakika). Olen surec kilidi rehin tutmasin.
+KILIT_BAYAT_SN = 30 * 60
+
+
+def _kilit_al(db, proje_id: str, sahip: str) -> bool:
+    """Surecler ARASI kilit. Ayni anda iki otomatik ilerleme olmaz.
+
+    OLCULDU (29.09.2026, gercek test): panelin arka plan denetimi ile
+    kabuktaki `guncelle otomatik simdi` AYNI ANDA calisti ve codex CLI iki
+    kez kuruldu. Surec ici kilit (RLock) bunu goremez; kilit defterdedir.
+    INSERT catismasi atomiktir -- ikinci surec giremez.
+    """
+    import sqlite3
+    with db.baglanti() as c:
+        r = c.execute("SELECT deger, guncellendi FROM ayar WHERE proje_id = ? "
+                      "AND anahtar = ?", (proje_id, ANAHTAR_KILIT)).fetchone()
+        if r is not None:
+            try:
+                yas = (_dt.datetime.now(_dt.timezone.utc)
+                       - _dt.datetime.fromisoformat(r["guncellendi"])).total_seconds()
+            except (ValueError, TypeError):
+                yas = KILIT_BAYAT_SN + 1
+            if yas <= KILIT_BAYAT_SN:
+                return False
+            c.execute("DELETE FROM ayar WHERE proje_id = ? AND anahtar = ? "
+                      "AND deger = ?", (proje_id, ANAHTAR_KILIT, r["deger"]))
+        try:
+            c.execute("INSERT INTO ayar (proje_id, anahtar, deger, guncellendi) "
+                      "VALUES (?, ?, ?, ?)",
+                      (proje_id, ANAHTAR_KILIT, sahip,
+                       _dt.datetime.now(_dt.timezone.utc).isoformat()))
+        except sqlite3.IntegrityError:
+            return False
+    return True
+
+
+def _kilit_birak(db, proje_id: str, sahip: str) -> None:
+    with db.baglanti() as c:
+        c.execute("DELETE FROM ayar WHERE proje_id = ? AND anahtar = ? AND deger = ?",
+                  (proje_id, ANAHTAR_KILIT, sahip))
+
+
 def otomatik_ilerle(ofis, *, fabrika=None) -> list:
+    """Kilitli sarmalayici: baska bir surec ilerletiyorsa hicbir sey yapmaz."""
+    db, pid = ofis.db, ofis.proje_id
+    if not otomatik_mi(db, pid):
+        return []
+    sahip = f"{os.getpid()}:{_dt.datetime.now().timestamp()}"
+    if not _kilit_al(db, pid, sahip):
+        return [{"anahtar": "", "basarili": False, "ertelendi": True,
+                 "ozet": "otomatik guncelleme",
+                 "mesaj": "baska bir surec su an guncelliyor -- beklenmedi, atlandi"}]
+    try:
+        return _otomatik_ilerle(ofis, fabrika=fabrika)
+    finally:
+        _kilit_birak(db, pid, sahip)
+
+
+def _otomatik_ilerle(ofis, *, fabrika=None) -> list:
     """Otomatik uygulanabilecek bekleyen onerileri SIRAYLA uygular.
 
     Sira: once CLI (yeni model yeni CLI isteyebilir), sonra modeller. Is
