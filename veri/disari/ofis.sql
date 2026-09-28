@@ -54,9 +54,9 @@ INSERT INTO "ayar" VALUES('915d303e41ee4cb59fa908401d277926','kademe:codex:hizli
 INSERT INTO "ayar" VALUES('915d303e41ee4cb59fa908401d277926','guncelleme:karar:model:codex:gpt-5.6-luna->gpt-6-luna','onay','2026-09-23T00:21:44+00:00');
 INSERT INTO "ayar" VALUES('915d303e41ee4cb59fa908401d277926','kademe:codex:standart','gpt-6-sol','2026-09-23T00:22:19+00:00');
 INSERT INTO "ayar" VALUES('915d303e41ee4cb59fa908401d277926','guncelleme:karar:cli:gemini:0.60.0','onay','2026-09-24T01:36:44+00:00');
-INSERT INTO "ayar" VALUES('915d303e41ee4cb59fa908401d277926','limit_canli_son','1790603904.680757','2026-09-28T13:58:24+00:00');
-INSERT INTO "ayar" VALUES('915d303e41ee4cb59fa908401d277926','limit_canli:claude:','{"motor": "claude", "hesap": "", "olculdu": "2026-09-28T13:58:27+00:00", "limit_pencere": {"kaynak": "claude CLI (get_usage, tur yok)", "hal": "", "plan": "max", "pencereler": {"5s": {"kullanim": 0.16, "yenilenme": 1790610000}, "7g": {"kullanim": 0.63, "yenilenme": 1790737200}, "7g_kapi": {"kullanim": 0.12, "yenilenme": 1790737200}}}}','2026-09-28T13:58:27+00:00');
-INSERT INTO "ayar" VALUES('915d303e41ee4cb59fa908401d277926','limit_canli:codex:','{"motor": "codex", "hesap": "", "olculdu": "2026-09-28T13:58:27+00:00", "limit_pencere": {"kaynak": "codex app-server (account/rateLimits)", "hal": "", "plan": "plus", "pencereler": {"5s": {"kullanim": 0.12, "yenilenme": 1790609963}, "7g": {"kullanim": 0.4, "yenilenme": 1791061490}}}}','2026-09-28T13:58:27+00:00');
+INSERT INTO "ayar" VALUES('915d303e41ee4cb59fa908401d277926','limit_canli_son','1790606432.6580822','2026-09-28T14:40:32+00:00');
+INSERT INTO "ayar" VALUES('915d303e41ee4cb59fa908401d277926','limit_canli:claude:','{"motor": "claude", "hesap": "", "olculdu": "2026-09-28T14:40:35+00:00", "limit_pencere": {"kaynak": "claude CLI (get_usage, tur yok)", "hal": "", "plan": "max", "pencereler": {"5s": {"kullanim": 0.17, "yenilenme": 1790609999}, "7g": {"kullanim": 0.63, "yenilenme": 1790737199}, "7g_kapi": {"kullanim": 0.12, "yenilenme": 1790737199}}}}','2026-09-28T14:40:35+00:00');
+INSERT INTO "ayar" VALUES('915d303e41ee4cb59fa908401d277926','limit_canli:codex:','{"motor": "codex", "hesap": "", "olculdu": "2026-09-28T14:40:36+00:00", "limit_pencere": {"kaynak": "codex app-server (account/rateLimits)", "hal": "", "plan": "plus", "pencereler": {"5s": {"kullanim": 0.12, "yenilenme": 1790609963}, "7g": {"kullanim": 0.4, "yenilenme": 1791061490}}}}','2026-09-28T14:40:36+00:00');
 CREATE TABLE brifing (
     id              TEXT PRIMARY KEY,
     gorev_id        TEXT NOT NULL REFERENCES gorev(id),
@@ -12638,6 +12638,10 @@ INSERT INTO "olay" VALUES(3244,'915d303e41ee4cb59fa908401d277926','demir',NULL,'
 INSERT INTO "olay" VALUES(3245,'915d303e41ee4cb59fa908401d277926','demir',NULL,'cevap','demir -> insan: İyidir patron, sen nasılsın? Ofis sakin, açık iş yok. Bilge, Çınar, Deniz, Ege ve Yaprak boşta. Son işimiz boştaki ajanların ofiste dolaşmasıydı: yürüyüş mantığı yazıldı ve test edildi. Boştaki ajan o','2026-09-28T12:52:07+00:00');
 INSERT INTO "olay" VALUES(3246,'915d303e41ee4cb59fa908401d277926','',NULL,'konsol_acildi','insan ofis disi terminal acti: codex · C:\Users\pc\Desktop\QUANTBOT','2026-09-28T12:53:07+00:00');
 INSERT INTO "olay" VALUES(3247,'915d303e41ee4cb59fa908401d277926','',NULL,'konsol_kapandi','ofis disi terminal kapandi (codex · C:\Users\pc\Desktop\QUANTBOT) -- duzgun','2026-09-28T12:53:17+00:00');
+INSERT INTO "olay" VALUES(3248,'915d303e41ee4cb59fa908401d277926','',NULL,'konsol_acildi','insan ofis disi terminal acti: claude · C:\Users\pc','2026-09-28T14:40:42+00:00');
+INSERT INTO "olay" VALUES(3249,'915d303e41ee4cb59fa908401d277926','',NULL,'konsol_kapandi','ofis disi terminal kapandi (claude · C:\Users\pc) -- duzgun','2026-09-28T14:40:58+00:00');
+INSERT INTO "olay" VALUES(3250,'915d303e41ee4cb59fa908401d277926','',NULL,'konsol_acildi','insan ofis disi terminal acti: claude · C:\Users\pc\Desktop\QUANTBOT','2026-09-28T14:41:32+00:00');
+INSERT INTO "olay" VALUES(3251,'915d303e41ee4cb59fa908401d277926','',NULL,'konsol_kapandi','ofis disi terminal kapandi (claude · C:\Users\pc\Desktop\QUANTBOT) -- duzgun','2026-09-28T14:41:44+00:00');
 CREATE TABLE olgu (
     id                  TEXT PRIMARY KEY,
     proje_id            TEXT NOT NULL REFERENCES proje(id),
@@ -12731,6 +12735,6 @@ CREATE INDEX ix_degisim_proje
 CREATE INDEX ix_tur_anlik_proje
     ON tur_anlik (proje_id, olusturuldu DESC);
 DELETE FROM "sqlite_sequence";
-INSERT INTO "sqlite_sequence" VALUES('olay',3247);
+INSERT INTO "sqlite_sequence" VALUES('olay',3251);
 COMMIT;
 PRAGMA user_version=1;
