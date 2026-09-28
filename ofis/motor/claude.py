@@ -542,6 +542,22 @@ class ClaudeMotoru(Motor):
             return "claude'a giris YOK (`claude auth status`). " + self.GIRIS_CARESI
         return ""
 
+    def etkilesimli_komut(self, *, oturum_id: str = "", klasor: str = "",
+                          model: str = "", ek_ortam: dict = None) -> dict | None:
+        """Devral: `claude --resume <oturum>` -- ajanin kendi oturumu, kendi
+        klasorunde (Claude oturumu klasore gore saklar; baska klasorde
+        acilirsa bulunamaz). Guven sorusu cikabilir: INSAN cevaplar."""
+        if not self.calistirilabilir:
+            return None
+        argv = [self.calistirilabilir]
+        if oturum_id:
+            argv += ["--resume", oturum_id]
+        if model:
+            argv += ["--model", model]
+        ortam = ortam_hazirla(os.environ, ek={**TUR_ORTAMI, **(ek_ortam or {})},
+                              izinli=tuple(ek_ortam or ()))
+        return {"argv": argv, "ortam": ortam, "kapat": "/exit"}
+
     def musait_mi(self) -> bool:
         """Kurulu MU, girisli MI ve hesabi son gercek turda REDDEDILMEDI mi.
 

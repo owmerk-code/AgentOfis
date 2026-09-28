@@ -20,6 +20,7 @@ Neden bir sahte motor cekirdegin parcasi:
 
 from __future__ import annotations
 
+import os
 import time
 import uuid
 from typing import Iterator
@@ -60,6 +61,25 @@ class SahteMotor(Motor):
         self.nabiz_sayisi = nabiz_sayisi
         #: Cagrilarin kaydi -- test "koltuk motora ne verdi" diye sorabilsin.
         self.cagrilar = []
+
+    #: Sinamalar icin etkilesimli "CLI": satir satir okur, "YANKI: <satir>"
+    #: basar, `/exit` gelince DUZGUN cikar (gercek CLI'lar gibi).
+    ETKILESIMLI_BETIK = (
+        "import sys\n"
+        "print('SAHTE TERMINAL hazir', flush=True)\n"
+        "for s in sys.stdin:\n"
+        "    s = ''.join(c for c in s if c >= ' ').strip()\n"
+        "    if s == '/exit':\n"
+        "        print('gule gule', flush=True); break\n"
+        "    print('YANKI: ' + s, flush=True)\n"
+    )
+
+    def etkilesimli_komut(self, *, oturum_id: str = "", klasor: str = "",
+                          model: str = "", ek_ortam: dict = None) -> dict | None:
+        import sys as _sys
+        return {"argv": [_sys.executable, "-u", "-c", self.ETKILESIMLI_BETIK],
+                "ortam": dict(os.environ), "kapat": "/exit",
+                "oturum_id": oturum_id}
 
     def musait_mi(self) -> bool:
         return True

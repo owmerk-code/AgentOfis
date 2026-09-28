@@ -32,7 +32,7 @@ import json
 import threading
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse, Response, StreamingResponse
 from pydantic import BaseModel
 
@@ -392,6 +392,24 @@ class OnayGovdesi(BaseModel):
     not_: str = ""
     kapsam: str = "eylem"
     surdur: bool = True
+
+
+class DevralGovdesi(BaseModel):
+    sutun: int = 120
+    satir: int = 32
+
+
+class GeriVerGovdesi(BaseModel):
+    """Insanin ajana kisa notu -- istege bagli; degisen dosyalari ofis
+    kendisi olcup ekler."""
+    not_: str = ""
+
+
+#: Terminal yalniz BU bilgisayardan acilir. Terminal bilgisayarda komut
+#: calistirabilen bir penceredir; telefondan (Tailscale) ya da agdaki baska
+#: bir cihazdan acilmasi, o cihaza bu bilgisayarin kabugunu vermek olurdu.
+#: `testclient` Starlette'in sinama istemcisinin adidir, bir ag adresi degil.
+TERMINAL_YEREL = ("127.0.0.1", "::1", "localhost", "testclient")
 
 
 class SebepGovdesi(BaseModel):
@@ -825,7 +843,7 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
                  '<circle cx="16" cy="16" r="11" fill="#e0785a"/></svg>')
         return Response(nokta, media_type="image/svg+xml")
 
-    @uygulama.get("/varlik/{dosya}")
+    @uygulama.get("/varlik/{dosya:path}")
     def varlik(dosya: str):
         yol = (WEB / dosya).resolve()
         # Klasor disina cikilamaz: panel yerelde kossa da yol enjeksiyonu
@@ -1573,6 +1591,106 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
         threading.Thread(target=_halkayi_kostur, args=(db.yol, proje_ad),
                          daemon=True).start()
         return {"kosuyor": True, "acik_is": len(acik)}
+
+    # -- DEVRAL (E18): insan ajanin isini gercek terminalde alir ----------
+    @uygulama.post("/api/gorev/{no}/devral")
+    def api_devral(no: int, govde: DevralGovdesi, istek: Request):
+        if istek.client and istek.client.host not in TERMINAL_YEREL:
+            raise HTTPException(403, "Terminal yalniz bu bilgisayardan acilir.")
+        from . import devral as _dv
+        ofis = ofis_ac()
+        try:
+            return _dv.devral(ofis, no, fabrika=MOTOR_FABRIKASI or motor_ac,
+                              sutun=govde.sutun, satir=govde.satir)
+        except (_dv.DevralHatasi, TahtaHatasi) as exc:
+            raise HTTPException(400, str(exc)) from exc
+
+    @uygulama.post("/api/gorev/{no}/geri_ver")
+    def api_geri_ver(no: int, govde: GeriVerGovdesi):
+        from . import devral as _dv
+        ofis = ofis_ac()
+        try:
+            return _dv.geri_ver(ofis, no, not_=govde.not_)
+        except (_dv.DevralHatasi, TahtaHatasi) as exc:
+            raise HTTPException(400, str(exc)) from exc
+
+    @uygulama.get("/api/devralinanlar")
+    def api_devralinanlar():
+        from . import devral as _dv
+        from . import terminal as _tr
+        ofis = ofis_ac()
+        return {"isler": _dv.devralinanlar(ofis.db, ofis.proje_id),
+                "pty": _tr.pty_durumu() or "hazir"}
+
+    @uygulama.websocket("/ws/terminal/{no}")
+    async def ws_terminal(soket: WebSocket, no: int):
+        """Devralinmis isin terminali: ekran -> panel, tuslar -> terminal.
+
+        Sozluk kucuk: `girdi` (tuslar) ve `boyut` (sutun/satir). Yeniden
+        baglanan panel son ekran gecmisini alir -- bos acilmaz."""
+        from . import terminal as _tr
+        await soket.accept()
+        if soket.client and soket.client.host not in TERMINAL_YEREL:
+            await soket.send_json({"tur": "hata",
+                                   "govde": "Terminal yalniz bu bilgisayardan acilir."})
+            await soket.close()
+            return
+        ofis = ofis_ac()
+        try:
+            gid = ofis.tahta.gorev(no)["id"]
+        except TahtaHatasi as exc:
+            await soket.send_json({"tur": "hata", "govde": str(exc)})
+            await soket.close()
+            return
+        acik = _tr.al(gid)
+        if not acik or not acik["terminal"].canli():
+            await soket.send_json({"tur": "hata",
+                                   "govde": "Bu is icin acik terminal yok."})
+            await soket.close()
+            return
+        t = acik["terminal"]
+        dongu = asyncio.get_running_loop()
+        kuyruk: asyncio.Queue = asyncio.Queue()
+
+        def gelen(veri):
+            dongu.call_soon_threadsafe(kuyruk.put_nowait, veri)
+
+        gecmis = t.dinle(gelen)
+        try:
+            await soket.send_json({"tur": "veri", "govde": gecmis})
+
+            async def terminalden():
+                while True:
+                    veri = await kuyruk.get()
+                    if veri is None:
+                        await soket.send_json({"tur": "kapandi"})
+                        return
+                    await soket.send_json({"tur": "veri", "govde": veri})
+
+            async def panelden():
+                while True:
+                    istek = await soket.receive_json()
+                    tur = istek.get("tur")
+                    if tur == "girdi":
+                        try:
+                            t.yaz(str(istek.get("govde") or ""))
+                        except _tr.TerminalHatasi:
+                            return
+                    elif tur == "boyut":
+                        t.boyutla(istek.get("sutun") or 120, istek.get("satir") or 32)
+                    # Bilinmeyen tur SESSIZCE dusurulur (kabin ile ayni kural).
+
+            gorevler = [asyncio.ensure_future(terminalden()),
+                        asyncio.ensure_future(panelden())]
+            await asyncio.wait(gorevler, return_when=asyncio.FIRST_COMPLETED)
+            for g in gorevler:
+                g.cancel()
+        except WebSocketDisconnect:
+            pass
+        except Exception:                          # noqa: BLE001 -- panel olmesin
+            pass
+        finally:
+            t.birak(gelen)
 
     @uygulama.post("/api/durdur")
     def api_durdur():

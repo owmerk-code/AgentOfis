@@ -889,7 +889,15 @@ class Orkestra:
         # baska bir dunyada kosturmak olurdu.
         _kabin_simdi = None
         cdp_is = {}
+        from . import devral as _devral
         for g in kosulacak:
+            # DEVRAL: insandaki is atlanir ve bu SOYLENIR -- sessizce
+            # atlanan is, "neden ilerlemiyor" sorusunu cevapsiz birakir.
+            if _devral.devralinmis(self.db, self.proje_id, g["id"]):
+                ozet["engel"].append({"gorev_no": g["no"],
+                                      "sebep": "insan devraldi (terminalde) -- "
+                                               "'Ofise geri ver' ile surer"})
+                continue
             cdp = tarayici_kabini
             if not cdp and g.get("tarayici_kabin") and (g.get("tarayici_alani") or []):
                 if _kabin_simdi is None:

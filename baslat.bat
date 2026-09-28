@@ -14,6 +14,14 @@ if errorlevel 1 (
   python -m pip install --quiet fastapi uvicorn || goto :hata
 )
 
+REM Devral (gercek terminal) icin. Kurulamazsa panel yine acilir;
+REM yalniz "Devral" dugmesi sebebini soyler.
+python -c "import winpty" 2>nul
+if errorlevel 1 (
+  echo   Terminal bileseni kuruluyor ^(pywinpty^)...
+  python -m pip install --quiet pywinpty
+)
+
 if not exist "veri\ofis.sqlite3" (
   echo   Ilk acilis: ornek ofis kuruluyor...
   python veri\ornek_ofis.py --db veri\ofis.sqlite3 || goto :hata

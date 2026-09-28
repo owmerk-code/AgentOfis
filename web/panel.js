@@ -116,6 +116,9 @@ const OLAY = {
   // ulasmak degildir (claude'da bir sonraki arac sinirinda ulasir).
   not:           (o) => ["patron not bıraktı", o.govde, "bekleme"],
   not_iletildi:  (o) => ["notu aldı", o.govde, "olumlu"],
+  devral:        (o) => ["işi insana verdi (devral)", sagdanKes(o.govde), "dikkat"],
+  devral_bitti:  (o) => ["iş ajana geri verildi", sagdanKes(o.govde), "olumlu"],
+  devral_dokum:  (o) => ["terminal dökümü kaydedildi", "", ""],
 };
 
 /* Olay govdesi cogu zaman "<ajan>: <sey>" ya da "#3 baslik -> ajan"
@@ -235,6 +238,7 @@ async function kosuDurumu() {
 
 async function yenile() {
   kosuDurumu();
+  await devralAl();
   D.ofis  = await al("/api/ofis");
   D.tahta = await al("/api/tahta" + (D.kanat ? "?kanat=" + D.kanat : ""));
   cizSerit(); cizGorunum(); cizBekleyenler(); cizSekme(); cizBaglam();
@@ -521,6 +525,15 @@ function panoKur(a, secenek) {
     const odaAd = (ODALAR.find((o) => o[0] === a.oda) || [])[2] || "";
     bas.append(el("span", "pano-oda " + a.oda, odaAd));
   }
+  // DEVRAL (E18): elinde is olan ajanin panosunda. Kosan tur varken
+  // sunucu reddeder ve SEBEBINI soyler ("once Durdur").
+  if (!s.gecmis && a.gorev_no && !devralinmisMi(a.gorev_no)) {
+    const dv = el("button", "pano-dugme devral-dugme", "⌨ Devral");
+    dv.title = "Bu işi al: ajanın kendi oturumu gerçek bir terminalde açılır. " +
+               "Ajan o sırada çalışmaz; işin bitince 'Ofise geri ver'.";
+    dv.onclick = (e) => { e.stopPropagation(); devralBaslat(a.gorev_no); };
+    bas.append(dv);
+  }
   if (s.dugmeler) {
     bas.append(el("span", "pano-bosluk"));
     for (const [ad, islev] of s.dugmeler) {
@@ -568,12 +581,135 @@ function panoKur(a, secenek) {
   p.append(bas, ozetSatiri(a));
   const kart = kullanimKarti(a);
   if (kart) p.append(kart);
+  if (!s.gecmis && devralinmisMi(a.gorev_no)) {
+    // Is INSANDA: akis yerine gercek terminal, not yerine "geri ver".
+    p.classList.add("devralindi");
+    p.append(terminalAlani(a.gorev_no), geriVerSatiri(a));
+    D.panolar[a.ad] = ic;
+    return p;
+  }
   p.append(ic);
   // YAZMA SATIRI yalniz elinde IS olan ajanda: not verilmis bir isin
   // yonunu duzeltir, is dagitmaz (yeni is lidere yazilir).
   if (!s.gecmis && a.gorev_no) p.append(notSatiri(a));
   D.panolar[a.ad] = ic;
   return p;
+}
+
+/* ─────────────── DEVRAL / OFİSE GERİ VER (E18) ───────────────
+   Varsayilan izleme OKUNUR akistir; gercek terminal yalniz "Devral"
+   denince acilir. Terminal ekrani (xterm.js, panelin icinde, internetten
+   cekilmez) her yeniden cizimde KURULMAZ: bir kez kurulur, pano yeniden
+   cizildikce ayni dugum TASINIR -- yoksa her olayda ekran silinirdi.
+   Geri verirken insanin yaptigini OFIS olcer (sunucu: `ofis/devral.py`);
+   panel bir sey iddia etmez, sunucunun cevabini soyler. */
+function devralinmisMi(no) {
+  return !!(no && (D.devral || {})[no]);
+}
+
+async function devralAl() {
+  try {
+    const r = await al("/api/devralinanlar");
+    const m = {};
+    for (const d of r.isler || []) m[d.no] = d;
+    D.devral = m;
+    D.devralPty = r.pty || "";
+  } catch (e) { /* olcum yoksa dugme yine sunucuya sorar */ }
+}
+
+async function devralBaslat(no) {
+  const r = await eylem(`/api/gorev/${no}/devral`, { sutun: 120, satir: 32 },
+    (r) => `#${r.no} sende — ${r.ajan}'in oturumu terminalde ` +
+           (r.oturum ? "sürüyor" : "(yeni oturum)") +
+           (r.olcum ? "" : " · DİKKAT: disk ölçülemedi"));
+  if (r) { await devralAl(); cizCanli(); panoSec("terminal"); }
+}
+
+async function geriVer(no, not) {
+  const r = await eylem(`/api/gorev/${no}/geri_ver`, { not_: not || "" },
+    (r) => `#${r.no} ${r.ajan}'a geri verildi · terminal ${r.kapanis} · ` +
+           (r.degisen && r.degisen.length ? `${r.degisen.length} dosya değişti (ölçüldü)`
+                                          : (r.olcum_notu || "dosya değişmedi")) +
+           (r.not_iletildi ? "" : " · DİKKAT: not ajana bırakılamadı"));
+  if (r) terminalKapat(no);
+  await devralAl();
+  cizCanli();
+}
+
+function terminalKapat(no) {
+  const x = (D.term || {})[no];
+  if (!x) return;
+  try { x.ws && x.ws.close(); } catch (e) { /* zaten kapali */ }
+  try { x.ro && x.ro.disconnect(); } catch (e) { /* */ }
+  try { x.term && x.term.dispose(); } catch (e) { /* */ }
+  x.el.remove();
+  delete D.term[no];
+}
+
+function terminalAlani(no) {
+  D.term = D.term || {};
+  if (D.term[no]) return D.term[no].el;
+  const kutu = el("div", "pano-terminal");
+  const x = { el: kutu, acildi: false };
+  D.term[no] = x;
+  if (typeof window.Terminal !== "function") {
+    kutu.append(el("div", "sonuk", "— terminal bileşeni yüklenemedi (web/vendor/xterm) —"));
+    return kutu;
+  }
+  const ac = () => {
+    if (x.acildi || !kutu.isConnected) return;
+    x.acildi = true;
+    const term = new window.Terminal({
+      fontSize: 13, cursorBlink: true, scrollback: 5000,
+      fontFamily: "Cascadia Mono, Consolas, monospace",
+      theme: { background: "#0d0f13", foreground: "#d7dde6" },
+    });
+    const fit = new window.FitAddon.FitAddon();
+    term.loadAddon(fit);
+    term.open(kutu);
+    x.term = term;
+    const ws = new WebSocket(`ws://${location.host}/ws/terminal/${no}`);
+    x.ws = ws;
+    const boyut = () => {
+      try { fit.fit(); } catch (e) { return; }
+      if (ws.readyState === 1)
+        ws.send(JSON.stringify({ tur: "boyut", sutun: term.cols, satir: term.rows }));
+    };
+    ws.onopen = boyut;
+    ws.onmessage = (m) => {
+      let v; try { v = JSON.parse(m.data); } catch (e) { return; }
+      if (v.tur === "veri") term.write(v.govde || "");
+      else if (v.tur === "kapandi") term.write("\r\n\x1b[33m[terminal kapandı — 'Ofise geri ver' ile ajana dön]\x1b[0m\r\n");
+      else if (v.tur === "hata") term.write("\r\n\x1b[31m" + (v.govde || "hata") + "\x1b[0m\r\n");
+    };
+    ws.onclose = () => { x.ws = null; };
+    term.onData((d) => {
+      if (ws.readyState === 1) ws.send(JSON.stringify({ tur: "girdi", govde: d }));
+    });
+    x.ro = new ResizeObserver(() => boyut());
+    x.ro.observe(kutu);
+    setTimeout(() => { boyut(); term.focus(); }, 50);
+  };
+  // Dugum DOM'a girince acilir (xterm olcu ister).
+  x.bekle = setInterval(() => {
+    if (kutu.isConnected) { clearInterval(x.bekle); ac(); }
+  }, 60);
+  return kutu;
+}
+
+function geriVerSatiri(a) {
+  const f = el("form", "pano-not pano-devral");
+  f.append(el("span", "devral-rozet", "SENDE"));
+  const g = el("input");
+  g.placeholder = `${a.ad}'a kısa not (isteğe bağlı) — değişen dosyaları ofis kendisi ölçer`;
+  g.maxLength = 1000;
+  const d = el("button", "dugme olumlu", "Ofise geri ver");
+  d.type = "submit";
+  d.title = "Terminal düzgün kapatılır; diskte ne değiştiği ölçülür ve " +
+            "notunla birlikte ajana iletilir. Ajan kaldığı yerden sürer.";
+  f.onsubmit = (e) => { e.preventDefault(); d.disabled = true; geriVer(a.gorev_no, g.value); };
+  f.append(g, d);
+  return f;
 }
 
 /* AJANA NOT (E17). Pano altindaki yazma satiri: "dur, sunu degistir".
@@ -3521,6 +3657,27 @@ async function gorevAc(no) {
       const kk = el("div", "cek-kutu");
       kk.append(el("pre", null, kes(g.rapor.govde, 1400)));
       c.append(kk);
+    }
+    // DEVRAL: calisan ya da hazir bekleyen iste (durdurulmus is dahil).
+    if (devralinmisMi(g.no)) {
+      c.append(el("div", "cek-etiket", "BU İŞ SENDE (terminalde)"));
+      const sat = el("div", "cek-eylem");
+      const nt = el("input");
+      nt.placeholder = "Ajana kısa not (isteğe bağlı)";
+      const gv = el("button", "dugme olumlu", "Ofise geri ver");
+      gv.onclick = async () => { gv.disabled = true; await geriVer(g.no, nt.value); cekmeceKapat(); };
+      sat.append(nt, gv);
+      c.append(sat);
+    } else if (["calisiyor", "hazir"].includes(g.durum)) {
+      c.append(el("div", "cek-etiket", "DEVRAL"));
+      const sat = el("div", "cek-eylem");
+      const dv = el("button", "dugme", "⌨ Devral — ajanın oturumunu terminalde aç");
+      dv.title = "Ajanın turu koşuyorsa önce Durdur. Ajan sen geri verene kadar çalışmaz.";
+      dv.onclick = async () => { await devralBaslat(g.no); cekmeceKapat(); };
+      sat.append(dv);
+      if (D.devralPty && D.devralPty !== "hazir")
+        sat.append(el("div", "sonuk", D.devralPty));
+      c.append(sat);
     }
     // IPTAL: yalniz bitmemis iste. Sebep ZORUNLU; birakilan kilitler
     // sunucuda OLCULUR ve soylenir (iddia edilmez).

@@ -170,6 +170,13 @@ class Koltuk:
             )
 
         gorev = self.ofis.tahta.gorev(no)
+        # DEVRAL (E18): is insandaysa ajan turu KOSMAZ -- ayni dosyalara iki
+        # yazar olurdu (Yasa 1). Insan "Ofise geri ver" deyince surer.
+        from . import devral as _devral
+        if _devral.devralinmis(self.db, self.proje_id, gorev["id"]):
+            raise KoltukHatasi(
+                f"#{no} su an INSANDA (devralindi) -- ajan turu kosmaz. "
+                "'Ofise geri ver' ile ajana doner.")
         # Rolun ihtiyac duydugu izinler. Rol tanimsizsa (kutuphane
         # oncesi kayit) bos gecer -- eski bir kayit isi durdurmasin.
         try:

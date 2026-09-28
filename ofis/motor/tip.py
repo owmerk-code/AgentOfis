@@ -242,6 +242,22 @@ class Motor(ABC):
         """
         return None
 
+    def etkilesimli_komut(self, *, oturum_id: str = "", klasor: str = "",
+                          model: str = "", ek_ortam: dict = None) -> dict | None:
+        """DEVRAL (E18): bu motorun oturumunu GERCEK bir terminalde acan komut.
+
+        Donus `{"argv": [...], "ortam": {...}, "kapat": "/exit"}` ya da
+        `None` = bu motor devralinamaz (motor kartinda "devral yok" yazar).
+        `kapat`: terminali DUZGUN kapatan girdi -- zorla oldurmek yerine.
+
+        OLCULDU (28.09.2026, ConPTY): ofisin arka planda baslattigi oturum
+        `claude --resume <id>` ve `codex resume <id>` ile terminalde acildi
+        ve onceki konusmayi GORDU. Ama insanin terminalde yazdigi Claude'un
+        oturum dosyasina YAZILMADI -- bu yuzden "ofise geri ver" CLI'in ic
+        dosyasina degil OFISIN kendi kaydina dayanir (`ofis/devral.py`).
+        """
+        return None
+
     def durum_notu(self) -> str:
         """Musait DEGILSE sebebi + caresi (insana); musaitse bos (E16).
 
@@ -500,6 +516,8 @@ class SurecKafesi:
                             ("PeakJobMemoryUsed", ctypes.c_size_t)]
 
             k32.CreateJobObjectW.restype = wintypes.HANDLE
+            # 64 bitte tutamac c_int'e kirpilmasin (OpenProcess -> ekle_pid).
+            k32.OpenProcess.restype = wintypes.HANDLE
             is_ = k32.CreateJobObjectW(None, None)
             if not is_:
                 raise OSError(ctypes.get_last_error(), "CreateJobObject")
@@ -525,6 +543,27 @@ class SurecKafesi:
                 wintypes.HANDLE(self._is), wintypes.HANDLE(int(tutamac))):
             self.hata = "surec kafese eklenemedi"
             return False
+        self.kuruldu = True
+        return True
+
+    def ekle_pid(self, pid: int) -> bool:
+        """Sureci KIMLIK NUMARASIYLA kafese ekler (Popen olmayan surecler:
+        `ofis/terminal.py`nin ConPTY sureci)."""
+        if not self._is or not pid:
+            return False
+        from ctypes import wintypes
+        # PROCESS_SET_QUOTA | PROCESS_TERMINATE
+        tut = self._k32.OpenProcess(0x0100 | 0x0001, False, int(pid))
+        if not tut:
+            self.hata = "surec acilamadi (kafes)"
+            return False
+        try:
+            if not self._k32.AssignProcessToJobObject(
+                    wintypes.HANDLE(self._is), wintypes.HANDLE(tut)):
+                self.hata = "surec kafese eklenemedi"
+                return False
+        finally:
+            self._k32.CloseHandle(wintypes.HANDLE(tut))
         self.kuruldu = True
         return True
 

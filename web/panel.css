@@ -1473,3 +1473,14 @@ details > summary.hf-bas { cursor: pointer; }
   background: var(--zemin-3); border-radius: 5px; padding: 5px 8px; overflow-wrap: anywhere; }
 .hp-not { margin-top: 16px; font-size: var(--yz-kucuk); color: var(--metin-3); line-height: 1.5; }
 @media (max-width: 640px) { .hp-satir { grid-template-columns: 1fr; } }
+
+/* DEVRAL (E18): is insanda -- akis yerine gercek terminal. */
+.pano.devralindi { outline: 1px solid var(--vurgu); }
+.pano-terminal { flex: 1; min-height: 260px; background: #0d0f13;
+  padding: 4px 2px 2px 6px; overflow: hidden; }
+.pano-terminal .xterm { height: 100%; }
+.devral-dugme { color: var(--vurgu); }
+.pano-devral { align-items: center; gap: 8px; }
+.devral-rozet { font-size: var(--yz-mikro); font-weight: 700; letter-spacing: .06em;
+  color: var(--vurgu); border: 1px solid var(--vurgu); border-radius: 3px;
+  padding: 1px 5px; flex: none; }

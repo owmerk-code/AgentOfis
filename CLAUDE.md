@@ -142,7 +142,7 @@ Motor bir adaptör, model bir ayar, arayüz bir istemci.
 
 ## Kod durumu
 
-Yazıldı ve **duman testlerinden geçti** (2693/2693, 28.09.2026):
+Yazıldı ve **duman testlerinden geçti** (2740/2740, 28.09.2026):
 
 | Dosya | Ne yapar |
 |---|---|
@@ -198,7 +198,7 @@ Yazıldı ve **duman testlerinden geçti** (2693/2693, 28.09.2026):
 | `ofis/geri_al.py` | **TUR GERİ ALMA** — her turun öncesi/sonrası proje kökünün dışındaki gölge git deposuna işlenir; `geri-al` YALNIZ o turun dosyalarını (ikili dahil) döndürür. Sonradan değişen dosyayı ve koşan işi ezmez (`--zorla` hariç), sebep zorunlu, geri alma da geri alınabilir. |
 | `baslat.bat` | Tek tık açılış — bağımlılık yoksa kurar, ilk açılışta örnek ofisi kurar. |
 
-Testler (`testler/`, hepsi jeton yakmadan koşar) — **2693/2693** (35 dosya, 28.09.2026'da tek tek koşturulup SAYILDI; hepsi GEÇİCİ kökte, gerçek `~/.agentofis`e dokunmadan):
+Testler (`testler/`, hepsi jeton yakmadan koşar) — **2740/2740** (36 dosya, 28.09.2026'da tek tek koşturulup SAYILDI; hepsi GEÇİCİ kökte, gerçek `~/.agentofis`e dokunmadan):
 `duman_baglayici.py` 64 · `duman_cekirdek.py` 100 ·
 `duman_codex_app.py` 71 · `duman_danisma.py` 36 ·
 `duman_degisim.py` 105 · `duman_deneme.py` 53 · `duman_depo.py` 48 ·
@@ -11670,3 +11670,60 @@ dalgalanıyor, sebebi bilinmiyor (açık).
 bir şey yok. 15 GB, Gmail + Fotoğraflar + Drive'ın ORTAK kotası; dolduran
 biz değiliz. Obsidian gerekmez (rakip de kullanmıyor); hafıza zaten
 GitHub'da metin olarak, günlük geçmişiyle.
+
+
+## DEVRAL / OFİSE GERİ VER — E18 (28.09.2026)
+
+Kullanıcı: *"terminal konusunda ileriye dönük kalıcı çözüm ne olmalı."*
+Önce ölçüldü (ConPTY, `pywinpty`, boş geçici klasör, en ucuz modeller):
+
+| | Claude | Codex |
+|---|---|---|
+| Arka planda başlayan oturum terminalde açılıyor, önceki konuşmayı görüyor | **evet** (`claude --resume`) | **evet** (`codex resume`) |
+| Açılışta soru | "klasöre güveniyor musun" | "güven" + **"şimdi güncelle?" (varsayılan = güncelle)** |
+| İnsanın terminalde yazdığı, CLI'ın oturum dosyasına yazılıyor mu | **HAYIR** (düzgün kapanışta bile, dosyada 0) | ölçülmedi |
+
+Codex güncelleme sorusunda ölçüm betiğimin Enter'ı güncellemeyi SEÇMEDİ
+(sürüm 0.156.0 kaldı, dosya 23.09 tarihli); `check_for_update_on_startup=false`
+soruyu kapatıyor (ölçüldü).
+
+### Karar — devir OFİSİN kaydıyla, CLI'ın iç dosyasıyla değil
+- Varsayılan izleme OKUNUR akış kalır; gerçek terminal yalnız "Devral"da.
+- `Motor.etkilesimli_komut()` (sözleşme): claude/codex/sahte cevaplar,
+  cevaplamayan motor `None` → "devralınamaz". Yeni motor tek yerden.
+- `ofis/terminal.py`: ConPTY, okuma ayrı iplikte (read ENGELLER — ölçüldü),
+  sınırlı tampon, kapanış önce DÜZGÜN (`/exit`, `/quit`), kafes
+  (`SurecKafesi.ekle_pid` eklendi; 64 bitte `OpenProcess.restype` şart).
+- `ofis/devral.py`: kapılar (ajana gitmemiş iş · bitmiş iş · KOŞAN tur →
+  "önce Durdur" · devralınamayan motor); devralınınca halka ATLAR ve
+  söyler, koltuk REDDEDER, kilit kira yüzünden DÜŞMEZ; hazır iş devralınınca
+  kilit YENİDEN alınır. Geri verirken: terminal düzgün kapanır, disk farkı
+  **"insan"** adına yazılır, gölge depoya işlenir (geri alınabilir), ekran
+  dökümü deftere, not + ölçülen dosyalar ajana PATRONUN NOTU olarak gider.
+  Panel arada yeniden başladıysa ölçüm yok ve bu SÖYLENİR.
+- Panel: `POST /api/gorev/{no}/devral|geri_ver`, `/api/devralinanlar`,
+  `WS /ws/terminal/{no}`; **yalnız bu bilgisayardan** (`TERMINAL_YEREL`,
+  telefondan açılmaz). xterm.js 6.0.0 + fit (MIT) `web/vendor/xterm/`,
+  internetten çekilmez; `/varlik/{dosya:path}` (klasör dışı yine 404).
+  Pano başlığında "⌨ Devral", devralınınca gövde = gerçek terminal +
+  "Ofise geri ver"; görev çekmecesinde de aynısı. `baslat.bat` pywinpty kurar.
+
+### Gerçek motorla uçtan uca
+Claude (haiku) ve Codex (luna): ajan tur koştu → insan durdurdu → devral
+(ajanın AYNI oturumu açıldı) → "insan" diske `b.txt` yazdı → geri ver
+(düzgün kapanış, 1 dosya ölçüldü) → ajan devam turunda notu TUR BAŞINDA
+aldı, `c.txt`'ye iki dosyayı yazdı, işi incelemeye verdi. Claude ~$0,14.
+(Codex'in `%TEMP%`'te yazdığı `c.txt` senin kullanıcına kapalı — bilinen
+sandbox sınırı; kanıt defterde.)
+
+### Sınamalar
+`testler/duman_devral.py` (47): gerçek ConPTY + sahte CLI. 11 mutasyonun
+11'i ateş etti. Yol boyunca: `sed -i` iki dosyayı LF'e, bir yama tip.py'nin
+karışık satır sonlarını tek tipe çevirmişti (git farkı 4.444 satır) —
+HEAD'e göre satır satır geri kuruldu (fark 425 satıra indi).
+
+### AÇIK KALAN
+- Terminal ekranında Claude'un güven sorusu ofisin kendi `calisma/`
+  klasörü için de çıkabilir (Claude güveni kullanıcının ayarında tutar;
+  ofis onu yazmıyor — insan bir kez cevaplar).
+- Telefon yüzeyinde terminal bilinçli olarak YOK.

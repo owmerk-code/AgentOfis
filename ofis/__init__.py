@@ -85,6 +85,13 @@ class Ofis:
             adlar.add(m["gonderen"])
         for o in self.postane.bekleyen_onaylar():
             adlar.add(o["isteyen"])
+        # DEVRAL: insan ajanin isinde calisirken kilit ajan adina durur ve
+        # nabiz atan tur yoktur. Kirayi dusurmek, insanin calistigi
+        # dosyalari baska bir ise acmak olurdu (Yasa 1).
+        from . import devral as _devral
+        for d in _devral.devralinanlar(self.db, self.proje_id):
+            if d.get("ajan"):
+                adlar.add(d["ajan"])
         return sorted(adlar)
 
     @classmethod

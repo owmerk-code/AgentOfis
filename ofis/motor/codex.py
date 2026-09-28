@@ -564,6 +564,35 @@ class CodexMotoru(Motor):
                     return str(aday)
         return bulunan
 
+    def etkilesimli_komut(self, *, oturum_id: str = "", klasor: str = "",
+                          model: str = "", ek_ortam: dict = None) -> dict | None:
+        """Devral: `codex resume <thread>` -- HESABIN kendi evinde.
+
+        OLCULDU (28.09.2026): codex TUI acilista "simdi guncelle?" sorar ve
+        varsayilan secenek GUNCELLEMEKTIR; kor bir Enter kullanicinin CLI'ini
+        guncellerdi. `check_for_update_on_startup=false` onu KAPATIR (olculdu:
+        soru cikmadi, surum degismedi). Klasor ofisin evinde onceden
+        guvenilir yapilir; yine de bir soru cikarsa INSAN gorur.
+        """
+        if not self.calistirilabilir:
+            return None
+        ev = (ek_ortam or {}).get("CODEX_HOME") or self._ev_bul()
+        if klasor:
+            try:
+                self._evi_hazirla(ev, klasor)
+            except OSError:
+                pass
+        argv = [self.calistirilabilir]
+        if str(self.calistirilabilir).lower().endswith((".cmd", ".bat")):
+            argv = ["cmd", "/c", self.calistirilabilir]
+        argv += (["resume", oturum_id] if oturum_id else [])
+        if model:
+            argv += ["-m", model]
+        argv += ["-c", "check_for_update_on_startup=false"]
+        ortam = ortam_hazirla(os.environ, ek={**(ek_ortam or {}), "CODEX_HOME": str(ev)},
+                              izinli=tuple(ek_ortam or ()) + ("CODEX_HOME",))
+        return {"argv": argv, "ortam": ortam, "kapat": "/quit"}
+
     def musait_mi(self) -> bool:
         """CLI kurulu MI ve OFIS HESABI girisli mi.
 
