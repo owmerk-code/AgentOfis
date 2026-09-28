@@ -230,6 +230,20 @@ ofis.tahta.sahiplen(_g12["no"], "cinar", g1["revizyon"] if False else
 _sahte_anahtar = "AIza" + ("Sb3Tk9Lm2Qw7Xz1Yv4Rn8Pd6Hc0Ga5Je" + "TESTONLY")
 ofis.tahta.kanit_ekle(_g12["no"], "terminal", "echo $GEMINI_API_KEY",
                       "cikti: " + _sahte_anahtar, "cinar")
+# F3 / E23 (28.09): olagan yazma yolu artik MASKELER -- anahtar deftere
+# hic dusmez. Saglik denetimi yine gerekli: eski kayitlar ve kapiyi
+# atlayan yazmalar (sqlite3 araci, baska bir surec) icin. Sahne bu yuzden
+# kapiyi ATLAYAN ham bir yazmayla kurulur.
+with db.baglanti() as c:
+    _mk = c.execute("SELECT icerik FROM kanit WHERE baslik=?",
+                    ("echo $GEMINI_API_KEY",)).fetchone()[0]
+sina("olagan yol MASKELEDI (anahtar deftere dusmedi)", _sahte_anahtar not in _mk, _mk[:80])
+import sqlite3 as _sq
+_ham = _sq.connect(str(db.yol))
+_ham.execute("UPDATE kanit SET icerik=? WHERE baslik=?",
+             ("cikti: " + _sahte_anahtar, "echo $GEMINI_API_KEY"))
+_ham.commit()
+_ham.close()
 
 r = ofis.saglik.denetle()
 sina("sizan anahtar YAKALANDI", bulgu_var(r, "SIR SIZMIS"),

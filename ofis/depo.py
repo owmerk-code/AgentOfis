@@ -45,13 +45,9 @@ BEKLENEN_UZAK = "https://github.com/owmerk-code/AgentOfis.git"
 VARSAYILAN_AYAR = OFIS_EVI / "depo.json"
 AZAMI_DOSYA_MB = 50
 
-#: Bilinen anahtar bicimleri. Sinama dosyalarindaki bilerek uydurma
-#: ornekler (`AIza-SINAMA-...`, `AIza-test`) bu desene UYMAZ: gercek
-#: anahtarlar tire icermeyen uzun govdeye sahip.
-ANAHTAR_DESENI = re.compile(
-    r"(sk-ant-[A-Za-z0-9_-]{20,}|sk-proj-[A-Za-z0-9_-]{20,}"
-    r"|sk-or-v1-[a-f0-9]{20,}|AIza[0-9A-Za-z_]{35}"
-    r"|gh[pousr]_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{30,})")
+#: Bilinen anahtar bicimleri -- TEK yerde (gizli.py): maskeleme ve sir
+#: taramasi ayni deseni kullanir.
+from .gizli import ANAHTAR_DESENI  # noqa: E402
 
 
 class DepoHatasi(RuntimeError):

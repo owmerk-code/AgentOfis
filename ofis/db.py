@@ -570,6 +570,43 @@ VERI_GOCLERI = (
 )
 
 
+def _maske_parametre(p):
+    from .gizli import maskele
+    if isinstance(p, dict):
+        return {k: maskele(v) for k, v in p.items()}
+    if isinstance(p, (list, tuple)):
+        return type(p)(maskele(v) for v in p)
+    return p
+
+
+class MaskeliBaglanti(sqlite3.Connection):
+    """ANAHTAR MASKELEME (F3 / E23) -- deftere yazan TEK kapi.
+
+    Deftere metin yazan ~20 tablo ve bir o kadar UPDATE var (olay, kanit,
+    mesaj, onay, degisim yamasi, olgu, karar...). Her birine ayri ayri
+    maskeleme koymak birinin unutulmasi demekti -- bu projede "iki
+    kopyadan biri unutulur" alti kez odendi. Burada baglantinin kendisi
+    INSERT/UPDATE/REPLACE parametrelerini `gizli.maskele`den gecirir:
+    yarin eklenen tablo da kendiliginden kapsanir.
+
+    Yalniz PARAMETRELER maskelenir (butun yazmalar parametreli); okuma
+    dokunulmaz. Sinir: sqlite3 komut satirindan ya da baska bir aractan
+    yapilan yazma bu kapidan gecmez.
+    """
+
+    def execute(self, sql, parametreler=(), /):
+        bas = sql.lstrip()[:7].upper()
+        if bas.startswith(("INSERT", "UPDATE", "REPLACE")):
+            parametreler = _maske_parametre(parametreler)
+        return super().execute(sql, parametreler)
+
+    def executemany(self, sql, dizi, /):
+        bas = sql.lstrip()[:7].upper()
+        if bas.startswith(("INSERT", "UPDATE", "REPLACE")):
+            dizi = [_maske_parametre(p) for p in dizi]
+        return super().executemany(sql, dizi)
+
+
 class Veritabani:
     """SQLite sarmalayici. Tek dosya, tek makine, disa bagimlilik yok."""
 
@@ -694,7 +731,8 @@ class Veritabani:
     #: Tek basina calisan yol (panel, kabuk, sinama) eskisiyle AYNI kalir.
     #: Kilit ve siralama degismez; yalniz acma bedeli kalabalikta odenmez.
     def _baglan(self):
-        conn = sqlite3.connect(str(self.yol), timeout=30.0, check_same_thread=False)
+        conn = sqlite3.connect(str(self.yol), timeout=30.0, check_same_thread=False,
+                               factory=MaskeliBaglanti)
         conn.row_factory = sqlite3.Row
         conn.execute("PRAGMA foreign_keys=ON")
         return conn

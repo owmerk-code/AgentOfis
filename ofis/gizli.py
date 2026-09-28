@@ -61,6 +61,79 @@ class GizliHatasi(RuntimeError):
     pass
 
 
+# --------------------------------------------------------------- maskeleme
+# F3 / E23 (28.09.2026). Kasa anahtari ajana gitmez -- ama ajanin kendi
+# ciktisi, bir sayfanin icerigi, bir `.env` dosyasinin disk farki ya da bir
+# hata mesaji bir anahtar TASIYABILIR. Deftere dusen anahtar yedege,
+# GitHub'a (metin dokumu), panele ve bir sonraki brifinge gider.
+#
+# Kural: DEFTERE YAZILAN HER METIN maskelenir (`db` baglantisi her INSERT/
+# UPDATE parametresini buradan gecirir). Iki kaynak:
+#   * kasadaki GERCEK degerler (+ ortamdaki anahtar/token/sifre adli degerler)
+#   * bilinen anahtar BICIMLERI (kasada olmayan, disaridan gelen anahtar)
+# Deger yerine AD yazilir: "[GIZLI: GEMINI_API_KEY]" -- ne sizdigi bilinir,
+# kendisi degil.
+
+#: Bilinen anahtar bicimleri (depo.py'nin sir taramasi da bunu kullanir).
+#: Sinama dosyalarindaki bilerek uydurma ornekler (`AIza-SINAMA-...`) bu
+#: desene UYMAZ: gercek anahtarlar tire icermeyen uzun govdeye sahip.
+import re as _re
+
+ANAHTAR_DESENI = _re.compile(
+    r"(sk-ant-[A-Za-z0-9_-]{20,}|sk-proj-[A-Za-z0-9_-]{20,}"
+    r"|sk-or-v1-[a-f0-9]{20,}|AIza[0-9A-Za-z_]{35}"
+    r"|gh[pousr]_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{30,}"
+    r"|xox[bpas]-[A-Za-z0-9-]{20,}|shp(?:at|ca|pa|ss)_[a-fA-F0-9]{32})")
+
+#: Ortamdaki bu adli degiskenlerin degeri de maskelenir (kasada olmasa bile).
+_ORTAM_ADI = _re.compile(r"(KEY|TOKEN|SECRET|SIFRE|PASSWORD|PASS)$", _re.I)
+#: Bundan kisa degerler aranmaz: "abc" gibi bir deger her metni bozardi.
+MASKE_ASGARI = 12
+
+_ONBELLEK: dict = {"imza": None, "degerler": ()}
+
+
+def _maskelenecekler() -> tuple:
+    """(deger, ad) ciftleri, UZUNDAN kisaya (ic ice degerde uzun once).
+    Kasa dosyasinin damgasi degismedikce yeniden okunmaz."""
+    yol = depo_yolu()
+    try:
+        st = yol.stat()
+        imza = (str(yol), st.st_mtime_ns, st.st_size)
+    except OSError:
+        imza = (str(yol), None, None)
+    ortam = tuple(sorted((k, v) for k, v in os.environ.items()
+                         if _ORTAM_ADI.search(k) and v and len(v) >= MASKE_ASGARI))
+    imza = (imza, hash(ortam))
+    if _ONBELLEK["imza"] != imza:
+        cift = {}
+        try:
+            for ad, deger in _oku(yol).items():
+                if deger and len(deger) >= MASKE_ASGARI:
+                    cift[deger] = ad
+        except Exception:                 # noqa: BLE001 -- kasa okunamazsa desenler yine calisir
+            pass
+        for ad, deger in ortam:
+            cift.setdefault(deger, ad)
+        _ONBELLEK["degerler"] = tuple(sorted(cift.items(), key=lambda x: -len(x[0])))
+        _ONBELLEK["imza"] = imza
+    return _ONBELLEK["degerler"]
+
+
+def maskele(metin):
+    """Metindeki anahtarlari "[GIZLI: AD]" ile degistirir. Metin degilse
+    oldugu gibi doner. Degismediyse AYNI nesne doner (ucuz)."""
+    if not isinstance(metin, str) or len(metin) < 16:
+        return metin
+    sonuc = metin
+    for deger, ad in _maskelenecekler():
+        if deger in sonuc:
+            sonuc = sonuc.replace(deger, f"[GIZLI: {ad}]")
+    if ANAHTAR_DESENI.search(sonuc):
+        sonuc = ANAHTAR_DESENI.sub("[GIZLI: anahtar]", sonuc)
+    return sonuc
+
+
 def depo_yolu() -> Path:
     ozel = os.environ.get("OFIS_GIZLI_YOLU", "").strip()
     return Path(ozel).expanduser().resolve() if ozel else VARSAYILAN_DEPO
