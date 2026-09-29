@@ -210,6 +210,9 @@ matrisin ölçümüyle karşılaştırır.
   Öneri: önce yapılı akışı CLI görünümüne yaklaştır, paralelde gerçek
   terminali ucuza ölç (kanca `rm`'i durduruyor mu, oturum `.jsonl`'dan
   kanıt/jeton/limit okunuyor mu, yazılan not ulaşıyor mu).
+  **Claude yarısı ÖLÇÜLDÜ (29.09): kanca rm'i durdurdu, not tur
+  sürerken ulaştı, döküm yapılı veri veriyor; limit yüzdesi dökümde yok
+  (limit_oku var). Codex terminali ölçülmedi.** Ayrıntı: günlük sonu.
 
 ## Kalıcı dersler (ilkeler)
 

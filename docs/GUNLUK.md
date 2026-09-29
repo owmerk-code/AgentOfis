@@ -12177,3 +12177,35 @@ Ekranda ölçülen, bizde OLMAYAN ya da YARIM olan:
   (kullanıcı düzeltti, 29.09).
 
 Kullanıcıya verilen ayrıntılı eksik listesi ve sıra bu oturumun cevabında.
+
+## GERÇEK CLAUDE TERMİNALİ ÖLÇÜLDÜ (29.09.2026) — "B yolu" mümkün mü
+
+Soru (kullanıcı): ajan panoları gerçek Claude/Codex terminali olsun mu?
+Ölçüm: boş geçici klasör, haiku, ConPTY'de etkileşimli `claude` (TUI),
+`--settings` ile `PreToolUse` kancası, `--session-id` ile bilinen döküm
+dosyası. Görev: a.txt yaz → 20 sn bekle → b.txt yaz → sil.txt'yi `rm` ile
+sil. a.txt yazılınca terminale NOT yazıldı ("b.txt'ye 'uc' yaz").
+Bedel ~$0,07 karşılığı (haiku).
+
+| Soru | Sonuç |
+|---|---|
+| Kanca etkileşimli terminalde ateşleniyor mu | **evet**, her araçta (Write, PowerShell, Bash) |
+| Riskli komutu durduruyor mu | **evet** — `rm` REDDEDİLDİ, sil.txt yerinde; gerekçe ajana ulaştı ("hook tarafından durduruldum") |
+| Tur sürerken terminale yazılan not ulaşıyor mu | **evet** — b.txt = `uc`; dökümde `queue-operation enqueue` → `remove reason: absorbed_mid_turn` (ulaştığının kanıtı) |
+| Döküm dosyasından yapılı veri | **evet**: araç çağrıları + sonuçları, ajanın sözü, jeton (mesaj başına; aynı mesaj birden çok satırda tekrar eder → kimlikle tekilleştir), `cost-state` (toplam $ ve model kullanımı), `turn_duration` |
+| Limit penceresi (5s/7g yüzdesi) dökümde | **HAYIR** (0 satır) — ama `limit_oku` (get_usage) zaten tur koşmadan okuyor |
+
+Ölçümle çıkan tuzaklar:
+- **Güven sorusu** yeni klasörde çıkıyor ve varsayılan "No, exit". `\r`
+  kapatıyor; aşağı ok `\x1b[B` İPTAL sayıldı; **`\x1bOB` çalışıyor**.
+- **Başka bir Claude oturumunun içinden başlatılan terminal dökümü
+  KAYDETMİYOR** ("inherited CLAUDE_CODE_CHILD_SESSION"); ortamdan
+  `CLAUDE_CODE*` değişkenleri çıkarılınca kaydediyor.
+- Retten sonra ajan "izin vermeniz gerekiyor" deyip devam etti — ofiste
+  ret, onay kartı + bekle olarak kurulmalı (bugünkü onay akışının aynısı).
+- Ölçüm betiğim "BITTI" kelimesini beklerken görev metninin kendisinde
+  buldu ve erken kesti (ölçüm aracının kendisi de ölçülmeli — yine).
+
+Ölçülmeyen: Codex'in etkileşimli terminali (kanca/onay, not, döküm);
+ofis MCP'sinin (kanıt_ekle) TUI'de çalışması (aynı `--mcp-config` yolu,
+beklenen evet); uzun işte ekrandan ve dökümden okumanın dayanıklılığı.
