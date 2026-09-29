@@ -58,6 +58,13 @@ NOT_MODU = "yonlendirme"
 #: bakiyordu ve is tik sinirinda oldu. Kural dort yerde ayri cumleyle
 #: yaziliydi (brifing, tur ici not, inceleme, danisma yoktu); tek sabit
 #: hepsine ayni sozu soyletir.
+#: Kapi kart actiktan sonra ajana soylenen tek cumle. OLCULDU (29.09,
+#: gercek terminal): kapi karti actiktan sonra ajan bir de kendisi
+#: `onay_iste` cagirdi -- patrona ayni is icin IKI kart dustu ve cevaplanmayan
+#: ikinci kart isi incelemeye gecirmedi. Uc kapi da bu cumleyi kullanir.
+KART_ACILDI = ("Onay karti patrona ZATEN dusuruldu: `onay_iste` CAGIRMA, "
+               "ikinci kart ACMA.")
+
 NOT_KURALI = ("Patronun notu isin ilk tanimindan YENIDIR ve onu DEGISTIRIR: "
               "ikisi celisirse NOT gecerlidir (is patronundur). Yalniz notun "
               "kendisi belirsizse ya da isi imkansiz kiliyorsa DUR ve "

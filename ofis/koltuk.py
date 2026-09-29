@@ -161,6 +161,27 @@ class Koltuk:
         # Gorev kimligi -> turun basladigi an (atif belirsizligi icin).
         self._tur_basi: dict = {}
 
+    #: Ayar anahtari: ajanlar hangi kipte kosar. 'arka' (varsayilan,
+    #: bugunku yapili akis) | 'gercek' (insanin kullandigi Claude/Codex
+    #: terminali, `motor/tui.py`). Iki kip ayni kapidan, ayni kurallarla
+    #: gecer; gercek kip olculup esitlenene kadar varsayilan degismez.
+    TERMINAL_KIPI = "terminal_kipi"
+
+    def _motor_ac(self, ad: str):
+        """Motoru acar; gercek terminal kipi aciksa ve motor destekliyorsa
+        sarmalar. Desteklemeyen motor SESSIZCE arka plana dusmez: gorunur
+        bir uyari yazilir."""
+        motor = self.motor_fabrikasi(ad)
+        if self.db.ayar_oku(self.proje_id, self.TERMINAL_KIPI, "arka") != "gercek":
+            return motor
+        if not getattr(motor, "tui_destegi", False):
+            self.db.olay_yaz(self.proje_id, "uyari",
+                             f"{ad} gercek terminal kipini desteklemiyor; "
+                             "bu tur ARKA PLANDA kosuyor.")
+            return motor
+        from .motor.tui import TuiMotoru
+        return TuiMotoru(motor)
+
     # -- ana akis ----------------------------------------------------------
 
     def akit(self, no: int, ajan_ad: str, *, butce_usd: float = None,
@@ -410,7 +431,7 @@ class Koltuk:
 
         sira = 0
         basamak = basamaklar[0]
-        motor = self.motor_fabrikasi(basamak["motor"])
+        motor = self._motor_ac(basamak["motor"])
         # Kanit kanali TEK olmali. Motor MCP konusuyorsa ofis sunucusu
         # baglanir ve kanit arac cagrisiyla gelir; konusmuyorsa metin
         # koprusu gecerli kalir. Ikisi birden acilirsa ayni is icin cift
@@ -947,7 +968,7 @@ class Koltuk:
 
             sira += 1
             basamak = yeni
-            motor = self.motor_fabrikasi(basamak["motor"])
+            motor = self._motor_ac(basamak["motor"])
             # Yeni motor MCP konusmuyorsa yapilandirmayi BIRAKMA:
             # konusmayan motora MCP vermek anlamsiz, konusana vermemek
             # kanit kanalini kapatir.

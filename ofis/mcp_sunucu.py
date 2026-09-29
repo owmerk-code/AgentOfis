@@ -806,6 +806,9 @@ def _tur_suphesi(oturum) -> str:
     return (r["govde"] or "suphe")[:200] if r else ""
 
 
+from ofis.postane import KART_ACILDI as _KART_ACILDI  # noqa: E402
+
+
 def arac_izin_sor(oturum: Oturum, args: dict) -> str:
     """CLI'IN IZIN KANCASI -- ofisin TEK kapisi, her yuzey icin.
 
@@ -947,7 +950,7 @@ def arac_izin_sor(oturum: Oturum, args: dict) -> str:
                 f"Onay : {kayit['id']}\n\n"
                 "Bu turda bu eylemi TEKRAR DENEME ve baska yoldan yapmaya "
                 "calisma. Buraya kadar yaptiklarini `kanit_ekle` ile yaz, "
-                "sonra turu bitir.")
+                "sonra turu bitir. " + _KART_ACILDI)
 
     ayrinti = (
         f"IMZA:{im}\n"
@@ -975,7 +978,7 @@ def arac_izin_sor(oturum: Oturum, args: dict) -> str:
         "SIMDI NE YAP: bu eylemi TEKRAR DENEME ve baska bir yoldan "
         "yapmaya calisma. Buraya kadar yaptiklarini `kanit_ekle` ile "
         "deftere yaz, sonra turu bitir. Patron onaylayinca is kaldigi "
-        "yerden devam eder.")
+        "yerden devam eder. " + _KART_ACILDI)
 
 
 ARACLAR = [

@@ -12380,3 +12380,71 @@ etti (öz-sınama kimliği silmesin · deny yerine allow).
 Açık: onaydan sonra terminale notu bugün betik yazdı; panelde "Onayla"
 basınca notu ofisin kendisinin yazması gerçek terminal kipiyle birlikte
 kurulacak. Ret yolu gerçek TUI'de ölçülmedi (arka plan kipinde ölçülü).
+
+## GERÇEK TERMİNAL KİPİ KURULDU (29.09.2026) — `ofis/motor/tui.py`
+
+Kullanıcı: *"Claude Code ve Codex'i terminalde nasıl kullanıyorsam agent
+sistemimizde de öyle olmalı."* Gerçek terminal kipi bir SARMALAYICI
+motordur: iç motor (claude/codex) NASIL açılacağını bilir (`tui_plani`,
+`tui_cevir`), ortak döngü `tui.py`de. Çekirdek hiçbir şeyin değiştiğini
+fark etmez — aynı olay akışı, aynı `bitti`; kilit, brifing, kanıt kapısı,
+zincir, not, Durdur aynen çalışır. Ayar: `terminal_kipi` = `arka`
+(varsayılan) | `gercek`; koltuk `_motor_ac` ile sarar, desteklemeyen motor
+görünür uyarıyla arkada kalır.
+
+Döngü: kapı kendini sınar (`kanca.py --oz-sinama`; geçmezse tur BAŞLAMAZ)
+→ ConPTY'de CLI açılır, güven sorusu cevaplanır → brifing KOPYALA-YAPIŞTIR
+(bracketed paste) tek mesaj → ajanın ne yaptığı EKRANDAN değil CLI'ın
+oturum dosyasından (Claude `.jsonl`, Codex rollout) okunur → tur sonu
+Claude `turn_duration`, Codex `task_complete` → terminal AÇIK kalır, sonraki
+tur (onay sonrası devam) AYNI terminale yazılır (30 dk boşta kalan kapanır).
+
+### Gerçek motorla uçtan uca (koltuk, boş geçici ofis)
+İş: a.txt yaz → sil.txt'yi rm ile sil → b.txt yaz, her adımda kanıt.
+
+| | Claude haiku | Codex gpt-6-luna |
+|---|---|---|
+| 1. tur | a.txt, rm kapıda DURDU, tek kart | aynı |
+| onay → halka devam | AYNI terminalde rm geçti, b.txt | aynı |
+| kanıt / iş | 4 kanıt, İNCELEMEYE gitti | 4 kanıt, İNCELEMEYE gitti |
+| onay_kullanildi | 1 | 1 |
+
+### Yol boyunca ölçülen tuzaklar (hepsi kapatıldı)
+1. **Codex `.CMD` sarmalayıcısı** kanca ayarındaki tırnak/köşeli
+   parantezi bozdu, terminal hiç açılmadı. Gerçek `codex.exe` (npm paketinin
+   içi) doğrudan çağrılıyor (`tui_ikilisi`); bulunamazsa tur başlamaz.
+2. **Codex `allow` tanımıyor**: "unsupported permissionDecision:allow" →
+   kanca başarısız sayılır ve komut YİNE koşar. Codex'te izin = boş çıktı
+   (`kanca.py --codex`), `deny` tanınıyor.
+3. **Codex `-a never` ofisin MCP araçlarını da reddetti** ("MCP tool call
+   requires approval") → kanıt eklenemedi. `mcp_servers.<ad>.default_tools_
+   approval_mode="approve"` (değerler codex'in kendi hata mesajından:
+   auto|prompt|writes|approve) yalnız ofisin verdiği sunuculara.
+4. **Codex uzun yapıştırmada ilk Enter'ı yutuyor** ("[Pasted Content N
+   chars]"). Ofis oturum dosyası büyüdü mü diye bakar, büyümediyse Enter'ı
+   tekrarlar.
+5. **Güven sorusu cevaplanmadan yapıştırılırsa** yapıştırmanın baştaki Esc'i
+   Codex'i kapatıyor → güven sorusu ekrandan tanınır, önce o cevaplanır.
+6. **Çift kart (iki yönde)**: kapı kart açınca ajan bir de `onay_iste`
+   çağırdı; ya da ajan önce sordu, sonra kapı ikinci kez sordu. Kapının
+   ajana cümlesi tek sabit (`postane.KART_ACILDI`), ve ölçüt artık "açık
+   komutta `onay_iste` çağırma, doğrudan dene; kapı sorar" diyor.
+7. **Kendi hatam:** `--oz-sinama` gerçek kimlikle koşup deftere sahte kart
+   düşürüyordu (kimlik silinir, sınandı). `koltuk.__init__` içine işlev
+   ekleyip satırları kopardım (test yakaladı).
+
+Yazılı sınırlar: dolar tavanı yok (kaçak freni + jeton tavanı geçerli;
+istenirse tur REDDEDİLİR); maliyet `None` (ölçülemedi); not "ulaştı" =
+terminal girdiyi aldı; Codex TUI sandbox'ı arka plan kipiyle aynı
+(workspace-write: `.git` yazımı ve ağ kapalı).
+
+Sınamalar: `testler/duman_tui.py` (26) — gerçek ConPTY'de sahte CLI
+(`testler/sahte_tui.py`): kapı sınanamazsa başlamaz · normal tur · aynı
+terminal · tur içi not · Durdur (CLI gerçekten kesildi mi) · zaman aşımı ·
+yutulan Enter · tavan reddi · koltuk kipi · codex kanca çıktısı. Sekiz
+mutasyonun sekizi ateş etti (Durdur önce sessizdi → CLI tarafı ölçüldü;
+"Enter tekrarlanmasın" önce sınamayı ASTI → her bölüme zaman sınırı).
+Tam takım **3185/3185** (43 dosya).
+
+Sıradaki: panelde ajan panosu bu terminali göstersin ve insan içine
+yazabilsin; panelde kip anahtarı.

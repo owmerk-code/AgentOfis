@@ -92,6 +92,7 @@ from __future__ import annotations
 import json
 import os
 import queue
+import re
 import shutil
 import subprocess
 import sys
@@ -1505,6 +1506,172 @@ class CodexMotoru(Motor):
         return ""
 
     # -- komut -------------------------------------------------------------
+
+    # -- gercek terminal (TUI) kipi -----------------------------------------
+    #
+    # 29.09.2026, olculdu: `codex` terminali (ConPTY) PreToolUse kancasini
+    # her komutta cagiriyor, `deny` komutu kosturmuyor, onaydan sonra ajan
+    # ayni terminalde devam ediyor; oturum dosyasi (rollout) komutu, ciktiyi,
+    # mesaji ve tur sonunu (`task_complete`) yapili tasiyor.
+    # Genel dongu `motor/tui.py`de.
+
+    tui_destegi = True
+
+    def tui_ikilisi(self) -> str:
+        """npm `.CMD`nin arkasindaki gercek `codex.exe` (yoksa bos)."""
+        yol = str(self.calistirilabilir or "")
+        if yol.lower().endswith(".exe"):
+            return yol
+        if not yol:
+            return ""
+        kok = Path(yol).parent / "node_modules" / "@openai" / "codex"
+        aday = sorted(kok.glob("node_modules/@openai/codex-win32-*/vendor/*/bin/codex.exe"))
+        aday += sorted(kok.glob("vendor/*/bin/codex.exe"))
+        return str(aday[0]) if aday else ""
+
+    def tui_plani(self, *, oturum_id: str, model: str, efor: str,
+                  yazabilir: bool, ek_klasorler: tuple, mcp_yapilandirma: str,
+                  izinli_araclar: tuple, ek_ortam: dict, kanca_komutu: str,
+                  gecici: Path) -> dict:
+        """`codex` etkilesimli komutu + oturum dosyasini bulan islev.
+
+        * Kanca komutu TIRNAKSIZ verilir: tirnakli komut PowerShell'de
+          bozuldu ve codex kanca DUSUNCE komutu CALISTIRDI (olculdu).
+          Bu yuzden yol bosluklu olamaz; oyleyse tur BASLAMAZ.
+        * `-a never`: codex kendi sorusunu sormaz; KARAR ofisin kancasinda.
+          Sandbox arka plan kipiyle ayni (workspace-write / read-only).
+        * Sistem eki codex'te bayrak degil; ilk mesajin basina konur.
+        """
+        kanca = kanca_komutu.replace('"', "") + " --codex"
+        if len(kanca.split(" ")) != 3:
+            raise MotorHatasi("Kanca yolu bosluk iceriyor; codex kancasi "
+                              "tirnaksiz calisir. Tur baslatilmadi.")
+        ev = (ek_ortam or {}).get("CODEX_HOME") or self._ev_bul()
+        # `.CMD` ARACILIGIYLA KOSMAZ. OLCULDU (29.09): `cmd /c codex.CMD`
+        # kanca ayarindaki tirnak/koseli parantezleri bozdu ve terminal
+        # hic acilmadi -- claude'da bir kez odenen tuzagin aynisi. npm
+        # paketinin icindeki gercek ikili dogrudan cagrilir; bulunamazsa
+        # tur BASLAMAZ (sarmalayiciya sessizce dusmez).
+        exe = self.tui_ikilisi()
+        if not exe:
+            raise MotorHatasi("codex'in gercek ikilisi (codex.exe) bulunamadi; "
+                              "gercek terminal kipi .CMD sarmalayicisiyla "
+                              "calistirilmaz. OFIS_CODEX_YOLU ile verilebilir.")
+        argv = [exe]
+        if oturum_id:
+            argv += ["resume", self._oturum_dogrula(oturum_id)]
+        argv += ["--no-alt-screen", "-c", "check_for_update_on_startup=false",
+                 "-s", SANDBOX_YAZAR if yazabilir else SANDBOX_OKUR,
+                 "-a", "never", "--dangerously-bypass-hook-trust",
+                 "-c", "hooks.PreToolUse=[{matcher=\"*\",hooks=[{type=\"command\","
+                       "command=" + json.dumps(kanca) + "}]}]"]
+        for ek in ek_klasorler or ():
+            argv += ["--add-dir", str(ek)]
+        model = str(model or "").strip()
+        if model:
+            argv += ["-m", model]
+        kademe = EFOR_CEVRIMI.get(str(efor or "").strip().lower(), "")
+        if kademe:
+            argv += ["-c", f'model_reasoning_effort="{kademe}"']
+        for parca in self._mcp_ayarlari(mcp_yapilandirma):
+            argv += ["-c", parca]
+        # OFISIN VERDIGI MCP SUNUCULARI ONAYSIZ. OLCULDU (29.09): `-a never`
+        # ile codex `kanit_ekle`yi "MCP tool call requires approval, but
+        # approval policy is never" diye reddetti -- ajan kanit ekleyemedi.
+        # Degerler codex'in kendi hata mesajindan: auto|prompt|writes|approve.
+        # Bu sunucular ofisin kendisi (ofis araclari kendi kapilarini tasir,
+        # tarayici kendi vekilinden gecer); hesabin baska sunuculari
+        # zaten verilmiyor.
+        for ad in self._mcp_adlari(mcp_yapilandirma):
+            argv += ["-c", f'mcp_servers.{ad}.default_tools_approval_mode="approve"']
+        ortam = ortam_hazirla(os.environ, ek={**(ek_ortam or {}), "CODEX_HOME": str(ev)},
+                              izinli=tuple(ek_ortam or ()) + ("CODEX_HOME",))
+        oturumlar = Path(ev) / "sessions"
+        acilis = time.time()
+        tid = str(oturum_id or "")
+
+        def dokum():
+            if not oturumlar.is_dir():
+                return None
+            if tid:
+                aday = list(oturumlar.rglob(f"rollout-*{tid}.jsonl"))
+            else:
+                aday = [f for f in oturumlar.rglob("rollout-*.jsonl")
+                        if f.stat().st_mtime >= acilis - 2]
+            return max(aday, key=lambda f: f.stat().st_mtime) if aday else None
+
+        return {
+            "argv": argv, "ortam": ortam, "kapat": "/quit", "oturum_id": tid,
+            "dokum": dokum,
+            "ilk_on_ek": self._istek_metni("", mcp_yapilandirma).strip() + "\n\n",
+            "guven": ("\r",), "guven_isareti": "trust",
+            "durdur": "\x1b", "ev": str(ev),
+        }
+
+    @staticmethod
+    def _exec_komutu(girdi: str) -> str:
+        """`exec` aracinin JS girdisinden kabuk komutunu cikarir."""
+        m = re.search(r'cmd\s*:\s*("(?:\\.|[^"\\])*")', girdi or "")
+        if not m:
+            return (girdi or "")[:200]
+        try:
+            return str(json.loads(m.group(1)))[:300]
+        except ValueError:
+            return m.group(1)[1:-1][:300]
+
+    def tui_cevir(self, kayit: dict, durum: dict) -> tuple:
+        """Rollout satiri -> (olaylar, tur_bitti)."""
+        olaylar = []
+        tur = kayit.get("type")
+        p = kayit.get("payload") if isinstance(kayit.get("payload"), dict) else {}
+        pt = p.get("type")
+        if tur == "session_meta" and p.get("id"):
+            durum["oturum_id"] = str(p["id"])
+        elif tur == "turn_context":
+            mdl = str(((p.get("collaboration_mode") or {}).get("model"))
+                      or p.get("model") or "")[:100]
+            if mdl and not durum.get("model"):
+                durum["model"] = mdl
+                olaylar.append(MotorOlayi("oturum", mdl, {
+                    "oturum_id": durum.get("oturum_id", ""), "model": mdl}))
+        elif tur == "response_item" and pt == "message" and p.get("role") == "assistant":
+            parca = "".join(str(b.get("text") or "") for b in (p.get("content") or [])
+                            if isinstance(b, dict) and b.get("type") == "output_text")
+            if parca:
+                parca = _mesaj_parcasi(durum, parca)
+                durum.setdefault("metin", []).append(parca)
+                olaylar.append(MotorOlayi("metin", parca))
+        elif tur == "response_item" and str(pt or "").endswith("_call"):
+            ad = str(p.get("name") or pt)
+            girdi = p.get("input") if pt == "custom_tool_call" else p.get("arguments")
+            if ad == "exec":
+                ad, ozet = "Bash", self._exec_komutu(str(girdi or ""))
+            else:
+                ozet = str(girdi or "")[:200]
+            durum["arac_sayisi"] = durum.get("arac_sayisi", 0) + 1
+            durum.setdefault("arac_adlari", {})[str(p.get("call_id") or "")] = (ad, ozet)
+            olaylar.append(MotorOlayi("arac", ad, {"ozet": ozet,
+                                                   "cagri_id": str(p.get("call_id") or "")}))
+        elif tur == "response_item" and str(pt or "").endswith("_call_output"):
+            cagri = str(p.get("call_id") or "")
+            ad, girdi = durum.get("arac_adlari", {}).get(cagri, ("", ""))
+            cikti = p.get("output")
+            if isinstance(cikti, list):
+                cikti = " ".join(str(b.get("text") or "") for b in cikti if isinstance(b, dict))
+            metin = str(cikti or "").strip()
+            reddedildi = "OFIS KAPISI" in metin.upper() or "ONAY ISTENDI" in metin.upper()
+            olaylar.append(MotorOlayi("izin" if reddedildi else "arac_sonuc",
+                                      (f"{ad} reddedildi: {girdi[:160]}" if reddedildi
+                                       else metin[:300]),
+                                      {"hatali": reddedildi, "cagri_id": cagri,
+                                       "arac": ad, "girdi": girdi}))
+        elif tur == "event_msg" and pt == "token_count":
+            son = ((p.get("info") or {}).get("last_token_usage") or {})
+            durum.setdefault("kullanim", {})[str(len(durum.get("kullanim", {})))] = \
+                int(son.get("total_tokens") or 0)
+        elif tur == "event_msg" and pt == "task_complete":
+            return olaylar, True
+        return olaylar, False
 
     def _istek_metni(self, metin: str, mcp_yapilandirma: str) -> str:
         """Sistem eki + brifing. Codex'te ayri bir sistem bayragi yok."""

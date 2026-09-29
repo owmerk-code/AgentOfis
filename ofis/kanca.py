@@ -81,7 +81,15 @@ def main() -> None:
         girdi = {}
     if not isinstance(girdi, dict):
         girdi = {}
-    sys.stdout.write(karar_ver(girdi))
+    cevap = karar_ver(girdi)
+    # CODEX `allow` TANIMIYOR. OLCULDU (29.09): "PreToolUse hook returned
+    # unsupported permissionDecision:allow" -> kanca BASARISIZ sayilir ve
+    # (codex kapali kalmadigi icin) komut yine kosar. Codex'te izin = HIC
+    # CIKTI yok; `deny` taniniyor (olculdu). Claude'da `allow` ACIKCA
+    # yazilir: yoksa elle kipte her yazim sorulur.
+    if "--codex" in sys.argv and '"allow"' in cevap:
+        return
+    sys.stdout.write(cevap)
     sys.stdout.flush()
 
 

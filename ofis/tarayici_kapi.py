@@ -88,11 +88,13 @@ if __package__ in (None, ""):                 # dogrudan `python ...py`
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
     from ofis import riskli, tarayici         # noqa: E402
     from ofis.db import Veritabani            # noqa: E402
-    from ofis.postane import Postane          # noqa: E402
+    from ofis.postane import KART_ACILDI, Postane  # noqa: E402
+    from ofis import izin as izin_mod         # noqa: E402
 else:
     from . import riskli, tarayici
     from .db import Veritabani
-    from .postane import Postane
+    from .postane import KART_ACILDI, Postane
+    from . import izin as izin_mod
 
 #: Ofisin sunmadigi araclar -- TEK KAYNAK `tarayici.py`de.
 #:
@@ -347,7 +349,6 @@ class OfisBagi:
         bir kez "bu urunu yayinla" der, ajan her urunu yayinlardi.
         """
         # PATRONUN IZNI: "yayina al" dediyse "Yayinla" sorulmaz.
-        from ofis import izin as izin_mod
         iz = izin_mod.eslesen(self.db, self.proje_id, self.gorev_id, bulgu)
         if iz:
             izin_mod.gecti_kaydi(self.db, self.proje_id, izin=iz, bulgu=bulgu,
@@ -443,7 +444,8 @@ class OfisBagi:
             "SIMDI NE YAP: bu turda BU EYLEMI TEKRAR DENEME ve baska bir "
             "yoldan yapmaya calisma. Buraya kadar yaptiklarini `kanit_ekle` "
             "ile deftere yaz, sonra turu bitir. Patron onaylayinca is "
-            "kaldigi yerden devam eder ve ayni eylem bir kez gecer.")
+            "kaldigi yerden devam eder ve ayni eylem bir kez gecer. "
+            + KART_ACILDI)
 
 
 class _SahteOfis:

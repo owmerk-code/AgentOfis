@@ -846,6 +846,116 @@ class ClaudeMotoru(Motor):
             },
         )
 
+    # -- gercek terminal (TUI) kipi -----------------------------------------
+    #
+    # 29.09.2026, olculdu: ajan gercek `claude` terminalinde (ConPTY)
+    # kosunca ofisin kapisi PreToolUse kancasiyla durduruyor, onaydan sonra
+    # ajan kaldigi yerden devam ediyor, oturum dosyasi arac cagrilarini
+    # arka plan kipindekiyle AYNI bicimde tasiyor. Genel dongu
+    # `motor/tui.py`de; burada yalniz claude'a ozel olan var.
+
+    tui_destegi = True
+
+    #: Arka plan kipine ozgu bayraklar -- etkilesimli terminalde anlamsiz.
+    _TUI_DUSEN_TEK = ("-p", "--verbose", "--include-partial-messages",
+                      "--replay-user-messages")
+    _TUI_DUSEN_CIFT = ("--input-format", "--output-format", "--permission-prompts",
+                       "--permission-prompt-tool", "--max-budget-usd")
+
+    def tui_plani(self, *, oturum_id: str, model: str, efor: str,
+                  yazabilir: bool, ek_klasorler: tuple, mcp_yapilandirma: str,
+                  izinli_araclar: tuple, ek_ortam: dict, kanca_komutu: str,
+                  gecici: Path) -> dict:
+        """Gercek terminalde acilacak `claude` komutu ve oturum dosyasi.
+
+        Arka plan kipinin komutu (`_komut_kur`) TEMEL alinir: arac listesi,
+        izin listesi, MCP yalitimi, sistem eki, model, efor, klasorler --
+        iki kip ayni kurallarla kosar. Yalniz arka plana ozgu bayraklar
+        duser ve izin karari KANCAYA gecer (`--settings` ile PreToolUse).
+        Izin kipi VERILMEZ: kanca `allow` dedigi seyi CLI sormaz, `deny`
+        dedigini yapmaz (olculdu, `_kip` belgesi).
+        """
+        devam = bool(oturum_id)
+        oturum = self._oturum_dogrula(oturum_id)
+        ham = self._komut_kur(
+            oturum, devam=devam, model=model, efor=efor, yazabilir=yazabilir,
+            ek_klasorler=ek_klasorler, butce_usd=None,
+            mcp_yapilandirma=mcp_yapilandirma, izinli_araclar=izinli_araclar,
+            izin_araci="kanca")
+        argv, i = [ham[0]], 1
+        while i < len(ham):
+            if ham[i] in self._TUI_DUSEN_TEK:
+                i += 1
+                continue
+            if ham[i] in self._TUI_DUSEN_CIFT:
+                i += 2
+                continue
+            argv.append(ham[i])
+            i += 1
+        ayar = Path(gecici) / f"kanca-{oturum}.json"
+        kanca = [{"matcher": "*", "hooks": [{"type": "command",
+                                             "command": kanca_komutu}]}]
+        ayar.write_text(json.dumps({"hooks": {"PreToolUse": kanca}}),
+                        encoding="utf-8")
+        argv += ["--settings", str(ayar)]
+        ortam = ortam_hazirla(os.environ, ek={**TUR_ORTAMI, **(ek_ortam or {})},
+                              izinli=tuple(ek_ortam or ()))
+        # Ic ice oturum isareti dokum KAYDINI kapatir (olculdu).
+        for ad in list(ortam):
+            if ad.startswith(("CLAUDE_CODE_SAFE_MODE", "CLAUDE_CODE_SIMPLE",
+                              "CLAUDECODE", "CLAUDE_CODE_CHILD", "CLAUDE_CODE_ENTRYPOINT")):
+                ortam.pop(ad, None)
+        projeler = Path(self._yapilandirma_dizini(ek_ortam)) / "projects"
+        return {
+            "argv": argv, "ortam": ortam, "kapat": "/exit",
+            "oturum_id": oturum,
+            "dokum": lambda: next(iter(projeler.rglob(f"{oturum}.jsonl")), None),
+            # Guven sorusunun varsayilani "No, exit": asagi ok + Enter.
+            # `\x1b[B` Esc sayildi (olculdu), `\x1bOB` dogru.
+            "guven": ("\x1bOB", "\r"),
+            "guven_isareti": "trust",
+            "durdur": "\x1b",
+        }
+
+    def tui_cevir(self, kayit: dict, durum: dict) -> tuple:
+        """Oturum dosyasinin bir satiri -> (olaylar, tur_bitti).
+
+        Arac cagrisi ve sonucu arka plan kipinin cevirisinden (`_mesaji_cevir`)
+        gecer -- iki kipte ayni olaylar. Farkli olan: metin parca parca degil
+        blok olarak gelir; kullanim mesaj basina yinelenir (ayni `id` her
+        icerik bloguyla tekrar yazilir), son deger alinir.
+        """
+        olaylar = []
+        tur = kayit.get("type")
+        if tur == "system" and kayit.get("subtype") == "turn_duration":
+            return olaylar, True
+        mesaj = kayit.get("message") if isinstance(kayit.get("message"), dict) else {}
+        if tur == "assistant":
+            if not durum.get("model") and mesaj.get("model"):
+                durum["model"] = str(mesaj["model"])[:100]
+                olaylar.append(MotorOlayi("oturum", durum["model"], {
+                    "oturum_id": durum.get("oturum_id", ""), "model": durum["model"]}))
+            kul = mesaj.get("usage") or {}
+            if mesaj.get("id") and kul:
+                durum.setdefault("kullanim", {})[mesaj["id"]] = int(
+                    (kul.get("input_tokens") or 0) + (kul.get("output_tokens") or 0)
+                    + (kul.get("cache_read_input_tokens") or 0)
+                    + (kul.get("cache_creation_input_tokens") or 0))
+            for blok in self._icerik_bloklari(kayit):
+                if isinstance(blok, dict) and blok.get("type") == "text":
+                    parca = str(blok.get("text") or "")
+                    if parca:
+                        durum.setdefault("metin", []).append(parca)
+                        olaylar.append(MotorOlayi("metin", parca))
+        if tur in ("assistant", "user"):
+            durum.setdefault("oturum_id", "")
+            durum.setdefault("arac_adlari", {})
+            durum.setdefault("arac_sayisi", 0)
+            durum.setdefault("limit", False)
+            durum.setdefault("hesap_hatasi", "")
+            olaylar += self._mesaji_cevir(kayit, durum)
+        return olaylar, False
+
     # -- tur ici kanal -----------------------------------------------------
 
     @staticmethod

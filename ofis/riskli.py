@@ -93,6 +93,11 @@ import unicodedata
 
 #: Brifinge ve lider istemine giren olcut. Liste degil, uc soru.
 #:
+#: 29.09.2026 (gercek terminal olcumu): ajan kurala uyup ONCE `onay_iste`
+#: cagirdi, onay aldi, sonra komutu kosturunca KAPI ayri bir eylem sayip
+#: ikinci kez sordu -- patrona ayni is iki kez dustu. Artik her isci motor
+#: kapiyi tasiyor (claude kancasi, codex app-server/kanca); acik komutta
+#: ajan sormaz, dener, kapi sorar.
 #: Kasitli olarak "sunlar yasak" demiyor: yasak listesi ajana ne
 #: yapmayacagini ogretir, olcut NASIL DUSUNECEGINI. Kimsenin
 #: dusunmedigi bir durum ancak ikincisiyle yakalanir.
@@ -110,6 +115,12 @@ Yalniz su UC SORUDAN biri "evet" ise ONCE `onay_iste` cagir ve DUR:
 Kisacasi: PATRONU ZORA SOKABILECEK bir sey yapmak uzereysen sor.
 Emin degilsen sor -- sormanin bedeli bir dakika, yanlis yapmanin
 bedeli patronun magazasi/reklami/hesabi.
+
+AMA ACIK KOMUTTA `onay_iste` CAGIRMA: rm/del, git push, deploy/publish,
+curl ile POST, genel paket kurma, tarayicida Yayinla/Ode/Sil dugmesi --
+bunlari DOGRUDAN dene. Ofis kapisi onlari gorur, durdurur ve patrona
+KENDISI sorar; sen de sorarsan patrona ayni sey IKI KEZ sorulur.
+`onay_iste` yalniz kapinin goremeyecegi bir karar icindir.
 
 Sormadigin her sey icin serbestsin ve BEKLEMEN gerekmez."""
 
