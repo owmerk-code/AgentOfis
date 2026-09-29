@@ -12209,3 +12209,28 @@ Bedel ~$0,07 karşılığı (haiku).
 Ölçülmeyen: Codex'in etkileşimli terminali (kanca/onay, not, döküm);
 ofis MCP'sinin (kanıt_ekle) TUI'de çalışması (aynı `--mcp-config` yolu,
 beklenen evet); uzun işte ekrandan ve dökümden okumanın dayanıklılığı.
+
+## GERÇEK CODEX TERMİNALİ ÖLÇÜLDÜ (29.09.2026)
+
+Aynı iş (a.txt → 20 sn → b.txt → sil.txt'yi sil), etkileşimli `codex`
+(0.158, gpt-6-luna düşük efor, ofisin codex evi, `-s workspace-write
+-a never`), kanca `-c hooks.PreToolUse=[...]` +
+`--dangerously-bypass-hook-trust` (kanca bizim; otomasyon bayrağı).
+
+| Soru | Sonuç |
+|---|---|
+| Kanca terminalde ateşleniyor mu | **evet**, her komutta (araç adı `Bash`, komut PowerShell) |
+| Riskli komutu durduruyor mu | **evet** — `Remove-Item` REDDEDİLDİ, sil.txt yerinde; ajan "OFIS KAPISI tarafından engellendi" dedi |
+| Tur sürerken yazılan not | **evet** — "Messages to be submitted after next tool call"; b.txt = `uc`; dökümde kullanıcı mesajı olarak var |
+| Döküm (rollout) | **evet**: araç çağrıları + çıktıları, ajan mesajları, jeton, **limit yüzdesi** (`rate_limits` 5s %6 · 7g %47, yenilenme anları) |
+
+**EN ÖNEMLİ BULGU — kanca düşerse Codex AÇIK KALIYOR.** İlk koşuda kanca
+komutu tırnaklı yol yüzünden çalışmadı ("Hook failed, exited with code 1")
+ve Codex `rm`'i yine koşturdu, dosya silindi. Yani Codex'te kapı "kapalı
+kalarak başarısız" OLMUYOR. Gerçek terminale geçilirse: kanca kendi içinde
+asla çökmemeli, her hatada açıkça `deny` basmalı; ayrıca kancanın gerçekten
+çalıştığı her turun başında sınanmalı. (Claude'da bu hâl ölçülmedi.)
+
+Diğer tuzaklar: güven sorusu ("1. Trust and continue", Enter yeterli);
+`%TEMP%` altında Codex'in yazdığı dosyayı `pc` okuyamıyor (bilinen
+sandbox ACL sınırı). Ekranda "Running hook" satırları görünüyor.

@@ -212,7 +212,9 @@ matrisin ölçümüyle karşılaştırır.
   kanıt/jeton/limit okunuyor mu, yazılan not ulaşıyor mu).
   **Claude yarısı ÖLÇÜLDÜ (29.09): kanca rm'i durdurdu, not tur
   sürerken ulaştı, döküm yapılı veri veriyor; limit yüzdesi dökümde yok
-  (limit_oku var). Codex terminali ölçülmedi.** Ayrıntı: günlük sonu.
+  (limit_oku var). Codex terminali de ÖLÇÜLDÜ: kanca Remove-Item'ı
+  durdurdu, not ulaştı, döküm limit yüzdesini bile taşıyor; AMA kanca
+  düşerse Codex AÇIK kalıyor (rm koştu).** Ayrıntı: günlük sonu.
 
 ## Kalıcı dersler (ilkeler)
 
