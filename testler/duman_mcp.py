@@ -142,7 +142,7 @@ sina("initialized bildiriminden sonra sunucu AYAKTA",
 
 y = s.cagir("tools/list")
 adlar = [a["name"] for a in y["result"]["tools"]]
-sina("on dort arac yayinlaniyor (giris_iste dahil)", len(adlar) == 14 and "giris_iste" in adlar, f"-- {adlar}")
+sina("on bes arac yayinlaniyor (giris_iste, sohbete_yaz dahil)", len(adlar) == 15 and "giris_iste" in adlar and "sohbete_yaz" in adlar, f"-- {adlar}")
 # `izin_sor` ajanin cagirdigi bir arac DEGIL: CLI'in izin
 # kancasi. Yine de yayinlanmak ZORUNDA -- CLI onu ada gore
 # arar ve bulamazsa izin gerektiren her cagri sessizce reddedilir.
@@ -867,6 +867,31 @@ except Exception as _exc:                     # noqa: BLE001 -- cokme degil KALD
 sina("uygun alan yoksa ajana HATA ANLATILIR", _mc2.startswith("HATA"), _mc2[:120])
 sina("rapor.md'nin ustune YAZILMADI",
      (_kok_c / "rapor.md").read_text(encoding="utf-8") == "metin")
+
+# --------------------------------------------------------------------------
+print("\nSOHBETE_YAZ -- ajan takim sohbetine kendisi yazar (29.09)")
+_ss = Sunucu({"OFIS_DB": str(db_yolu), "OFIS_PROJE": ofis.proje_id,
+              "OFIS_AJAN": "cinar", "OFIS_GOREV": str(g["no"])})
+_ss.cagir("initialize", {"protocolVersion": "2025-06-18", "capabilities": {},
+                         "clientInfo": {"name": "t", "version": "1"}})
+_ss.bildir("notifications/initialized", {})
+_c = _ss.arac("sohbete_yaz", metin="api/ altinda eksik test buldum, ekliyorum", ajan="baskasi")
+sina("bildirim yazildi", "yazildi" in _c, _c[:120])
+with ofis.db.baglanti() as _cn:
+    _r = _cn.execute("SELECT ajan_ad, govde FROM olay WHERE tur='ajan_sohbet' "
+                     "ORDER BY rowid DESC LIMIT 1").fetchone()
+sina("kimlik ORTAMDAN (argumandaki 'baskasi' yok sayildi)", _r and _r["ajan_ad"] == "cinar")
+from ofis import takim as _tk  # noqa: E402
+_akis = _tk.akis(ofis)
+sina("takim akisinda 'bildirim' olarak gorunuyor",
+     any(x["tur"] == "bildirim" and x["kimden"] == "cinar" for x in _akis))
+sina("bos mesaj reddedilir", _ss.arac("sohbete_yaz", metin="  ").startswith("HATA"))
+for _i in range(10):
+    _son = _ss.arac("sohbete_yaz", metin=f"bildirim {_i}")
+sina("is basina ust sinir uygulaniyor", _son.startswith("HATA") and "6 kez" in _son, _son[:120])
+with ofis.db.baglanti() as _cn:
+    _n = _cn.execute("SELECT COUNT(*) FROM olay WHERE tur='ajan_sohbet' AND ajan_ad='cinar'").fetchone()[0]
+sina("sinirdan fazlasi deftere GIRMEDI", _n == 6, str(_n))
 
 print(f"\n== sonuc: {GECEN} gecti, {KALAN} kaldi ==")
 print(f"klasor: {kok}")

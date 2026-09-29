@@ -258,6 +258,51 @@ def arac_karar_yaz(oturum: Oturum, args: dict) -> str:
     return f"Karar gunluge yazildi: {karar}"
 
 
+#: Bir ajanin BIR IS icin takim sohbetine yazabilecegi azami bildirim.
+#: Sohbet konusmadir, gunluk degil: her adimi yazan ajan insanin okumasi
+#: gereken satiri kalabalikta kaybettirir. Ayrintinin yeri kanit ve akis.
+SOHBET_AZAMI_IS_BASINA = 6
+SOHBET_AZAMI_HARF = 1200
+
+
+def arac_sohbete_yaz(oturum: Oturum, args: dict) -> str:
+    """Ajan TAKIM SOHBETINE kisa bir bildirim yazar (29.09.2026).
+
+    Rakipte ajanlar sonuclarini ayni akisa birakiyor ([ODA] protokolu).
+    Bizde de: engel, onemli bulgu, is bitti. Ama bu bir BILDIRIMDIR --
+    cevap beklenmez, kimseye is vermez. Soru `soru_sor`, onay `onay_iste`;
+    ikisinin yerine gecmez (ceviri bekleyen bir soru sohbette kaybolurdu).
+    Kimlik ortamdan: ajan baskasi adina yazamaz.
+    """
+    metin = str(args.get("metin") or "").strip()
+    if not metin:
+        return "HATA: bos mesaj yazilamaz."
+    if not oturum.ajan_ad:
+        return "HATA: ajan kimligi yok; sohbete yazilamaz."
+    kesildi = len(metin) > SOHBET_AZAMI_HARF
+    metin = metin[:SOHBET_AZAMI_HARF]
+    gorev_id = None
+    if oturum.gorev_no is not None:
+        try:
+            gorev_id = oturum.gorev()["id"]
+        except Exception:
+            gorev_id = None
+    db = oturum.ofis.db
+    with db.baglanti() as conn:
+        sayi = conn.execute(
+            "SELECT COUNT(*) FROM olay WHERE proje_id = ? AND tur = 'ajan_sohbet' "
+            "AND ajan_ad = ? AND gorev_id IS ?",
+            (oturum.proje_id, oturum.ajan_ad, gorev_id)).fetchone()[0]
+    if sayi >= SOHBET_AZAMI_IS_BASINA:
+        return (f"HATA: bu is icin sohbete {SOHBET_AZAMI_IS_BASINA} kez yazdin; "
+                "sohbet gunluk degil. Ayrintiyi `kanit_ekle` ile yaz; patrona "
+                "sorun varsa `soru_sor`.")
+    db.olay_yaz(oturum.proje_id, "ajan_sohbet", metin, ajan_ad=oturum.ajan_ad,
+                gorev_id=gorev_id)
+    return ("Takim sohbetine yazildi." + (" (1200 harfte kesildi)" if kesildi else "")
+            + " Bu bir bildirimdir, cevap BEKLEME; isine devam et.")
+
+
 def arac_soru_sor(oturum: Oturum, args: dict) -> str:
     """Lidere ya da insana soru sorar ve TURU BITIRIR.
 
@@ -1075,6 +1120,24 @@ ARACLAR = [
             "required": ["karar", "gerekce"],
         },
         "islev": arac_karar_yaz,
+    },
+    {
+        "name": "sohbete_yaz",
+        "description": (
+            "Takim sohbetine KISA bir bildirim yazar: bir engel, onemli bir "
+            "bulgu, isin bittigi. Cevap beklenmez, kimseye is vermez; is "
+            "basina en fazla 6 kez. Soru icin `soru_sor`, onay icin "
+            "`onay_iste` kullan."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "metin": {"type": "string",
+                          "description": "Takimin gorecegi 1-3 cumle."},
+            },
+            "required": ["metin"],
+        },
+        "islev": arac_sohbete_yaz,
     },
     {
         "name": "soru_sor",

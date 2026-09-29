@@ -116,7 +116,7 @@ motor matrisinden geçmeden deftere girmez.
 
 ```
 YÜZEYLER    panel · kabuk (CLI) · telefon(sonra) · ses(sonra)
-PROTOKOL    ofis MCP sunucusu (stdio JSON-RPC, 14 araç)
+PROTOKOL    ofis MCP sunucusu (stdio JSON-RPC, 15 araç)
 ÇEKİRDEK    kadro · DAG tahta · yazma kilidi · kanıt kapısı · karar günlüğü
             orkestra (halka) · lider (3 kapı) · sohbet (ön kapı) · takım
 BELLEK      olay · olgu (çift-zamanlı) · bilgi/kural/ders · brifing K1–K4
@@ -149,7 +149,7 @@ matrisin ölçümüyle karşılaştırır.
 | `ofis/takim.py` | Takım sohbeti: `@ajan` yönlendirme (lider · not · soru · `iş:`), tek akış. |
 | `ofis/postane.py` | Soru/onay, patronun notu (`NOT_KURALI`), imza/kapsam ile onay eşleştirme. |
 | `ofis/danisma.py` | Ajana sorulan soruyu teslim eder (araçsız, salt okunur); cevaplanamazsa insana yükseltir. |
-| `ofis/mcp_sunucu.py` | Ofis MCP: durum · kanit_ekle · karar_yaz · soru_sor · onay_iste · bilgi_yaz · gorev_ac · gorsel_uret/iste · video_uret/durum/iste · izin_sor (kanca) · giris_iste. Kimlik ORTAMDAN gelir. |
+| `ofis/mcp_sunucu.py` | Ofis MCP: durum · kanit_ekle · karar_yaz · sohbete_yaz · soru_sor · onay_iste · bilgi_yaz · gorev_ac · gorsel_uret/iste · video_uret/durum/iste · izin_sor (kanca) · giris_iste. Kimlik ORTAMDAN gelir. |
 | `ofis/motor/tui.py` | GERÇEK TERMİNAL KİPİ: iç motoru (claude/codex) ConPTY'de gerçek CLI olarak koşturan sarmalayıcı; brifing yapıştırılır, olaylar CLI'ın oturum dosyasından okunur, terminal turlar arası açık kalır. Ayar `terminal_kipi` (`arka`/`gercek`). |
 | `ofis/kanca.py` | Gerçek terminal (TUI) kancası: CLI'ın her araç çağrısını arka plan kipindeki AYNI kapıya sorar; hata = deny; `--oz-sinama`. |
 | `ofis/izin.py` | Patronun ACIKCA istedigi riskli eylem (push, deploy) sorulmaz: lider planda patronun sozunden KELIMESI KELIMESINE alintiyla izin yazar, ofis sinifi olcer, olumsuz cumleyi reddeder; is basina ve kalici (insan). Para ve silme izinle acilmaz. |
@@ -208,11 +208,11 @@ matrisin ölçümüyle karşılaştırır.
   kendi sütunu; "Ajanlar kabinde" (tarayıcılı tek iş panelde canlı).
 - **Codex ajanı kapı varken tam erişimle** koşar (workspace-write'ta `git add` bile yapamıyordu, push sandbox kullanıcısı yüzünden düşüyordu); riskli adım kapıda.
 - **Gerçek terminal kipi** kuruldu ve panelde (üst çubuk anahtarı, ajan panosu = gerçek terminal); varsayılan hâlâ `arka`.
-- **Sınamalar:** 43 duman dosyası, **3215/3215** (29.09). Deneme seti 15/15
+- **Sınamalar:** 43 duman dosyası, **3221/3221** (29.09). Deneme seti 15/15
   (Claude ve Codex, işçi+lider).
 - **Kullanıcının belirttiği eksikler (29.09):** her panoda her zaman açık
   yazma yeri; dosya/görsel ekleme ve görselin sohbette görünmesi; sesli orkestratör;
-  ajanların sohbete kendileri yazması; seçenekli karar ekranı; "her iş gerçek
+  seçenekli karar ekranı; "her iş gerçek
   durumuyla" ekranı; gece otopilotu.
 - **Karar bekleyen (kullanıcı):** ajan panoları **gerçek Claude/Codex
   terminali mi** olsun, yoksa bugünkü yapılı akış CLI'a benzetilsin mi.

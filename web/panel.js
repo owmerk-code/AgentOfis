@@ -3138,7 +3138,7 @@ function yetenekYaz(kap, v, an) {
 const TAKIM_KATLA_HARF = 700;
 const TAKIM_TUR = { sohbet: "", soru: "soru", not: "not", cevap: "", rapor: "rapor",
                     is: "iş açıldı", kapandi: "kapandı", ret: "geri gönderildi",
-                    onay: "onay istiyor" };
+                    onay: "onay istiyor", bildirim: "takıma yazdı" };
 const GOREV_DURUM = { bekliyor: "bekliyor", hazir: "sırada", calisiyor: "çalışıyor",
                       inceleme: "incelemede", bitti: "bitti", iptal: "iptal" };
 

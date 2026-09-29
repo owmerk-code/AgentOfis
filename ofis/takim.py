@@ -42,7 +42,8 @@ _IS = re.compile(r"^\s*(?:is|iş|IS|İŞ|Is|İş)\s*[:\-]\s*(.*)$", re.S)
 
 #: Akista gosterilen olaylar. Terminal olaylari (arac, cikti, nabiz)
 #: GIRMEZ: sohbet bir kayit defteri degil, konusmadir.
-AKIS_OLAYLARI = ("rapor", "gorev_acildi", "kapandi", "ret", "onay_istendi")
+AKIS_OLAYLARI = ("rapor", "gorev_acildi", "kapandi", "ret", "onay_istendi",
+                 "ajan_sohbet")
 #: Akista metin KESILMEZ (4000 = cevap siniri, yalniz bellek korumasi).
 #: OLCULDU (29.09.2026): ilk surum her ogeyi 600 harfte kesiyordu ve
 #: liderin uzun cevabi panelde "**3..." diye yarida kaldi -- eski sohbet
@@ -271,7 +272,8 @@ def akis(ofis, *, kanat_id=None, adet: int = 80) -> list:
                            "gorev_no": m["gorev_no"], "id": m["id"],
                            "bekliyor": False, "ulasti": None})
     tur_adi = {"rapor": "rapor", "gorev_acildi": "is", "kapandi": "kapandi",
-               "ret": "ret", "onay_istendi": "onay"}
+               "ret": "ret", "onay_istendi": "onay",
+               "ajan_sohbet": "bildirim"}
     for o in olaylar:
         o = dict(o)
         ajan = o["ajan_ad"] or ""

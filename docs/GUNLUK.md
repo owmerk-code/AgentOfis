@@ -12539,3 +12539,19 @@ yeniden çizilir, yazılan kaybolmaz). Alttaki satırla AYNI gönderici
 yazılan yerin üstünde çıkar. Tarayıcıda ölçüldü (örnek ofis kopyası):
 `@URUN …` demir'e gitti, adressiz mesajda öneri kutunun üstünde çıktı.
 `duman_panel` +4 sözleşme sınaması (382).
+
+## AJANLAR TAKIM SOHBETİNE KENDİSİ YAZIYOR (29.09.2026) — `sohbete_yaz`
+
+Rakipte ajanlar sonuçlarını aynı akışa bırakıyor. Ofis MCP'sine 15. araç:
+`sohbete_yaz(metin)` — kısa BİLDİRİM (engel, önemli bulgu, iş bitti).
+Cevap beklenmez, kimseye iş vermez; soru `soru_sor`, onay `onay_iste`
+olarak kalır (cevap bekleyen bir soru sohbette kaybolurdu). Kimlik
+ortamdan (argümandaki ad yok sayılır, sınandı). İş başına en fazla 6
+bildirim, 1200 harf: sohbet konuşmadır, günlük değil. Olay `ajan_sohbet`,
+takım akışında "takıma yazdı". Brifing K4 ne zaman kullanılacağını söyler.
+
+Gerçek turla ölçüldü (boş klasör, haiku / gpt-6-luna): Claude arka plan,
+Claude gerçek terminal, Codex arka plan, Codex gerçek terminal — dördünde
+de ajan bildirimi kendisi yazdı ve akışa düştü (ofis araçlarının izinleri
+iki motorda da doğru). `duman_mcp` 143 (+5: yazıldı, kimlik ortamdan,
+akışta görünür, boş mesaj reddi, üst sınır ve fazlasının deftere girmemesi).

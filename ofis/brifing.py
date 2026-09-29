@@ -354,6 +354,11 @@ class Brifing:
                 satirlar.append(f"  - [{zaman}]"
                                 + ("" if n["okundu"] else " **YENI**")
                                 + f" {n['govde']}")
+        # TAKIMA BILDIRIM (29.09): ajan onemli anlari sohbete kendisi yazar.
+        satirlar += ["", "**Takima bildirim:** ofis araclarin varsa onemli "
+                         "anlarda (engel, onemli bulgu, is bitti) `sohbete_yaz` "
+                         "ile 1-3 cumle yaz; is basina en fazla 6 kez. Cevap "
+                         "bekleme. Soru icin `soru_sor`, onay icin `onay_iste`."]
         # PATRONUN IZINLERI her turda (devam dahil) soylenir: ajan izinli
         # bir eylem icin `onay_iste` cagirip bosuna durmasin.
         from .izin import brifing_blogu as izin_blogu
