@@ -208,11 +208,10 @@ matrisin ölçümüyle karşılaştırır.
   kendi sütunu; "Ajanlar kabinde" (tarayıcılı tek iş panelde canlı).
 - **Codex ajanı kapı varken tam erişimle** koşar (workspace-write'ta `git add` bile yapamıyordu, push sandbox kullanıcısı yüzünden düşüyordu); riskli adım kapıda.
 - **Gerçek terminal kipi** kuruldu ve panelde (üst çubuk anahtarı, ajan panosu = gerçek terminal); varsayılan hâlâ `arka`.
-- **Sınamalar:** 43 duman dosyası, **3211/3211** (29.09). Deneme seti 15/15
+- **Sınamalar:** 43 duman dosyası, **3215/3215** (29.09). Deneme seti 15/15
   (Claude ve Codex, işçi+lider).
 - **Kullanıcının belirttiği eksikler (29.09):** her panoda her zaman açık
-  yazma yeri; takım sohbeti panosunun İÇİNDE kutu (bugün yazılan yer
-  alttaki komut satırı); dosya/görsel ekleme ve görselin sohbette görünmesi; sesli orkestratör;
+  yazma yeri; dosya/görsel ekleme ve görselin sohbette görünmesi; sesli orkestratör;
   ajanların sohbete kendileri yazması; seçenekli karar ekranı; "her iş gerçek
   durumuyla" ekranı; gece otopilotu.
 - **Karar bekleyen (kullanıcı):** ajan panoları **gerçek Claude/Codex

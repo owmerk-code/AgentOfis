@@ -12530,3 +12530,12 @@ sınamayı ÇÖKERTTİ → çağrılar korundu; biri yanlış kurulmuştu → d�
   bekliyordu; genel kanal kararıyla bilinçli olarak "öneri döner" oldu,
   sınama yeni sözleşmeye çevrildi. (Önceki kayıt bu sınama kalmışken
   gönderildi — benim hatam; düzeltildi, tam takım yeniden koştu.)
+
+### Takım sohbeti panosuna yazma kutusu (29.09.2026)
+Kullanıcı: *"çekirdek takım sohbetine yazamıyorum"* — yazılan yer alttaki
+komut satırıydı. Panonun altına kendi kutusu kondu (akışın DIŞINDA: akış
+yeniden çizilir, yazılan kaybolmaz). Alttaki satırla AYNI gönderici
+(`komutGonder(girdi, yer)`), aynı yönlendirici; genel kanal önerisi
+yazılan yerin üstünde çıkar. Tarayıcıda ölçüldü (örnek ofis kopyası):
+`@URUN …` demir'e gitti, adressiz mesajda öneri kutunun üstünde çıktı.
+`duman_panel` +4 sözleşme sınaması (382).

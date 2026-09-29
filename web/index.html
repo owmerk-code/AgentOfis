@@ -99,6 +99,14 @@
            cevap panelde hic tam gorunmuyordu (200 harflik olay satiri). -->
       <div class="pano-govde" data-pano="sohbet">
         <div class="gorunum sekme-icerik sohbet-akis" id="pano-sohbet"></div>
+        <!-- SOHBETE YAZ: panonun kendi kutusu (akis yeniden cizilir, bu
+             kutu cizilmez -- yazilan kaybolmaz). Alttaki satirla AYNI
+             gonderici. -->
+        <form class="sohbet-yaz" id="sohbet-yaz" autocomplete="off">
+          <input id="sohbet-girdi" type="text" maxlength="4000"
+                 placeholder="Takıma yaz — adres yoksa lidere · @ad · @ad iş: … · @TAKIM">
+          <button class="dugme olumlu" type="submit">Gönder</button>
+        </form>
       </div>
       <!-- KONSOL: ofisten BAGIMSIZ, insanin kendi terminali (28.09). -->
       <div class="pano-govde" data-pano="konsol">

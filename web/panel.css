@@ -1657,3 +1657,11 @@ details > summary.hf-bas { cursor: pointer; }
   box-shadow: 0 -4px 12px rgba(0,0,0,.35);
 }
 .takim-oneri-soru { font-size: var(--yz-alt); color: var(--metin-2); margin-right: 4px; }
+
+/* SOHBETE YAZ: takim sohbeti panosunun kendi kutusu (panonun altinda). */
+.sohbet-yaz { position: relative; flex: 0 0 auto; display: flex; gap: 8px;
+  padding: 8px 12px; border-top: 1px solid var(--cizgi); background: var(--zemin-2); }
+.sohbet-yaz input { flex: 1; min-width: 0; background: var(--zemin); color: var(--metin);
+  border: 1px solid var(--cizgi); border-radius: var(--koseli); padding: 7px 10px;
+  font: inherit; font-size: var(--yz-govde); }
+.sohbet-yaz input:focus { outline: none; border-color: var(--vurgu); }

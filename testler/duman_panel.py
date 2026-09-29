@@ -1344,5 +1344,21 @@ console.log(JSON.stringify([
         sina("  birden cok sorun SAYILIR", _r22[3]["yazi"] == "1 dolu · codex2 kullanılamıyor", str(_r22[3]))
         sina("  yalniz kapali hesap -> 'hesap yok'", _r22[4]["yazi"] == "hesap yok", str(_r22[4]))
 
+# 29.09: TAKIM SOHBETI PANOSUNUN KENDI YAZMA KUTUSU. Kullanici "takim
+# sohbetine yazamiyorum" demisti. Kutu akisin DISINDA (akis yeniden
+# cizilir, yazilan kaybolmasin) ve alttaki satirla AYNI gondericiyi
+# kullanir (iki kopya olmasin); takim onerisi kutunun ustunde cikar.
+_h2 = _web.joinpath("index.html").read_text(encoding="utf-8")
+_j2 = _web.joinpath("panel.js").read_text(encoding="utf-8")
+_sy = _h2.find('id="sohbet-yaz"')
+sina("sohbet panosunda yazma kutusu var", _sy > 0 and 'id="sohbet-girdi"' in _h2)
+sina("  kutu akisin DISINDA (yeniden cizimde silinmez)",
+     _sy > _h2.find('id="pano-sohbet"') and
+     _h2[_h2.find('id="pano-sohbet"'):_sy].count("</div>") >= 1)
+sina("  ayni gonderici (komutGonder) kutuyla cagriliyor",
+     'komutGonder($("#sohbet-girdi"), f)' in _j2)
+sina("  oneri yazilan yerin ustunde cikar (yer parametresi)",
+     "takimOneriGoster(metin, r.oneriler || [], girdi, oneriYeri)" in _j2)
+
 print(f"\n== sonuc: {GECEN} gecti, {KALAN} kaldi ==")
 sys.exit(1 if KALAN else 0)

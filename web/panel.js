@@ -4975,8 +4975,9 @@ document.addEventListener("keydown", (e) => {
 /* GENEL KANAL onerisi: komut satirinin ustunde takim dugmeleri. Puani 0
    olan takim "onerilen" diye isaretlenmez -- uydurma bir "en uygun"
    gosterilmez. `metin` null ise satir kaldirilir. */
-function takimOneriGoster(metin, oneriler) {
-  $("#takim-oneri")?.remove();
+function takimOneriGoster(metin, oneriler, girdi, yer) {
+  girdi = girdi || $("#komut-girdi");
+  document.querySelectorAll(".takim-oneri").forEach((x) => x.remove());
   if (metin === null || metin === undefined) return;
   const kap = el("div", "takim-oneri");
   kap.id = "takim-oneri";
@@ -4990,7 +4991,7 @@ function takimOneriGoster(metin, oneriler) {
       kap.remove();
       try {
         await yolla("/api/lidere", { metin, kanat: o.kanat_id, oge: D.secilenOge || null });
-        $("#komut-girdi").value = "";
+        girdi.value = "";
         bildir(`mesaj ${o.ad} takımının liderine (${o.lider}) gitti`, "iyi");
         if (D.yerlesim) panoSec("sohbet");
       } catch (e) { bildir("gönderilemedi: " + (e.message || e), "kotu"); }
@@ -5003,11 +5004,15 @@ function takimOneriGoster(metin, oneriler) {
   kap.append(vaz);
   // Komut satirinin ICINE, onun ustunde SUZULUR: sayfayi itseydi komut
   // satiri ekranin altina kayardi (olculdu, 1920x900).
-  document.querySelector(".komut").append(kap);
+  (yer || document.querySelector(".komut")).append(kap);
 }
 
-async function komutGonder() {
-  const girdi = $("#komut-girdi");
+/* Iki yazma yeri, TEK gonderici: alttaki komut satiri ve takim
+   sohbeti panosunun kendi kutusu (29.09: kullanici "takim sohbetine
+   yazamiyorum" demisti -- yazilan yer alttaki satirdi, pano degil).
+   Ikisi ayni yonlendiriciden gecer; iki kopya olsaydi biri kayardi. */
+async function komutGonder(girdi, oneriYeri) {
+  girdi = (girdi && girdi.value !== undefined) ? girdi : $("#komut-girdi");
   const metin = girdi.value.trim();
   if (!metin) return;
   girdi.value = "";
@@ -5034,7 +5039,7 @@ async function komutGonder() {
       // GENEL KANAL: ofis secmez, ONERIR. Mesaj gitmedi; insan takimi
       // secince ayni istek o takimin kanadiyla yeniden gider.
       girdi.value = metin;
-      takimOneriGoster(metin, r.oneriler || []);
+      takimOneriGoster(metin, r.oneriler || [], girdi, oneriYeri);
       return;
     }
     takimOneriGoster(null);
@@ -5124,7 +5129,14 @@ document.querySelectorAll("#efor-sec button").forEach(b => {
 });
 cizEfor();
 
-$("#komut-gonder").onclick = komutGonder;
+$("#komut-gonder").onclick = () => komutGonder();
+{
+  const f = $("#sohbet-yaz");
+  if (f) f.onsubmit = (e) => {
+    e.preventDefault();
+    komutGonder($("#sohbet-girdi"), f);
+  };
+}
 $("#ajan-ekle").onclick = ajanEkleAc;
 
 /* ARAMA. Sonuc cekmecede; gorevi olan sonuca tiklamak gorevi acar.
