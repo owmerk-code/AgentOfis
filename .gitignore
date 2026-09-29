@@ -16,6 +16,9 @@ clewase-review/
 
 # Ajan ciktilari GIRER, medya ve oturum artigi GIRMEZ: buyuk dosya depoyu
 # sisirir (GitHub 100 MB siniri); medya ZIP yedeginde durur.
+# Sohbete eklenen dosyalar (ekran goruntusu, belge) OZEL olabilir: GitHub'a
+# gitmez, ZIP yedeginde durur (ofis/ekler.py).
+calisma/ekler/
 calisma/**/*.png
 calisma/**/*.jpg
 calisma/**/*.jpeg

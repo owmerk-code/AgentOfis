@@ -163,6 +163,7 @@ matrisin ölçümüyle karşılaştırır.
 | `ofis/motor_saglik.py` · `kullanim.py` · `tavan.py` · `butce.py` | Oturum/kota hafızası; hesap pencereleri (tur koşmadan okunur); kaçak freni + jeton tavanı; Fable kapı payı. |
 | `ofis/degisim.py` · `geri_al.py` | Diskte ölçülen fark (beyan dışı yazma, canlı izleme) · gölge git ile tur geri alma. |
 | `ofis/devral.py` · `terminal.py` · `konsol.py` | Ajanın terminalini insan devralır (ConPTY) · bağımsız konsol. |
+| `ofis/ekler.py` | Sohbete dosya/görsel: kökün `ekler/` klasörü, `[ek] ekler/ad` satırı, ad/boyut/yol kapıları; GitHub'a ve disk ölçümüne girmez. |
 | `ofis/gorsel.py` · `video.py` | Medya; codex aboneliğiyle görsel; para kilidi. |
 | `ofis/ekip.py` · `sablon.py` | Ekip önerisi (lider önerir, insan onaylar) · takım şablonları. |
 | `ofis/saglik.py` · `yetenek.py` · `denetim.py` · `baglayici.py` · `klasor.py` · `sartname.py` · `guncelleme.py` · `motor_karti.py` | Tıkanma teşhisi · yetenek envanteri · denetim kaydı · claude.ai bağlayıcıları · dış klasör kapısı · şartname kapısı (fable, araçsız) · otomatik güncelleme · motor kartı. |
@@ -208,10 +209,10 @@ matrisin ölçümüyle karşılaştırır.
   kendi sütunu; "Ajanlar kabinde" (tarayıcılı tek iş panelde canlı).
 - **Codex ajanı kapı varken tam erişimle** koşar (workspace-write'ta `git add` bile yapamıyordu, push sandbox kullanıcısı yüzünden düşüyordu); riskli adım kapıda.
 - **Gerçek terminal kipi** kuruldu ve panelde (üst çubuk anahtarı, ajan panosu = gerçek terminal); varsayılan hâlâ `arka`.
-- **Sınamalar:** 43 duman dosyası, **3221/3221** (29.09). Deneme seti 15/15
+- **Sınamalar:** 43 duman dosyası, **3247/3247** (29.09). Deneme seti 15/15
   (Claude ve Codex, işçi+lider).
 - **Kullanıcının belirttiği eksikler (29.09):** her panoda her zaman açık
-  yazma yeri; dosya/görsel ekleme ve görselin sohbette görünmesi; sesli orkestratör;
+  yazma yeri; sesli orkestratör;
   seçenekli karar ekranı; "her iş gerçek
   durumuyla" ekranı; gece otopilotu.
 - **Karar bekleyen (kullanıcı):** ajan panoları **gerçek Claude/Codex

@@ -63,6 +63,10 @@ ATLANAN_KLASOR = frozenset({
     # Olculunce "beyan disi yazma" gorunuyor ve ajan onu SILMEK icin
     # patrona onay soruyordu (D09, D18) -- gurultu, onay yorgunlugu.
     ".playwright-mcp",
+    # 29.09: patronun sohbete ekledigi dosyalar (`ofis/ekler.py`). Ofis
+    # yonetir; tur surerken eklenen dosya ajanin "beyan disi yazmasi"
+    # sayilmasin.
+    "ekler",
 })
 ATLANAN_UZANTI = frozenset({".pyc", ".pyo", ".pyd", ".so", ".dll", ".exe"})
 

@@ -1665,3 +1665,14 @@ details > summary.hf-bas { cursor: pointer; }
   border: 1px solid var(--cizgi); border-radius: var(--koseli); padding: 7px 10px;
   font: inherit; font-size: var(--yz-govde); }
 .sohbet-yaz input:focus { outline: none; border-color: var(--vurgu); }
+.ek-dugme { padding: 4px 9px; }
+.ek-ciplari { display: flex; gap: 4px; flex-wrap: wrap; max-width: 45%; }
+.ek-ciplari:empty { display: none; }
+.ek-cip { font-size: var(--yz-kucuk); border: 1px solid var(--cizgi); border-radius: 4px;
+  padding: 2px 4px 2px 6px; white-space: nowrap; max-width: 180px; overflow: hidden;
+  text-overflow: ellipsis; color: var(--metin-2); }
+.ek-sil { background: none; border: 0; color: var(--metin-3); cursor: pointer; padding: 0 2px; }
+.sohbet-ekler { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+.sohbet-ek img { max-width: 220px; max-height: 140px; border-radius: 6px;
+  border: 1px solid var(--cizgi); display: block; }
+.sohbet-ek { color: var(--vurgu); font-size: var(--yz-alt); }

@@ -440,6 +440,11 @@ class KipGovdesi(BaseModel):
     kip: str = ""
 
 
+class EkGovdesi(BaseModel):
+    ad: str = ""
+    veri: str = ""      # base64 (python-multipart bagimliligi eklenmesin)
+
+
 class SebepGovdesi(BaseModel):
     """Ret ve iptal icin. Sebep ZORUNLU -- cekirdek zaten reddediyor;
     burada ayrica alan olmasi, panelin onu SORMASI icin."""
@@ -1691,6 +1696,33 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
                 for x in _tui.acik_oturumlar()]
         return {"isler": _dv.devralinanlar(ofis.db, ofis.proje_id),
                 "pty": _tr.pty_durumu() or "hazir", "tui": acik}
+
+    @uygulama.post("/api/ek")
+    def api_ek(govde: EkGovdesi):
+        """Sohbete dosya/gorsel: proje kokunun `ekler/` klasorune yazilir
+        (kural `ofis/ekler.py`de; panel yalniz ulasan kapi)."""
+        import base64
+        import binascii
+        from . import ekler as _ek
+        if len(govde.veri) > _ek.AZAMI_BAYT * 4 // 3 + 16:
+            raise HTTPException(400, f"Dosya cok buyuk; sinir {_ek.AZAMI_BAYT // 1024 // 1024} MB.")
+        try:
+            veri = base64.b64decode(govde.veri, validate=True)
+        except (binascii.Error, ValueError):
+            raise HTTPException(400, "Dosya okunamadi (bozuk veri).")
+        try:
+            return _ek.kaydet(ofis_ac(), govde.ad, veri)
+        except _ek.EkHatasi as exc:
+            raise HTTPException(400, str(exc))
+
+    @uygulama.get("/api/ek/{ad}")
+    def api_ek_oku(ad: str):
+        from . import ekler as _ek
+        try:
+            yol = _ek.dosya(ofis_ac(), ad)
+        except _ek.EkHatasi as exc:
+            raise HTTPException(404, str(exc))
+        return FileResponse(yol)
 
     @uygulama.get("/api/terminal_kipi")
     def api_terminal_kipi():

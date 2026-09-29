@@ -299,7 +299,10 @@ def akis(ofis, *, kanat_id=None, adet: int = 80) -> list:
                     "SELECT no, durum FROM gorev WHERE proje_id = ? AND no IN (%s)"
                     % ",".join("?" * len(nolar)), (ofis.proje_id, *nolar)):
                 durumlar[r["no"]] = r["durum"]
+    from . import ekler as _ek
     for x in ogeler:
+        # EKLER mesaj satirindan cikarilir, balonda resim/baglanti olur.
+        x["metin"], x["ekler"] = _ek.ayikla(x.get("metin") or "")
         x.pop("sira", None)
         a = kadro.get(x["kimden"])
         x["meslek"] = (a or {}).get("meslek", "")

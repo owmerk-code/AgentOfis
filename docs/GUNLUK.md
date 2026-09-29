@@ -12555,3 +12555,29 @@ Claude gerçek terminal, Codex arka plan, Codex gerçek terminal — dördünde
 de ajan bildirimi kendisi yazdı ve akışa düştü (ofis araçlarının izinleri
 iki motorda da doğru). `duman_mcp` 143 (+5: yazıldı, kimlik ortamdan,
 akışta görünür, boş mesaj reddi, üst sınır ve fazlasının deftere girmemesi).
+
+## SOHBETE DOSYA / GÖRSEL (29.09.2026) — `ofis/ekler.py`
+
+Kullanıcı: *"dosya ya da görsel yükleyemiyorum."* Sohbet kutusunda 📎 ve
+Ctrl+V (ekran görüntüsü yapıştırma, iki yazma yerinde de). Dosya seçilince
+hemen yüklenir (`POST /api/ek`, base64 — yeni bağımlılık eklenmedi), proje
+kökünün `ekler/` klasörüne yazılır (ajanlar kökte, okuyabilir), gönderilene
+kadar çip olarak bekler; mesaja `[ek] ekler/ad` satırı eklenir. Ek kaydı
+ayrı tabloda tutulmaz: mesaj taşır, akış satırdan çıkarır; balonda görsel
+küçük resim, diğerleri bağlantı.
+
+Korumalar: ad temizlenir (Türkçe harf, yol parçası atılır), zaman damgasıyla
+benzersiz, üstüne yazmaz; 20 MB sınır; boş dosya reddi; yazma atomik;
+okuma yalnız ADLA ve yalnız `ekler/` içinden (`..`, alt yol, olmayan → 404).
+`ekler/` GitHub'a GİTMEZ (.gitignore; özel olabilir, ZIP yedeğinde durur)
+ve disk ölçümüne GİRMEZ (tur sürerken eklenen dosya ajanın "beyan dışı
+yazması" sayılmasın). Lider hedefi yeniden yazsa bile ek yolu işe taşınır.
+
+Ölçüldü: tarayıcıda yapıştırılan ekran görüntüsü çip → mesaj → balonda
+resim. Gerçek ajan: içinde "KOD 4718" yazan görsel eklendi, **Claude haiku
+ve Codex gpt-6-luna ikisi de görsele bakıp kodu doğru yazdı**.
+
+Sınama `duman_ekler.py` (26); üç mutasyon ateş etti (işe taşınmasın ·
+boyut sınırı kalksın · akış ayıklamasın).
+Açık: danışma (`@ajan` sorusu) araçsızdır, eke bakamaz; eke bakması
+gereken iş `@ajan iş:` ya da lidere yazılır.

@@ -627,6 +627,12 @@ class Sohbet:
             return
 
         hedef = (karar.get("hedef") or mesaj).strip()
+        # EKLER ise TASINIR: lider hedefi yeniden yazarken dosya satirlarini
+        # dusurebilir; isi yapacak ajan dosyanin yerini bilmeli.
+        from .ekler import ajan_notu, ayikla
+        _, _yollar = ayikla(mesaj)
+        if _yollar and not all(y in hedef for y in _yollar):
+            hedef += "\n\n" + ajan_notu(_yollar)
 
         if karar["karar"] == "kadro":
             # KADRO YETMIYOR. Lider oneri getirir ve BURADA DURUR.

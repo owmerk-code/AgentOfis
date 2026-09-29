@@ -3168,6 +3168,23 @@ function takimBalonu(x, D_ajanlar) {
   const yazi = el("span", "sohbet-yazi");
   kalinYaz(yazi, x.metin);
   b.append(yazi);
+  // EKLER: gorsel kucuk resim (tiklayinca tam boy), digerleri baglanti.
+  if ((x.ekler || []).length) {
+    const kap = el("div", "sohbet-ekler");
+    for (const y of x.ekler) {
+      const ad = y.split("/").pop();
+      const url = "/api/ek/" + encodeURIComponent(ad);
+      const a = el("a", "sohbet-ek");
+      a.href = url; a.target = "_blank"; a.rel = "noopener";
+      if (/\.(png|jpe?g|gif|webp|bmp)$/i.test(ad)) {
+        const im = el("img"); im.src = url; im.alt = ad; im.loading = "lazy";
+        a.append(im);
+      } else a.textContent = "📄 " + ad.replace(/^\d{8}-\d{6}-/, "");
+      a.title = y;
+      kap.append(a);
+    }
+    b.append(kap);
+  }
   const altlar = [];
   if (x.gorev_no) {
     const d = GOREV_DURUM[x.gorev_durum] || x.gorev_durum || "";
@@ -5011,10 +5028,49 @@ function takimOneriGoster(metin, oneriler, girdi, yer) {
    sohbeti panosunun kendi kutusu (29.09: kullanici "takim sohbetine
    yazamiyorum" demisti -- yazilan yer alttaki satirdi, pano degil).
    Ikisi ayni yonlendiriciden gecer; iki kopya olsaydi biri kayardi. */
+/* EKLER (29.09): dosya secilince/yapistirilinca HEMEN yuklenir (proje
+   kokunun `ekler/` klasoru), gonderilene kadar cip olarak bekler; mesaja
+   `[ek] ekler/ad` satiri olarak eklenir. Kural sunucuda (`ofis/ekler.py`). */
+D.ekler = D.ekler || [];
+function ekCiplari() {
+  const kap = $("#ek-ciplari");
+  if (!kap) return;
+  kap.textContent = "";
+  for (const e of D.ekler) {
+    const c = el("span", "ek-cip", (e.gorsel ? "🖼 " : "📄 ") + e.ad.replace(/^\d{8}-\d{6}-/, ""));
+    const x = el("button", "ek-sil", "×");
+    x.type = "button";
+    x.title = "eki çıkar (dosya diskte kalır)";
+    x.onclick = () => { D.ekler = D.ekler.filter((y) => y !== e); ekCiplari(); };
+    c.append(x);
+    kap.append(c);
+  }
+}
+async function ekYukle(dosyalar) {
+  for (const f of dosyalar) {
+    try {
+      const veri = await new Promise((ok, hata) => {
+        const r = new FileReader();
+        r.onload = () => ok(String(r.result).split(",")[1] || "");
+        r.onerror = () => hata(r.error);
+        r.readAsDataURL(f);
+      });
+      const ad = f.name || ("ekran-" + Date.now() + ".png");
+      const r = await yolla("/api/ek", { ad, veri });
+      D.ekler.push(r);
+      bildir(`eklendi: ${r.yol}`, "iyi");
+    } catch (e) { bildir("eklenemedi: " + (e.message || e), "kotu"); }
+  }
+  ekCiplari();
+}
+
 async function komutGonder(girdi, oneriYeri) {
   girdi = (girdi && girdi.value !== undefined) ? girdi : $("#komut-girdi");
-  const metin = girdi.value.trim();
-  if (!metin) return;
+  let metin = girdi.value.trim();
+  const ekVar = D.ekler.length > 0;
+  if (!metin && !ekVar) return;
+  if (ekVar) metin = (metin || "Ekteki dosyaya bak.") + "\n" +
+    D.ekler.map((e) => "[ek] " + e.yol).join("\n");
   girdi.value = "";
   // SECILI KANAT gonderilir: ofiste birden fazla lider olabilir ve
   // yanlis kanada verilen hedef, yanlis kadroya yanlis isi verir.
@@ -5043,6 +5099,7 @@ async function komutGonder(girdi, oneriYeri) {
       return;
     }
     takimOneriGoster(null);
+    if (ekVar) { D.ekler = []; ekCiplari(); }
     girdi.placeholder = r && r.yol === "not" ? `not ${r.alici}'a iletilecek`
       : r && r.yol === "soru" ? `${r.alici} düşünüyor…`
       : r && r.yol === "is" ? `iş ${r.atanan}'a veriliyor (planı ${r.alici} yazar)…`
@@ -5050,7 +5107,8 @@ async function komutGonder(girdi, oneriYeri) {
     // Cevap SOHBET panosuna duser; insan nereye bakacagini aramasin.
     if (D.yerlesim) panoSec("sohbet");
   } catch (e) {
-    girdi.value = metin;                  // yazdigini kaybetme
+    // yazdigini kaybetme -- ek satirlari cipte kaldigi icin metne yazilmaz
+    girdi.value = metin.split("\n").filter((s) => !s.startsWith("[ek] ")).join("\n");
     girdi.placeholder = String(e.message || e).slice(0, 180);
   }
   yenile();
@@ -5136,6 +5194,19 @@ $("#komut-gonder").onclick = () => komutGonder();
     e.preventDefault();
     komutGonder($("#sohbet-girdi"), f);
   };
+  const sec = $("#ek-sec"), dos = $("#ek-dosya");
+  if (sec && dos) {
+    sec.onclick = () => dos.click();
+    dos.onchange = () => { ekYukle([...dos.files]); dos.value = ""; };
+  }
+  // Ekran goruntusu YAPISTIRMA: iki yazma yerinde de.
+  for (const g of [$("#sohbet-girdi"), $("#komut-girdi")]) {
+    if (!g) continue;
+    g.addEventListener("paste", (e) => {
+      const dosyalar = [...(e.clipboardData?.files || [])];
+      if (dosyalar.length) { e.preventDefault(); ekYukle(dosyalar); }
+    });
+  }
 }
 $("#ajan-ekle").onclick = ajanEkleAc;
 

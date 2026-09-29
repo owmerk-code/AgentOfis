@@ -103,6 +103,10 @@
              kutu cizilmez -- yazilan kaybolmaz). Alttaki satirla AYNI
              gonderici. -->
         <form class="sohbet-yaz" id="sohbet-yaz" autocomplete="off">
+          <button class="dugme ek-dugme" type="button" id="ek-sec"
+                  title="Dosya ya da görsel ekle (ekran görüntüsünü kutuya Ctrl+V ile de yapıştırabilirsin)">📎</button>
+          <input type="file" id="ek-dosya" multiple hidden>
+          <span class="ek-ciplari" id="ek-ciplari"></span>
           <input id="sohbet-girdi" type="text" maxlength="4000"
                  placeholder="Takıma yaz — adres yoksa lidere · @ad · @ad iş: … · @TAKIM">
           <button class="dugme olumlu" type="submit">Gönder</button>
