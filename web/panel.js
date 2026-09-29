@@ -3084,39 +3084,101 @@ function yetenekYaz(kap, v, an) {
 
 /* LIDER SOHBETI. Defterden okunur (`/api/sohbet`); cevap gelmemisse
    "dusunuyor" yazar ve kosu durumunu soyler -- bos bir cevap uydurmaz. */
+/* TAKIM SOHBETI (29.09.2026). Rakipteki "Cekirdek takim sohbeti"nin
+   karsiligi: lidere yazilanlar, `@ajan` sorulari/notlari/isleri, cevaplar,
+   ajanlarin birbirine sorulari, raporlar ve hukumler TEK akista. Akis
+   sunucuda defterden TURETILIR; burada yalniz cizim var, karar yok.
+   - Metin KESILMEZ; uzun olan katlanir ve "Tamamini oku" acar (ilk surum
+     600 harfte kesiyordu ve liderin cevabi yarida kaliyordu).
+   - Is etiketi isin SU ANKI durumudur (defterden), mesajin yazildigi an
+     degil.
+   - "Terminalde goster" ajanin kendi akisini ofis panosunda acar. */
+const TAKIM_KATLA_HARF = 700;
+const TAKIM_TUR = { sohbet: "", soru: "soru", not: "not", cevap: "", rapor: "rapor",
+                    is: "iş açıldı", kapandi: "kapandı", ret: "geri gönderildi",
+                    onay: "onay istiyor" };
+const GOREV_DURUM = { bekliyor: "bekliyor", hazir: "sırada", calisiyor: "çalışıyor",
+                      inceleme: "incelemede", bitti: "bitti", iptal: "iptal" };
+
+/* `**kalin**` metni DOM dugumuyle kalinlastirir (innerHTML YOK: ajan
+   metni sayfaya kod olarak giremez). Yalniz kalin; baska isaretleme yok. */
+function kalinYaz(kap, metin) {
+  const parca = String(metin || "").split("**");
+  parca.forEach((p, i) => {
+    if (!p) return;
+    kap.append(i % 2 && i < parca.length - 1 ? el("b", null, p) : document.createTextNode(p));
+  });
+}
+
+function takimBalonu(x, D_ajanlar) {
+  const insan = x.kimden === "insan";
+  const ajanMi = !insan && x.kimden !== "ofis";
+  const b = el("div", "sohbet-balon " + (insan ? "insan" : "lider") + " tur-" + x.tur);
+  const ust = el("div", "sohbet-ust");
+  const kim = insan ? "sen" : x.kimden;
+  ust.append(el("b", "sohbet-kim", kim));
+  if (x.meslek && !insan) ust.append(el("span", "sohbet-meslek", " · " + x.meslek));
+  if (x.kime) ust.append(el("span", null, " → " + (x.kime === "insan" ? "sen" : x.kime)));
+  const tur = TAKIM_TUR[x.tur];
+  if (tur) ust.append(el("span", "sohbet-tur", " · " + tur));
+  ust.append(el("span", "sohbet-saat", " · " + saat(x.an)));
+  b.append(ust);
+  const yazi = el("span", "sohbet-yazi");
+  kalinYaz(yazi, x.metin);
+  b.append(yazi);
+  const altlar = [];
+  if (x.gorev_no) {
+    const d = GOREV_DURUM[x.gorev_durum] || x.gorev_durum || "";
+    const c = el("button", "sohbet-cip durum-" + (x.gorev_durum || "yok"),
+                 `#${x.gorev_no}${d ? " " + d : ""}`);
+    c.title = "işin ayrıntısı";
+    c.onclick = () => gorevAc(x.gorev_no);
+    altlar.push(c);
+  }
+  if (x.tur === "not") altlar.push(el("span", "sohbet-cip " + (x.ulasti ? "durum-bitti" : ""),
+                                      x.ulasti ? "ulaştı" : "iletilecek"));
+  if ((x.metin || "").length > TAKIM_KATLA_HARF) {
+    b.classList.add("katli");
+    const t = el("button", "sohbet-cip", "Tamamını oku");
+    t.onclick = () => { const k = b.classList.toggle("katli");
+                        t.textContent = k ? "Tamamını oku" : "Kısalt"; };
+    altlar.push(t);
+  }
+  if (ajanMi && D_ajanlar.includes(x.kimden)) {
+    const t = el("button", "sohbet-cip", "Terminalde göster");
+    t.onclick = () => { D.secilenAjan = x.kimden; if (D.yerlesim) panoSec("ofis"); cizOfis(); };
+    altlar.push(t);
+  }
+  if (altlar.length) { const a = el("div", "sohbet-altlar"); a.append(...altlar); b.append(a); }
+  return b;
+}
+
 async function cizSohbet(kap) {
-  // TAKIM SOHBETI (29.09.2026): lidere yazilanlar, `@ajan` sorulari ve
-  // notlari, cevaplar, ajanlarin birbirine sorulari, raporlar ve
-  // hukumler TEK akista. Akis sunucuda defterden turetilir; burada
-  // yalniz cizim var, karar yok. Gorunus en son tasarlanacak.
   let r;
   try { r = await al("/api/takim" + (D.kanat ? "?kanat=" + D.kanat : "")); }
-  catch (e) { return kap.append(el("div", "form-ipucu uyari", "sohbet okunamadı: " + e.message)); }
+  catch (e) { return kap.append(el("div", "form-ipucu uyari", "takım sohbeti okunamadı: " + e.message)); }
   const ogeler = r.ogeler || [];
+  const adlar = ((D.ofis && D.ofis.ajanlar) || []).map((a) => a.ad);
+  const bas = el("div", "takim-bas");
+  const calisan = ((D.ofis && D.ofis.ajanlar) || []).filter((a) => a.oda === "masa").length;
+  bas.append(el("b", null, "Takım sohbeti"),
+             el("span", null, calisan ? ` · ${calisan} ajan çalışıyor` : " · kimse çalışmıyor"),
+             el("span", "takim-ipucu", "@ad → ajana sor ya da not · @ad iş: … → işi ona ver · adres yoksa lidere"));
+  kap.append(bas);
   if (!ogeler.length)
     return kap.append(el("div", "bos-yazi",
       "Takım sohbeti boş. Alttaki satıra yaz: adres yoksa lidere gider; " +
       "@ad ile bir ajana sorarsın (elinde iş varsa not olur), " +
       "@ad iş: … ile işi o ajana verirsin."));
-  const TUR = { sohbet: "", soru: "soru", not: "not", cevap: "", rapor: "rapor",
-                is: "iş açıldı", kapandi: "kapandı", ret: "geri gönderildi", onay: "onay istiyor" };
   const kosuyor = (r.kosu && r.kosu.calisiyor) || (r.danisma && r.danisma.calisiyor);
   for (const x of ogeler) {
-    const insan = x.kimden === "insan";
-    const b = el("div", "sohbet-balon " + (insan ? "insan" : "lider"));
-    const kime = x.kime ? " → " + (x.kime === "insan" ? "sen" : x.kime) : "";
-    const ek = [TUR[x.tur], x.gorev_no ? "#" + x.gorev_no : "",
-                x.tur === "not" ? (x.ulasti ? "ulaştı" : "iletilecek") : ""]
-               .filter(Boolean).join(" · ");
-    b.append(el("div", "sohbet-ust",
-      `${insan ? "sen" : x.kimden}${kime}${ek ? " · " + ek : ""} · ${saat(x.an)}`));
-    const yazi = el("span", "sohbet-yazi"); yazi.textContent = x.metin; b.append(yazi);
-    kap.append(b);
+    kap.append(takimBalonu(x, adlar));
     if (x.bekliyor && x.tur !== "not") {
       // Cevap henuz yok: yer tutucu. Liderin yazilmakta olan cevabi akar.
       const l = el("div", "sohbet-balon lider " + (x.akis ? "akiyor" : "bekliyor"));
       l.dataset.mesaj = x.id;
-      l.append(el("div", "sohbet-ust", x.kime));
+      const u = el("div", "sohbet-ust"); u.append(el("b", "sohbet-kim", x.kime));
+      l.append(u);
       const y = el("span", "sohbet-yazi");
       y.textContent = x.akis || (kosuyor ? "düşünüyor…"
         : "cevap gelmedi (tur yarıda kalmış olabilir; günlükte 'hata' var mı bak).");
@@ -4330,7 +4392,7 @@ function baglan() {
 const PANOLAR = {
   ofis:     { ad: "Ofis",     sayac: "sayac-ofis" },
   terminal: { ad: "Terminal", sayac: "sayac-canli" },
-  sohbet:   { ad: "Sohbet",   sayac: "" },
+  sohbet:   { ad: "Takım sohbeti", sayac: "" },
   konsol:   { ad: "Konsol",   sayac: "" },
   kod:      { ad: "Kod",      sayac: "sayac-kod" },
   tarayici: { ad: "Tarayıcı", sayac: "sayac-kabin" },

@@ -990,6 +990,25 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .sohbet-balon.lider { align-self: flex-start; background: var(--zemin-2);
                       border: 1px solid var(--cizgi); }
 .sohbet-balon.bekliyor { color: var(--metin-3); font-style: italic; }
+/* Takim sohbeti: uzun metin katlanir (veri kesilmez), alt satirda etiketler. */
+.sohbet-balon.katli .sohbet-yazi { display: block; max-height: 12.5em; overflow: hidden;
+  -webkit-mask-image: linear-gradient(#000 70%, transparent); mask-image: linear-gradient(#000 70%, transparent); }
+.sohbet-kim { color: var(--metin); font-weight: 600; }
+.sohbet-meslek { color: var(--metin-3); }
+.sohbet-balon.tur-rapor, .sohbet-balon.tur-kapandi { border-color: color-mix(in srgb, var(--iyi) 45%, var(--cizgi)); }
+.sohbet-balon.tur-ret { border-color: color-mix(in srgb, var(--kotu) 45%, var(--cizgi)); }
+.sohbet-balon.tur-soru, .sohbet-balon.tur-onay { border-color: color-mix(in srgb, var(--bekleyen) 45%, var(--cizgi)); }
+.sohbet-altlar { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 7px; }
+.sohbet-cip { font: inherit; font-size: var(--yz-mikro); padding: 2px 8px; border-radius: 99px;
+  border: 1px solid var(--cizgi); background: transparent; color: var(--metin-2); cursor: pointer; }
+.sohbet-cip:hover { border-color: var(--vurgu); color: var(--metin); }
+.sohbet-cip.durum-calisiyor { border-color: var(--iyi); color: var(--iyi); }
+.sohbet-cip.durum-inceleme { border-color: var(--uyari); color: var(--uyari); }
+.sohbet-cip.durum-bitti { border-color: color-mix(in srgb, var(--iyi) 50%, var(--cizgi)); }
+.takim-bas { display: flex; flex-wrap: wrap; gap: 4px 6px; align-items: baseline;
+  font-size: var(--yz-alt); color: var(--metin-2); padding: 2px 2px 8px;
+  border-bottom: 1px solid var(--cizgi); margin-bottom: 8px; }
+.takim-ipucu { flex-basis: 100%; font-size: var(--yz-mikro); color: var(--metin-3); }
 .sohbet-balon.akiyor .sohbet-yazi::after { content: "▍"; color: var(--vurgu);
   animation: akis-imlec 1s steps(2) infinite; }
 @keyframes akis-imlec { 50% { opacity: 0; } }

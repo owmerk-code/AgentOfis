@@ -43,7 +43,12 @@ _IS = re.compile(r"^\s*(?:is|iş|IS|İŞ|Is|İş)\s*[:\-]\s*(.*)$", re.S)
 #: Akista gosterilen olaylar. Terminal olaylari (arac, cikti, nabiz)
 #: GIRMEZ: sohbet bir kayit defteri degil, konusmadir.
 AKIS_OLAYLARI = ("rapor", "gorev_acildi", "kapandi", "ret", "onay_istendi")
-AZAMI_METIN = 600
+#: Akista metin KESILMEZ (4000 = cevap siniri, yalniz bellek korumasi).
+#: OLCULDU (29.09.2026): ilk surum her ogeyi 600 harfte kesiyordu ve
+#: liderin uzun cevabi panelde "**3..." diye yarida kaldi -- eski sohbet
+#: panosu TAM gosteriyordu, yani yeni akis geriye gitmisti. Uzun metni
+#: katlamak ARAYUZUN isi ("Tamamini oku"), veriyi kirpmak degil.
+AZAMI_METIN = 4000
 
 
 class TakimHatasi(ValueError):
@@ -192,6 +197,22 @@ def akis(ofis, *, kanat_id=None, adet: int = 80) -> list:
     # Zaman saniye cozunurluklu: ayni saniyedekiler kendi tablosundaki
     # sirayla kalir (karar tablosunda odenen beraberlik tuzagi).
     ogeler.sort(key=lambda x: (x["an"] or "", x["sira"]))
+    ogeler = ogeler[-adet:]
+    # Kimin konustugu (meslegi) ve isin SU ANKI durumu: rakipteki gibi
+    # "Kamil Amca · frontend" ve bir durum etiketi. Durum defterden
+    # okunur, ogeye yazilmis eski hal degil -- "basliyor" diyen bir
+    # etiket is bittikten sonra da oyle kalirsa yanlis gosterir.
+    nolar = sorted({x["gorev_no"] for x in ogeler if x.get("gorev_no")})
+    durumlar = {}
+    if nolar:
+        with ofis.db.baglanti() as conn:
+            for r in conn.execute(
+                    "SELECT no, durum FROM gorev WHERE proje_id = ? AND no IN (%s)"
+                    % ",".join("?" * len(nolar)), (ofis.proje_id, *nolar)):
+                durumlar[r["no"]] = r["durum"]
     for x in ogeler:
         x.pop("sira", None)
-    return ogeler[-adet:]
+        a = kadro.get(x["kimden"])
+        x["meslek"] = (a or {}).get("meslek", "")
+        x["gorev_durum"] = durumlar.get(x.get("gorev_no"), "")
+    return ogeler

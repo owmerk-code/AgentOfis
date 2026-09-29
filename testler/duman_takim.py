@@ -145,6 +145,25 @@ sina("kanat suzgeci: PAZARLAMA yalniz kendi ajanlari",
      ak2 and all(x["kimden"] in ("insan", "ege", "ruzgar") and x["kime"] in ("", "insan", "ege", "ruzgar")
                  for x in ak2), str([(x["kimden"], x["kime"]) for x in ak2]))
 sina("akis adet siniri", len(takim.akis(ofis, adet=2)) == 2)
+# OLCULDU (29.09.2026): ilk surum 600 harfte KESIYORDU; liderin cevabi
+# panelde "**3..." diye yarida kaldi. Katlamak arayuzun isi.
+uzun = "madde " * 500
+mu = ofis.postane.soru_sor("insan", "demir", "uzun anlat", mod="uyandiran")
+ofis.postane.cevapla(mu["id"], uzun.strip(), cevaplayan="demir")
+cev = [x for x in takim.akis(ofis) if x["id"] == mu["id"] and x["tur"] == "cevap"]
+sina("uzun cevap KESILMEDEN geliyor", cev and len(cev[0]["metin"]) == len(uzun.strip()),
+     str(cev and len(cev[0]["metin"])))
+sina("konusanin meslegi geliyor (demir · lider)", cev and cev[0]["meslek"] == "lider")
+rap = [x for x in takim.akis(ofis) if x["tur"] == "rapor"]
+sina("is etiketi isin SU ANKI durumu", rap and rap[0]["gorev_durum"] == "calisiyor",
+     str(rap and rap[0]["gorev_durum"]))
+_js = (Path(__file__).resolve().parent.parent / "web" / "panel.js").read_text(encoding="utf-8")
+_balon = _js.split("function takimBalonu")[1].split("async function cizSohbet")[0]
+sina("panel: uzun metin 'Tamamini oku' ile katlaniyor",
+     "Tamamını oku" in _balon and "katli" in _balon)
+sina("panel: ajan mesajinda 'Terminalde goster'", "Terminalde göster" in _balon)
+sina("panel: ajan metni innerHTML ile BASILMIYOR",
+     "innerHTML" not in _balon and "innerHTML" not in _js.split("function kalinYaz")[1].split("}\n")[0])
 
 # ---------------------------------------------------------------------------
 print("\n3b. PATRONUN SORUSU TAKIMIN SON KONUSMASINI GORUR")
