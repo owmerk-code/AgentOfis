@@ -46,8 +46,8 @@ motor matrisinden geçmeden deftere girmez.
 
 ### Hesaplar ve model politikası
 
-- **Hesaplar:** Claude **Max 5x** · ChatGPT **Pro 5x** (29.09 kullanıcı:
-  Plus sabit düşünülmesin; ofisin codex evi:
+- **Hesaplar:** Claude **Max 5x** · ChatGPT **Plus** (şu an; **Pro 5x'e geçilecek**,
+  henüz alınmadı — tasarım Plus'a sabitlenmez; ofisin codex evi:
   omerjob34). `codex2` hesabı kayıp (kapalı). Gemini defterden çıkarıldı
   (24.09); Pro alınınca eklenti olarak geri takılır.
 - **Kullanıcı API değil ABONELİK kullanıyor:** maliyet **kota diliyle**
