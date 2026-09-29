@@ -12721,3 +12721,16 @@ gizli tarayıcısı da açıldı ama ajan onu hiç kullanmadı.
 
 Sınama: `duman_riskli` 214 (8 masaüstü komutu sorulur, 6 olağan komut
 serbest, izinle açılmaz, brifing cümlesi).
+
+## 30.09.2026 — Liderin akan cevabında iç gerekçe gösterilmiyor
+
+Kullanıcı (ekran görüntüsü): *"niye böyle cevap veriyor?"* Lider triyajda
+"kendi" dedi ve panelde "kendim yapıyorum — bölünmez… ~15 kat jeton…
+yapan inceleyemez…" aktı. Bu, triyaj JSON'undaki `gerekce` idi: liderin
+iç muhasebesi, patrona değil karar günlüğüne (zaten yazılıyor). Artık
+akan satır "Bu işi ben yapıyorum: <hedef>" (hedef gelene kadar yalnız
+etiket). `duman_sohbet` 113.
+
+Ayrıca `duman_panel`'deki "kabin kapalıyken paylaşıldı denmiyor"
+sınaması kullanıcının GERÇEK kabinine (9222) bakıyordu; kullanıcı kabini
+açınca kaldı. Kabin kapalı sahnesi artık açıkça kuruluyor (388/388).

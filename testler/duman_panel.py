@@ -351,6 +351,11 @@ def _kosu_bitsin(sn=60.0):
 # guvenilmez girdidir: sunucu yeniden suzer, metni kendisi kurar.
 _P.MOTOR_FABRIKASI = lambda ad, **kw: SahteMotor(
     cevap='{"karar": "cevap", "gerekce": "bilgi sorusu", "cevap": "Tamam."}')
+# Kabin KAPALI sahnesi ACIKCA kurulur. 30.09 olculdu: kullanici kendi
+# kabinini acinca bu sinama kaldi -- gercek 9222'ye bakiyordu.
+from ofis import kabin as _kb_mod  # noqa: E402
+_kb_durum_asil = _kb_mod.Kabin.durum
+_kb_mod.Kabin.durum = lambda self, *a, **k: {"acik": False}
 try:
     _oge = {"etiket": "button", "secici": "#al", "essiz": True,
             "metin": "Satin al", "url": "https://a.com/sepet?sid=TOKSIR9",
@@ -387,6 +392,7 @@ try:
 finally:
     _P.MOTOR_FABRIKASI = _yalniz_sahte
     _kosu_bitsin()
+    _kb_mod.Kabin.durum = _kb_durum_asil
 
 _js_o = (Path(__file__).resolve().parent.parent / "web" / "panel.js").read_text(encoding="utf-8")
 _bas = _js_o.index("img.onmousedown")

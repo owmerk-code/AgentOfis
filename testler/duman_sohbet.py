@@ -576,9 +576,14 @@ sina("json: karar henuz kapanmadiysa BOS (makine metni gosterilmez)",
      akis_metni('```json\n{"karar": "ce') == "")
 sina("json: cit/suslu parantezle baslayan henuz bos",
      akis_metni("```json\n") == "" and akis_metni("{") == "")
-sina("json: dagit yolunda yol + gerekce gosteriliyor",
+# 30.09: gerekce patrona AKMAZ (ic muhasebe, karar gunlugunde); hedef akar.
+sina("json: dagit yolunda GEREKCE akmiyor, yalniz etiket",
      akis_metni('{"karar":"dagit","gerekce":"Is iki kola bol') ==
-     "ekibe da\u011f\u0131t\u0131yorum \u2014 Is iki kola bol")
+     "Bu i\u015fi ekibe da\u011f\u0131t\u0131yorum\u2026")
+sina("json: hedef gelince NE yapilacagi akiyor",
+     akis_metni('{"karar":"kendi","gerekce":"15 kat jeton","cevap":"",'
+                '"hedef":"semuparfum.com\'u acip ekran goruntusu al') ==
+     "Bu i\u015fi ben yap\u0131yorum: semuparfum.com'u acip ekran goruntusu al")
 sina("duz metin (lider bicime uymadi) oldugu gibi akiyor",
      akis_metni("Selam patron") == "Selam patron")
 sina("rapor kipi oldugu gibi", akis_metni(" rapor ", "duz") == "rapor")

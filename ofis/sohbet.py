@@ -119,8 +119,16 @@ def _bellege_yaz(proje_id: str, mesaj_id: str, metin) -> None:
         else:
             _AKISLAR[(proje_id, mesaj_id)] = metin
 
-_KARAR_ETIKET = {"kendi": "kendim yapıyorum", "dagit": "ekibe dağıtıyorum",
-                 "kadro": "kadro öneriyorum", "cevap": "cevaplıyorum"}
+#: Patrona akan satirin basi. 30.09.2026: once "kendim yapiyorum — <GEREKCE>"
+#: akiyordu; kullanici "niye boyle cevap veriyor" dedi -- gerekce ("bolunmez,
+#: ~15 kat jeton, yapan inceleyemez") liderin ic muhasebesi, patrona degil
+#: karar gunlugune yazilir (zaten yaziliyor). Patron NE yapilacagini gorur:
+#: `hedef`. Hedef JSON'da gerekceden SONRA geldigi icin o gelene kadar
+#: yalniz etiket akar.
+_KARAR_ETIKET = {"kendi": "Bu işi ben yapıyorum",
+                 "dagit": "Bu işi ekibe dağıtıyorum",
+                 "kadro": "Bu iş için kadroya yeni bir ajan öneriyorum",
+                 "cevap": "Cevaplıyorum"}
 
 
 def _kismi_alan(metin: str, alan: str):
@@ -189,9 +197,9 @@ def akis_metni(ham: str, kip: str = "json") -> str:
     if karar == "cevap":
         cevap, _ = _kismi_alan(govde, "cevap")
         return (cevap or "").strip()
-    gerekce, _ = _kismi_alan(govde, "gerekce")
+    hedef, _ = _kismi_alan(govde, "hedef")
     bas = _KARAR_ETIKET.get(karar, karar)
-    return (bas + (" — " + gerekce.strip() if gerekce else "")).strip()
+    return (bas + (": " + hedef.strip() if hedef and hedef.strip() else "…")).strip()
 
 
 class AkisYazici:
