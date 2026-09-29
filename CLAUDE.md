@@ -150,6 +150,7 @@ matrisin ölçümüyle karşılaştırır.
 | `ofis/postane.py` | Soru/onay, patronun notu (`NOT_KURALI`), imza/kapsam ile onay eşleştirme. |
 | `ofis/danisma.py` | Ajana sorulan soruyu teslim eder (araçsız, salt okunur); cevaplanamazsa insana yükseltir. |
 | `ofis/mcp_sunucu.py` | Ofis MCP: durum · kanit_ekle · karar_yaz · soru_sor · onay_iste · bilgi_yaz · gorev_ac · gorsel_uret/iste · video_uret/durum/iste · izin_sor (kanca) · giris_iste. Kimlik ORTAMDAN gelir. |
+| `ofis/izin.py` | Patronun ACIKCA istedigi riskli eylem (push, deploy) sorulmaz: lider planda patronun sozunden KELIMESI KELIMESINE alintiyla izin yazar, ofis sinifi olcer, olumsuz cumleyi reddeder; is basina ve kalici (insan). Para ve silme izinle acilmaz. |
 | `ofis/riskli.py` | Riskli eylem ölçütü (geri alınabilir mi · dışarı çıkıyor mu · para var mı) + sert durak; kabuk kuralları; araç adı polaritesi (okuma serbest, tanınmayan sorulur); şifre/kart alanı. |
 | `ofis/tarayici.py` · `tarayici_kapi.py` | Playwright MCP'yi bağlar (varsayılan serbest, riskli tıklama vekilde sorulur, sayfadaki gerçek adı okur); kabin CDP. |
 | `ofis/kabin.py` | Panelin içindeki paylaşılan başsız Chrome (kare akışı), öğe seçici. |
@@ -177,6 +178,9 @@ matrisin ölçümüyle karşılaştırır.
   kancası, Codex app-server onayı). Yerleşik dosya araçları serbest; kabukta
   silme · gönderim · yayın · sistem sorulur; bağlayıcıda okuma serbest,
   tanınmayan sorulur; onay "bir kez" ya da "bu iş boyunca".
+  **Patronun sözü izindir:** mesajında açıkça istediğin push/deploy o iş
+  için sorulmaz (kartta görünür, kaldırılabilir); para ve silme her zaman
+  sorulur; kalıcı izin yalnız insandan (`kabuk izin`).
 - **Tarayıcı:** her işte serbest; riskli tıklama ve beyan edilmemiş site
   (daraltılmış işte) sorulur; sayfadaki gizli talimat işaretlenir.
 - **Zincir:** limit/oturum düşünce aynı turda sıradaki hesaba devreder, devir
@@ -199,7 +203,7 @@ matrisin ölçümüyle karşılaştırır.
   medya · **F8** panel · **F9** masaüstü · **F10** kabul. Ayrıntı `PLAN.md`.
 - **Son işler:** liderin cevabı panelde akıyor; takım sohbeti (`@ajan`) ve
   kendi sütunu; "Ajanlar kabinde" (tarayıcılı tek iş panelde canlı).
-- **Sınamalar:** 40 duman dosyası, **3088/3088** (29.09). Deneme seti 15/15
+- **Sınamalar:** 41 duman dosyası, **3146/3146** (29.09). Deneme seti 15/15
   (Claude ve Codex, işçi+lider).
 - **Kullanıcının belirttiği eksikler (29.09):** her panoda her zaman açık
   yazma yeri; takım sohbeti panosunun İÇİNDE kutu (bugün yazılan yer

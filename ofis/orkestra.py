@@ -68,7 +68,7 @@ import json
 import re
 from concurrent.futures import ThreadPoolExecutor
 
-from . import baglayici, kullanim, roller, sartname, tarayici, tavan
+from . import baglayici, izin as izin_mod, kullanim, roller, sartname, tarayici, tavan
 from .klasor import klasorleri_dogrula, metinler
 from .koltuk import Koltuk, durdurma_istendi
 from .danisma import Danisma
@@ -154,7 +154,8 @@ class Orkestra:
     # -- 1. hedeften plana ---------------------------------------------------
 
     def plan_metni(self, hedef: str, kanat_id: str, hata: str = "",
-                   *, ek_klasorler=None, atanan: str = "") -> str:
+                   *, ek_klasorler=None, atanan: str = "",
+                   patron_sozu: str = "") -> str:
         """Lidere verilen planlama istegi.
 
         Kadro ISIMLERIYLE verilir: lider kimin ne yaptigini bilmeden
@@ -173,6 +174,14 @@ class Orkestra:
             "## HEDEF",
             "",
             hedef,
+        ]
+        if patron_sozu:
+            # Izin YALNIZ patronun kendi sozunden cikar; lider onu
+            # gormeden alinti yapamaz (hedef liderin yeniden yazimi
+            # olabilir).
+            satirlar += ["", "## PATRONUN KENDI SOZU (izin alintisi buradan, kelimesi kelimesine)",
+                         "", patron_sozu]
+        satirlar += [
             "",
         ]
         # KUNYE: bolen kisi "yapma" denen seyi bilmeli (bkz.
@@ -354,7 +363,8 @@ class Orkestra:
             '      "zorluk_gerekce": "zor/cok_zor ise NEDEN -- zorunlu",',
             '      "bekler": []',
             "    }",
-            "  ]",
+            "  ]" + (',' if patron_sozu else ''),
+        ] + (['  "izinler": []'] if patron_sozu else []) + [
             "}",
             "```",
             "",
@@ -392,6 +402,8 @@ class Orkestra:
             "- Birlestirme kolunu KENDINE de verebilirsin (`sahip` bos birak).",
             "  Ama o zaman inceleme insana duser: YAPAN INCELEYEMEZ.",
         ]
+        if patron_sozu:
+            satirlar += ["", izin_mod.plan_blogu()]
         if hata:
             satirlar += [
                 "",
@@ -446,7 +458,7 @@ class Orkestra:
         return chr(10).join(satirlar[:60])
 
     def _plani_dogrula(self, plan, kanat_id: str, ek_klasorler=None,
-                       atanan: str = "") -> str:
+                       atanan: str = "", patron_sozu: str = "") -> str:
         """Plani kapilardan gecirir. Sorun varsa ANLATAN metin doner."""
         if not isinstance(plan, dict):
             return "Plan JSON olarak okunamadi."
@@ -454,6 +466,12 @@ class Orkestra:
             return ("`gerekce` bos. Bolmek de bolmemek de gerekce ister -- "
                     "alti ay sonra 'bunu neden boyle yapmistik' sorusunun "
                     "cevabi o satirdir.")
+        # IZINLER patronun SOZUNE karsi dogrulanir (alinti + olumsuzluk
+        # + sinif). Gecersiz izin plani reddeder: ret ogretir.
+        _, izin_hatasi = izin_mod.plan_izinleri(plan.get("izinler"),
+                                                patron_sozu)
+        if izin_hatasi:
+            return izin_hatasi
         kollar = plan.get("kollar")
         if not isinstance(kollar, list) or not kollar:
             return "`kollar` bos. En az bir kol gerekli."
@@ -550,7 +568,8 @@ class Orkestra:
                   deneme: int = 2, ek_klasorler=None,
                   tarayici_alani=None, tarayici_yazma: bool = True,
                   baglayicilar=None, tarayici_kabin: bool = False,
-                  sartname_denetimi: bool = False, atanan: str = "") -> dict:
+                  sartname_denetimi: bool = False, atanan: str = "",
+                  patron_sozu: str = "") -> dict:
         """Lideri TEMIZ oturumda acar, bolme kararini ALDIRIR, gorevleri acar.
 
         Oturum kimligi verilmez: her planlama kendi temiz kafasiyla yapilir
@@ -566,11 +585,12 @@ class Orkestra:
         hata = ""
         for sira in range(max(1, deneme)):
             metin = self.plan_metni(hedef, kanat_id, hata,
-                                    ek_klasorler=ek_klasorler, atanan=atanan)
+                                    ek_klasorler=ek_klasorler, atanan=atanan,
+                                    patron_sozu=patron_sozu)
             cevap = self._lideri_kostur(lider, metin, butce_usd, zaman_asimi)
             plan = _json_ayikla(cevap)
             hata = self._plani_dogrula(plan, kanat_id, ek_klasorler,
-                                       atanan=atanan)
+                                       atanan=atanan, patron_sozu=patron_sozu)
             # KAPI GOREV BASINA BIR KEZ KOSAR, deneme basina degil.
             #
             # Olculdu (21.09.2026): tek bir sartname turu 46.773 jeton /
@@ -631,9 +651,27 @@ class Orkestra:
                         f"Bagimlilik kurulamadi #{acilan[sira]['no']} -> "
                         f"#{acilan[int(b)]['no']}: {exc}", ajan_ad=lider["ad"])
         acilan = [self.ofis.tahta.gorev(g["no"]) for g in acilan]
+
+        # PATRONUN IZINLERI her kola yazilir: patron hedefin tamami icin
+        # "pushla" dedi. Lider KAYNAK degildir -- izin patronun sozunden
+        # gelir, alintisiyla birlikte kayda gecer ve kartta gorunur.
+        izinler, _ = izin_mod.plan_izinleri(plan.get("izinler"), patron_sozu)
+        verilen = []
+        for iz in izinler:
+            for g in acilan:
+                try:
+                    izin_mod.tanimla(self.db, self.proje_id, desen=iz["desen"],
+                                     alinti=iz["alinti"], kaynak="patron_sozu",
+                                     veren="insan", gorev_id=g["id"])
+                except izin_mod.IzinHatasi as exc:
+                    self.db.olay_yaz(self.proje_id, "uyari",
+                                     f"Izin yazilamadi ({iz['desen']}): {exc}",
+                                     ajan_ad=lider["ad"], gorev_id=g["id"])
+                    continue
+            verilen.append(iz["desen"])
         return {"hedef": hedef, "bol": len(acilan) > 1,
                 "gerekce": plan["gerekce"], "gorevler": acilan,
-                "lider": lider["ad"]}
+                "lider": lider["ad"], "izinler": verilen}
 
     def _lider_sec(self, lider_ad: str, kanat_id) -> dict:
         """Hedefi kim dagitacak.

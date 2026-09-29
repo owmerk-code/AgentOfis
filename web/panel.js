@@ -90,6 +90,9 @@ const OLAY = {
   soru:          (o) => ["soru sordu", sagdanKes(o.govde), "bekleme"],
   cevap:         (o) => ["cevapladı", sagdanKes(o.govde), "bekleme"],
   onay_istendi:  (o) => ["onay istedi", sagdanKes(o.govde), "bekleme"],
+  izin_verildi:  (o) => ["izin verildi", o.govde, "dikkat"],
+  izinle_gecti:  (o) => ["izinle geçti (sorulmadı)", sagdanKes(o.govde), "dikkat"],
+  izin_kaldirildi: (o) => ["izin kaldırıldı", o.govde, ""],
   onay_cevabi:   (o) => ["onay yanıtlandı", o.govde, "bekleme"],
   karar:         (o) => ["karar yazdı", sagdanKes(o.govde), ""],
   olgu:          (o) => ["bilgi eklendi", o.govde, ""],
@@ -4239,6 +4242,30 @@ async function gorevAc(no) {
     cekAlan(c, "BAĞLI OLDUĞU ÜST HEDEF", g.ana_hedef);
     cekAlan(c, "KABUL ÖLÇÜTÜ", g.kabul_olcutu);
     cekAlan(c, "YAZMA ALANI (KİLİTLİ)", g.yazma_alani.join(" · ") || "—");
+    // IZINLER: patronun sozunden cikan (ya da kalici) izinler GORUNUR ve
+    // tek tikla kaldirilir. Ofis yanlis anladiysa insan hemen gorsun.
+    c.append(el("div", "cek-etiket", "SORULMADAN GEÇECEKLER (senin iznin)"));
+    if (!g.izinler || !g.izinler.length)
+      c.append(el("div", "cek-deger",
+        "Yok — riskli adımlar (push, deploy, silme, para) sana sorulur."));
+    for (const iz of (g.izinler || [])) {
+      const kk = el("div", "cek-eylem");
+      const ne = iz.gorev_id ? `senin sözün: "${kes(iz.alinti, 90)}"`
+                             : `kalıcı izin — ${kes(iz.gerekce, 90)}`;
+      kk.append(el("span", "etiket", iz.desen), el("span", "sonuk", ne));
+      const kb = el("button", "dugme olumsuz", "Kaldır");
+      kb.title = "Bu eylem bundan sonra yine sana sorulur.";
+      kb.onclick = async () => {
+        const r = await eylem(`/api/izin/${iz.id}/kaldir`,
+          { sebep: "panelden kaldırıldı" }, (r) => `izin kaldırıldı: ${r.desen}`);
+        if (r) gorevAc(g.no);
+      };
+      kk.append(kb);
+      c.append(kk);
+    }
+    if (g.izinler && g.izinler.length)
+      c.append(el("div", "sonuk",
+        "Para ve silme izinle açılmaz; her seferinde sorulur."));
     if (g.govde) cekAlan(c, "TARİF", g.govde);
     if (g.brifing)
       cekAlan(c, "BRİFİNG",

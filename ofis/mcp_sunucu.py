@@ -909,6 +909,16 @@ def arac_izin_sor(oturum: Oturum, args: dict) -> str:
             ajan_ad=oturum.ajan_ad, gorev_id=gorev_id)
         return izin()
 
+    # PATRONUN IZNI (ofis/izin.py): patron bu eylemi ACIKCA istediyse
+    # ya da kalici izin varsa SORULMAZ, ama kayda gecer. Para ve silme
+    # bu yoldan hic gecmez (izin.HER_ZAMAN_SORULUR).
+    from ofis import izin as izin_mod
+    iz = izin_mod.eslesen(ofis.db, oturum.proje_id, gorev_id, bulgu)
+    if iz:
+        izin_mod.gecti_kaydi(ofis.db, oturum.proje_id, izin=iz, bulgu=bulgu,
+                             ajan_ad=oturum.ajan_ad, gorev_id=gorev_id)
+        return izin()
+
     im = postane.imza(bulgu)
     for kayit in postane.onay_ara(oturum.ajan_ad, im,
                                   gorev_no=oturum.gorev_no):

@@ -508,6 +508,26 @@ CREATE TABLE IF NOT EXISTS kural (
 );
 
 -- ---------------------------------------------------------------------------
+-- IZIN: patronun ACIKCA istedigi riskli eylem sorulmaz (ofis/izin.py).
+-- `gorev_id` doluysa o isin (patronun sozunden), bossa KALICI (insan elle).
+-- Silinmez, kaldirilir. Para ve silme bu tabloya hic giremez.
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS izin (
+    id              TEXT PRIMARY KEY,
+    proje_id        TEXT NOT NULL REFERENCES proje(id),
+    gorev_id        TEXT REFERENCES gorev(id),
+    sinif           TEXT NOT NULL,
+    desen           TEXT NOT NULL,
+    alinti          TEXT NOT NULL DEFAULT '',
+    kaynak          TEXT NOT NULL,                  -- patron_sozu | insan
+    gerekce         TEXT NOT NULL DEFAULT '',
+    veren           TEXT NOT NULL,
+    olusturuldu     TEXT NOT NULL,
+    kaldirildi      TEXT,
+    kaldirma_sebebi TEXT NOT NULL DEFAULT ''
+);
+
+-- ---------------------------------------------------------------------------
 -- CANLI DEGISIM -- tur SURERKEN olculen ara fark (degisim.CanliIzleyici).
 --
 -- Ayri tablo, cunku ara olcum KESIN degildir: tur bitince silinir ve

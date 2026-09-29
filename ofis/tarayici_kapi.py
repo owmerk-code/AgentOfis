@@ -346,6 +346,13 @@ class OfisBagi:
         tek bir "evet" o eylem icin **surekli yetki** olurdu -- insan
         bir kez "bu urunu yayinla" der, ajan her urunu yayinlardi.
         """
+        # PATRONUN IZNI: "yayina al" dediyse "Yayinla" sorulmaz.
+        from ofis import izin as izin_mod
+        iz = izin_mod.eslesen(self.db, self.proje_id, self.gorev_id, bulgu)
+        if iz:
+            izin_mod.gecti_kaydi(self.db, self.proje_id, izin=iz, bulgu=bulgu,
+                                 ajan_ad=self.ajan, gorev_id=self.gorev_id)
+            return {"izin": True}
         im = self.imza(bulgu)
         for kayit in self._ayni_imzalar(im):
             if kayit["durum"] == "onaylandi" and not self._kullanildi_mi(

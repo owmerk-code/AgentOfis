@@ -665,7 +665,7 @@ class Sohbet:
                 zaman_asimi=zaman_asimi, ek_klasorler=ekler,
                 tarayici_alani=web or None,
                 tarayici_kabin=bool(web and tarayici_kabini),
-                atanan=atanan)
+                atanan=atanan, patron_sozu=mesaj)
         except OrkestraHatasi as exc:
             not_ = f"Plan alinamadi: {exc}"
             self.ofis.postane.cevapla(kayit["id"], not_, cevaplayan=lider["ad"])
@@ -676,10 +676,13 @@ class Sohbet:
         self._akis.not_yaz(_KARAR_ETIKET.get(karar["karar"], karar["karar"])
                            + " — ekip çalışıyor; bitince rapor buraya düşer. ("
                            + ", ".join(f"#{g['no']} {g['sahip'] or '-'}"
-                                       for g in plan["gorevler"]) + ")")
+                                       for g in plan["gorevler"]) + ")"
+                           + ("\nSorulmadan geçecek (senin sözün): "
+                              + ", ".join(plan.get("izinler") or [])
+                              if plan.get("izinler") else ""))
         self._akis.yeni_bolum("duz")
         yield {"tur": "plan", "govde": plan["gerekce"],
-               "ek": {"bol": plan["bol"],
+               "ek": {"bol": plan["bol"], "izinler": plan.get("izinler") or [],
                       "gorevler": [{"no": g["no"], "baslik": g["baslik"],
                                     "sahip": g["sahip"]}
                                    for g in plan["gorevler"]]}}

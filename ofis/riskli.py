@@ -135,7 +135,12 @@ def sadelestir(metin: str) -> str:
     """
     if not metin:
         return ""
-    metin = unicodedata.normalize("NFKD", str(metin))
+    # NOKTASIZ I (29.09.2026, olculdu): `ı` NFKD ile AYRISMAZ, oyle
+    # kaliyordu. Yani gercek Turkce yazimla "Yayınla", "Satın al",
+    # "Canlıya al" hicbir kaliba uymuyor ve kapidan SORULMADAN geciyordu;
+    # sinamalar hep ASCII ("Yayinla") yazdigi icin gorunmedi.
+    metin = str(metin).replace("ı", "i").replace("I", "i")
+    metin = unicodedata.normalize("NFKD", metin)
     metin = "".join(k for k in metin if not unicodedata.combining(k))
     return re.sub(r"\s+", " ", metin.lower()).strip()
 

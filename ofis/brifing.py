@@ -354,6 +354,12 @@ class Brifing:
                 satirlar.append(f"  - [{zaman}]"
                                 + ("" if n["okundu"] else " **YENI**")
                                 + f" {n['govde']}")
+        # PATRONUN IZINLERI her turda (devam dahil) soylenir: ajan izinli
+        # bir eylem icin `onay_iste` cagirip bosuna durmasin.
+        from .izin import brifing_blogu as izin_blogu
+        iz = izin_blogu(self.db, self.proje_id, g["id"])
+        if iz:
+            satirlar += ["", iz]
         blok = self.tahta.blokcular(no)
         if blok:
             satirlar += ["", "**Seni bekleten isler:**"]

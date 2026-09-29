@@ -299,13 +299,16 @@ def komut_hedef(a) -> None:
             tarayici_alani=a.web,
             tarayici_yazma=not bool(getattr(a, "web_salt_okur", False)),
             baglayicilar=a.baglayici,
-            sartname_denetimi=a.sartname)
+            sartname_denetimi=a.sartname,
+            patron_sozu=a.hedef)
     except OrkestraHatasi as exc:
         raise SystemExit(f"\nPlan alinamadi: {exc}")
 
     yaz(f"  karar  : {'BOLDU' if plan['bol'] else 'BOLMEDI'} "
         f"({len(plan['gorevler'])} is)")
     yaz(f"  gerekce: {plan['gerekce']}")
+    if plan.get("izinler"):
+        yaz(f"  sorulmadan gecer (senin sozun): {', '.join(plan['izinler'])}")
     yaz("")
     for g in plan["gorevler"]:
         alan = ", ".join(g["yazma_alani"]) or "dosya yazmiyor"
@@ -1222,6 +1225,51 @@ def komut_bilgi(a) -> None:
         yaz(f"- {o['konu']}: {o['icerik']}  ({o['kaynak'] or '-'})")
 
 
+def komut_izin(a) -> None:
+    """IZINLER -- patronun onceden izin verdigi riskli eylemler.
+
+    Kalici izin ("bu projede `git push origin test` hep serbest") yalniz
+    insandan gelir ve gerekce ister. Is izinleri patronun mesajindan
+    gelir; burada gorulur ve kaldirilabilir. PARA ve SILME izinle acilmaz.
+    """
+    from . import izin as izin_mod
+    ofis = ofis_ac(a.db, a.proje)
+    try:
+        if a.eylem == "ekle":
+            if not a.desen:
+                raise SystemExit('kullanim: izin ekle "git push origin test" '
+                                 '--gerekce "..." [--is NO]')
+            gid = ofis.tahta.gorev(int(a.is_no))["id"] if a.is_no else None
+            r = izin_mod.tanimla(ofis.db, ofis.proje_id, desen=a.desen,
+                                 veren="insan", kaynak="insan", gorev_id=gid,
+                                 gerekce=a.gerekce)
+            yaz(f"izin verildi: {r['desen']} ({izin_mod.IZIN_VERILEBILIR[r['sinif']]})"
+                + (f" -- yalniz #{a.is_no}" if gid else " -- KALICI"))
+            return
+        if a.eylem == "kaldir":
+            if not a.desen:
+                raise SystemExit("kullanim: izin kaldir IZIN_ID --sebep ...")
+            r = izin_mod.kaldir(ofis.db, ofis.proje_id, a.desen, sebep=a.sebep)
+            yaz(f"izin kaldirildi: {r['desen']}")
+            return
+    except izin_mod.IzinHatasi as exc:
+        raise SystemExit(str(exc))
+    kaliciler = izin_mod.liste(ofis.db, ofis.proje_id)
+    yaz(f"KALICI IZINLER ({len(kaliciler)}):")
+    for i in kaliciler:
+        yaz(f"  {i['id'][:8]}  {i['desen']}  -- {i['gerekce']}")
+    with ofis.db.baglanti() as c:
+        rows = c.execute(
+            "SELECT i.*, g.no FROM izin i JOIN gorev g ON g.id = i.gorev_id "
+            "WHERE i.proje_id = ? AND i.kaldirildi IS NULL AND g.durum NOT IN "
+            "('bitti','iptal') ORDER BY g.no", (ofis.proje_id,)).fetchall()
+    yaz(f"ACIK ISLERIN IZINLERI ({len(rows)}):")
+    for r in rows:
+        yaz(f"  {r['id'][:8]}  #{r['no']}  {r['desen']}  "
+            f"(patron: \"{r['alinti'][:60]}\")")
+    yaz("PARA ve SILME izinle acilmaz: her seferinde sorulur.")
+
+
 def komut_kural(a) -> None:
     """OFIS KURALLARI -- her brifinge KOSULSUZ girer, yalniz insandan.
 
@@ -2049,6 +2097,18 @@ def ayristirici() -> argparse.ArgumentParser:
     bl.add_argument("konu", nargs="?", default="")
     bl.add_argument("icerik", nargs="?", default="")
     bl.set_defaults(islev=komut_bilgi)
+
+    iz = alt.add_parser("izin", help="patronun onceden verdigi izinler (push, deploy...)")
+    iz.add_argument("eylem", nargs="?", default="liste",
+                    choices=["liste", "ekle", "kaldir"])
+    iz.add_argument("desen", nargs="?", default="",
+                    help="`ekle` icin eylem (\"git push origin test\"), "
+                         "`kaldir` icin izin kimligi")
+    iz.add_argument("--gerekce", default="", help="kalici izin icin ZORUNLU")
+    iz.add_argument("--sebep", default="", help="kaldir icin ZORUNLU")
+    iz.add_argument("--is", dest="is_no", default="",
+                    help="yalniz bu is icin (verilmezse KALICI)")
+    iz.set_defaults(islev=komut_izin)
 
     kr = alt.add_parser("kural", help="OFIS KURALLARI -- her brifinge girer")
     kr.add_argument("eylem", nargs="?", default="liste",

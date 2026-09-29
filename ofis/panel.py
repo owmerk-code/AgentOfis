@@ -983,6 +983,8 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
                 "ORDER BY id DESC LIMIT 1", (g["id"],)).fetchone()
         g["kanitlar"] = ofis.tahta.kanitlar(no)
         g["blokcular"] = ofis.tahta.blokcular(no)
+        from . import izin as izin_mod
+        g["izinler"] = izin_mod.liste(db, ofis.proje_id, gorev_id=g["id"])
         g["brifing"] = dict(brifing) if brifing else None
         g["rapor"] = dict(rapor) if rapor else None
         return g
@@ -1859,6 +1861,18 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
         return {"durduruluyor": True,
                 "not": "Kosan turlar kesiliyor (kismi kanit korunur). Yarim "
                        "kalan is 'Surdur' ile kaldigi yerden devam eder."}
+
+    @uygulama.post("/api/izin/{izin_id}/kaldir")
+    def api_izin_kaldir(izin_id: str, govde: SebepGovdesi):
+        """Patronun verdigi izni geri alir. Sebep zorunlu; kural
+        `izin.kaldir`da (panel yalniz ona ulasan bir kapi)."""
+        from . import izin as izin_mod
+        ofis = ofis_ac()
+        try:
+            k = izin_mod.kaldir(db, ofis.proje_id, izin_id, sebep=govde.sebep)
+        except izin_mod.IzinHatasi as exc:
+            raise HTTPException(400, str(exc))
+        return {"id": k["id"], "desen": k["desen"]}
 
     @uygulama.post("/api/gorev/{no}/iptal")
     def api_iptal(no: int, govde: SebepGovdesi):

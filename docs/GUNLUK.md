@@ -12285,3 +12285,61 @@ yalnız güvenli adımları hızlandırır. Codex'te kanca düşerse AÇIK kald�
 
 Sıradaki ölçüm: kanca reddettikten sonra insan onaylayınca aynı adımın
 terminalde kaldığı yerden geçmesi (onay tüketilir, not terminale yazılır).
+
+## PATRONUN SÖZÜ İZİNDİR (29.09.2026) — `ofis/izin.py`
+
+Kullanıcı: *"git push deploy yapmanı istersem zaten söylüyorum, onay
+verdiğim için yapıyorsun; ben demeden bana sorarak yapıyorsun. Agent
+sistemimizde nasıl olacak?"* Kural onun burada yaşadığının aynısı:
+söylediği riskli iş sorulmaz, söylemediği sorulur, sıradan iş hiç sorulmaz.
+
+**Neden motora bırakılmadı:** ölçüldü, iki motorun izin kipi de görev
+metnindeki "push yap"ı patronun sözü sayıp sormadan yaptı. Görev metnini
+kimin yazdığını yalnız ofis biliyor.
+
+Kurulan:
+- Lider plan JSON'una `izinler: [{eylem, alinti}]` yazar; plan istemi
+  patronun KENDİ sözünü ayrı başlıkla taşır.
+- Ofis üç şeyi denetler, biri tutmazsa plan REDDEDİLİR (ret öğretir):
+  alıntı patronun mesajında kelimesi kelimesine geçiyor mu; alıntının
+  cümleciğinde olumsuzluk var mı ("push etme", "pushlama", "sakın" —
+  yanlış pozitif güvenli yöndür); desenin sınıfı ÖLÇÜLÜR (liderin
+  söylediği değil). `git`/`npm` gibi belirsiz desen, para, silme ve
+  `--force` izinle açılmaz.
+- İzin o hedeften açılan her işe yazılır, kartta "SORULMADAN GEÇECEKLER"
+  olarak görünür, tek tıkla kaldırılır. Kalıcı izin yalnız insandan,
+  gerekçeyle (`kabuk izin ekle "git push origin test" --gerekce ...`).
+- Kapı tek yerde: `izin_sor` (Claude kancası ve Codex app-server) ve
+  tarayıcı vekili aynı `izin.eslesen`i çağırır; eşleşme = aynı sınıf +
+  desenin sözcükleri komutta ardışık. Geçen eylem `izinle_gecti` olarak
+  kayda düşer. Defter okunamazsa eşleşme yok → sorulur (kapalı kalır).
+- Brifing ajana izinli desenleri söyler (boşuna `onay_iste` çağırmasın).
+
+**Yol boyunca bulunan açık (ÖNEMLİ):** `riskli.sadelestir` noktasız
+`ı`yı çevirmiyordu (NFKD onu ayırmaz). Gerçek Türkçe yazımla "Yayınla",
+"Satın al", "Canlıya al" hiçbir kalıba uymuyor, tarayıcı kapısından
+SORULMADAN geçiyordu. Sınamalar hep ASCII ("Yayinla") yazdığı için
+aylardır görünmedi. Düzeltildi, sınandı.
+
+**Gerçek modelle ölçüldü** (boş geçici klasör, lider sonnet, işçi haiku,
+yerel sahte uzak depo):
+
+| Patronun sözü | Liderin izni | Sonuç |
+|---|---|---|
+| "…commit et, sonra git push origin HEAD:main ile pushla. eski.txt'ye dokunma." | `git push origin HEAD:main` (alıntı birebir) | push SORULMADAN gitti (`izinle_gecti`), kart yok, eski.txt yerinde, iş kanıtla kapandı |
+| "…commit et. Sakın git push yapma, uzak depoya gönderme." | yok | push yapılmadı, kart yok, iş kapandı |
+
+İki koşu toplam ~$0,28 karşılığı (Claude kotası).
+
+Sınamalar: `testler/duman_izin.py` (58). On mutasyonun onu ateş etti
+(kapı izne bakmasın · olumsuzluk kalksın · alıntı denetimi kalksın ·
+başka işin izni geçsin · silme açılsın · --force geçsin · brifing
+söylemesin · noktasız i geri gelsin · orkestra yazmasın · panel
+göndermesin). Üçü önce testi ÇÖKERTTİ, korundu. Alıntı denetimi
+koparılınca olumsuzluk kapısı da tutuyor (iki kapı). Sohbet sınamasının
+sahte motoru triyajı "PATRONUN MESAJI" başlığından tanıyordu; plan
+istemindeki yeni başlık ayırt edici yapıldı. Tam takım **3146/3146**.
+
+Açık kalan: tur sürerken yazılan NOT ("şimdi pushla") izin sayılmıyor;
+izin yalnız işi başlatan mesajdan çıkar. Gerçek terminal kipinde onay
+sonrası devamın ölçümü sırada.
