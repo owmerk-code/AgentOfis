@@ -12343,3 +12343,40 @@ istemindeki yeni başlık ayırt edici yapıldı. Tam takım **3146/3146**.
 Açık kalan: tur sürerken yazılan NOT ("şimdi pushla") izin sayılmıyor;
 izin yalnız işi başlatan mesajdan çıkar. Gerçek terminal kipinde onay
 sonrası devamın ölçümü sırada.
+
+## GERÇEK TERMİNALDE ONAY SONRASI DEVAM ÖLÇÜLDÜ (29.09.2026) — `ofis/kanca.py`
+
+Soru: ajan gerçek Claude/Codex terminalinde (TUI) çalışırken ofis riskli
+adımı durdurur, insan onaylar — ajan kaldığı yerden devam ediyor mu?
+
+`ofis/kanca.py`: CLI'ın `PreToolUse` kancası. Girdiyi arka plan kipindeki
+AYNI kapıya (`mcp_sunucu.arac_izin_sor`) verir; riskli ölçüt, patronun
+izni, onay defteri, bir kez / iş boyunca — hepsi tek yerde. Her hata
+`deny` olur (Codex kanca patlarsa AÇIK kaldığı ölçülmüştü). `--oz-sinama`
+tur öncesi kancanın çalıştığını ve rm'i durdurduğunu ölçer.
+
+Ölçüm (boş geçici klasör, Claude haiku / Codex gpt-6-luna, gerçek TUI,
+ConPTY). Görev: a.txt yaz → sil.txt'yi rm ile sil → b.txt yaz.
+
+| | Claude (haiku) | Codex (gpt-6-luna) |
+|---|---|---|
+| a.txt (serbest) | sorulmadan yazıldı | sorulmadan yazıldı |
+| rm | kapıda durdu, kart düştü, ajan "onayınız gerekiyor" deyip BEKLEDİ | durdu, kart düştü, "durdum" dedi |
+| onay + terminale not | aynı komutu tekrar koştu, sil.txt silindi, b.txt yazıldı | aynısı |
+| onay_kullanildi / yeni kart | 1 / 0 | 1 / 0 |
+| onaydan devama | ~19 sn | ~19 sn |
+
+Yan sonuç: kapı `allow` dediği için Claude'un elle kipi soru sormuyor —
+**Auto kipi olmayan haiku da gerçek terminalde sorunsuz çalıştı.**
+
+Kendi iki hatam ölçümde çıktı: ilk `--oz-sinama` gerçek kimlikle koşup
+defterlere sahte "rm -rf /oz-sinama" kartı düşürüyordu (düzeltildi:
+kimlik silinir, sınandı); betiğim onayı o sahte karta verdi, ilk koşu
+geçersiz sayıldı.
+
+Sınama `testler/duman_kanca.py` (13, gerçek alt süreç). İki mutasyon ateş
+etti (öz-sınama kimliği silmesin · deny yerine allow).
+
+Açık: onaydan sonra terminale notu bugün betik yazdı; panelde "Onayla"
+basınca notu ofisin kendisinin yazması gerçek terminal kipiyle birlikte
+kurulacak. Ret yolu gerçek TUI'de ölçülmedi (arka plan kipinde ölçülü).

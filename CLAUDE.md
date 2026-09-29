@@ -150,6 +150,7 @@ matrisin ölçümüyle karşılaştırır.
 | `ofis/postane.py` | Soru/onay, patronun notu (`NOT_KURALI`), imza/kapsam ile onay eşleştirme. |
 | `ofis/danisma.py` | Ajana sorulan soruyu teslim eder (araçsız, salt okunur); cevaplanamazsa insana yükseltir. |
 | `ofis/mcp_sunucu.py` | Ofis MCP: durum · kanit_ekle · karar_yaz · soru_sor · onay_iste · bilgi_yaz · gorev_ac · gorsel_uret/iste · video_uret/durum/iste · izin_sor (kanca) · giris_iste. Kimlik ORTAMDAN gelir. |
+| `ofis/kanca.py` | Gerçek terminal (TUI) kancası: CLI'ın her araç çağrısını arka plan kipindeki AYNI kapıya sorar; hata = deny; `--oz-sinama`. |
 | `ofis/izin.py` | Patronun ACIKCA istedigi riskli eylem (push, deploy) sorulmaz: lider planda patronun sozunden KELIMESI KELIMESINE alintiyla izin yazar, ofis sinifi olcer, olumsuz cumleyi reddeder; is basina ve kalici (insan). Para ve silme izinle acilmaz. |
 | `ofis/riskli.py` | Riskli eylem ölçütü (geri alınabilir mi · dışarı çıkıyor mu · para var mı) + sert durak; kabuk kuralları; araç adı polaritesi (okuma serbest, tanınmayan sorulur); şifre/kart alanı. |
 | `ofis/tarayici.py` · `tarayici_kapi.py` | Playwright MCP'yi bağlar (varsayılan serbest, riskli tıklama vekilde sorulur, sayfadaki gerçek adı okur); kabin CDP. |
@@ -203,7 +204,7 @@ matrisin ölçümüyle karşılaştırır.
   medya · **F8** panel · **F9** masaüstü · **F10** kabul. Ayrıntı `PLAN.md`.
 - **Son işler:** liderin cevabı panelde akıyor; takım sohbeti (`@ajan`) ve
   kendi sütunu; "Ajanlar kabinde" (tarayıcılı tek iş panelde canlı).
-- **Sınamalar:** 41 duman dosyası, **3146/3146** (29.09). Deneme seti 15/15
+- **Sınamalar:** 42 duman dosyası, **3159/3159** (29.09). Deneme seti 15/15
   (Claude ve Codex, işçi+lider).
 - **Kullanıcının belirttiği eksikler (29.09):** her panoda her zaman açık
   yazma yeri; takım sohbeti panosunun İÇİNDE kutu (bugün yazılan yer
