@@ -264,6 +264,15 @@ class Orkestra:
             "cikar / para) patrona sorulur. Bir isi 'ajanin araci yok' diye "
             "insana havale etme.",
             "",
+            # 30.09 olculdu: "tarayiciyi ac ve youtube'a gir" -> lider
+            # "varsayilan tarayiciyi ac" yazdi, ajan patronun Chrome'unu
+            # acip masaustunu surdu.
+            "Patron 'tarayiciyi ac', 'siteye gir' derse bu OFISIN "
+            "tarayicisidir (panelde gorunen kabin ya da ajanin kendi "
+            "tarayicisi). Hedefe 'varsayilan tarayici', 'Chrome'u ac' ya "
+            "da 'masaustu ekran goruntusu' YAZMA; kanit sayfanin "
+            "`browser_take_screenshot` goruntusudur.",
+            "",
             "`tarayici_alani` alanini NORMALDE YAZMA. Yalniz bir isi BILEREK "
             "birkac siteyle SINIRLAMAK istersen doldur; doldurursan ajan "
             "listede olmayan her site icin patrona sormak zorunda kalir.",

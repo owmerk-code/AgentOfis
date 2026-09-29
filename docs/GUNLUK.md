@@ -12690,3 +12690,34 @@ Codex (luna) takım sohbetine dosyayı "dışarı paylaşım" sanıp onay istedi
 
 Sınamalar: `duman_ekler` 40, `duman_mcp` 146, `duman_tui` 48,
 `duman_guncelleme` 109, `duman_panel` 388, `duman_koltuk` (brifing yeri).
+
+
+## 30.09.2026 — "Tarayıcıyı aç" işinde ajan patronun Chrome'unu sürdü (kapı açığı kapandı)
+
+**Ölçüldü (gerçek ofis, #35):** patron "tarayıcıyı aç ve youtube'a gir"
+dedi. Lider hedefe "yerel makinede VARSAYILAN tarayıcıyı aç" yazdı. Çınar
+(codex, gerçek terminal) ofisin tarayıcısını kullanmadı:
+`python webbrowser.open` ile patronun Chrome'unu açtı, `WScript.Shell`
+`AppActivate`/`SendKeys` ile pencereleri öne aldı, `CopyFromScreen` ile
+bütün masaüstünün görüntüsünü aldı. **Kapı hiçbirini sormadı** (ölçüldü:
+beş komut da `None`). Kullanıcının kalıcı kuralı: kendi Chrome'u ve canlı
+masaüstü onaysız sürülmez. Kabin kullanılmadı çünkü "Ajanlar kabinde"
+anahtarı kapalıydı (`kabin_izle`, bilerek varsayılan kapalı); ajanın
+gizli tarayıcısı da açıldı ama ajan onu hiç kullanmadı.
+
+**Düzeltme:**
+- `riskli` yeni sınıf **masaustu** ("PATRONUN MASAÜSTÜ / TARAYICISI"):
+  webbrowser, os.startfile, pyautogui, `Start-Process <url|tarayıcı>`,
+  `start "" url`, `chrome.exe url`, WScript.Shell, SendKeys, AppActivate,
+  SetForegroundWindow/ShowWindow, fare/klavye olayı, CopyFromScreen,
+  ImageGrab. Olağan komutlar (`Get-Process chrome`, `Start-Process
+  notepad`, `curl url`, `npm start`) serbest kaldı.
+- `izin.HER_ZAMAN_SORULUR`'a girdi: patronun sözü de kalıcı izin de açmaz
+  ("tarayıcıyı aç" demek masaüstünü sürme izni değil).
+- Brifing (her işte): web sayfası için YALNIZ `browser_*`; kanıt
+  `browser_take_screenshot`.
+- Liderin plan istemi: "tarayıcıyı aç" = ofisin tarayıcısı; hedefe
+  "varsayılan tarayıcı / Chrome / masaüstü ekran görüntüsü" yazılmaz.
+
+Sınama: `duman_riskli` 214 (8 masaüstü komutu sorulur, 6 olağan komut
+serbest, izinle açılmaz, brifing cümlesi).

@@ -913,5 +913,30 @@ for komut in (_PS + "'Get-ChildItem -Force'", _PS + "'python ozet.py'",
     sina(f"zararsiz sarili komut SERBEST {komut[-24:]!r}",
          R.arac_degerlendir("Bash", {"command": komut}) is None)
 
+print("\n-- MASAUSTU / PATRONUN TARAYICISI (30.09, gercek ofiste olculdu) --")
+# Ajan "tarayiciyi ac" isinde patronun Chrome'unu acti, SendKeys ile
+# pencereleri surdu, butun ekrani yakaladi -- kapi hicbirini sormadi.
+for komut in (
+        'python -c "import webbrowser; print(webbrowser.open(\'https://www.youtube.com\'))"',
+        "$s = New-Object -ComObject WScript.Shell; $s.AppActivate('Chrome'); $s.SendKeys('^{9}')",
+        "Add-Type -AssemblyName System.Drawing; $g.CopyFromScreen(0, 0, 0, 0, $b.Size)",
+        "Start-Process https://www.youtube.com",
+        "powershell.exe -Command 'Start-Process \"https://youtube.com\"'",
+        'start "" https://x.com',
+        r'"C:\Program Files\Google\Chrome\Application\chrome.exe" https://youtube.com',
+        "[Win32]::SetForegroundWindow($h)"):
+    _b = R.arac_degerlendir("Bash", {"command": komut})
+    sina(f"masaustu SORULUR: {komut[:50]}", bool(_b) and _b["sinif"] == "masaustu"
+         and _b["sorulur"], str(_b and _b["sinif"]))
+for komut in ("Get-Process chrome", "Start-Process notepad", "curl https://youtube.com",
+              "npm start", "echo screenshot", "Start-Process python -ArgumentList app.py"):
+    sina(f"  olagan komut serbest: {komut}",
+         R.arac_degerlendir("Bash", {"command": komut}) is None)
+from ofis import izin as _iz  # noqa: E402
+sina("masaustu IZINLE ACILAMAZ (patron sozu de kalici izin de)",
+     "masaustu" in _iz.HER_ZAMAN_SORULUR and "masaustu" not in _iz.IZIN_VERILEBILIR)
+sina("brifing ofisin tarayicisini soyluyor, masaustunu yasakliyor",
+     "YALNIZ ofisin" in R.brifing_blogu() and "SendKeys" in R.brifing_blogu())
+
 print(f"\n== sonuc: {GECEN} gecti, {KALAN} kaldi ==")
 sys.exit(1 if KALAN else 0)

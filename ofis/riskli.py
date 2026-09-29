@@ -267,6 +267,9 @@ SINIFLAR = {
     # 28.09: sifre / dogrulama kodu alanina AJANIN yazmasi. Sifre ajanin
     # elinde olmamali (bkz. giris.py); oradaysa bir yerden sizmistir.
     "kimlik":   ("SIFRE / KIMLIK BILGISI YAZMA", "yuksek"),
+    # 30.09: patronun kendi tarayicisini acmak, masaustu pencerelerine
+    # tus gondermek, ekrani yakalamak. Bkz. KABUK_KURALLARI "masaustu".
+    "masaustu": ("PATRONUN MASAUSTU / TARAYICISI", "yuksek"),
 }
 
 #: Kimlik alani: sifre, dogrulama kodu, kart. Dile bagli ama alan adi
@@ -624,6 +627,24 @@ KABUK_KURALLARI = (
         r"\bdocker\s+push\b", r"\bgh\s+release\s+create\b", r"\bdeploy\b",
         r"\bwrangler\s+(?:deploy|publish)\b", r"\bkubectl\s+(?:apply|delete)\b",
     ))),
+    # MASAUSTU (30.09.2026). OLCULDU, gercek ofis: patron "tarayiciyi ac
+    # ve youtube'a gir" dedi; codex ajani ofisin tarayicisini degil
+    # `python webbrowser.open` ile PATRONUN Chrome'unu acti, sonra
+    # WScript.Shell AppActivate/SendKeys ile pencereleri surdu ve butun
+    # masaustunun ekran goruntusunu aldi (CopyFromScreen). Kapi bunlarin
+    # HICBIRINI sormadi. Kural (kullanici): kullanicinin kendi Chrome'u
+    # ve canli masaustu onaysiz surulmez. Bu sinif izinle ACILMAZ.
+    ("masaustu", _kur((
+        r"\bwebbrowser\b", r"\bos\.startfile\b", r"\bpyautogui\b",
+        r"\bstart-process\b[^|;&]*(?:https?:|www\.|chrome|msedge|firefox)",
+        _B + r"start\s+(?:\"[^\"]*\"\s+)?(?:https?:|www\.|chrome|msedge|firefox)",
+        r"\b(?:chrome|msedge|firefox|explorer)(?:\.exe)?[\"']?\s+[^|;&]*(?:https?:|www\.)",
+        r"\binvoke-item\b[^|;&]*https?:", r"\bxdg-open\b", _B + r"open\s+https?:",
+        r"\bwscript\.shell\b", r"\bsendkeys\b", r"\bappactivate\b",
+        r"\bsetforegroundwindow\b", r"\bshowwindow\b", r"\bsetcursorpos\b",
+        r"\bmouse_event\b", r"\bkeybd_event\b", r"\bsendinput\b",
+        r"\bcopyfromscreen\b", r"\bimagegrab\b", r"\bscreenshot\s*\(",
+    ))),
     ("sistem", _kur((
         r"\bshutdown\b", r"\brestart-computer\b", r"\bstop-computer\b",
         _B + r"reboot\b", r"\breg\s+(?:delete|add)\b", _B + r"setx\b",
@@ -836,6 +857,16 @@ def brifing_blogu(tarayici_var: bool = False, *, serbest: bool = False) -> str:
     # beyan disi site zaten patrona SORULUYORDU (vekil) ve artik
     # tarayici varsayilan olarak SERBEST. Soylenen kural uygulanan
     # kuraldan farkliysa ajan yanlis olani ogrenir.
+    # 30.09: ajan ofisin tarayicisi yerine patronun Chrome'unu acti.
+    parcalar += [
+        "",
+        "TARAYICI ve EKRAN: web sayfasi gereken iste YALNIZ ofisin "
+        "tarayici araclarini (`browser_*`) kullan. Patronun kendi "
+        "tarayicisini ya da masaustunu ACMA/SURME (webbrowser, "
+        "Start-Process <url>, SendKeys, pencere one alma, ekrani "
+        "yakalama): bunlar patrona SORULUR. Sayfanin goruntusu "
+        "gerekiyorsa `browser_take_screenshot`.",
+    ]
     if tarayici_var and serbest:
         parcalar += [
             "",

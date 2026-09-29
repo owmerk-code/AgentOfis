@@ -73,6 +73,9 @@ HER_ZAMAN_SORULUR = {
     "belirsiz": "RISKLI SAYFADA ONAY",
     "kod": "SAYFAYI DEGISTIREN KOD",
     "bilinmiyor": "TANINMAYAN ARAC",
+    # 30.09: kullanicinin kurali -- canli masaustu ve kendi tarayicisi
+    # onaysiz surulmez; "tarayiciyi ac" demek masaustunu surme izni degil.
+    "masaustu": "PATRONUN MASAUSTU / TARAYICISI",
 }
 
 #: Izin verilmis sinifta bile ZORLA/YIKICI bicim gecmez: "pushla" demek
