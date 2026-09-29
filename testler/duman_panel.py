@@ -750,7 +750,8 @@ sina("panel iptal yolunu bagliyor", "/iptal`" in _js6)
 sina("panel kosarken DURDUR dugmesi sunuyor", '"/api/durdur"' in _js6)
 sina("panel yetenek panosunu bagliyor", '"/api/yetenek' in _js6)
 sina("panel aramayi bagliyor", '"/api/ara?q="' in _js6)
-sina("panel lider SOHBETINI gosteriyor", '"/api/sohbet"' in _js6)
+sina("panel TAKIM SOHBETINI gosteriyor (lider + ajanlar tek akis)",
+     '"/api/takim' in _js6)
 sina("panel takim kurmayi bagliyor", '"/api/kanat"' in _js6)
 sina("panel ajana sormayi bagliyor", '"/api/ajana-sor"' in _js6)
 _ara_js = _js6[_js6.index("async function araAc"):_js6.index("async function araAc") + 2500]

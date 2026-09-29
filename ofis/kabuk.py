@@ -174,12 +174,46 @@ def komut_konus(a) -> None:
     for e in ekler:
         yaz(f"  + klasor acildi: {e}")
     yaz("")
+    # TAKIM SOHBETI: `@ad` ile yazilan satir panelle AYNI yonlendiriciden
+    # gecer (`takim.yonlendir`) -- iki yuzey iki ayri kural tasimasin.
+    from . import takim as _takim
+    try:
+        yon = _takim.yonlendir(ofis, a.mesaj)
+    except _takim.TakimHatasi as exc:
+        raise SystemExit(str(exc))
+    if yon["yol"] == "not":
+        from .postane import PostaneHatasi
+        try:
+            ofis.postane.not_birak(yon["ajan"], yon["metin"],
+                                   gorev_no=yon["gorev_no"])
+        except PostaneHatasi as exc:
+            raise SystemExit(str(exc))
+        yaz(f"NOT -> {yon['ajan']} (#{yon['gorev_no']}): calisirken ulasir; "
+            "ulasinca kayda gecer.")
+        return
+    if yon["yol"] == "soru":
+        m = ofis.postane.soru_sor("insan", yon["ajan"], yon["metin"],
+                                  mod="uyandiran")
+        with ofis.db.baglanti() as conn:
+            m = dict(conn.execute(
+                "SELECT m.*, g.no AS gorev_no FROM mesaj m LEFT JOIN gorev g "
+                "ON g.id = m.gorev_id WHERE m.id = ?", (m["id"],)).fetchone())
+        sonuc = ofis.danisma.insana_cevapla(m, zaman_asimi=a.zaman_asimi)
+        yaz(f"{yon['ajan'].upper()} (salt okunur cevap):")
+        yaz(sonuc["cevap"])
+        return
+    if yon["yol"] == "is":
+        yaz(f"IS -> {yon['ajan']} (plani {yon['lider']} yazar: olcut, "
+            "yazma alani, kanit)")
+        yaz("")
     try:
         for olay in ofis.sohbet.konus(
-                a.mesaj, lider_ad=a.lider or "", butce_usd=None,
+                yon["metin"], lider_ad=(yon["lider"] or a.lider or ""),
+                butce_usd=None,
                 zaman_asimi=a.zaman_asimi, azami_tik=a.azami_tik,
                 paralel=a.paralel, izinli_araclar=tuple(a.izin),
-                ek_klasorler=ekler):
+                ek_klasorler=ekler,
+                atanan=(yon["ajan"] if yon["yol"] == "is" else "")):
             if olay["tur"] == "triyaj":
                 # `.get` ile: bilinmeyen bir yol eklendiginde komut
                 # KeyError ile PATLAMASIN. Dorduncu yol (`kadro`)
@@ -235,7 +269,10 @@ def komut_konus(a) -> None:
                 yaz("LIDERIN RAPORU")
                 yaz("=" * 60)
                 yaz(olay["govde"])
-    except SohbetHatasi as exc:
+    except (SohbetHatasi, OrkestraHatasi) as exc:
+        # OrkestraHatasi da: iki liderli ofiste `konus` lider SECEMEZ ve
+        # bunu soyler -- yakalanmadiginda insana yigin izi dusuyordu
+        # (takim sohbeti mutasyonu gosterdi, 29.09.2026).
         raise SystemExit("Liderle konusulamadi: " + str(exc))
     yaz("")
     _durum_yaz(ofis)

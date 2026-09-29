@@ -504,7 +504,8 @@ class Sohbet:
     def _konus(self, mesaj: str, *, lider_ad: str = "", butce_usd=None,
                zaman_asimi=None, azami_tik: int = 8, paralel: int = 3,
                izinli_araclar: tuple = (), ek_klasorler=None,
-               tarayici_alani=None, tarayici_kabini: str = ""):
+               tarayici_alani=None, tarayici_kabini: str = "",
+               atanan: str = ""):
         mesaj = (mesaj or "").strip()
         if not mesaj:
             raise SohbetHatasi("Bos mesaj gonderilemez.")
@@ -514,8 +515,28 @@ class Sohbet:
         ekler = metinler(klasorleri_dogrula(ek_klasorler))
 
         lider = self.orkestra._lider_sec(lider_ad, None)
-        kayit = self.ofis.postane.soru_sor("insan", lider["ad"], mesaj,
-                                           mod="uyandiran")
+        atanan = (atanan or "").strip()
+        if atanan:
+            # TAKIM SOHBETI: `@ad is: ...`. Is yine LIDERIN planindan
+            # gecer (olcut, yazma alani, kanit kapisi); yalniz KIMIN
+            # yapacagi patronun. Ajan var mi, isci mi -- burada olculur,
+            # plan kapisina kalmasin (orada her deneme bir lider turu).
+            try:
+                hedef_ajan = self.ofis.kadro.ajan(atanan)
+            except Exception:
+                adlar = ", ".join(a["ad"] for a in self.ofis.kadro.liste())
+                raise SohbetHatasi(f"'{atanan}' diye bir ajan yok. Ajanlar: {adlar}")
+            if hedef_ajan["lider_mi"]:
+                raise SohbetHatasi(
+                    f"{atanan} lider: lider is DAGITIR ve inceler, isi isci yapar. "
+                    "Isi lidere dogrudan yaz (@ olmadan).")
+            if hedef_ajan["kanat_id"] != lider["kanat_id"]:
+                raise SohbetHatasi(
+                    f"{atanan} bu liderin takiminda degil; isi kendi takiminin "
+                    "liderine ver.")
+        kayit = self.ofis.postane.soru_sor(
+            "insan", lider["ad"],
+            (f"@{atanan} is: {mesaj}" if atanan else mesaj), mod="uyandiran")
         self._akis = AkisYazici(self.db, self.proje_id, kayit["id"])
 
         if ekler:
@@ -539,8 +560,17 @@ class Sohbet:
                 + (" (PAYLASILAN kabin)" if tarayici_kabini else ""),
                 ajan_ad="insan")
 
-        karar = self._triyaj(lider, mesaj, butce_usd, zaman_asimi,
-                             ek_klasorler=ekler)
+        if atanan:
+            # Triyaj SORULMAZ: patron bunun bir IS oldugunu ve kimin
+            # yapacagini soyledi. Bir lider turu (9-27 sn) kazanilir ve
+            # "cevap" yoluna dusup isin hic acilmamasi riski kalkar.
+            karar = {"karar": "dagit",
+                     "gerekce": f"Patron isi takim sohbetinde dogrudan "
+                                f"@{atanan}'a verdi.",
+                     "hedef": mesaj}
+        else:
+            karar = self._triyaj(lider, mesaj, butce_usd, zaman_asimi,
+                                 ek_klasorler=ekler)
         yield {"tur": "triyaj", "govde": karar["karar"],
                "ek": {"gerekce": karar.get("gerekce", ""),
                       "hedef": karar.get("hedef", "")}}
@@ -634,7 +664,8 @@ class Sohbet:
                 hedef, lider_ad=lider["ad"], butce_usd=butce_usd,
                 zaman_asimi=zaman_asimi, ek_klasorler=ekler,
                 tarayici_alani=web or None,
-                tarayici_kabin=bool(web and tarayici_kabini))
+                tarayici_kabin=bool(web and tarayici_kabini),
+                atanan=atanan)
         except OrkestraHatasi as exc:
             not_ = f"Plan alinamadi: {exc}"
             self.ofis.postane.cevapla(kayit["id"], not_, cevaplayan=lider["ad"])

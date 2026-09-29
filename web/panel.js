@@ -3085,34 +3085,46 @@ function yetenekYaz(kap, v, an) {
 /* LIDER SOHBETI. Defterden okunur (`/api/sohbet`); cevap gelmemisse
    "dusunuyor" yazar ve kosu durumunu soyler -- bos bir cevap uydurmaz. */
 async function cizSohbet(kap) {
+  // TAKIM SOHBETI (29.09.2026): lidere yazilanlar, `@ajan` sorulari ve
+  // notlari, cevaplar, ajanlarin birbirine sorulari, raporlar ve
+  // hukumler TEK akista. Akis sunucuda defterden turetilir; burada
+  // yalniz cizim var, karar yok. Gorunus en son tasarlanacak.
   let r;
-  try { r = await al("/api/sohbet"); }
+  try { r = await al("/api/takim" + (D.kanat ? "?kanat=" + D.kanat : "")); }
   catch (e) { return kap.append(el("div", "form-ipucu uyari", "sohbet okunamadı: " + e.message)); }
-  if (!r.mesajlar.length)
+  const ogeler = r.ogeler || [];
+  if (!ogeler.length)
     return kap.append(el("div", "bos-yazi",
-      "Henüz lidere bir şey yazmadın. Alttaki satıra yaz — lider cevaplar, " +
-      "gerekirse işi dağıtır ve sonunda buraya rapor verir."));
-  for (const m of r.mesajlar) {
-    const i = el("div", "sohbet-balon insan");
-    i.append(el("div", "sohbet-ust", `sen → ${m.alici} · ${saat(m.olusturuldu)}`),
-             document.createTextNode(m.govde));
-    kap.append(i);
-    const l = el("div", "sohbet-balon lider" + (m.cevap ? "" : (m.akis ? " akiyor" : " bekliyor")));
-    if (!m.cevap) l.dataset.mesaj = m.id;
-    l.append(el("div", "sohbet-ust", m.cevap
-      ? `${m.alici} · ${saat(m.cevaplandi)}` + (m.gorev_no ? ` · #${m.gorev_no}` : "")
-      : `${m.alici}`));
-    const dusunuyor = (r.kosu && r.kosu.calisiyor)
-      || (r.danisma && r.danisma.calisiyor && r.danisma.ajan === m.alici);
-    const govde = el("span", "sohbet-yazi");
-    govde.textContent = m.cevap || m.akis || (dusunuyor
-      ? "düşünüyor…"
-      : "cevap gelmedi (tur yarıda kalmış olabilir; günlükte 'hata' var mı bak).");
-    l.append(govde);
-    kap.append(l);
+      "Takım sohbeti boş. Alttaki satıra yaz: adres yoksa lidere gider; " +
+      "@ad ile bir ajana sorarsın (elinde iş varsa not olur), " +
+      "@ad iş: … ile işi o ajana verirsin."));
+  const TUR = { sohbet: "", soru: "soru", not: "not", cevap: "", rapor: "rapor",
+                is: "iş açıldı", kapandi: "kapandı", ret: "geri gönderildi", onay: "onay istiyor" };
+  const kosuyor = (r.kosu && r.kosu.calisiyor) || (r.danisma && r.danisma.calisiyor);
+  for (const x of ogeler) {
+    const insan = x.kimden === "insan";
+    const b = el("div", "sohbet-balon " + (insan ? "insan" : "lider"));
+    const kime = x.kime ? " → " + (x.kime === "insan" ? "sen" : x.kime) : "";
+    const ek = [TUR[x.tur], x.gorev_no ? "#" + x.gorev_no : "",
+                x.tur === "not" ? (x.ulasti ? "ulaştı" : "iletilecek") : ""]
+               .filter(Boolean).join(" · ");
+    b.append(el("div", "sohbet-ust",
+      `${insan ? "sen" : x.kimden}${kime}${ek ? " · " + ek : ""} · ${saat(x.an)}`));
+    const yazi = el("span", "sohbet-yazi"); yazi.textContent = x.metin; b.append(yazi);
+    kap.append(b);
+    if (x.bekliyor && x.tur !== "not") {
+      // Cevap henuz yok: yer tutucu. Liderin yazilmakta olan cevabi akar.
+      const l = el("div", "sohbet-balon lider " + (x.akis ? "akiyor" : "bekliyor"));
+      l.dataset.mesaj = x.id;
+      l.append(el("div", "sohbet-ust", x.kime));
+      const y = el("span", "sohbet-yazi");
+      y.textContent = x.akis || (kosuyor ? "düşünüyor…"
+        : "cevap gelmedi (tur yarıda kalmış olabilir; günlükte 'hata' var mı bak).");
+      l.append(y); kap.append(l);
+    }
   }
   kap.scrollTop = kap.scrollHeight;
-  if (r.kosu && r.kosu.calisiyor) sohbetAkisIzle();
+  if (kosuyor) sohbetAkisIzle();
 }
 
 /* CEVAP YAZILIRKEN AKAR (29.09.2026). Lider kosarken yalniz AKAN metin
@@ -4847,7 +4859,10 @@ async function komutGonder() {
           + (r.kabin ? " (paylaşılan kabin)" : " (kabin kapalı: ayrı tarayıcı)")
         : "öğe eklendi (sayfa bir web kaynağı değil, tarayıcı açılmadı)", "iyi");
     }
-    girdi.placeholder = "Lider çalışıyor…";
+    girdi.placeholder = r && r.yol === "not" ? `not ${r.alici}'a iletilecek`
+      : r && r.yol === "soru" ? `${r.alici} düşünüyor…`
+      : r && r.yol === "is" ? `iş ${r.atanan}'a veriliyor (planı ${r.alici} yazar)…`
+      : "Lider çalışıyor…";
     // Cevap SOHBET panosuna duser; insan nereye bakacagini aramasin.
     if (D.yerlesim) panoSec("sohbet");
   } catch (e) {

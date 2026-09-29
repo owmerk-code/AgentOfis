@@ -245,7 +245,8 @@ def _proje_id_bul(db, proje_ad: str):
 
 
 def _lideri_kostur(db_yolu, proje_ad: str, mesaj: str,
-                   lider_ad: str = "", web=None, kabin_cdp: str = "") -> None:
+                   lider_ad: str = "", web=None, kabin_cdp: str = "",
+                   atanan: str = "") -> None:
     """Arka planda lider turu. Olaylar zaten deftere yazilir; panel onlari
     SSE ile gorur, yani burada ayrica bir kanal kurmaya gerek yok."""
     def isi(o):
@@ -257,7 +258,7 @@ def _lideri_kostur(db_yolu, proje_ad: str, mesaj: str,
         for _olay in sohbet.konus(mesaj, lider_ad=lider_ad,
                                   butce_usd=PANEL_TUR_TAVANI_USD,
                                   tarayici_alani=web or None,
-                                  tarayici_kabini=kabin_cdp):
+                                  tarayici_kabini=kabin_cdp, atanan=atanan):
             if _durdurulduysa(o, "Lider turu"):
                 break
     _arkada_calistir(db_yolu, proje_ad, isi, "lider turu")
@@ -2165,10 +2166,33 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
            sessizce kaybolurdu; `hata` olayina yazilir ve panele duser.
         """
         ofis = ofis_ac()
+        # TAKIM SOHBETI: satirin basindaki `@ad` kime gittigini soyler;
+        # ne olacagina ofisin var olan kurallari karar verir (`takim.py`).
+        from . import takim as _takim
+        try:
+            yon = _takim.yonlendir(ofis, govde.metin)
+        except _takim.TakimHatasi as exc:
+            raise HTTPException(400, str(exc))
+        if yon["yol"] == "not":
+            try:
+                m = ofis.postane.not_birak(yon["ajan"], yon["metin"],
+                                           gorev_no=yon["gorev_no"])
+            except PostaneHatasi as exc:
+                raise HTTPException(400, str(exc))
+            return {"yol": "not", "alici": yon["ajan"], "id": m["id"],
+                    "gorev_no": yon["gorev_no"], "kosuyor": False}
+        if yon["yol"] == "soru":
+            return dict(_ajana_sor_baslat(ofis, yon["ajan"], yon["metin"]),
+                        yol="soru", alici=yon["ajan"], kosuyor=False)
+        atanan = yon["ajan"] if yon["yol"] == "is" else ""
         liderler = [a for a in ofis.kadro.liste() if a["lider_mi"]]
         if not liderler:
             raise HTTPException(400, "Bu ofiste lider yok. Once lider ise al.")
-        if govde.kanat:
+        if yon["lider"]:
+            # `@lider_adi` ya da `@ajan is:` -- lider ADRESTEN gelir; secili
+            # kanat sekmesi baska bir takimi gosteriyor olsa bile.
+            lider = ofis.kadro.ajan(yon["lider"])
+        elif govde.kanat:
             eslesen = [a for a in liderler if str(a["kanat_id"]) == str(govde.kanat)]
             if not eslesen:
                 raise HTTPException(
@@ -2203,7 +2227,7 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
         # yetki insandan gelir -- isaret etmek, o kaynagi acmaktir.
         # Kabin aciksa is PAYLASILAN kabinde kosar (patronun oturumu);
         # kapaliysa ayri, oturumsuz tarayici -- ve blok bunu SOYLER.
-        metin, web, kabin_cdp = govde.metin, [], ""
+        metin, web, kabin_cdp = yon["metin"], [], ""
         oge = kabin.oge_ozeti(govde.oge) if govde.oge else None
         if govde.oge and not oge:
             raise HTTPException(400, "Secilen oge okunamadi; yeniden sec.")
@@ -2220,10 +2244,10 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
         _KOSU.update(dur=False, calisiyor=True, mesaj=govde.metin[:80])
         threading.Thread(target=_lideri_kostur,
                          args=(db.yol, proje_ad, metin, lider["ad"],
-                               web, kabin_cdp),
+                               web, kabin_cdp, atanan),
                          daemon=True).start()
-        return {"alici": lider["ad"], "kosuyor": True,
-                "tarayici": web, "kabin": bool(kabin_cdp)}
+        return {"yol": yon["yol"], "alici": lider["ad"], "atanan": atanan,
+                "kosuyor": True, "tarayici": web, "kabin": bool(kabin_cdp)}
 
     @uygulama.post("/api/ajana-sor")
     def api_ajana_sor(govde: AjanaSorGovdesi):
@@ -2236,14 +2260,18 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
         `uyandiran` kipinde yazilir: halka onu ajanin bekleyen sorusu
         sanip IKINCI kez teslim etmez ve ajanin isini durdurmaz.
         """
-        metin = govde.metin.strip()
+        return _ajana_sor_baslat(ofis_ac(), govde.ajan, govde.metin)
+
+    def _ajana_sor_baslat(ofis, ajan_ad: str, metin: str) -> dict:
+        """"Ajana sor" ile takim sohbetindeki `@ajan` sorusunun TEK yolu --
+        iki kopya olsaydi biri tek-ucus kilidini unuturdu."""
+        metin = (metin or "").strip()
         if not metin:
             raise HTTPException(400, "Bos soru sorulamaz.")
-        ofis = ofis_ac()
         try:
-            ajan = ofis.kadro.ajan(govde.ajan)
+            ajan = ofis.kadro.ajan(ajan_ad)
         except Exception:
-            raise HTTPException(400, f"'{govde.ajan}' diye bir ajan yok.")
+            raise HTTPException(400, f"'{ajan_ad}' diye bir ajan yok.")
         if _DANISMA["calisiyor"]:
             raise HTTPException(409, f"{_DANISMA['ajan']} su an bir soruyu "
                                      "cevapliyor -- bitmesini bekle.")
@@ -2283,6 +2311,22 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
             m["akis"] = "" if m["cevap"] else akan.get(str(m["id"]), "")
         return {"mesajlar": mesajlar,
                 "kosu": dict(_KOSU), "danisma": dict(_DANISMA)}
+
+    @uygulama.get("/api/takim")
+    def api_takim(kanat: str = "", adet: int = 80):
+        """Takim sohbeti: lidere yazilanlar, ajanlara sorular ve notlar,
+        cevaplar, ajanlarin birbirine sorulari, raporlar ve hukumler --
+        TEK akista, defterden TURETILIR (kopya yok). Liderin YAZILMAKTA
+        olan cevabi da bekleyen ogeye eklenir."""
+        from . import takim as _takim
+        from .sohbet import akislar
+        ofis = ofis_ac()
+        ogeler = _takim.akis(ofis, kanat_id=(kanat or None), adet=adet)
+        akan = akislar(ofis.db, ofis.proje_id)
+        for x in ogeler:
+            x["akis"] = akan.get(str(x["id"]), "") if x["bekliyor"] else ""
+        return {"ogeler": ogeler, "kosu": dict(_KOSU),
+                "danisma": dict(_DANISMA)}
 
     @uygulama.get("/api/sohbet/akis")
     def api_sohbet_akis():

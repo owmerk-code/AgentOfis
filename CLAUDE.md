@@ -12009,3 +12009,66 @@ ateş etti (JSON ayıklanmasın · bitirme silmesin · orkestra akıtmasın ·
 panel cevaplıda da göstersin · seyreltme kalksın).
 
 Toplam **2993/2993** (38 dosya).
+
+## TAKIM SOHBETİ (29.09.2026) — `@ajan` ile tek satırdan bütün ekip
+
+Kullanıcı Murat'ın yayınını izlerken: *"çekirdek takım sohbeti kurmuş."*
+Yayından bir dakika okundu (`.playwright-mcp/murat_canli_*.png`): insan
+yazıyor, mesaj doğrudan bir ajana gidiyor (`Sen → Kamil Amca`), ajan
+kendi rolüyle cevaplıyor, sonucunu aynı akışa bırakıyor. Terminalleri
+hâlâ `bypass permissions on`. Sesli orkestratör ve panel görünümü
+kullanıcı kararıyla **EN SONA** kaldı.
+
+Bizde parçaların hepsi vardı ama dağınıktı. `ofis/takim.py` yeni yetenek
+eklemiyor; **yönlendiriyor** ve **tek akış** veriyor:
+
+| yazılan | ne olur |
+|---|---|
+| (adres yok) / `@lider` / `@lider_adı` | lidere (triyaj) |
+| `@ajan` + elinde iş var | patronun NOTU (tur sürerken ulaşır) |
+| `@ajan` + boşta | SORU (danışma: salt okunur, araç yok) |
+| `@ajan iş: …` | İŞ — lider planlar, ama kolların sahibi ZORUNLU o ajan |
+
+- **Kapı atlanmaz.** Rakipte ajana doğrudan iş verilir, kanıt kapısı
+  yok. Bizde *kimin* yapacağı patronun, *neye bitti denir* (kabul
+  ölçütü, yazma alanı, kanıt) liderin. `_plani_dogrula(atanan=)` başka
+  sahipli planı REDDEDER ve ret lidere öğretilir. `iş:` yolunda triyaj
+  SORULMAZ (bir lider turu kazanılır; "cevap" yoluna düşüp işin hiç
+  açılmaması riski kalkar). Lidere `iş:`, başka takımın ajanına iş ve
+  bilinmeyen ad REDDEDİLİR (bilinmeyende geçerli adlar sayılır).
+- **Tek akış** (`takim.akis`, `/api/takim`): lidere yazılanlar ve
+  cevaplar, `@ajan` soruları/notları, ajanların birbirine soruları,
+  raporlar, iş açılışı, kapanış, geri gönderme, onay istekleri. Defterden
+  TÜRETİLİR, kopya yok; kanat süzgeçli. Terminal olayları girmez.
+- **Panel ve kabuk AYNI yönlendiriciden geçer** (`/api/lidere` ve
+  `kabuk konus "@ad …"`); "Ajana sor" ile `@ajan` sorusu tek işlev
+  (`_ajana_sor_baslat`).
+
+**Gerçek haiku ile uçtan uca** (boş geçici ofis): `@ege iş: slogan.md'ye
+2 slogan` → triyaj atlandı, lider planı ege'ye yazdı, ege yazdı, lider
+kanıtla KAPAT, rapor. 77–97 sn, 5 tur, $0,09–0,14 karşılığı.
+
+**Gerçek koşu bir boşluk gösterdi:** `@cem hangi sloganı daha iyi
+buldun?` → *"hangi sloganları görmüyorum"*. Danışma, patronla aynı
+odanın konuşmasını görmüyordu. Artık **patronun** sorusunda takım
+akışının son 8 satırı (400 harf) istemde; ajanlar ARASI danışmada
+verilmiyor (taze göz bilinçli). Tekrar koşuda cem sloganları görüp
+gerekçeli tercih söyledi.
+
+**Mutasyon bir eski kusuru gösterdi:** iki liderli ofiste adressiz
+`kabuk konus` `OrkestraHatasi` ile yığın izine düşüyordu; artık
+yakalanıyor ve sebep söyleniyor.
+
+`testler/duman_takim.py` **60**. On mutasyonun onu ateş etti; ikisi önce
+testi ÇÖKERTTİ (kabuk yardımcısı yalnız `SystemExit` yakalıyordu) —
+korundu. Yol boyunca: test sahtesi cevabını kuruluşta seçiyordu ve zincir
+müsaitlik sorarken kuyruğu tüketiyordu (zincir testinde bir kez ödenen
+tuzak); `sed -i` `danisma.py`'nin CRLF'ini silmişti — geri kuruldu.
+
+Toplam **3058/3058** (39 dosya).
+
+### AÇIK KALAN
+- Panel görünümü ve sesli orkestratör: kullanıcı kararıyla EN SON.
+- `@ajan` sorusu salt okunurdur (dosyaya bakamaz); "sonucu göster"
+  gerekiyorsa `iş:` ya da lidere yazılır.
+- Birden çok adres (`@a @b`) desteklenmiyor; yalnız ilk adres sayılır.

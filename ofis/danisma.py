@@ -76,6 +76,43 @@ class Danisma:
 
     # -- metin -------------------------------------------------------------
 
+    #: Takim sohbetinden danisilana gosterilen son oge sayisi ve harf siniri.
+    TAKIM_OZETI_ADET = 8
+    TAKIM_OZETI_HARF = 400
+
+    def _takim_ozeti(self, mesaj: dict) -> list:
+        """Patronun `@ajan` sorusunda TAKIM SOHBETININ son satirlari.
+
+        OLCULDU (29.09.2026, gercek haiku): patron `@ege is:` ile iki slogan
+        yazdirdi, sonra `@cem hangi slogani daha iyi buldun?` dedi. Cem
+        "hangi sloganlari gormuyorum" dedi -- dogru davrandi (uydurmadi)
+        ama takim sohbetinde soru, odada az once konusulana dayanir.
+        Yasa 4'un "temiz goz"u AJANIN KENDI transkriptine karsidir; bu,
+        patronla ayni odanin ortak konusmasi. Ajanlar ARASI danismada
+        verilmez: orada taze goz bilincli.
+
+        Kisa ve sinirli: her oge kesilir, sayi sinirli -- her soruda odenir.
+        """
+        from .takim import akis
+        try:
+            kanat = self.ofis.kadro.ajan(mesaj["alici"])["kanat_id"]
+        except Exception:
+            kanat = None
+        ogeler = [x for x in akis(self.ofis, kanat_id=kanat, adet=40)
+                  if x.get("id") != mesaj.get("id")][-self.TAKIM_OZETI_ADET:]
+        if not ogeler:
+            return []
+        satirlar = ["", "## TAKIM SOHBETINDE SON KONUSULANLAR",
+                    "(patron bunlari goruyor; sorusu bunlara dayanabilir)", ""]
+        for x in ogeler:
+            kimden = "patron" if x["kimden"] == "insan" else x["kimden"]
+            kime = (" -> " + ("patron" if x["kime"] == "insan" else x["kime"])
+                    if x["kime"] else "")
+            no = f" #{x['gorev_no']}" if x.get("gorev_no") else ""
+            metin = " ".join((x["metin"] or "").split())[:self.TAKIM_OZETI_HARF]
+            satirlar.append(f"- {kimden}{kime} [{x['tur']}{no}]: {metin}")
+        return satirlar
+
     def soru_metni(self, mesaj: dict) -> str:
         """Danisilanin gorecegi metin. Transkript YOK, taze goz var."""
         soran = mesaj["gonderen"]
@@ -116,6 +153,9 @@ class Danisma:
                 # Gorev silinmis olabilir: soru yine cevaplanir. DAR tutuldu:
                 # genis `except` notlarin okunamamasini da yutardi.
                 pass
+
+        if soran == "insan":
+            satirlar += self._takim_ozeti(mesaj)
 
         satirlar += ["", "## SORUSU", "", mesaj["govde"], ""]
 

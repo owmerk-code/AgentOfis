@@ -133,7 +133,7 @@ class Orkestra:
     # -- 1. hedeften plana ---------------------------------------------------
 
     def plan_metni(self, hedef: str, kanat_id: str, hata: str = "",
-                   *, ek_klasorler=None) -> str:
+                   *, ek_klasorler=None, atanan: str = "") -> str:
         """Lidere verilen planlama istegi.
 
         Kadro ISIMLERIYLE verilir: lider kimin ne yaptigini bilmeden
@@ -159,6 +159,19 @@ class Orkestra:
         kunye = self.ofis.brifing.kunye_ozeti()
         if kunye:
             satirlar += [kunye, ""]
+        if atanan:
+            # TAKIM SOHBETI: patron isi `@ad is: ...` ile DOGRUDAN bir
+            # ajana verdi. Kime -- patronun karari; nasil (olcut, yazma
+            # alani, bolme) -- liderin. Kapi `_plani_dogrula`da.
+            satirlar += [
+                "## PATRON ISI KIME VERECEGINI SECTI",
+                "",
+                f"Patron bu isi dogrudan **{atanan}**'a verdi. BUTUN "
+                f"kollarin `sahip` alani `{atanan}` OLMALI (birlestirme "
+                "kolu dahil). Kabul olcutunu, yazma alanini ve bolup "
+                "bolmemeyi SEN belirlersin; kimin yapacagini degil.",
+                "",
+            ]
         satirlar += ["## KADRON", ""]
         for a in kadro:
             yetki = ("dosya YAZAMAZ, yalnizca dusunur ve metin uretir"
@@ -411,7 +424,8 @@ class Orkestra:
                             "'ornek.py')")
         return chr(10).join(satirlar[:60])
 
-    def _plani_dogrula(self, plan, kanat_id: str, ek_klasorler=None) -> str:
+    def _plani_dogrula(self, plan, kanat_id: str, ek_klasorler=None,
+                       atanan: str = "") -> str:
         """Plani kapilardan gecirir. Sorun varsa ANLATAN metin doner."""
         if not isinstance(plan, dict):
             return "Plan JSON olarak okunamadi."
@@ -436,6 +450,13 @@ class Orkestra:
                             "nicin var oldugunu tasimazsa ajan isi kusursuz "
                             "yapip hedefi iskalar.")
             sahip = str(kol.get("sahip") or "").strip()
+            if atanan and sahip != atanan:
+                # Patronun secimi SESSIZCE degistirilemez: lider baska
+                # birini daha uygun buluyorsa bunu patrona soyler, planla
+                # ustune yazmaz. (Bos sahip = lider yapar; o da degil.)
+                return (f"Patron bu isi {atanan}'a verdi; bir kolun sahibi "
+                        f"'{sahip or 'bos (lider)'}'. Butun kollar "
+                        f"`\"sahip\": \"{atanan}\"` olmali.")
             if sahip:
                 ajan = adlar.get(sahip)
                 if ajan is None:
@@ -508,7 +529,7 @@ class Orkestra:
                   deneme: int = 2, ek_klasorler=None,
                   tarayici_alani=None, tarayici_yazma: bool = True,
                   baglayicilar=None, tarayici_kabin: bool = False,
-                  sartname_denetimi: bool = False) -> dict:
+                  sartname_denetimi: bool = False, atanan: str = "") -> dict:
         """Lideri TEMIZ oturumda acar, bolme kararini ALDIRIR, gorevleri acar.
 
         Oturum kimligi verilmez: her planlama kendi temiz kafasiyla yapilir
@@ -524,10 +545,11 @@ class Orkestra:
         hata = ""
         for sira in range(max(1, deneme)):
             metin = self.plan_metni(hedef, kanat_id, hata,
-                                    ek_klasorler=ek_klasorler)
+                                    ek_klasorler=ek_klasorler, atanan=atanan)
             cevap = self._lideri_kostur(lider, metin, butce_usd, zaman_asimi)
             plan = _json_ayikla(cevap)
-            hata = self._plani_dogrula(plan, kanat_id, ek_klasorler)
+            hata = self._plani_dogrula(plan, kanat_id, ek_klasorler,
+                                       atanan=atanan)
             # KAPI GOREV BASINA BIR KEZ KOSAR, deneme basina degil.
             #
             # Olculdu (21.09.2026): tek bir sartname turu 46.773 jeton /
