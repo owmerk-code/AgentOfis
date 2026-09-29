@@ -12234,3 +12234,24 @@ asla çökmemeli, her hatada açıkça `deny` basmalı; ayrıca kancanın gerçe
 Diğer tuzaklar: güven sorusu ("1. Trust and continue", Enter yeterli);
 `%TEMP%` altında Codex'in yazdığı dosyayı `pc` okuyamıyor (bilinen
 sandbox ACL sınırı). Ekranda "Running hook" satırları görünüyor.
+
+## TAKIMLAR, BİNA, SOHBET DÜZENİ — öneri (29.09.2026)
+
+Kullanıcı: *"ofis tek olmayacak, büyük bir bina; takımlar nasıl yer alacak,
+her takımın çekirdek sohbeti mi olacak, genel mi? Murat genel müdür koymuş
+mu?"*
+
+Rakipte ölçülen: "Çekirdek" bir TAKIMIN adı; sohbet takıma göre ("Çekirdek
+takım sohbeti" o sekme seçiliyken); tek bina, takımlar HQ olarak alt alta
+("ÇEKİRDEK HQ" altında "ÜRÜN GELİŞTİRME HQ"); her takımın lideri; Murat
+yalnız takım liderleriyle konuşuyor. **Genel müdür YOK** (hiçbir kare ve
+dökümde yok). Agent X bir YÖNLENDİRİCİ: takım değiştirir, söyleneni
+kelimesi kelimesine iletir ("Gönder" onayıyla), cevabı sesle okur; plan
+yapmaz, iş bölmez. "YÖNETİM (2)" adlı bir takım var, içeriği görülmedi.
+
+Öneri (kullanıcıya sunuldu): bina = ofis, her takım bir kat; takım başına
+sohbet (mesaj o takımın liderine); "Genel" kanal = yönlendirici (`@takım`
+ya da ofis önerir, insan onaylar); genel müdür (F6 E39) ANCAK takımlar
+arası iş elle dağıtmayı yorucu kılınca. Sesli orkestratör yönlendiricinin
+üstüne oturur. Sıra: gerçek terminal ölçümü → takım sohbeti + Genel kanal
+→ bina haritası (görünüş işiyle, en son).
