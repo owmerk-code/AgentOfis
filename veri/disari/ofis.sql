@@ -54,9 +54,9 @@ INSERT INTO "ayar" VALUES('915d303e41ee4cb59fa908401d277926','kademe:codex:hizli
 INSERT INTO "ayar" VALUES('915d303e41ee4cb59fa908401d277926','guncelleme:karar:model:codex:gpt-5.6-luna->gpt-6-luna','onay','2026-09-23T00:21:44+00:00');
 INSERT INTO "ayar" VALUES('915d303e41ee4cb59fa908401d277926','kademe:codex:standart','gpt-6-sol','2026-09-23T00:22:19+00:00');
 INSERT INTO "ayar" VALUES('915d303e41ee4cb59fa908401d277926','guncelleme:karar:cli:gemini:0.60.0','onay','2026-09-24T01:36:44+00:00');
-INSERT INTO "ayar" VALUES('915d303e41ee4cb59fa908401d277926','limit_canli_son','1790634402.1330426','2026-09-28T22:26:42+00:00');
-INSERT INTO "ayar" VALUES('915d303e41ee4cb59fa908401d277926','limit_canli:claude:','{"motor": "claude", "hesap": "", "olculdu": "2026-09-28T22:26:44+00:00", "limit_pencere": {"kaynak": "claude CLI (get_usage, tur yok)", "hal": "", "plan": "max", "pencereler": {"5s": {"kullanim": 0.18, "yenilenme": 1790646000}, "7g": {"kullanim": 0.69, "yenilenme": 1790737200}, "7g_kapi": {"kullanim": 0.14, "yenilenme": 1790737200}}}}','2026-09-28T22:26:44+00:00');
-INSERT INTO "ayar" VALUES('915d303e41ee4cb59fa908401d277926','limit_canli:codex:','{"motor": "codex", "hesap": "", "olculdu": "2026-09-28T22:26:45+00:00", "limit_pencere": {"kaynak": "codex app-server (account/rateLimits)", "hal": "", "plan": "plus", "pencereler": {"5s": {"kullanim": 0.0, "yenilenme": 1790651729}, "7g": {"kullanim": 0.44, "yenilenme": 1791061490}}}}','2026-09-28T22:26:45+00:00');
+INSERT INTO "ayar" VALUES('915d303e41ee4cb59fa908401d277926','limit_canli_son','1790638757.1626854','2026-09-28T23:39:17+00:00');
+INSERT INTO "ayar" VALUES('915d303e41ee4cb59fa908401d277926','limit_canli:claude:','{"motor": "claude", "hesap": "", "olculdu": "2026-09-28T23:39:19+00:00", "limit_pencere": {"kaynak": "claude CLI (get_usage, tur yok)", "hal": "", "plan": "max", "pencereler": {"5s": {"kullanim": 0.26, "yenilenme": 1790645999}, "7g": {"kullanim": 0.7, "yenilenme": 1790737199}, "7g_kapi": {"kullanim": 0.14, "yenilenme": 1790737199}}}}','2026-09-28T23:39:19+00:00');
+INSERT INTO "ayar" VALUES('915d303e41ee4cb59fa908401d277926','limit_canli:codex:','{"motor": "codex", "hesap": "", "olculdu": "2026-09-28T23:39:20+00:00", "limit_pencere": {"kaynak": "codex app-server (account/rateLimits)", "hal": "", "plan": "plus", "pencereler": {"5s": {"kullanim": 0.06, "yenilenme": 1790651729}, "7g": {"kullanim": 0.45, "yenilenme": 1791061490}}}}','2026-09-28T23:39:20+00:00');
 INSERT INTO "ayar" VALUES('915d303e41ee4cb59fa908401d277926','guncelleme:karar:cli:claude:2.1.284','otomatik','2026-09-28T22:15:11+00:00');
 INSERT INTO "ayar" VALUES('915d303e41ee4cb59fa908401d277926','guncelleme:gecmis','[{"tur": "cli", "motor": "claude", "paket": "@anthropic-ai/claude-code", "eski": "2.1.282", "yeni": "2.1.284", "anahtar": "cli:claude:2.1.284", "veren": "ofis", "deneme": "OK", "sira": 1, "zaman": "2026-09-28T22:15:11.610387+00:00", "durum": "uygulandi", "goruldu": true}, {"tur": "cli", "motor": "codex", "paket": "@openai/codex", "eski": "0.156.0", "yeni": "0.158.0", "anahtar": "cli:codex:0.158.0", "veren": "ofis", "deneme": "OK", "sira": 2, "zaman": "2026-09-28T22:15:29.639707+00:00", "durum": "uygulandi", "goruldu": true}, {"tur": "takma_ad", "motor": "claude", "ad": "sonnet", "eski": "claude-sonnet-5", "yeni": "claude-sonnet-5-5", "anahtar": "takma_ad:sonnet:claude-sonnet-5-5", "veren": "ofis", "deneme": "OK", "sira": 3, "zaman": "2026-09-28T22:15:43.569258+00:00", "durum": "uygulandi", "goruldu": true}, {"tur": "cli", "motor": "codex", "paket": "@openai/codex", "eski": "0.156.0", "yeni": "0.158.0", "anahtar": "cli:codex:0.158.0", "veren": "ofis", "deneme": "OK", "sira": 4, "zaman": "2026-09-28T22:15:47.019645+00:00", "durum": "uygulandi", "goruldu": true}]','2026-09-28T22:22:05+00:00');
 INSERT INTO "ayar" VALUES('915d303e41ee4cb59fa908401d277926','guncelleme:karar:cli:codex:0.158.0','otomatik','2026-09-28T22:15:46+00:00');
@@ -5477,6 +5477,7 @@ INSERT INTO "karar" VALUES('0e42e993f44447d083dfeed13c7fb09a','915d303e41ee4cb59
 INSERT INTO "karar" VALUES('c69fee8ebfd4479a9ce883c809e4c1cf','915d303e41ee4cb59fa908401d277926',NULL,'dagitim','Patron mesaji ''ofiste bugun neler oldu?'' icin yol: cevap.','Patron ofisin bugünkü durumunu soruyor. Bu bir bilgi sorusu, iş talebi değil. Bunun için ajan uyandırmak ya da görev açmak jeton ve zaman harcar. Cevap zaten elimdeki karar kaydında ve BRIFING.md''de var. deneme/sonnet55-tanitim.md dosyasının gerçekten yazıldığını da kontrol ettim. Kayıtlarda saat bilgisi olmadığı için her şeyin tam olarak bugün yapıldığını kesin söyleyemem, bunu cevapta belirttim.','demir','[]','2026-09-28T22:25:49+00:00');
 INSERT INTO "karar" VALUES('4afbea99889f436fb35707905fcb35fb','915d303e41ee4cb59fa908401d277926',NULL,'dagitim','''deneme/sonnet-5-vs-5-5.md dosyasina Claude Sonnet 5 ile Sonnet 5.5 arasindaki farki anlatan kisa bir karsilastirma yaz: 1 tablo (en az 4 olcut) ve ofisimiz icin 3 maddelik tavsiye. Her sayi icin kaynak baglantisi olsun, kaynagi bulunamayan sayi YAZILMASIN. Bu ORTA zorlukta bir is: kaynak dogrulama ve yargi gerektiriyor. Arastirma rolundeki ajan (bilge) yapsin, bolme.'' bolunmedi, tek ajanda kosacak.','Bu iş tek bir dosyaya yazılan ve baştan sona tek bir yargıyla ilerleyen kısa bir karşılaştırma. Kaynak bulmak, sayıları doğrulamak, tabloyu kurmak ve tavsiye yazmak birbirine bağlı adımlar. Tavsiyeler doğrulanan sayılara dayanıyor, tablo da hangi sayının kaynağı bulunursa ona göre şekilleniyor. Bağımsız kol çıkmıyor ve hepsi aynı dosyaya yazıyor. Bölmek yaklaşık 15 kat jeton yakar ve yazma alanı çakışır. Hedef de araştırma rolündeki ajanın (bilge) işi bölmeden yapmasını istiyor. Bu yüzden tek kol açıyorum, birleştirme kolu gerekmiyor. Bağlayıcı da gerekmiyor: kaynaklar herkese açık web sayfaları ve tarayıcıyla okunabiliyor.','demir','[]','2026-09-28T22:25:58+00:00');
 INSERT INTO "karar" VALUES('d560af72eafb4b1b831d6f9f88d68ed9','915d303e41ee4cb59fa908401d277926','7c9c49680af9495bbbdd1dfe5a3949f7','genel','#33 kapatildi.','Kanitlar kabul olcutunu karsiliyor.','demir','[]','2026-09-28T22:27:52+00:00');
+INSERT INTO "karar" VALUES('cb978a51471a4979a289ad0ede3baf9b','915d303e41ee4cb59fa908401d277926',NULL,'dagitim','Patron mesaji ''bu ajanlarla neler yapabiliriz ?'' icin yol: cevap.','Patron bir iş istemiyor, ekibin neler yapabileceğini soruyor. Kadro, rolleri, bağlı bağlayıcılar ve medya durumu zaten elimdeki ofis bilgisinde var. Bunun için görev açıp ajan uyandırmak boşuna jeton ve zaman harcar.','demir','[]','2026-09-28T22:29:46+00:00');
 CREATE TABLE kural (
     id              TEXT PRIMARY KEY,
     proje_id        TEXT NOT NULL REFERENCES proje(id),
@@ -6133,6 +6134,25 @@ INSERT INTO "mesaj" VALUES('7f67db8530cf493c821940fbc138a678','915d303e41ee4cb59
 - Para kilidi kapalı, ofis para harcamıyor.
 
 Bir not: kayıtlarda saat bilgisi yok. Bu yüzden bunların hepsinin tam olarak bugün mü yapıldığını kesin söyleyemem, sadece en son yapılanlar bunlar. İstersen tanıtım metnini sana göstereyim ya da yeni bir iş verebilirsin.','2026-09-28T22:25:49+00:00',1,'2026-09-28T22:25:13+00:00');
+INSERT INTO "mesaj" VALUES('52a08befeb0547eeb3a77327cdce6c85','915d303e41ee4cb59fa908401d277926','insan','demir','bu ajanlarla neler yapabiliriz ?','uyandiran',NULL,'Patron, elimizdeki ekip ve bağlantılarla yapabileceklerimiz şunlar:
+
+**1. Mağaza işleri (semuparfum):** Shopify bağlı. Ürün açıklamalarını yeniletebiliriz, katalogdaki eksik ve tutarsız bilgileri buldurabiliriz, sipariş ve stok özeti çıkarabiliriz. Sitenin müşteri gözüyle yapılmış analizi elimizde hazır duruyor. Sıradaki adım oradaki bulguları düzeltmek olur.
+
+**2. Metin ve içerik:** Deniz ile Ege metin rolünde. Ürün sayfası metinleri, blog yazıları, Instagram gönderi metinleri, e-posta bültenleri ve SSS sayfası yazabilirler. Aynı işi ikisine ayrı ayrı yazdırıp iyi olanı seçmek de mümkün.
+
+**3. Reklam:** Meta Reklamları bağlı. Mevcut kampanyaların performansını okutup rapor çıkarabiliriz, yeni reklam metinleri de yazdırabiliriz. Reklamı yayına almak ve para harcamak her zaman senin onayınla olur.
+
+**4. Görsel:** Codex ve Gemini ile ücretsiz görsel üretebiliyoruz, bunlar ürün ve sosyal medya görselleri için yeter. Canva da bağlı, şablon üzerinden tasarım yapılabilir. Video üretimi para kilidi yüzünden kapalı. Ama videonun istemini ajana yazdırıp senin kendi aracında üretmeni sağlayabiliriz.
+
+**5. Araştırma:** Bilge rakip parfüm sitelerini fiyat, kargo ve kampanya açısından karşılaştırabilir, pazar ve trend araştırması yapabilir. Her iddiayı kaynaklı yazar.
+
+**6. E-posta ve dosyalar:** Gmail ve Google Drive bağlı. Gelen kutusunu özetletebilir, müşteri sorularına cevap taslağı hazırlatabiliriz. Taslakları biz göndermeyiz, sen gönderirsin. Drive''daki belgeleri de düzenletebiliriz.
+
+**7. Yazılım ve otomasyon:** Çınar backend, Yaprak entegrasyon rolünde. Küçük araçlar, raporlama betikleri ve sistemler arası bağlantılar kurabilirler. Ofisin kendisini geliştirmek de bu kapsamda, ajanların yürümesi gibi.
+
+**Yapamadıklarımız:** Microsoft 365, WordPress, Supabase, n8n, BigQuery, Fireflies ve Higgsfield için yetki yok. Bunlar gerekirse `claude mcp login "claude.ai <Ad>"` komutuyla sen bağlarsın.
+
+**Önerim:** En hızlı getiriyi semuparfum sağlar. Analiz raporundaki sorunları düzelttirip Shopify''da ürün sayfalarını ve metinlerini güçlendirelim, ardından Meta reklamlarına bakalım. İstersen ilk işi hemen açarım.','2026-09-28T22:29:46+00:00',1,'2026-09-28T22:29:19+00:00');
 CREATE TABLE olay (
     id              INTEGER PRIMARY KEY AUTOINCREMENT,
     proje_id        TEXT NOT NULL,
@@ -13425,6 +13445,12 @@ INSERT INTO "olay" VALUES(3435,'915d303e41ee4cb59fa908401d277926','demir','7c9c4
 INSERT INTO "olay" VALUES(3436,'915d303e41ee4cb59fa908401d277926','',NULL,'olgu','Sonnet 5.5 model kimliği: claude-sonnet-5-5, çıkış 28 Eylül 2026, 1M bağlam, 128K çıktı (platform.claude.com/docs/en/models/sonnet-5-5/overview)','2026-09-28T22:27:52+00:00');
 INSERT INTO "olay" VALUES(3437,'915d303e41ee4cb59fa908401d277926','',NULL,'olgu','Sonnet 5.5 ve Sonnet 5 API fiyatı: ikisi de $2 girdi / $10 çıktı / $0.20 önbellek okuma, toplu iş $1/$5 (platform.claude.com/docs/en/about-claude/pricing)','2026-09-28T22:27:52+00:00');
 INSERT INTO "olay" VALUES(3438,'915d303e41ee4cb59fa908401d277926','',NULL,'olgu','Sonnet 5 durumu: Legacy, emeklilik en erken 30 Haziran 2027 (platform.claude.com/docs/en/models/sonnet-5/overview)','2026-09-28T22:27:52+00:00');
+INSERT INTO "olay" VALUES(3439,'915d303e41ee4cb59fa908401d277926','insan',NULL,'soru','insan -> demir: bu ajanlarla neler yapabiliriz ?','2026-09-28T22:29:19+00:00');
+INSERT INTO "olay" VALUES(3440,'915d303e41ee4cb59fa908401d277926','demir',NULL,'tur_ozeti','{"jeton": 44907, "maliyet_usd": 0.16429919999999998, "sure_ms": 26734.0, "model": "claude-opus-5-5", "arac_sayisi": 2, "basarili": true, "motor": "claude", "hesap": "", "yol": "lider", "limit_pencere": {"kaynak": "claude CLI (rate_limit_event)", "hal": "allowed", "plan": "", "pencereler": {"5s": {"kullanim": 0.18, "yenilenme": 1790646000}, "7g": {"kullanim": 0.68, "yenilenme": 1790737200}}}}','2026-09-28T22:29:46+00:00');
+INSERT INTO "olay" VALUES(3441,'915d303e41ee4cb59fa908401d277926','demir',NULL,'karar','demir: Patron mesaji ''bu ajanlarla neler yapabiliriz ?'' icin yol: cevap.','2026-09-28T22:29:46+00:00');
+INSERT INTO "olay" VALUES(3442,'915d303e41ee4cb59fa908401d277926','demir',NULL,'cevap','demir -> insan: Patron, elimizdeki ekip ve bağlantılarla yapabileceklerimiz şunlar:
+
+**1. Mağaza işleri (semuparfum):** Shopify bağlı. Ürün açıklamalarını yeniletebiliriz, katalogdaki eksik ve tutarsız bilgileri buld','2026-09-28T22:29:46+00:00');
 CREATE TABLE olgu (
     id                  TEXT PRIMARY KEY,
     proje_id            TEXT NOT NULL REFERENCES proje(id),
@@ -13524,6 +13550,6 @@ CREATE INDEX ix_degisim_proje
 CREATE INDEX ix_tur_anlik_proje
     ON tur_anlik (proje_id, olusturuldu DESC);
 DELETE FROM "sqlite_sequence";
-INSERT INTO "sqlite_sequence" VALUES('olay',3438);
+INSERT INTO "sqlite_sequence" VALUES('olay',3442);
 COMMIT;
 PRAGMA user_version=1;
