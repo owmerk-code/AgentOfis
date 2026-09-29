@@ -11974,3 +11974,38 @@ mutasyon, ikisi sahnesi eksik sınama; düzeltildi).
   (56) Fable 5.1 max'ı (53) geçiyor ve ucuz: **kapı modelinin Fable'dan
   Opus 5.5'e geçmesi** ölçülerek değerlendirilmeli.
 - Deneme turu yalnız "cevap veriyor mu"yu ölçer; araç kullanımını ölçmez.
+
+## LİDERİN CEVABI PANELDE AKIYOR (29.09.2026)
+
+Kullanıcı: *"sohbetten yazdığımda lider geç cevap veriyor."* İki parça:
+bağlayıcı ölçümünün ~20 sn'lik bekleyişi önceki işte kapandı (diskte
+önbellek, bayatsa arkada tazelenir); kalan süre modelin kendisi. Lideri
+zayıflatmadan bekleyişi kısaltmanın yolu cevabı **yazılırken** göstermek.
+
+- Orkestra `_lideri_kostur(akis=...)`: her metin parçası akışa da gider;
+  yeni basamakta `akis(None)` = baştan (devredilen turun yarım metni
+  yapışmaz). Akışın hatası turu DURDURMAZ, bir kez `uyari` yazılır.
+- Triyaj cevabı JSON'un içinde: `sohbet.akis_metni` yarım JSON'dan
+  YALNIZ `cevap` alanını (kaçışları çözülmüş) ayıklar; karar `cevap`
+  değilse yol + gerekçe. Karar kapanmadan hiçbir şey gösterilmez —
+  patron makine metni görmez. Rapor turu düz metin akar.
+- Akış **bellekte** (`_AKISLAR`), deftere yazılmaz: ilk sürüm `ayar`a
+  yazıyordu; ölçüldü, yazım boşta ~9 ms ama yük altında 100–150 ms ve
+  defter kilidini tutuyordu. Bedeli: kabuktan başlayan `konus` panelde
+  akmaz (ayrı süreç). ~3 kez/sn güncellenir, cevap düşünce ya da tur
+  hangi sebeple biterse bitsin silinir.
+- Panel: `/api/sohbet` bekleyen mesaja `akis` ekler (cevabı düşmüşe
+  asla), `/api/sohbet/akis` hafif yoklama; balonun İÇİ değişir, pano
+  baştan çizilmez; akış bitince bir kez tam çizim. Yanıp sönen imleç
+  (`prefers-reduced-motion`'da durur).
+
+**Gerçek haiku liderle ölçüldü** (boş geçici ofis): toplam 12,9 sn, ilk
+kelime **7,8 sn**'de panelde; JSON sızmadı; bitince kayıt boş. Yol
+boyunca: bir sınama sahnesi önceki bölümlerin açık işlerini taşıdığı
+için rapor turunu ölçüyordu (iptal edilip daraltıldı).
+
+`duman_sohbet` 94 → **112** · `duman_panel` +4. Beş mutasyonun beşi
+ateş etti (JSON ayıklanmasın · bitirme silmesin · orkestra akıtmasın ·
+panel cevaplıda da göstersin · seyreltme kalksın).
+
+Toplam **2993/2993** (38 dosya).

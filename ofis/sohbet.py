@@ -50,6 +50,9 @@ Kararlar ve sebepleri:
 
 from __future__ import annotations
 
+import threading
+import time
+
 from . import baglayici, gorsel, roller
 from .motor import motor_ac
 from .ekip import Ekip, EkipHatasi
@@ -70,6 +73,175 @@ CEVAP_SINIRI = 4000
 
 class SohbetHatasi(RuntimeError):
     pass
+
+
+# -- CEVAP YAZILIRKEN AKAR ---------------------------------------------------
+#
+# OLCULDU (29.09.2026): liderin "naber"e cevabi Opus'ta 9-27 sn suruyor ve
+# panel bu sure boyunca yalnizca "dusunuyor" diyordu. Modeli kucultmek
+# lideri zayiflatirdi; bekleyisi kisaltmanin tek yolu cevabi YAZILIRKEN
+# gostermek.
+#
+# Iki tuzak, ikisi de bilincli karsilandi:
+#
+# 1. Triyaj cevabi JSON'un ICINDE (`{"karar", "gerekce", "cevap", ...}`).
+#    Ham parcalari basmak patrona makine metni gosterirdi. Akista yalniz
+#    `cevap` alani (kacislari cozulmus, yarimsa yarim) gosterilir; karar
+#    `cevap` degilse yolun kendisi ve gerekcesi.
+# 2. Akis DEFTERE YAZILMAZ, surecin BELLEGINDE yasar. Ilk surum onu tek
+#    bir `ayar` kaydinda tutuyordu. OLCULDU: defter yazimi bosta ~9 ms
+#    (WAL + synchronous=FULL, her islemde fsync), ama makine yuk altindayken
+#    100-150 ms'ye cikti ve akis defter kilidini tuttugu icin cevabi HIZLI
+#    gostermek icin eklenen sey lider turunu YAVASLATABILIYORDU. Bellekte
+#    maliyeti yok. Bedeli yazili: kabuktan baslayan `konus` panelde AKMAZ
+#    (ayri surec); panelden yazilan her mesaj akar. Cevabin kendisi yine
+#    deftere duser -- akis yalniz bekleyis suresinin gorunur hali.
+#
+# 3. En fazla ~3 kez/sn guncellenir: her parcada yarim JSON'u yeniden
+#    ayiklamak uzun cevapta karesel buyurdu.
+
+AKIS_ARALIK_SN = 0.3
+
+#: `{(proje_id, mesaj_id): metin}` -- su an yazilmakta olan cevaplar.
+_AKISLAR: dict = {}
+_AKIS_KILIDI = threading.Lock()
+
+
+def _bellege_yaz(proje_id: str, mesaj_id: str, metin) -> None:
+    with _AKIS_KILIDI:
+        if metin is None:
+            _AKISLAR.pop((proje_id, mesaj_id), None)
+        else:
+            _AKISLAR[(proje_id, mesaj_id)] = metin
+
+_KARAR_ETIKET = {"kendi": "kendim yapıyorum", "dagit": "ekibe dağıtıyorum",
+                 "kadro": "kadro öneriyorum", "cevap": "cevaplıyorum"}
+
+
+def _kismi_alan(metin: str, alan: str):
+    """JSON metnindeki `"alan": "..."` degerini, YARIM olsa bile coz.
+
+    Doner `(deger, kapandi)`; alan hic baslamadiysa `(None, False)`.
+    Yarim bir kacis (`\\` ya da `\\u00`) sonda kalirsa o parca beklenir,
+    uydurulmaz.
+    """
+    import re
+    m = re.search(r'"' + re.escape(alan) + r'"\s*:\s*"', metin)
+    if not m:
+        return None, False
+    i, cikti = m.end(), []
+    kacis = {"n": "\n", "t": "\t", "r": "", '"': '"', "\\": "\\",
+             "/": "/", "b": "", "f": ""}
+    while i < len(metin):
+        c = metin[i]
+        if c == '"':
+            return "".join(cikti), True
+        if c == "\\":
+            if i + 1 >= len(metin):
+                break
+            k = metin[i + 1]
+            if k == "u":
+                hex_ = metin[i + 2:i + 6]
+                if len(hex_) < 4:
+                    break
+                try:
+                    cikti.append(chr(int(hex_, 16)))
+                except ValueError:
+                    pass
+                i += 6
+                continue
+            cikti.append(kacis.get(k, k))
+            i += 2
+            continue
+        cikti.append(c)
+        i += 1
+    return "".join(cikti), False
+
+
+def akis_metni(ham: str, kip: str = "json") -> str:
+    """Liderin YARIM ciktisindan patrona gosterilecek metin.
+
+    `kip="duz"`: rapor turu, metin oldugu gibi. `kip="json"`: triyaj.
+    Gosterilecek bir sey yoksa bos doner (panel "dusunuyor" der).
+    """
+    import re
+    ham = ham or ""
+    if kip == "duz":
+        return ham.strip()
+    m = re.search(r'\{\s*"karar"', ham)
+    if not m:
+        yalin = ham.strip()
+        # JSON gelmek uzere olabilir (cit ya da suslu parantez): o zaman
+        # henuz gosterilecek bir sey yok. Duz metinse -- lider bicime
+        # uymadiysa -- oldugu gibi akar; triyaj da onu cevap sayacak.
+        if not yalin or yalin.startswith(("{", "`")):
+            return ""
+        return yalin
+    govde = ham[m.start():]
+    karar, kapandi = _kismi_alan(govde, "karar")
+    if not kapandi:
+        return ""
+    if karar == "cevap":
+        cevap, _ = _kismi_alan(govde, "cevap")
+        return (cevap or "").strip()
+    gerekce, _ = _kismi_alan(govde, "gerekce")
+    bas = _KARAR_ETIKET.get(karar, karar)
+    return (bas + (" — " + gerekce.strip() if gerekce else "")).strip()
+
+
+class AkisYazici:
+    """Tek mesajin akisini BELLEGE seyrek yazan cagrilabilir.
+
+    Orkestra her parcada cagirir; `None` = yeni basamak, bastan (devredilen
+    turun yarim metni yenisine yapismasin). `sabit` onceki bolumdur
+    (orn. triyajin cevabi) ve rapor akarken ustunde durur.
+    """
+
+    def __init__(self, db, proje_id: str, mesaj_id: str) -> None:
+        self._saat = time.monotonic
+        self.proje_id, self.mesaj_id = proje_id, str(mesaj_id)
+        self.kip, self.ham, self.sabit = "json", "", ""
+        self._son_an, self._son_metin = 0.0, None
+
+    def yeni_bolum(self, kip: str, sabit: str = "") -> None:
+        self.kip, self.ham, self.sabit = kip, "", sabit or ""
+
+    def not_yaz(self, metin: str) -> None:
+        """Iki tur arasindaki durum ("ekip calisiyor...") -- hemen yazilir."""
+        self.sabit, self.ham = metin, ""
+        self._yaz(zorla=True)
+
+    def __call__(self, parca) -> None:
+        if parca is None:
+            self.ham = ""
+        else:
+            self.ham += parca
+        self._yaz()
+
+    def _metin(self) -> str:
+        akan = akis_metni(self.ham, self.kip)
+        if self.sabit and akan:
+            return self.sabit + "\n\n" + akan
+        return self.sabit or akan
+
+    def _yaz(self, zorla: bool = False) -> None:
+        an = self._saat()
+        if not zorla and an - self._son_an < AKIS_ARALIK_SN:
+            return
+        metin = self._metin()[:CEVAP_SINIRI]
+        if metin == self._son_metin:
+            return
+        self._son_an, self._son_metin = an, metin
+        _bellege_yaz(self.proje_id, self.mesaj_id, metin)
+
+    def bitir(self) -> None:
+        _bellege_yaz(self.proje_id, self.mesaj_id, None)
+
+
+def akislar(db, proje_id: str) -> dict:
+    """Su an akan butun cevaplar: `{mesaj_id: metin}` (bu surecte)."""
+    with _AKIS_KILIDI:
+        return {m: v for (p, m), v in _AKISLAR.items() if p == proje_id}
 
 
 class Sohbet:
@@ -311,15 +483,28 @@ class Sohbet:
 
     # -- ana akis ----------------------------------------------------------
 
-    def konus(self, mesaj: str, *, lider_ad: str = "", butce_usd=None,
-              zaman_asimi=None, azami_tik: int = 8, paralel: int = 3,
-              izinli_araclar: tuple = (), ek_klasorler=None,
-              tarayici_alani=None, tarayici_kabini: str = ""):
+    def konus(self, mesaj: str, **ayarlar):
         """Patronun mesajini alir, lideri karar verdirir, sonucu akitir.
 
         Akan sozlukler: `{tur, govde, ek}`. Turler:
         `triyaj` · `cevap` · `plan` · `tik` · `rapor` · `bitti`.
+
+        Liderin cevabi YAZILIRKEN de deftere akar (`AkisYazici`); cevap
+        dusunce -- ya da tur hangi sebeple biterse bitsin -- akis kaydi
+        silinir. Bitmis bir mesajin yarim metni panelde asili kalmaz.
         """
+        self._akis = None
+        try:
+            yield from self._konus(mesaj, **ayarlar)
+        finally:
+            if self._akis is not None:
+                self._akis.bitir()
+                self._akis = None
+
+    def _konus(self, mesaj: str, *, lider_ad: str = "", butce_usd=None,
+               zaman_asimi=None, azami_tik: int = 8, paralel: int = 3,
+               izinli_araclar: tuple = (), ek_klasorler=None,
+               tarayici_alani=None, tarayici_kabini: str = ""):
         mesaj = (mesaj or "").strip()
         if not mesaj:
             raise SohbetHatasi("Bos mesaj gonderilemez.")
@@ -331,6 +516,7 @@ class Sohbet:
         lider = self.orkestra._lider_sec(lider_ad, None)
         kayit = self.ofis.postane.soru_sor("insan", lider["ad"], mesaj,
                                            mod="uyandiran")
+        self._akis = AkisYazici(self.db, self.proje_id, kayit["id"])
 
         if ekler:
             # OLCULDU: klasor acilisi yalnizca GOREV acilinca kayda
@@ -386,6 +572,9 @@ class Sohbet:
             # doner. "Lider ofisi yonetir, takip eder" demek, acik isle
             # bosta duran bir ofis olmamasi demektir.
             if self._acik_is_var():
+                self._akis.not_yaz(cevap + "\n\n(açık iş var — ekip çalışıyor, "
+                                   "bitince rapor buraya eklenecek)")
+                self._akis.yeni_bolum("duz", sabit=cevap)
                 yield {"tur": "surduruluyor", "govde":
                        "Acik is var, halka donuyor.", "ek": {}}
                 for adim in self.orkestra.kos(
@@ -453,6 +642,11 @@ class Sohbet:
             yield {"tur": "bitti", "govde": "", "ek": {"yol": "plan_hatasi"}}
             return
 
+        self._akis.not_yaz(_KARAR_ETIKET.get(karar["karar"], karar["karar"])
+                           + " — ekip çalışıyor; bitince rapor buraya düşer. ("
+                           + ", ".join(f"#{g['no']} {g['sahip'] or '-'}"
+                                       for g in plan["gorevler"]) + ")")
+        self._akis.yeni_bolum("duz")
         yield {"tur": "plan", "govde": plan["gerekce"],
                "ek": {"bol": plan["bol"],
                       "gorevler": [{"no": g["no"], "baslik": g["baslik"],
@@ -487,7 +681,8 @@ class Sohbet:
                 ek_klasorler=()) -> dict:
         metin = self.triyaj_metni(mesaj, ek_klasorler=ek_klasorler)
         ham = self._lideri_kostur(lider, metin, butce_usd, zaman_asimi,
-                                  ek_klasorler=ek_klasorler)
+                                  ek_klasorler=ek_klasorler,
+                                  akis=getattr(self, "_akis", None))
         karar = _json_ayikla(ham)
         if not isinstance(karar, dict) or karar.get("karar") not in (
                 "cevap", "kendi", "dagit", "kadro"):
@@ -542,7 +737,8 @@ class Sohbet:
             "  patron sonucu ister, defteri degil.",
         ]
         ham = self._lideri_kostur(lider, "\n".join(satirlar),
-                                  butce_usd, zaman_asimi)
+                                  butce_usd, zaman_asimi,
+                                  akis=getattr(self, "_akis", None))
         metin = (ham or "").strip()[:CEVAP_SINIRI] or "(Lider rapor yazmadi.)"
         return metin + self._gercek_durum(plan)
 
@@ -595,7 +791,7 @@ class Sohbet:
         return chr(10).join(parca)
 
     def _lideri_kostur(self, lider: dict, metin: str, butce_usd,
-                       zaman_asimi, ek_klasorler=()) -> str:
+                       zaman_asimi, ek_klasorler=(), akis=None) -> str:
         """Lideri TEMIZ oturumda, YAZMA YETKISI VERMEDEN kosturur.
 
         Kosumu Orkestra ile PAYLASIR, kopyalamaz. Iki ayri kopya olsaydi
@@ -608,6 +804,6 @@ class Sohbet:
         try:
             return self.orkestra._lideri_kostur(
                 lider, metin, butce_usd, zaman_asimi,
-                ek_klasorler=ek_klasorler)
+                ek_klasorler=ek_klasorler, akis=akis)
         except OrkestraHatasi as exc:
             raise SohbetHatasi(str(exc)) from exc

@@ -617,12 +617,17 @@ class Orkestra:
         return liderler[0]
 
     def _lideri_kostur(self, lider: dict, metin: str, butce_usd, zaman_asimi,
-                       ek_klasorler=()) -> str:
+                       ek_klasorler=(), akis=None) -> str:
         """Lider turu -- NOBET ZINCIRIYLE (bkz. `zincir.LIDER_ZINCIRI`).
 
         Claude limiti dolunca lider durmaz: AYNI istem codex'te (rolun
         kademesi, bugun gpt-6-sol) kosar. Lider turu temiz oturumdur ve
         baglamini defterden alir, yani devirde kaybolan bir sey yoktur.
+
+        `akis` verilirse her metin parcasi ONA da gider (panelde cevabin
+        yazilirken akmasi). Yeni basamakta `akis(None)` = bastan: devredilen
+        turun yarim metni yenisinin basina yapismasin. Akis bir GOSTERIMDIR;
+        onun hatasi lider turunu durdurmaz (asagida).
         """
         basamaklar, uyarilar = basamaklari_kur(
             self.db, self.proje_id, lider, fabrika=self.motor_fabrikasi,
@@ -634,6 +639,23 @@ class Orkestra:
         for u in uyarilar:
             self.db.olay_yaz(self.proje_id, "uyari", u, ajan_ad=lider["ad"])
 
+        akis_durdu = {"hata": ""}
+
+        def _akit(parca):
+            # Gosterim, karari DEGISTIRMEZ: panelin akisini yazamamak (defter
+            # mesgul, disk dolu...) lider turunu oldurmemeli. Ama SESSIZ de
+            # kalmaz: ilk hatada akis kapanir ve bu bir kez yazilir.
+            if akis is None or akis_durdu["hata"]:
+                return
+            try:
+                akis(parca)
+            except Exception as exc:          # noqa: BLE001 -- yalniz gosterim
+                akis_durdu["hata"] = str(exc) or type(exc).__name__
+                self.db.olay_yaz(self.proje_id, "uyari",
+                                 "Liderin cevabi panele akitilamadi (cevap yine "
+                                 "gelecek): " + akis_durdu["hata"][:200],
+                                 ajan_ad=lider["ad"])
+
         def kostur(b):
             motor = self.motor_fabrikasi(b["motor"])
             parcalar, ek = [], {}
@@ -644,6 +666,7 @@ class Orkestra:
             # kullanicinin istedigi tavan, isi hic yapilmamis kilardi.
             motor_butcesi = tur_butcesi(b, motor, butce_usd)
             fren = tavan.KacakFreni()
+            _akit(None)
             for olay in motor.tur_kos(
                 metin, klasor=lider["klasor"], oturum_id="",
                 model=b["model"],
@@ -663,6 +686,7 @@ class Orkestra:
                     return kesildi, []
                 if olay.tur == "metin":
                     parcalar.append(olay.govde)
+                    _akit(olay.govde)
                 elif olay.tur == "bitti":
                     ek = dict(olay.ek or {})
                     # LIDER TURU DA OLCULUR -- devredilen basamak dahil:

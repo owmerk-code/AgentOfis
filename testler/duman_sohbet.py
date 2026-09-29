@@ -557,6 +557,132 @@ sina("verilmezse halka kabinsiz", bool(_kos_ayar)
      and not _kos_ayar[0].get("tarayici_kabini"))
 
 
+# -- CEVAP YAZILIRKEN AKAR (29.09.2026) -------------------------------------
+# Olculdu: Opus liderin "naber"e cevabi 9-27 sn; panel bu sure "dusunuyor"
+# diyordu. Akis JSON'dan AYIKLANIR (patron makine metni gormez), defterde
+# tek kayitta yasar ve cevap dusunce SILINIR.
+print("\nAKIS -- liderin cevabi yazilirken panele akiyor")
+from ofis import sohbet as _sm
+from ofis.sohbet import akis_metni, akislar
+
+sina("json: yarim cevap alani cozuluyor",
+     akis_metni('{"karar": "cevap", "gerekce": "g", "cevap": "Mer') == "Mer")
+sina("json: kacislar cozuluyor (satir, tirnak, \\u)",
+     akis_metni('{"karar":"cevap","gerekce":"g","cevap":"a\\nb \\"c\\" \\u00e7"}')
+     == 'a\nb "c" \xe7')
+sina("json: yarim kacis UYDURULMUYOR (bekleniyor)",
+     akis_metni('{"karar":"cevap","gerekce":"g","cevap":"ab\\u00') == "ab")
+sina("json: karar henuz kapanmadiysa BOS (makine metni gosterilmez)",
+     akis_metni('```json\n{"karar": "ce') == "")
+sina("json: cit/suslu parantezle baslayan henuz bos",
+     akis_metni("```json\n") == "" and akis_metni("{") == "")
+sina("json: dagit yolunda yol + gerekce gosteriliyor",
+     akis_metni('{"karar":"dagit","gerekce":"Is iki kola bol') ==
+     "ekibe da\u011f\u0131t\u0131yorum \u2014 Is iki kola bol")
+sina("duz metin (lider bicime uymadi) oldugu gibi akiyor",
+     akis_metni("Selam patron") == "Selam patron")
+sina("rapor kipi oldugu gibi", akis_metni(" rapor ", "duz") == "rapor")
+
+_akis_goruntu = []
+_eski_aralik = _sm.AKIS_ARALIK_SN
+_sm.AKIS_ARALIK_SN = 0.0
+
+
+class AkisMotor(SahteMotor):
+    """Her metin parcasindan SONRA defterdeki akisi okur (panel gibi)."""
+
+    def tur_kos(self, metin, **ayar):
+        for olay in super().tur_kos(metin, **ayar):
+            yield olay
+            if olay.tur == "metin":
+                _akis_goruntu.append(dict(akislar(db, ofis.proje_id)))
+
+
+try:
+    kutu_akis = json.dumps({"karar": "cevap", "gerekce": "bilgi sorusu",
+                            "cevap": "Merhaba patron, her sey yolunda."},
+                           ensure_ascii=False)
+    s_akis = Sohbet(ofis, motor_fabrikasi=lambda ad, **k: AkisMotor(cevap=kutu_akis))
+    # Onceki bolumlerin acik isleri halkayi dondurur ve RAPOR turu da ayni
+    # sahte JSON'u yazar -- bu bolum yalniz TRIYAJIN akisini olcer.
+    for _g in ofis.tahta.liste():
+        if _g["durum"] not in ("bitti", "iptal"):
+            ofis.tahta.iptal_et(_g["no"], sebep="akis sinamasi", iptal_eden="insan")
+    _akis_goruntu.clear()
+    ol = list(s_akis.konus("naber"))
+    metinler_ = [v for g in _akis_goruntu for v in g.values()]
+    sina("tur SURERKEN akis vardi", bool(metinler_), str(_akis_goruntu[:3]))
+    sina("akis BUYUYEREK geldi (once kismi, sonra tam)",
+         len(set(metinler_)) >= 2 and metinler_[-1].startswith("Merhaba patron"),
+         str(metinler_))
+    sina("akista JSON/makine metni YOK",
+         bool(metinler_) and not any('"karar"' in m or "{" in m
+                                     for m in metinler_), str(metinler_))
+    sina("bitince akis kaydi SILINDI", akislar(db, ofis.proje_id) == {})
+    sina("cevap yine deftere dustu",
+         any(o["tur"] == "cevap" and "Merhaba patron" in o["govde"] for o in ol))
+
+    # Tur DUSERSE de akis asili kalmaz.
+    class DusenMotor(SahteMotor):
+        def tur_kos(self, metin, **ayar):
+            yield from super().tur_kos(metin, **ayar)
+            raise RuntimeError("motor koptu")
+
+    s_dus = Sohbet(ofis, motor_fabrikasi=lambda ad, **k: DusenMotor(cevap=kutu_akis))
+    try:
+        list(s_dus.konus("naber 2"))
+    except Exception:
+        pass
+    sina("tur dusunce de akis kaydi SILINDI", akislar(db, ofis.proje_id) == {})
+
+    # Akisi yazamamak lider turunu OLDURMEZ, ama sessiz de kalmaz.
+    _eski_yaz = _sm.AkisYazici.__call__
+
+    def _bozuk_yaz(self, parca):
+        raise OSError("disk dolu")
+
+    _sm.AkisYazici.__call__ = _bozuk_yaz
+    try:
+        ol2 = list(s_akis.konus("naber 3"))
+    finally:
+        _sm.AkisYazici.__call__ = _eski_yaz
+    sina("akis yazilamasa da CEVAP geldi",
+         any(o["tur"] == "cevap" and "Merhaba" in o["govde"] for o in ol2))
+    with db.baglanti() as c:
+        _u = c.execute("SELECT govde FROM olay WHERE tur='uyari' AND govde LIKE "
+                       "'%panele akitilamadi%'").fetchall()
+    sina("akis hatasi BIR KEZ uyari olarak yazildi", len(_u) == 1, str(len(_u)))
+finally:
+    _sm.AKIS_ARALIK_SN = _eski_aralik
+
+# SEYREK GUNCELLEME: 200 hizli parca -> birkac guncelleme (yarim JSON her
+# parcada yeniden ayiklanmasin). Akis DEFTERE hic yazilmaz (olculdu: yuk
+# altinda her yazim 100-150 ms ve defter kilidini tutuyordu).
+_yazim = {"n": 0}
+_eski_bel = _sm._bellege_yaz
+
+
+def _sayan(*a):
+    _yazim["n"] += 1
+    _eski_bel(*a)
+
+
+_sm._bellege_yaz = _sayan
+try:
+    _ay = _sm.AkisYazici(None, "p", "m")
+    _ay('{"karar":"cevap","gerekce":"g","cevap":"')
+    for _i in range(200):
+        _ay("x")
+    _ay.bitir()
+finally:
+    _sm._bellege_yaz = _eski_bel
+sina("akis DEFTERE yazilmiyor", "ayar_yaz" not in
+     Path(_sm.__file__).read_text(encoding="utf-8").split("class AkisYazici")[1]
+     .split("def akislar")[0])
+sina("hizli parcalar SEYREK guncelleniyor", 1 <= _yazim["n"] <= 4,
+     str(_yazim["n"]))
+
+
 print(f"\n== sonuc: {GECEN} gecti, {KALAN} kaldi ==")
 print(f"klasor: {kok}")
 sys.exit(1 if KALAN else 0)

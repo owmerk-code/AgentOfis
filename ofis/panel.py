@@ -2274,8 +2274,24 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
                 "WHERE m.proje_id = ? AND m.gonderen = 'insan' "
                 "AND m.mod = 'uyandiran' ORDER BY m.rowid DESC LIMIT ?",
                 (ofis.proje_id, max(1, min(int(adet), 200)))).fetchall()
-        return {"mesajlar": [dict(r) for r in reversed(rows)],
+        from .sohbet import akislar
+        akan = akislar(ofis.db, ofis.proje_id)
+        mesajlar = [dict(r) for r in reversed(rows)]
+        for m in mesajlar:
+            # Cevabi dusmus mesajin akisi GOSTERILMEZ (kayit silinmemis
+            # olsa bile): yarim metin, tam cevabin yerini almaz.
+            m["akis"] = "" if m["cevap"] else akan.get(str(m["id"]), "")
+        return {"mesajlar": mesajlar,
                 "kosu": dict(_KOSU), "danisma": dict(_DANISMA)}
+
+    @uygulama.get("/api/sohbet/akis")
+    def api_sohbet_akis():
+        """Liderin YAZILMAKTA olan cevaplari -- panel bunu kosu surerken
+        sik yoklar. Sohbetin tamamini her seferinde cekmemek icin ayri uc."""
+        ofis = ofis_ac()
+        from .sohbet import akislar
+        return {"akis": akislar(ofis.db, ofis.proje_id),
+                "kosu": dict(_KOSU)}
 
     @uygulama.get("/api/ara")
     def api_ara(q: str = ""):

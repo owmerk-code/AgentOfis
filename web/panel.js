@@ -3097,18 +3097,58 @@ async function cizSohbet(kap) {
     i.append(el("div", "sohbet-ust", `sen → ${m.alici} · ${saat(m.olusturuldu)}`),
              document.createTextNode(m.govde));
     kap.append(i);
-    const l = el("div", "sohbet-balon lider" + (m.cevap ? "" : " bekliyor"));
+    const l = el("div", "sohbet-balon lider" + (m.cevap ? "" : (m.akis ? " akiyor" : " bekliyor")));
+    if (!m.cevap) l.dataset.mesaj = m.id;
     l.append(el("div", "sohbet-ust", m.cevap
       ? `${m.alici} · ${saat(m.cevaplandi)}` + (m.gorev_no ? ` · #${m.gorev_no}` : "")
       : `${m.alici}`));
     const dusunuyor = (r.kosu && r.kosu.calisiyor)
       || (r.danisma && r.danisma.calisiyor && r.danisma.ajan === m.alici);
-    l.append(document.createTextNode(m.cevap || (dusunuyor
-      ? "düşünüyor — bitince cevap buraya düşer…"
-      : "cevap gelmedi (tur yarıda kalmış olabilir; günlükte 'hata' var mı bak).")));
+    const govde = el("span", "sohbet-yazi");
+    govde.textContent = m.cevap || m.akis || (dusunuyor
+      ? "düşünüyor…"
+      : "cevap gelmedi (tur yarıda kalmış olabilir; günlükte 'hata' var mı bak).");
+    l.append(govde);
     kap.append(l);
   }
   kap.scrollTop = kap.scrollHeight;
+  if (r.kosu && r.kosu.calisiyor) sohbetAkisIzle();
+}
+
+/* CEVAP YAZILIRKEN AKAR (29.09.2026). Lider kosarken yalniz AKAN metin
+   yoklanir ve bekleyen balonun ICI degistirilir -- pano bastan cizilmez
+   (kaydirma ve secim korunur). Akis kaydi kaybolunca (cevap deftere
+   dustu) ya da kosu bitince sohbet bir kez tam cizilir. Metin sunucuda
+   JSON'dan ayiklanmis gelir; burada yorum yok. */
+let _sohbetAkisZaman = null;
+function sohbetAkisIzle() {
+  if (_sohbetAkisZaman) return;
+  const tur = async () => {
+    _sohbetAkisZaman = null;
+    const kap = $("#pano-sohbet");
+    if (!kap || !panoAcik("sohbet")) return;
+    let r;
+    try { r = await al("/api/sohbet/akis"); } catch (e) { return; }
+    const akis = r.akis || {};
+    let biten = false;
+    for (const b of kap.querySelectorAll(".sohbet-balon.lider[data-mesaj]")) {
+      const metin = akis[b.dataset.mesaj];
+      const yazi = b.querySelector(".sohbet-yazi");
+      if (metin) {
+        if (yazi && yazi.textContent !== metin) {
+          const altta = kap.scrollHeight - kap.scrollTop - kap.clientHeight < 40;
+          yazi.textContent = metin;
+          b.classList.remove("bekliyor"); b.classList.add("akiyor");
+          if (altta) kap.scrollTop = kap.scrollHeight;
+        }
+      } else if (b.classList.contains("akiyor")) biten = true;
+    }
+    if (biten || !(r.kosu && r.kosu.calisiyor)) {
+      kap.textContent = ""; await cizSohbet(kap); return;
+    }
+    _sohbetAkisZaman = setTimeout(tur, 400);
+  };
+  _sohbetAkisZaman = setTimeout(tur, 400);
 }
 
 async function cizRaporlar(kap) {

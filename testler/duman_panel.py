@@ -617,6 +617,32 @@ sina("  liderin cevabi TAM geliyor (olay satiri gibi kesilmiyor)",
 sina("  kosu durumu da geliyor (cevap yoksa 'dusunuyor' diyebilsin)",
      "calisiyor" in sh["kosu"])
 
+# -- AKIS: cevabi YAZILAN mesaj panelde akiyor (29.09.2026) --------------
+from ofis.sohbet import AkisYazici as _AY
+_ak_m = ofis.postane.soru_sor("insan", "demir", "Akis denemesi", mod="uyandiran")
+_ay = _AY(ofis.db, ofis.proje_id, _ak_m["id"])
+_ay('{"karar": "cevap", "gerekce": "g", "cevap": "Yaziliyor')
+_ay._yaz(zorla=True)
+_sa = [m for m in istemci.get("/api/sohbet").json()["mesajlar"]
+       if m["govde"] == "Akis denemesi"]
+sina("cevapsiz mesaj panele AKAN metinle geliyor",
+     bool(_sa) and _sa[0]["akis"] == "Yaziliyor", str(_sa)[:160])
+_ya = istemci.get("/api/sohbet/akis").json()
+sina("  ayri akis ucu da veriyor (JSON ayiklanmis)",
+     _ya["akis"].get(str(_ak_m["id"])) == "Yaziliyor", str(_ya)[:160])
+ofis.postane.cevapla(_ak_m["id"], "Tam cevap", cevaplayan="demir")
+_sa = [m for m in istemci.get("/api/sohbet").json()["mesajlar"]
+       if m["govde"] == "Akis denemesi"]
+sina("  cevap dusunce YARIM metin gosterilmiyor (kayit silinmemis olsa bile)",
+     bool(_sa) and _sa[0]["akis"] == "" and _sa[0]["cevap"] == "Tam cevap")
+_ay.bitir()
+sina("  bitince akis ucu bos", str(_ak_m["id"]) not in
+     istemci.get("/api/sohbet/akis").json()["akis"])
+_js_ak = (Path(__file__).resolve().parent.parent / "web" / "panel.js").read_text(encoding="utf-8")
+sina("panel akisi YOKLUYOR ve balonun ICINI degistiriyor",
+     '"/api/sohbet/akis"' in _js_ak and "sohbetAkisIzle" in _js_ak
+     and ".sohbet-yazi" in _js_ak)
+
 # -- AJANA SOR: danisma insana acildi, yukseltme YOK ----------------------
 _P.MOTOR_FABRIKASI = lambda ad, **kw: _Sahte(cevap="Webhook'ta ustel geri cekilme kullan.")
 try:
