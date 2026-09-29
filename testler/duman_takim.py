@@ -100,7 +100,7 @@ sina("`is:` -> IS, plani o takimin LIDERI yazar",
      y["yol"] == "is" and y["ajan"] == "ege" and y["lider"] == "ruzgar", str(y))
 y = takim.yonlendir(ofis, "@cinar iş: ikinci is")
 sina("elinde is olsa da `is:` IS'tir (not degil)", y["yol"] == "is", str(y))
-for metin, beklenen in (("@yok selam", "diye biri yok"),
+for metin, beklenen in (("@yok selam", "diye biri ya da bir takim yok"),
                         ("@demir iş: kendin yap", "lider"),
                         ("@yalniz iş: yaz", "lider yok"),
                         ("@cinar", "Bos mesaj")):
@@ -326,6 +326,65 @@ sina("kabuk: iki liderli ofiste adressiz mesaj COKMEDEN reddediliyor",
 with ofis.db.baglanti() as c:
     n = c.execute("SELECT COUNT(*) FROM mesaj WHERE mod='yonlendirme' AND alici='cinar'").fetchone()[0]
 sina("kabuk ve panel AYNI defteri kullandi (3 not)", n == 3, str(n))
+
+# ---------------------------------------------------------------------------
+print("\nGENEL KANAL -- @TAKIM ve oneri")
+def yon(m):
+    try:
+        return takim.yonlendir(ofis, m)
+    except Exception as exc:  # noqa: BLE001 -- cokme KALDI sayilir, sinama surer
+        return {"hata": str(exc)}
+
+
+y = yon("@URUN sayfa neden yavas")
+sina("@TAKIM -> o takimin lideri", y.get("yol") == "lider" and y.get("lider") == "demir", str(y))
+y = yon("@pazarlama yeni slogan")
+sina("kucuk harfle takim adi", y.get("lider") == "ruzgar", str(y))
+y = yon("@PZ yeni slogan")
+sina("takim onekiyle", y.get("lider") == "ruzgar", str(y))
+h = ""
+try:
+    takim.yonlendir(ofis, "@URUN is: bir sey yap")
+except takim.TakimHatasi as exc:
+    h = str(exc)
+sina("@TAKIM is: reddedilir (is lider uzerinden)", "LIDERI" in h, h)
+h = ""
+try:
+    takim.yonlendir(ofis, "@LIDERSIZ selam")
+except takim.TakimHatasi as exc:
+    h = str(exc)
+sina("lidersiz takim reddedilir", "lideri yok" in h, h)
+h = ""
+try:
+    takim.yonlendir(ofis, "@hayalet2 selam")
+except takim.TakimHatasi as exc:
+    h = str(exc)
+sina("bilinmeyen adres takimlari da sayar", "@URUN" in h and "@PAZARLAMA" in h, h)
+ofis.kadro.ise_al("urun", "metin", kanat_id=kn2, tur="eller", motor="sahte",
+                  klasor=str(kok / "ege"))
+y = yon("@urun kisa bir soru")
+sina("ayni adda ajan varsa AJAN kazanir", y.get("ajan") == "urun", str(y))
+
+o = takim.takim_oner(ofis, "arastirma raporu ve backend sunucusu")
+sina("oneri: rolleri eslesen takim once", o and o[0]["ad"] == "URUN" and o[0]["puan"] > 0,
+     str(o))
+sina("oneri: lidersiz takim onerilmez", all(x["ad"] != "LIDERSIZ" for x in o))
+o = takim.takim_oner(ofis, "zzzqqq xxxyyy")
+sina("eslesme yoksa puan 0 (uydurma 'en uygun' yok)", o and all(x["puan"] == 0 for x in o),
+     str(o))
+
+with ofis.db.baglanti() as c:
+    once = c.execute("SELECT COUNT(*) FROM mesaj").fetchone()[0]
+r = istemci.post("/api/lidere", json={"metin": "backend sunucusu yavas", "kanat": ""})
+j = r.json()
+sina("panel: adressiz + kanatsiz -> ONERI (200)", r.status_code == 200 and j.get("yol") == "oneri",
+     r.text[:200])
+sina("panel onerisi takim listesi tasiyor", any(x["ad"] == "URUN" for x in j.get("oneriler", [])))
+with ofis.db.baglanti() as c:
+    sina("oneride mesaj YAZILMADI (lider kosmadi)",
+         c.execute("SELECT COUNT(*) FROM mesaj").fetchone()[0] == once)
+cikti, hata = kabuk_konus("backend sunucusu yavas")
+sina("kabuk: oneriyle birlikte reddediyor", hata is not None and "@URUN" in hata, str(hata))
 
 print(f"\n== sonuc: {GECEN} gecti, {KALAN} kaldi ==")
 sys.exit(1 if KALAN else 0)

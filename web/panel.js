@@ -4972,6 +4972,40 @@ document.addEventListener("keydown", (e) => {
   else $("#gunluk").classList.add("gizli");
 });
 
+/* GENEL KANAL onerisi: komut satirinin ustunde takim dugmeleri. Puani 0
+   olan takim "onerilen" diye isaretlenmez -- uydurma bir "en uygun"
+   gosterilmez. `metin` null ise satir kaldirilir. */
+function takimOneriGoster(metin, oneriler) {
+  $("#takim-oneri")?.remove();
+  if (metin === null || metin === undefined) return;
+  const kap = el("div", "takim-oneri");
+  kap.id = "takim-oneri";
+  kap.append(el("span", "takim-oneri-soru", "Birden çok takım var — hangisine gitsin?"));
+  const enIyi = oneriler.length && oneriler[0].puan > 0 ? oneriler[0].kanat_id : null;
+  for (const o of oneriler) {
+    const b = el("button", "dugme" + (o.kanat_id === enIyi ? " olumlu" : ""),
+                 o.ad + (o.kanat_id === enIyi ? " · önerilen" : ""));
+    b.title = `lider: ${o.lider}` + (o.puan ? ` · eşleşen: ${o.sebep}` : " · eşleşme yok");
+    b.onclick = async () => {
+      kap.remove();
+      try {
+        await yolla("/api/lidere", { metin, kanat: o.kanat_id, oge: D.secilenOge || null });
+        $("#komut-girdi").value = "";
+        bildir(`mesaj ${o.ad} takımının liderine (${o.lider}) gitti`, "iyi");
+        if (D.yerlesim) panoSec("sohbet");
+      } catch (e) { bildir("gönderilemedi: " + (e.message || e), "kotu"); }
+      yenile();
+    };
+    kap.append(b);
+  }
+  const vaz = el("button", "dugme", "vazgeç");
+  vaz.onclick = () => kap.remove();
+  kap.append(vaz);
+  // Komut satirinin ICINE, onun ustunde SUZULUR: sayfayi itseydi komut
+  // satiri ekranin altina kayardi (olculdu, 1920x900).
+  document.querySelector(".komut").append(kap);
+}
+
 async function komutGonder() {
   const girdi = $("#komut-girdi");
   const metin = girdi.value.trim();
@@ -4996,6 +5030,14 @@ async function komutGonder() {
           + (r.kabin ? " (paylaşılan kabin)" : " (kabin kapalı: ayrı tarayıcı)")
         : "öğe eklendi (sayfa bir web kaynağı değil, tarayıcı açılmadı)", "iyi");
     }
+    if (r && r.yol === "oneri") {
+      // GENEL KANAL: ofis secmez, ONERIR. Mesaj gitmedi; insan takimi
+      // secince ayni istek o takimin kanadiyla yeniden gider.
+      girdi.value = metin;
+      takimOneriGoster(metin, r.oneriler || []);
+      return;
+    }
+    takimOneriGoster(null);
     girdi.placeholder = r && r.yol === "not" ? `not ${r.alici}'a iletilecek`
       : r && r.yol === "soru" ? `${r.alici} düşünüyor…`
       : r && r.yol === "is" ? `iş ${r.atanan}'a veriliyor (planı ${r.alici} yazar)…`

@@ -1647,3 +1647,13 @@ details > summary.hf-bas { cursor: pointer; }
   border: 1px solid var(--iyi); border-radius: 4px; padding: 0 5px;
   white-space: nowrap;
 }
+
+/* GENEL KANAL: takim onerisi (komut satirinin ustunde). */
+.komut { position: relative; }
+.takim-oneri {
+  position: absolute; left: 0; right: 0; bottom: 100%; z-index: 30;
+  display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+  padding: 6px 16px; border-top: 1px solid var(--cizgi); background: var(--zemin-2);
+  box-shadow: 0 -4px 12px rgba(0,0,0,.35);
+}
+.takim-oneri-soru { font-size: var(--yz-alt); color: var(--metin-2); margin-right: 4px; }

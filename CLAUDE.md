@@ -190,6 +190,7 @@ matrisin ölçümüyle karşılaştırır.
   %95/%97) hesap önceden sona alınır.
 - **Tur içi not ve Durdur:** defter üzerinden; Claude stdin/interrupt, Codex
   steer/interrupt. Durdurulan iş arıza değil, Sürdür aynı oturumdan devam.
+- **Genel kanal:** çok takımlı ofiste "Tüm ofis"ten `@TAKIM` o takımın liderine; adres yoksa ofis takım ÖNERİR (model yok), insan seçer.
 - **Takım sohbeti:** adres yok → lider; `@ajan` → işi varsa not, boşsa soru;
   `@ajan iş:` → lider planlar ama sahip o ajan.
 - **Hafıza:** bilgi kapısı (insanın yazdığını ajan devremez), `[[bağ]]`,
@@ -207,7 +208,7 @@ matrisin ölçümüyle karşılaştırır.
   kendi sütunu; "Ajanlar kabinde" (tarayıcılı tek iş panelde canlı).
 - **Codex ajanı kapı varken tam erişimle** koşar (workspace-write'ta `git add` bile yapamıyordu, push sandbox kullanıcısı yüzünden düşüyordu); riskli adım kapıda.
 - **Gerçek terminal kipi** kuruldu ve panelde (üst çubuk anahtarı, ajan panosu = gerçek terminal); varsayılan hâlâ `arka`.
-- **Sınamalar:** 43 duman dosyası, **3194/3194** (29.09). Deneme seti 15/15
+- **Sınamalar:** 43 duman dosyası, **3207/3207** (29.09). Deneme seti 15/15
   (Claude ve Codex, işçi+lider).
 - **Kullanıcının belirttiği eksikler (29.09):** her panoda her zaman açık
   yazma yeri; takım sohbeti panosunun İÇİNDE kutu (bugün yazılan yer

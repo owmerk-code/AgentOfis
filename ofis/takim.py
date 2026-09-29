@@ -55,6 +55,75 @@ class TakimHatasi(ValueError):
     pass
 
 
+# ---------------------------------------------------------------------------
+# GENEL KANAL (29.09.2026) -- birden cok takimli ofiste "Tum ofis"ten yazmak
+#
+# Kullanici ile kararlastirildi: genel mudur YOK; her takimin lideri ve
+# sohbeti var; "Genel" kanal bir YONLENDIRICIDIR. `@TAKIM ...` o takimin
+# liderine gider; adres yoksa ofis en uygun takimi ONERIR, insan secer.
+# Ofis KENDI BASINA SECMEZ: yanlis kanada verilen hedef, yanlis kadroya
+# yanlis isi verir (orkestra._lider_sec'in reddettigi hata).
+#
+# Oneri model CAGIRMADAN hesaplanir (kota harcamaz): mesajin kelimeleri
+# ile takimin adi, uyelerinin rolleri ve son islerinin basliklari. Kelime
+# eslesmesi hafizanin kullandigiyla AYNI (`bellek._kelimeler/_ortak`,
+# Turkce ek icin onek) -- ikinci bir kopya yazilmadi.
+# ---------------------------------------------------------------------------
+
+def kanatlar(ofis) -> list:
+    with ofis.db.baglanti() as conn:
+        return [dict(r) for r in conn.execute(
+            "SELECT id, ad, onek FROM kanat WHERE proje_id = ? "
+            "ORDER BY olusturuldu, rowid", (ofis.proje_id,)).fetchall()]
+
+
+def kanat_bul(ofis, ad: str):
+    """`@URUN`, `@urun`, `@Ürün` ya da onek (`@UR`) -> kanat; yoksa None."""
+    from .bellek import _sadelestir
+    hedef = _sadelestir(ad)
+    for k in kanatlar(ofis):
+        if hedef in (_sadelestir(k["ad"]), _sadelestir(k["onek"])):
+            return k
+    return None
+
+
+def takim_oner(ofis, metin: str, azami: int = 4) -> list:
+    """Liderli takimlari mesaja uygunluguna gore siralar.
+
+    Doner: [{kanat_id, ad, lider, puan, sebep}] -- puan ortak kelime sayisi.
+    Hepsi 0 ise ONERI YOKTUR (siralama yalniz kurulus sirasidir) ve bu
+    `puan` alanindan okunur: uydurma bir "en uygun" gosterilmez.
+    """
+    from .bellek import _kelimeler, _ortak
+    from . import roller
+    mesaj = _kelimeler(metin)
+    kadro = ofis.kadro.liste()
+    sonuc = []
+    for k in kanatlar(ofis):
+        uyeler = [a for a in kadro if a["kanat_id"] == k["id"]]
+        lider = next((a["ad"] for a in uyeler if a["lider_mi"]), "")
+        if not lider:
+            continue
+        parca = [k["ad"]]
+        for a in uyeler:
+            parca.append(a["meslek"])
+            try:
+                parca.append(roller.rol(a["meslek"]).ozet)
+            except Exception:                    # noqa: BLE001 -- eski meslek adi
+                pass
+        with ofis.db.baglanti() as conn:
+            parca += [r["baslik"] for r in conn.execute(
+                "SELECT baslik FROM gorev WHERE proje_id = ? AND kanat_id = ? "
+                "AND silindi = 0 ORDER BY rowid DESC LIMIT 40",
+                (ofis.proje_id, k["id"])).fetchall()]
+        havuz = _kelimeler(" ".join(parca))
+        ortak = sorted(x for x in mesaj if _ortak({x}, havuz))
+        sonuc.append({"kanat_id": k["id"], "ad": k["ad"], "lider": lider,
+                      "puan": len(ortak), "sebep": ", ".join(ortak[:5])})
+    sonuc.sort(key=lambda x: -x["puan"])
+    return sonuc[:azami]
+
+
 def ayristir(metin: str) -> dict:
     """`{"ad": str|"", "metin": str, "is_mi": bool}`. Adres yoksa ad bos."""
     metin = (metin or "").strip()
@@ -99,9 +168,27 @@ def yonlendir(ofis, metin: str) -> dict:
         eslesen = [x for ad, x in kadro.items() if ad.lower() == a["ad"].lower()]
         ajan = eslesen[0] if len(eslesen) == 1 else None
     if ajan is None:
+        # GENEL KANAL: `@TAKIM` o takimin LIDERINE gider. Ayni adda bir
+        # ajan varsa ajan kazanir (yukarida) -- kisi, takimdan ozeldir.
+        k = kanat_bul(ofis, a["ad"])
+        if k is not None:
+            if a["is_mi"]:
+                raise TakimHatasi(
+                    f"`@{k['ad']} is:` olmaz: takima is LIDERI uzerinden verilir. "
+                    f"`is:` olmadan yaz ya da `@ajan is:` kullan.")
+            try:
+                lider_ad = ofis.kadro.lider(k["id"])["ad"]
+            except KadroHatasi:
+                raise TakimHatasi(f"{k['ad']} takiminin lideri yok. Once o "
+                                  "takima bir lider ise al.")
+            return {"yol": "lider", "ajan": "", "lider": lider_ad,
+                    "metin": a["metin"], "gorev_no": None, "kanat": k["ad"]}
+        takimlar = [k["ad"] for k in kanatlar(ofis)]
         raise TakimHatasi(
-            f"'@{a['ad']}' diye biri yok. Ofistekiler: "
-            + ", ".join("@" + ad for ad in kadro) + " (ya da @ olmadan lidere yaz).")
+            f"'@{a['ad']}' diye biri ya da bir takim yok. Ofistekiler: "
+            + ", ".join("@" + ad for ad in kadro)
+            + (" · takimlar: " + ", ".join("@" + t for t in takimlar) if takimlar else "")
+            + " (ya da @ olmadan lidere yaz).")
     if ajan["lider_mi"]:
         if a["is_mi"]:
             raise TakimHatasi(

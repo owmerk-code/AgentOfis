@@ -202,6 +202,16 @@ def komut_konus(a) -> None:
         yaz(f"{yon['ajan'].upper()} (salt okunur cevap):")
         yaz(sonuc["cevap"])
         return
+    if not (yon["lider"] or a.lider) and sum(
+            1 for x in ofis.kadro.liste() if x["lider_mi"]) > 1:
+        # GENEL KANAL: ofis secmez, ONERIR (model cagrilmaz).
+        oneriler = _takim.takim_oner(ofis, yon["metin"])
+        satir = [f"  @{o['ad']}  (lider {o['lider']}"
+                 + (f", eslesen: {o['sebep']})" if o["puan"] else ")")
+                 for o in oneriler]
+        raise SystemExit("Ofiste birden cok takim var; mesaji hangi takima "
+                         "gondereyim? Satirin basina takimi yaz:\n"
+                         + "\n".join(satir))
     if yon["yol"] == "is":
         yaz(f"IS -> {yon['ajan']} (plani {yon['lider']} yazar: olcut, "
             "yazma alani, kanit)")

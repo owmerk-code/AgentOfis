@@ -12492,3 +12492,31 @@ koşuyor (ölçülmüştü) → terminal her açılışta kapıyı sınar.
 
 Sınama `duman_codex_app` (72): kapı varken tam, yokken dar, kafa okur;
 iki mutasyon ateş etti.
+
+## GENEL KANAL (29.09.2026) — `@TAKIM` ve ofisin önerisi
+
+Kullanıcıyla kararlaştırıldı: genel müdür YOK; her takımın lideri ve
+sohbeti var (takım sekmesi seçiliyken mesaj o takımın liderine gider ve
+akış o takıma süzülür — bu zaten vardı). Eksik olan "Tüm ofis"ten yazmaktı:
+birden çok lider varken panel 400 veriyordu ("kanat seç").
+
+- `@TAKIM mesaj` (ad ya da önek, büyük/küçük ve Türkçe harf farkı yok) o
+  takımın LİDERİNE gider. Aynı adda bir ajan varsa AJAN kazanır. `@TAKIM
+  iş:` reddedilir (takıma iş lider üzerinden verilir). Lidersiz takım
+  reddedilir; bilinmeyen adres artık takımları da sayar.
+- Adres yoksa ofis **seçmez, önerir** (`takim.takim_oner`): model
+  ÇAĞRILMAZ, kota yok; mesajın kelimeleri takımın adı, üyelerinin rolleri
+  ve son 40 iş başlığıyla karşılaştırılır (hafızanın eşleştiricisi,
+  Türkçe ek için önek — kopya yazılmadı). Eşleşme yoksa hiçbir takım
+  "önerilen" diye işaretlenmez. Panel mesajı yazmaz, lider koşmaz; komut
+  satırının üstünde takım düğmeleri çıkar, seçilince aynı istek o takımla
+  gider. Kabuk öneriyle birlikte reddeder (`@TAKIM` yaz).
+- Tarayıcıda ölçüldü (örnek ofis kopyası, 8911): "kampanya için slogan ve
+  reklam metni" → PAZARLAMA önerildi (eşleşen: reklam, metni), tıklayınca
+  ruzgar'a gitti. Ölçümle çıkan kusur: öneri satırı sayfayı itip komut
+  satırını ekranın altına kaydırıyordu → komut satırının üstünde süzülür.
+
+Sınama `duman_takim` (80): takım adı/önek/küçük harf, ajan önceliği,
+`is:` reddi, lidersiz takım, öneri sıralaması, eşleşme yokken 0, panel
+mesaj yazmadan öneri döner, kabuk. Mutasyonlar ateş etti (biri önce
+sınamayı ÇÖKERTTİ → çağrılar korundu; biri yanlış kurulmuştu → düzeltildi).

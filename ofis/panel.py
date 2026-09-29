@@ -2296,15 +2296,14 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
         elif len(liderler) == 1:
             lider = liderler[0]
         else:
-            # SESSIZCE BIRINI SECMEYIZ. Ilk surumum `kadro[0]` aliyordu ve
-            # bu, isi yanlis kanada vermenin en sessiz yoluydu -- panelde
-            # hicbir sey yanlis gorunmezdi. Cekirdek zaten ayni sebeple
-            # reddediyor (`orkestra._lider_sec`).
-            raise HTTPException(
-                400, "Ofiste birden fazla lider var ("
-                     + ", ".join(a["ad"] for a in liderler)
-                     + "). Ust seritten bir KANAT sec: yanlis kanada verilen "
-                       "hedef, yanlis kadroya yanlis isi verir.")
+            # GENEL KANAL (29.09): adres yok, kanat secili degil, birden cok
+            # lider. SESSIZCE BIRINI SECMEYIZ (ilk surum `kadro[0]` aliyordu:
+            # isi yanlis kanada vermenin en sessiz yolu). Ofis en uygun
+            # takimi ONERIR -- model cagirmadan, kota harcamadan -- insan
+            # secer; secim gelince ayni istek kanatla yeniden gelir. Mesaj
+            # yazilmaz, lider kosmaz.
+            return {"yol": "oneri", "kosuyor": False,
+                    "oneriler": _takim.takim_oner(ofis, yon["metin"])}
         if _KOSU["calisiyor"]:
             raise HTTPException(
                 409, "Lider su an zaten kosuyor: " + (_KOSU["mesaj"] or "?")
