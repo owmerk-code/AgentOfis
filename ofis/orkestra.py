@@ -738,7 +738,12 @@ class Orkestra:
                                  ajan_ad=lider["ad"])
 
         def kostur(b):
-            motor = self.motor_fabrikasi(b["motor"])
+            from .motor.tui import kipe_gore
+            # GERCEK TERMINAL KIPI liderde de (29.09): her tur TEMIZ bir
+            # terminal (oturum yok), panoda liderin son terminali gorunur.
+            motor = kipe_gore(self.db, self.proje_id,
+                              self.motor_fabrikasi(b["motor"]),
+                              ajan_ad=lider["ad"], butce_usd=butce_usd)
             parcalar, ek = [], {}
             # Butce, DESTEKLEYEN motora verilir. Desteklemeyen motor (codex)
             # butce gelince turu hic baslatmadan reddeder -- para kontrolleri

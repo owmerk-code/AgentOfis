@@ -201,6 +201,45 @@ try:
 except ImportError as exc:
     print(f"  [ATLANDI] fastapi yok: {exc}")
 
+print("\n-- 12. claude dokum cevirisi: ayri mesajlar YAPISMAZ --")
+from ofis.motor.claude import ClaudeMotoru  # noqa: E402
+_d = {}
+for _t in ("Once dosyaya bakacagim.", "KARAR: kapat"):
+    ClaudeMotoru().tui_cevir({"type": "assistant", "message": {
+        "id": _t, "content": [{"type": "text", "text": _t}]}}, _d)
+sina("KARAR satir basinda kaliyor", "\nKARAR: kapat" in "".join(_d["metin"]),
+     repr("".join(_d["metin"])))
+
+print("\n-- 13. kip kurali (kipe_gore) --")
+db.ayar_yaz(ofis.proje_id, "terminal_kipi", "gercek")
+sina("tavan gereken tur ARKADA kalir (fable hakemi)",
+     not isinstance(tui.kipe_gore(db, ofis.proje_id, SahteTui(), butce_usd=0.5), tui.TuiMotoru))
+_m = tui.kipe_gore(db, ofis.proje_id, SahteTui(), ajan_ad="lale")
+sina("tavansiz tur gercek terminalde, ajan adi tasiniyor",
+     isinstance(_m, tui.TuiMotoru) and _m.ajan_ad == "lale")
+_o1 = list(_m.tur_kos("ilk lider turu", klasor=str(_KOK), zaman_asimi=45))[-1].ek.get("oturum_id")
+_o2 = list(tui.kipe_gore(db, ofis.proje_id, SahteTui(), ajan_ad="lale").tur_kos(
+    "ikinci lider turu", klasor=str(_KOK), zaman_asimi=45))[-1].ek.get("oturum_id")
+_acik = [x["oturum_id"] for x in tui.acik_oturumlar() if x["ajan"] == "lale"]
+sina("lider her turda TEMIZ terminal, eskisi kapandi (tek terminal kalir)",
+     _o1 != _o2 and _acik == [_o2], f"{_o1} {_o2} {_acik}")
+db.ayar_yaz(ofis.proje_id, "terminal_kipi", "arka")
+
+print("\n-- 14. codex salt okunur: --add-dir YOK --")
+from ofis.motor.codex import CodexMotoru  # noqa: E402
+_cm = CodexMotoru()
+if _cm.tui_ikilisi():
+    def _plan(yaz):
+        return _cm.tui_plani(oturum_id="", model="", efor="", yazabilir=yaz,
+                             ek_klasorler=("C:/ek",), mcp_yapilandirma="",
+                             izinli_araclar=(), ek_ortam=None,
+                             kanca_komutu=tui.kanca_komutu(), gecici=_KOK)["argv"]
+    sina("salt okunur turda --add-dir verilmez (codex terminali kapatiyordu)",
+         "--add-dir" not in _plan(False))
+    sina("yazabilen turda --add-dir verilir", "--add-dir" in _plan(True))
+else:
+    print("  [ATLANDI] codex ikilisi yok")
+
 for x in tui.acik_oturumlar():
     tui.kapat(x["oturum_id"])
 sina("butun terminaller kapandi", not tui.acik_oturumlar())

@@ -165,22 +165,14 @@ class Koltuk:
     #: bugunku yapili akis) | 'gercek' (insanin kullandigi Claude/Codex
     #: terminali, `motor/tui.py`). Iki kip ayni kapidan, ayni kurallarla
     #: gecer; gercek kip olculup esitlenene kadar varsayilan degismez.
-    TERMINAL_KIPI = "terminal_kipi"
+    from .motor.tui import KIP_AYARI as TERMINAL_KIPI  # tek yerde
 
     def _motor_ac(self, ad: str):
         """Motoru acar; gercek terminal kipi aciksa ve motor destekliyorsa
         sarmalar. Desteklemeyen motor SESSIZCE arka plana dusmez: gorunur
         bir uyari yazilir."""
-        motor = self.motor_fabrikasi(ad)
-        if self.db.ayar_oku(self.proje_id, self.TERMINAL_KIPI, "arka") != "gercek":
-            return motor
-        if not getattr(motor, "tui_destegi", False):
-            self.db.olay_yaz(self.proje_id, "uyari",
-                             f"{ad} gercek terminal kipini desteklemiyor; "
-                             "bu tur ARKA PLANDA kosuyor.")
-            return motor
-        from .motor.tui import TuiMotoru
-        return TuiMotoru(motor)
+        from .motor.tui import kipe_gore
+        return kipe_gore(self.db, self.proje_id, self.motor_fabrikasi(ad))
 
     # -- ana akis ----------------------------------------------------------
 

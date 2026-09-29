@@ -945,6 +945,12 @@ class ClaudeMotoru(Motor):
                 if isinstance(blok, dict) and blok.get("type") == "text":
                     parca = str(blok.get("text") or "")
                     if parca:
+                        # AYRI MESAJLAR YAPISMASIN (29.09, olculdu): rapor
+                        # "...dogrulayacagim.**Patrona rapor**" diye birlesti.
+                        # Satir basi arayan `KARAR:`/`DURUM:` desenleri bozulur
+                        # (codex'te bir kez odendi, `_mesaj_parcasi`).
+                        if durum.get("metin"):
+                            parca = "\n\n" + parca
                         durum.setdefault("metin", []).append(parca)
                         olaylar.append(MotorOlayi("metin", parca))
         if tur in ("assistant", "user"):

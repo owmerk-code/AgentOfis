@@ -137,6 +137,33 @@ def kapat(oturum_id: str) -> str:
     return k["terminal"].kapat(duzgun=True, bekle=8) if k else "yok"
 
 
+#: Ayar anahtari (koltuk da bunu okur): 'arka' | 'gercek'.
+KIP_AYARI = "terminal_kipi"
+
+
+def kipe_gore(db, proje_id: str, motor, *, ajan_ad: str = "",
+              butce_usd=None):
+    """TEK KURAL, uc cagiran (isci turu, liderin planlama/triyaj/rapor
+    turu, liderin incelemesi): ayar 'gercek' ve motor destekliyorsa
+    gercek terminal; degilse motorun kendisi.
+
+    TUR BASINA DOLAR TAVANI GEREKEN tur (fable hakemi, API hesabi) ARKADA
+    kalir: gercek terminal tavan uygulayamaz ve tavani sessizce dusurmek
+    kapi modelinin "tavan zorunlu" kuralini delerdi. Desteklemeyen motor
+    da arkada kalir ve bu GORUNUR bir uyari olur.
+    """
+    if db.ayar_oku(proje_id, KIP_AYARI, "arka") != "gercek":
+        return motor
+    if butce_usd:
+        return motor
+    if not getattr(motor, "tui_destegi", False):
+        db.olay_yaz(proje_id, "uyari",
+                    f"{getattr(motor, 'ad', '?')} gercek terminal kipini "
+                    "desteklemiyor; bu tur ARKA PLANDA kosuyor.", ajan_ad=ajan_ad)
+        return motor
+    return TuiMotoru(motor, ajan_ad=ajan_ad)
+
+
 def _bostakileri_kapat() -> None:
     simdi = time.time()
     with _KILIT:
@@ -154,10 +181,13 @@ class TuiMotoru(Motor):
     butce_destegi = False
     araclar_kapatilabilir = False
 
-    def __init__(self, ic: Motor) -> None:
+    def __init__(self, ic: Motor, *, ajan_ad: str = "") -> None:
         if not getattr(ic, "tui_destegi", False):
             raise MotorHatasi(f"{ic.ad} gercek terminal kipini desteklemiyor.")
         self.ic = ic
+        #: Panelin terminali hangi ajana baglayacagi. Isci turunda kimlik
+        #: MCP ortamindan da gelir; lider turunda MCP yoktur, buradan gelir.
+        self.ajan_ad = ajan_ad
         self.ad = ic.ad
         self.mcp_konusur = ic.mcp_konusur
         self.baglayici_tasir = getattr(ic, "baglayici_tasir", False)
@@ -230,10 +260,20 @@ class TuiMotoru(Motor):
                                                "oturum_id": oturum_id})
                 return
             oturum_id = plan["oturum_id"] or f"yeni-{time.time_ns()}"
+            sahibi = kimlik.get("OFIS_AJAN", "") or self.ajan_ad
+            # AYNI AJANIN eski (kosmayan) terminali kapanir: lider her turu
+            # TEMIZ oturumla acar (Yasa 4); panoda son terminal gorunur,
+            # eskiler birikmez.
+            if sahibi:
+                with _KILIT:
+                    eski = [k for k, v in _ACIK.items()
+                            if v.get("ajan") == sahibi and not v.get("kosuyor")]
+                for k in eski:
+                    kapat(k)
             # Motorun sistem eki bayrakla verilemiyorsa (codex) ilk mesaja.
             metin = plan.get("ilk_on_ek", "") + metin
             kayit = {"terminal": t, "plan": plan, "son": time.time(),
-                     "ajan": kimlik.get("OFIS_AJAN", ""),
+                     "ajan": sahibi,
                      "gorev": kimlik.get("OFIS_GOREV", ""), "ofset": 0}
             with _KILIT:
                 _ACIK[oturum_id] = kayit

@@ -12581,3 +12581,33 @@ Sınama `duman_ekler.py` (26); üç mutasyon ateş etti (işe taşınmasın ·
 boyut sınırı kalksın · akış ayıklamasın).
 Açık: danışma (`@ajan` sorusu) araçsızdır, eke bakamaz; eke bakması
 gereken iş `@ajan iş:` ya da lidere yazılır.
+
+## LİDER DE GERÇEK TERMİNALDE (29.09.2026)
+
+Tek kural `tui.kipe_gore` üç yerde: işçi turu (koltuk), liderin
+triyaj/planlama/rapor turu (orkestra), liderin incelemesi (lider). Lider
+her turu TEMİZ oturumla açar (Yasa 4): her tur yeni terminal, aynı ajanın
+eski (koşmayan) terminali kapanır; panoda liderin son terminali görünür.
+**Tur başına dolar tavanı gereken tur (Fable hakemi, API hesabı) ARKADA
+kalır**: gerçek terminal tavan uygulayamaz, tavanı sessizce düşürmek kapı
+modelinin "tavan zorunlu" kuralını delerdi.
+
+Gerçek tam halka (boş klasör, `konus`, gerçek terminal kipi):
+- Claude (lider sonnet, işçi haiku): triyaj → plan → işçi → inceleme KAPAT
+  → rapor, ~104 sn; 4 lider terminali + 1 işçi terminali.
+- Codex (gpt-6-luna): aynı halka, iş kapandı, ~149 sn.
+
+Ölçümle çıkan iki kusur (kapatıldı):
+1. **Claude'da ayrı mesajlar yapışıyordu** (rapor "…doğrulayacağım.**Patrona
+   rapor**"). Satır başı arayan `KARAR:`/`DURUM:` desenlerini bozar;
+   codex'te bir kez ödenmişti. Mesajlar arasına boş satır.
+2. **Codex salt okunur turda `--add-dir` verilince terminali kapatıyordu**
+   ("effective permissions do not allow additional writable roots") →
+   liderin incelemesi hiç koşmadı, iş incelemede kaldı. Salt okunur sandbox
+   her yeri okuyabildiği için ek kök yalnız yazabilen turda.
+
+Yan not (açık): codex'in sistem eki "BRIFING.md'yi oku" diyor; lider
+turunda da okunuyor (gereksiz ama zararsız, iki kipte aynı).
+
+Sınama `duman_tui` (39): mesaj ayrımı, tavanlı tur arkada, lider terminali
+tek kalır, codex salt okunurda `--add-dir` yok.

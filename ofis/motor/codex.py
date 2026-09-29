@@ -1587,7 +1587,11 @@ class CodexMotoru(Motor):
                  "-a", "never", "--dangerously-bypass-hook-trust",
                  "-c", "hooks.PreToolUse=[{matcher=\"*\",hooks=[{type=\"command\","
                        "command=" + json.dumps(kanca) + "}]}]"]
-        for ek in ek_klasorler or ():
+        # `--add-dir` YALNIZ YAZABILEN turda. OLCULDU (29.09): salt okunur
+        # (lider incelemesi) turda codex "effective permissions do not allow
+        # additional writable roots" deyip terminali KAPATTI. Salt okunur
+        # sandbox zaten her yeri OKUYABILIYOR; ek kok yalniz yazma icindir.
+        for ek in (ek_klasorler or ()) if yazabilir else ():
             argv += ["--add-dir", str(ek)]
         model = str(model or "").strip()
         if model:

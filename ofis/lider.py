@@ -583,7 +583,12 @@ class Lider:
                              gorev_id=gorev["id"])
 
         def kostur(b):
-            motor = self.motor_fabrikasi(b["motor"])
+            from .motor.tui import kipe_gore
+            # Inceleme de gercek terminalde olabilir -- TEMIZ oturum, salt
+            # okunur. Tavan gereken tur (fable hakemi) ARKADA kalir.
+            motor = kipe_gore(self.db, self.proje_id,
+                              self.motor_fabrikasi(b["motor"]),
+                              ajan_ad=lider["ad"], butce_usd=butce_usd)
             parcalar, ek = [], {}
             fren = tavan.KacakFreni()
             for olay in motor.tur_kos(

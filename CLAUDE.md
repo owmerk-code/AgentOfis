@@ -150,7 +150,7 @@ matrisin ölçümüyle karşılaştırır.
 | `ofis/postane.py` | Soru/onay, patronun notu (`NOT_KURALI`), imza/kapsam ile onay eşleştirme. |
 | `ofis/danisma.py` | Ajana sorulan soruyu teslim eder (araçsız, salt okunur); cevaplanamazsa insana yükseltir. |
 | `ofis/mcp_sunucu.py` | Ofis MCP: durum · kanit_ekle · karar_yaz · sohbete_yaz · soru_sor · onay_iste · bilgi_yaz · gorev_ac · gorsel_uret/iste · video_uret/durum/iste · izin_sor (kanca) · giris_iste. Kimlik ORTAMDAN gelir. |
-| `ofis/motor/tui.py` | GERÇEK TERMİNAL KİPİ: iç motoru (claude/codex) ConPTY'de gerçek CLI olarak koşturan sarmalayıcı; brifing yapıştırılır, olaylar CLI'ın oturum dosyasından okunur, terminal turlar arası açık kalır. Ayar `terminal_kipi` (`arka`/`gercek`). |
+| `ofis/motor/tui.py` | GERÇEK TERMİNAL KİPİ: iç motoru (claude/codex) ConPTY'de gerçek CLI olarak koşturan sarmalayıcı; brifing yapıştırılır, olaylar CLI'ın oturum dosyasından okunur, terminal turlar arası açık kalır. Ayar `terminal_kipi` (`arka`/`gercek`); tek kural `kipe_gore` (işçi + lider; tavan gereken tur arkada). |
 | `ofis/kanca.py` | Gerçek terminal (TUI) kancası: CLI'ın her araç çağrısını arka plan kipindeki AYNI kapıya sorar; hata = deny; `--oz-sinama`. |
 | `ofis/izin.py` | Patronun ACIKCA istedigi riskli eylem (push, deploy) sorulmaz: lider planda patronun sozunden KELIMESI KELIMESINE alintiyla izin yazar, ofis sinifi olcer, olumsuz cumleyi reddeder; is basina ve kalici (insan). Para ve silme izinle acilmaz. |
 | `ofis/riskli.py` | Riskli eylem ölçütü (geri alınabilir mi · dışarı çıkıyor mu · para var mı) + sert durak; kabuk kuralları; araç adı polaritesi (okuma serbest, tanınmayan sorulur); şifre/kart alanı. |
@@ -208,7 +208,7 @@ matrisin ölçümüyle karşılaştırır.
 - **Son işler:** liderin cevabı panelde akıyor; takım sohbeti (`@ajan`) ve
   kendi sütunu; "Ajanlar kabinde" (tarayıcılı tek iş panelde canlı).
 - **Codex ajanı kapı varken tam erişimle** koşar (workspace-write'ta `git add` bile yapamıyordu, push sandbox kullanıcısı yüzünden düşüyordu); riskli adım kapıda.
-- **Gerçek terminal kipi** kuruldu ve panelde (üst çubuk anahtarı, ajan panosu = gerçek terminal); varsayılan hâlâ `arka`.
+- **Gerçek terminal kipi** kuruldu ve panelde (üst çubuk anahtarı, ajan panosu = gerçek terminal); lider de gerçek terminalde (her tur temiz); varsayılan hâlâ `arka`.
 - **Sınamalar:** 43 duman dosyası, **3247/3247** (29.09). Deneme seti 15/15
   (Claude ve Codex, işçi+lider).
 - **Kullanıcının belirttiği eksikler (29.09):** her panoda her zaman açık
