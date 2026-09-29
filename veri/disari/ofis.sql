@@ -54,9 +54,9 @@ INSERT INTO "ayar" VALUES('915d303e41ee4cb59fa908401d277926','kademe:codex:hizli
 INSERT INTO "ayar" VALUES('915d303e41ee4cb59fa908401d277926','guncelleme:karar:model:codex:gpt-5.6-luna->gpt-6-luna','onay','2026-09-23T00:21:44+00:00');
 INSERT INTO "ayar" VALUES('915d303e41ee4cb59fa908401d277926','kademe:codex:standart','gpt-6-sol','2026-09-23T00:22:19+00:00');
 INSERT INTO "ayar" VALUES('915d303e41ee4cb59fa908401d277926','guncelleme:karar:cli:gemini:0.60.0','onay','2026-09-24T01:36:44+00:00');
-INSERT INTO "ayar" VALUES('915d303e41ee4cb59fa908401d277926','limit_canli_son','1790684636.1071808','2026-09-29T12:23:56+00:00');
-INSERT INTO "ayar" VALUES('915d303e41ee4cb59fa908401d277926','limit_canli:claude:','{"motor": "claude", "hesap": "", "olculdu": "2026-09-29T12:23:58+00:00", "limit_pencere": {"kaynak": "claude CLI (get_usage, tur yok)", "hal": "", "plan": "max", "pencereler": {"5s": {"kullanim": 0.15, "yenilenme": 1790692199}, "7g": {"kullanim": 0.73, "yenilenme": 1790737199}, "7g_kapi": {"kullanim": 0.15, "yenilenme": 1790737199}}}}','2026-09-29T12:23:58+00:00');
-INSERT INTO "ayar" VALUES('915d303e41ee4cb59fa908401d277926','limit_canli:codex:','{"motor": "codex", "hesap": "", "olculdu": "2026-09-29T12:23:59+00:00", "limit_pencere": {"kaynak": "codex app-server (account/rateLimits)", "hal": "", "plan": "plus", "pencereler": {"5s": {"kullanim": 0.12, "yenilenme": 1790692728}, "7g": {"kullanim": 0.47, "yenilenme": 1791061490}}}}','2026-09-29T12:23:59+00:00');
+INSERT INTO "ayar" VALUES('915d303e41ee4cb59fa908401d277926','limit_canli_son','1790701818.986318','2026-09-29T17:10:18+00:00');
+INSERT INTO "ayar" VALUES('915d303e41ee4cb59fa908401d277926','limit_canli:claude:','{"motor": "claude", "hesap": "", "olculdu": "2026-09-29T17:10:21+00:00", "limit_pencere": {"kaynak": "claude CLI (get_usage, tur yok)", "hal": "", "plan": "max", "pencereler": {"5s": {"kullanim": 0.14, "yenilenme": 1790710199}, "7g": {"kullanim": 0.76, "yenilenme": 1790737199}, "7g_kapi": {"kullanim": 0.15, "yenilenme": 1790737199}}}}','2026-09-29T17:10:21+00:00');
+INSERT INTO "ayar" VALUES('915d303e41ee4cb59fa908401d277926','limit_canli:codex:','{"motor": "codex", "hesap": "", "olculdu": "2026-09-29T17:10:22+00:00", "limit_pencere": {"kaynak": "codex app-server (account/rateLimits)", "hal": "", "plan": "plus", "pencereler": {"5s": {"kullanim": 0.06, "yenilenme": 1790713671}, "7g": {"kullanim": 0.49, "yenilenme": 1791061490}}}}','2026-09-29T17:10:22+00:00');
 INSERT INTO "ayar" VALUES('915d303e41ee4cb59fa908401d277926','guncelleme:karar:cli:claude:2.1.284','otomatik','2026-09-28T22:15:11+00:00');
 INSERT INTO "ayar" VALUES('915d303e41ee4cb59fa908401d277926','guncelleme:gecmis','[{"tur": "cli", "motor": "claude", "paket": "@anthropic-ai/claude-code", "eski": "2.1.282", "yeni": "2.1.284", "anahtar": "cli:claude:2.1.284", "veren": "ofis", "deneme": "OK", "sira": 1, "zaman": "2026-09-28T22:15:11.610387+00:00", "durum": "uygulandi", "goruldu": true}, {"tur": "cli", "motor": "codex", "paket": "@openai/codex", "eski": "0.156.0", "yeni": "0.158.0", "anahtar": "cli:codex:0.158.0", "veren": "ofis", "deneme": "OK", "sira": 2, "zaman": "2026-09-28T22:15:29.639707+00:00", "durum": "uygulandi", "goruldu": true}, {"tur": "takma_ad", "motor": "claude", "ad": "sonnet", "eski": "claude-sonnet-5", "yeni": "claude-sonnet-5-5", "anahtar": "takma_ad:sonnet:claude-sonnet-5-5", "veren": "ofis", "deneme": "OK", "sira": 3, "zaman": "2026-09-28T22:15:43.569258+00:00", "durum": "uygulandi", "goruldu": true}, {"tur": "cli", "motor": "codex", "paket": "@openai/codex", "eski": "0.156.0", "yeni": "0.158.0", "anahtar": "cli:codex:0.158.0", "veren": "ofis", "deneme": "OK", "sira": 4, "zaman": "2026-09-28T22:15:47.019645+00:00", "durum": "uygulandi", "goruldu": true}]','2026-09-28T22:22:05+00:00');
 INSERT INTO "ayar" VALUES('915d303e41ee4cb59fa908401d277926','guncelleme:karar:cli:codex:0.158.0','otomatik','2026-09-28T22:15:46+00:00');
@@ -4040,6 +4040,20 @@ INSERT INTO "hesap" VALUES('326f65fe07eb4e0bbbf4424314b5c1f9','915d303e41ee4cb59
 INSERT INTO "hesap" VALUES('2b20be28d5554962924bf2b24b01efac','915d303e41ee4cb59fa908401d277926','codex','codex','abonelik','plus','{}',20,1,'GPT Plus 1 - omerjob34 (ofisin kendi evi)','2026-09-22T20:32:56+00:00','2026-09-22T20:32:56+00:00',NULL);
 INSERT INTO "hesap" VALUES('809249320dfe49bb8c8220f155df0b50','915d303e41ee4cb59fa908401d277926','codex2','codex','abonelik','plus','{"CODEX_HOME": "~/.agentofis/codex2"}',21,0,'GPT Plus 2 - trader bot hesabi, kullanici izin verdi 22.09.2026','2026-09-22T20:32:57+00:00','2026-09-28T22:25:00+00:00',NULL);
 INSERT INTO "hesap" VALUES('4dc6b119d92b42028eba931bb40fd6f8','915d303e41ee4cb59fa908401d277926','gemini','gemini','abonelik','','{}',30,0,'Gemini (kasadaki anahtar)','2026-09-22T20:32:57+00:00','2026-09-28T22:25:01+00:00',NULL);
+CREATE TABLE izin (
+    id              TEXT PRIMARY KEY,
+    proje_id        TEXT NOT NULL REFERENCES proje(id),
+    gorev_id        TEXT REFERENCES gorev(id),
+    sinif           TEXT NOT NULL,
+    desen           TEXT NOT NULL,
+    alinti          TEXT NOT NULL DEFAULT '',
+    kaynak          TEXT NOT NULL,                  -- patron_sozu | insan
+    gerekce         TEXT NOT NULL DEFAULT '',
+    veren           TEXT NOT NULL,
+    olusturuldu     TEXT NOT NULL,
+    kaldirildi      TEXT,
+    kaldirma_sebebi TEXT NOT NULL DEFAULT ''
+);
 CREATE TABLE kanat (
     id              TEXT PRIMARY KEY,
     proje_id        TEXT NOT NULL REFERENCES proje(id),
