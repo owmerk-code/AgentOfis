@@ -46,7 +46,8 @@ motor matrisinden geçmeden deftere girmez.
 
 ### Hesaplar ve model politikası
 
-- **Hesaplar:** Claude **Max 5x** · ChatGPT **Plus** (ofisin codex evi:
+- **Hesaplar:** Claude **Max 5x** · ChatGPT **Pro 5x** (29.09 kullanıcı:
+  Plus sabit düşünülmesin; ofisin codex evi:
   omerjob34). `codex2` hesabı kayıp (kapalı). Gemini defterden çıkarıldı
   (24.09); Pro alınınca eklenti olarak geri takılır.
 - **Kullanıcı API değil ABONELİK kullanıyor:** maliyet **kota diliyle**
@@ -215,6 +216,11 @@ matrisin ölçümüyle karşılaştırır.
   (limit_oku var). Codex terminali de ÖLÇÜLDÜ: kanca Remove-Item'ı
   durdurdu, not ulaştı, döküm limit yüzdesini bile taşıyor; AMA kanca
   düşerse Codex AÇIK kalıyor (rm koştu).** Ayrıntı: günlük sonu.
+  **Yerleşik izin kipleri de ölçüldü (29.09): Claude Auto (sonnet) git
+  push + rm + dışarı POST'u SORMADAN yaptı; Codex "Approve for me" rm'i
+  sormadan yaptı, POST'u sandbox kesti (sormadı). İki motorda da kanca
+  her komutu gördü. Karar: gerçek terminal kipinde de KARAR ofisin kancası
+  (riskli.py); yerleşik kip tek başına yetmez. Haiku'da Auto yok.**
 
 ## Kalıcı dersler (ilkeler)
 
