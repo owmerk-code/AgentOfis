@@ -363,6 +363,10 @@ class CevapGovdesi(BaseModel):
     surdur: bool = True
 
 
+class KabinIzleGovdesi(BaseModel):
+    acik: bool
+
+
 class KabinGovdesi(BaseModel):
     """Kabin acilirken gidilecek ilk adres (istege bagli).
 
@@ -1330,6 +1334,29 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
                      "Kabin acildi" + (" (panel acti)" if d.get("bizim_surec")
                                        else " (zaten acikti, baglanildi)"))
         return d
+
+    @uygulama.get("/api/kabin/izle")
+    def api_kabin_izle():
+        from .orkestra import kabin_izle_acik_mi
+        o = ofis_ac()
+        return {"acik": kabin_izle_acik_mi(o.db, o.proje_id)}
+
+    @uygulama.post("/api/kabin/izle")
+    def api_kabin_izle_ayarla(govde: KabinIzleGovdesi):
+        """"Ajanlar kabinde" anahtari. Acmak bir YETKI genisletmesidir:
+        kabinde girdigin hesaplar tarayicili ise acilir. Karar insanin,
+        kayda gecer; koruma tiklamada (riskli eylem onaya duser) durur."""
+        from .orkestra import KABIN_IZLE_ANAHTARI
+        o = ofis_ac()
+        o.db.ayar_yaz(o.proje_id, KABIN_IZLE_ANAHTARI,
+                      "acik" if govde.acik else "kapali")
+        o.db.olay_yaz(o.proje_id, "kabin_izle",
+                      "Ajanlar kabinde: ACIK -- tarayicili bir is panelde canli "
+                      "kosacak, kabindeki oturumlarla (riskli tiklama onaya duser)"
+                      if govde.acik else
+                      "Ajanlar kabinde: KAPALI -- ajanlar kendi gorunmez "
+                      "tarayicilarini kullanir", ajan_ad="insan")
+        return {"acik": bool(govde.acik)}
 
     @uygulama.post("/api/kabin/kapat")
     def api_kabin_kapat():

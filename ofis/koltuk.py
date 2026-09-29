@@ -129,6 +129,17 @@ def durdurma_temizle(db, proje_id: str) -> None:
         db.ayar_yaz(proje_id, DURDUR_ANAHTARI, "")
 
 
+#: Izleme kabininde kosan tura eklenen not (bkz. `orkestra` izleme kabini).
+KABIN_IZLEME_NOTU = (
+    "## TARAYICIN: PAYLASILAN KABIN (patron CANLI izliyor)\n\n"
+    "Bu turda tarayicin, patronun panelde canli izledigi paylasilan kabin. "
+    "Patronun kabinde actigi oturumlar burada gecerli. YENI SEKME ACMA: acik "
+    "sekmede calis (panel yalniz onu gosterir). Sayfayi okumak icin "
+    "`browser_find`/`browser_evaluate` tercih et; tam anlik goruntu pahali. "
+    "Riskli tiklama (yayin, silme, para, gonderim) yine patronun onayina "
+    "duser; sifre ya da kod YAZMA -- giris gerekiyorsa `giris_iste`.")
+
+
 class Koltuk:
     """Tek bir ajanin tek bir gorev icin oturdugu koltuk."""
 
@@ -155,7 +166,7 @@ class Koltuk:
     def akit(self, no: int, ajan_ad: str, *, butce_usd: float = None,
              mcp_yapilandirma: str = "", zaman_asimi: float = None,
              tarayici_profili: str = "", tarayici_gorunur: bool = False,
-             tarayici_kabini: str = "",
+             tarayici_kabini: str = "", kabin_izleme: bool = False,
              izinli_araclar: tuple = ()):
         """Gorevi kostur, panelin okuyacagi olaylari akit.
 
@@ -541,7 +552,10 @@ class Koltuk:
             # Kabin istenmisse (insanin oturumlari) serbest OLMAZ:
             # `sunucu_girdisi` kabinde bos listeyle tarayici vermez.
             serbest = not alan
-            if alan or not tarayici_kabini:
+            # IZLEME KABINI: patron "Ajanlar kabinde" anahtarini acti ve
+            # halka bu isi kabine verdi -- is serbest ama panelde CANLI.
+            kabinde = bool(tarayici_kabini) and (bool(alan) or kabin_izleme)
+            if alan or not tarayici_kabini or kabin_izleme:
                 # KIMLIK VEKILE DE GIDER. Tarayici artik dogrudan
                 # Playwright degil, `tarayici_kapi.py` uzerinden
                 # veriliyor ve o vekil riskli bir tiklamayi gorunce
@@ -550,7 +564,8 @@ class Koltuk:
                 # degil ise yaramaz hale getirmek olurdu.
                 girdi = tarayici.sunucu_girdisi(
                     alan, profil=tarayici_profili, gorunur=tarayici_gorunur,
-                    cdp=tarayici_kabini if alan else "", serbest=serbest,
+                    cdp=tarayici_kabini if kabinde else "", serbest=serbest,
+                    kabin_izleme=kabin_izleme and not alan,
                     kimlik={"OFIS_DB": str(self.db.yol),
                             "OFIS_PROJE": str(self.proje_id),
                             "OFIS_AJAN": str(ajan_ad),
@@ -562,12 +577,20 @@ class Koltuk:
                         f"#{no} " + tarayici.ozet(
                             alan, profil=tarayici_profili,
                             gorunur=tarayici_gorunur,
-                            cdp=tarayici_kabini if alan else "",
-                            yazma=self._tarayici_yazar(gorev)),
+                            cdp=tarayici_kabini if kabinde else "",
+                            yazma=self._tarayici_yazar(gorev),
+                            kabin_izleme=kabin_izleme and not alan),
                         ajan_ad=ajan_ad, gorev_id=gorev["id"])
             mcp_yapilandirma = mcp_yapilandirmasi(
                 str(self.db.yol), self.proje_id, ajan_ad, no,
                 ek_sunucular=ek_sunucular)
+            if (kabinde and kabin_izleme and not alan
+                    and tarayici.SUNUCU_ADI in ek_sunucular):
+                # Uygulanan ama SOYLENMEYEN kural, ogrenilemeyen kuraldir:
+                # ajan panelin yalniz ACIK SEKMEYI gosterdigini bilmezse
+                # yeni sekme acar ve patron bos bir ekran izler (olculdu
+                # 22.09: kabine baglanan ajan var olan sekmede calisir).
+                metin = metin + "\n\n" + KABIN_IZLEME_NOTU
         sonuc = {"basarili": False}
         tampon = []
         son_dokum = time.monotonic()

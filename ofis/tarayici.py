@@ -231,7 +231,7 @@ def kaynaklari_dogrula(hamlar) -> list:
 
 def sunucu_girdisi(kaynaklar, *, profil: str = "", gorunur: bool = False,
                    cdp: str = "", ek_bayraklar=(), kimlik: dict = None,
-                   serbest: bool = False) -> dict:
+                   serbest: bool = False, kabin_izleme: bool = False) -> dict:
     """`--mcp-config` icin tarayici sunucusu girdisi.
 
     `kaynaklar` BOS ve `serbest=False` ise `None` doner: tarayici
@@ -248,6 +248,11 @@ def sunucu_girdisi(kaynaklar, *, profil: str = "", gorunur: bool = False,
 
     KABIN (cdp) SERBEST OLMAZ: orada insanin oturumlari (magaza paneli,
     e-posta) yasar. Kabin yalniz insanin isaret ettigi kaynaklarla acilir.
+    TEK ISTISNA `kabin_izleme=True`: patron paneldeki "Ajanlar kabinde"
+    anahtarini BILEREK acti (29.09.2026, kullanici: "muratin sisteminde
+    ajanlar gomulu tarayiciyi kullaniyor, bizde de olmali"). O zaman kabin
+    serbesttir; koruma yine tiklamada (vekil) ve sifre kuralinda durur.
+    Yetki insandan gelir: anahtar kapaliyken bu kip HIC kurulmaz.
 
     ## Playwright DOGRUDAN verilmez -- ofisin KAPISI uzerinden verilir
 
@@ -273,7 +278,7 @@ def sunucu_girdisi(kaynaklar, *, profil: str = "", gorunur: bool = False,
     seciyoruz: profil verildiyse kimlik istenmistir.
     """
     kaynaklar = list(kaynaklar or ())
-    if not kaynaklar and (not serbest or cdp):
+    if not kaynaklar and (not serbest or (cdp and not kabin_izleme)):
         return None
 
     if cdp:
@@ -324,10 +329,13 @@ def sunucu_girdisi(kaynaklar, *, profil: str = "", gorunur: bool = False,
 
 
 def ozet(kaynaklar, *, profil: str = "", gorunur: bool = False,
-          cdp: str = "", yazma: bool = True) -> str:
+          cdp: str = "", yazma: bool = True, kabin_izleme: bool = False) -> str:
     """Insana tek satirda: tarayici ne kadar acik."""
     kip = "tiklayabilir (riskli eylem ONAYA duser)" if yazma else \
         "SALT OKUNUR (bilerek daraltildi)"
+    if not kaynaklar and cdp and kabin_izleme:
+        return (f"tarayici[{kip}]: SERBEST · KABIN ({cdp}) -- panelde CANLI "
+                "izleniyor, patronun oturumlariyla (\"Ajanlar kabinde\" acik)")
     if not kaynaklar:
         if cdp:
             return "tarayici: YOK (kabin yalniz isaret edilen sitelerle acilir)"

@@ -105,6 +105,27 @@ def _json_ayikla(metin: str):
         return None
 
 
+#: "Ajanlar kabinde" anahtari (ayar). Varsayilan KAPALI: kabinde insanin
+#: oturumlari yasar; ajani oraya sokmak insanin bilerek verdigi bir yetki.
+KABIN_IZLE_ANAHTARI = "kabin_izle"
+
+#: Izleme kabini hangi ise verilsin: tarayici kullanacagi en belli olana.
+#: Tahmin degil ONCELIK: eslesen yoksa kabin ilk ise verilir (kullanmazsa
+#: zarar yok, bir sonraki turda baska ise gecer).
+_TARAYICI_IPUCU = ("http", "site", "sayfa", "tarayici", "tarayıcı", "web",
+                   "oyun", "tikla", "tıkla", "ekran", "form", "kabin", "url")
+
+
+def kabin_izle_acik_mi(db, proje_id) -> bool:
+    return (db.ayar_oku(proje_id, KABIN_IZLE_ANAHTARI, "kapali") or "") == "acik"
+
+
+def _tarayici_puani(g: dict) -> int:
+    metin = " ".join(str(g.get(k) or "") for k in
+                     ("baslik", "ana_hedef", "neden", "govde")).lower()
+    return sum(1 for i in _TARAYICI_IPUCU if i in metin)
+
+
 def _kabin_ucnoktasi() -> str:
     """Kabin aciksa CDP ucnoktasi, degilse bos. OLCER, varsaymaz."""
     from . import kabin as _kab, tarayici as _tar
@@ -935,7 +956,21 @@ class Orkestra:
         # baska bir dunyada kosturmak olurdu.
         _kabin_simdi = None
         cdp_is = {}
+        izleme_is = set()
         from . import devral as _devral
+        # IZLEME KABINI (29.09.2026, kullanici: "muratin sisteminde ajanlar
+        # gomulu tarayiciyi kullaniyor, bizde de olmali"). Anahtar ACIK ve
+        # kabin aciksa, tarayici kullanacagi en belli olan TEK is kabinde
+        # (panelde canli) kosar; otekiler kendi gorunmez tarayicisiyla.
+        # Kabinli (insanin isaret ettigi) bir is varsa oncelik onundur.
+        izleme_adayi = None
+        if (kabin_izle_acik_mi(self.db, self.proje_id)
+                and not any(g.get("tarayici_kabin") for g in kosulacak)):
+            adaylar = [g for g in kosulacak
+                       if not (g.get("tarayici_alani") or [])
+                       and not _devral.devralinmis(self.db, self.proje_id, g["id"])]
+            if adaylar:
+                izleme_adayi = max(adaylar, key=_tarayici_puani)["no"]
         for g in kosulacak:
             # DEVRAL: insandaki is atlanir ve bu SOYLENIR -- sessizce
             # atlanan is, "neden ilerlemiyor" sorusunu cevapsiz birakir.
@@ -945,6 +980,12 @@ class Orkestra:
                                                "'Ofise geri ver' ile surer"})
                 continue
             cdp = tarayici_kabini
+            if not cdp and g["no"] == izleme_adayi and not kabin_alindi:
+                if _kabin_simdi is None:
+                    _kabin_simdi = self.kabin_ucnoktasi() or ""
+                if _kabin_simdi:
+                    cdp = _kabin_simdi
+                    izleme_is.add(g["no"])
             if not cdp and g.get("tarayici_kabin") and (g.get("tarayici_alani") or []):
                 if _kabin_simdi is None:
                     _kabin_simdi = self.kabin_ucnoktasi() or ""
@@ -957,7 +998,8 @@ class Orkestra:
                     continue
                 cdp = _kabin_simdi
             cdp_is[g["no"]] = cdp
-            tarayicili = bool(cdp and (g.get("tarayici_alani") or []))
+            tarayicili = bool(cdp and ((g.get("tarayici_alani") or [])
+                                       or g["no"] in izleme_is))
             if tarayicili and kabin_alindi:
                 # Sessizce atlamak, isin neden kosmadigini cevapsiz
                 # birakirdi. Sebep GORUNUR olur.
@@ -989,7 +1031,8 @@ class Orkestra:
                     zaman_asimi=zaman_asimi, izinli_araclar=izinli_araclar,
                     tarayici_gorunur=tarayici_gorunur,
                     tarayici_profili=tarayici_profili,
-                    tarayici_kabini=cdp_is.get(g["no"], tarayici_kabini))
+                    tarayici_kabini=cdp_is.get(g["no"], tarayici_kabini),
+                    kabin_izleme=g["no"] in izleme_is)
                 return ("tamam", g, ajan, sonuc)
             except KilitCakismasi as exc:
                 # Yasa 1 calisti: alan baskasinda. Bu bir HATA degil,

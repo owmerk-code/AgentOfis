@@ -184,21 +184,27 @@ const esit = (a, b) => JSON.stringify(duz(a)) === JSON.stringify(duz(b));
   sina("sol: bolunen sutun genisligi paylasilir",
        Math.abs(d.sutunlar[0].gen + d.sutunlar[1].gen - v.sutunlar[0].gen) < 1e-9);
 
-  const e = Y.panoTasi(v, "raporlar", { sutun: 3, yigin: 0, yer: "sag" });
-  sina("sag: raporlar EN SAGDA yeni sutun", esit(konum(e, "raporlar"), [4, 0]));
+  // Gorevler/raporlar sutununun sirasi varsayilan duzenden OKUNUR: duzen
+  // degisince (29.09: takim sohbeti ayri sutun) sinama kirilmasin.
+  const R = konum(v, "raporlar")[0];
+  const e = Y.panoTasi(v, "raporlar", { sutun: R, yigin: 0, yer: "sag" });
+  sina("sag: raporlar EN SAGDA yeni sutun", esit(konum(e, "raporlar"), [R + 1, 0]));
 
-  const f = Y.panoTasi(v, "ofis", { sutun: 3, yigin: 0, yer: "sekme" });
+  const f = Y.panoTasi(v, "ofis", { sutun: R, yigin: 0, yer: "sekme" });
   sina("sutunun SON panosu gidince sutun kalkar",
-       f.sutunlar.length === v.sutunlar.length - 1 && esit(konum(f, "ofis"), [2, 0]), bozukluk(f));
+       f.sutunlar.length === v.sutunlar.length - 1 && esit(konum(f, "ofis"), [R - 1, 0]), bozukluk(f));
 
-  const g = Y.panoTasi(v, "raporlar", { sutun: 3, yigin: 0, yer: "sekme" });
+  const g = Y.panoTasi(v, "raporlar", { sutun: R, yigin: 0, yer: "sekme" });
   sina("ayni yigina sekme: yalniz secili degisir",
-       g.sutunlar[3].yiginlar[0].secili === "raporlar" &&
-       esit(g.sutunlar[3].yiginlar[0].panolar, v.sutunlar[3].yiginlar[0].panolar));
+       g.sutunlar[R].yiginlar[0].secili === "raporlar" &&
+       esit(g.sutunlar[R].yiginlar[0].panolar, v.sutunlar[R].yiginlar[0].panolar));
 
-  const h = Y.panoTasi(v, "raporlar", { sutun: 3, yigin: 0, yer: "alt" });
+  const h = Y.panoTasi(v, "raporlar", { sutun: R, yigin: 0, yer: "alt" });
   sina("cok panolu yigini KENDI icinde bolmek calisir",
-       esit(konum(h, "raporlar"), [3, 1]) && esit(konum(h, "gorevler"), [3, 0]), bozukluk(h));
+       esit(konum(h, "raporlar"), [R, 1]) && esit(konum(h, "gorevler"), [R, 0]), bozukluk(h));
+  sina("takim sohbeti varsayilanda KENDI sutununda, tek pano",
+       v.sutunlar.some((c) => c.yiginlar.length === 1 &&
+         c.yiginlar[0].panolar.length === 1 && c.yiginlar[0].panolar[0] === "sohbet"));
 
   // Anlamsiz hareketler duzeni DEGISTIRMEZ.
   for (const [ad, pano, hedef] of [

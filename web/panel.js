@@ -2577,6 +2577,21 @@ function kabinKur() {
   $("#kabin-geri").onclick = () => kabinYolla({ tur: "geri" });
   $("#kabin-yenile").onclick = () => kabinYolla({ tur: "yenile" });
   $("#kabin-kapat").onclick = kabinKapat;
+  const izleCiz = (acik) => {
+    const b = $("#kabin-izle"); if (!b) return;
+    b.classList.toggle("acik", !!acik);
+    b.textContent = acik ? "ajanlar: burada" : "ajanlar: kapalı";
+  };
+  al("/api/kabin/izle").then((r) => izleCiz(r.acik)).catch(() => {});
+  $("#kabin-izle").onclick = async () => {
+    const simdi = $("#kabin-izle").classList.contains("acik");
+    try {
+      const r = await yolla("/api/kabin/izle", { acik: !simdi });
+      izleCiz(r.acik);
+      bildir(r.acik ? "ajanlar kabinde: tarayıcılı iş burada canlı koşacak (kabin açıkken)"
+                    : "ajanlar kendi görünmez tarayıcılarına döndü", "iyi");
+    } catch (e) { bildir("ayarlanamadı: " + e.message, "uyari"); }
+  };
   $("#kabin-sec").onclick = () => {
     if (!K.acik) return bildir("önce tarayıcıyı aç", "uyari");
     secKipiAyarla(!K.secKipi);
@@ -4410,11 +4425,17 @@ function yerlesimVarsayilan() {
   return {
     surum: 1,
     sutunlar: [
-      { gen: 1.1, kapali: false,
+      { gen: 1.0, kapali: false,
         yiginlar: [{ yuk: 1, panolar: ["ofis"], secili: "ofis" }] },
-      { gen: 1.62, kapali: false,
-        yiginlar: [{ yuk: 0.66, panolar: ["terminal", "sohbet", "konsol"], secili: "terminal" },
+      { gen: 1.35, kapali: false,
+        yiginlar: [{ yuk: 0.66, panolar: ["terminal", "konsol"], secili: "terminal" },
                    { yuk: 0.34, panolar: ["kod"], secili: "kod" }] },
+      // TAKIM SOHBETI KENDI SUTUNUNDA, TAM BOY (29.09.2026, kullanici:
+      // "takim sohbetinin altinda kod ne alaka, murat gibi degil"). Onceden
+      // terminalle ayni sekme yiginindaydi ve altinda Kod duruyordu: sohbet
+      // gorunmek icin sekme degistirmek istiyordu. Rakipte de ayri sutun.
+      { gen: 1.0, kapali: false,
+        yiginlar: [{ yuk: 1, panolar: ["sohbet"], secili: "sohbet" }] },
       { gen: 1.6, kapali: false,
         yiginlar: [{ yuk: 1, panolar: ["tarayici"], secili: "tarayici" }] },
       { gen: 0.8, kapali: false,
@@ -4538,7 +4559,10 @@ function birakmaYeri(x, y, kutu, basYuksekligi) {
    boyutlandirma bunlarin altina cekmez, yoksa CSS durdurur ve yer oteki
    panolardan calinir. */
 const SUTUN_ALT_PX = 220, YIGIN_ALT_PX = 80;
-const YERLESIM_ANAHTARI = "agentofis.yerlesim.v1";
+// v2 (29.09.2026): varsayilan duzen degisti (takim sohbeti ayri sutun). v1
+// anahtarinda saklanan eski duzen yeni varsayilani gizlerdi; anahtar
+// degisince herkes yeni duzenle acilir, kendi duzenini yeniden kurabilir.
+const YERLESIM_ANAHTARI = "agentofis.yerlesim.v2";
 function yerlesimYukle() {
   try {
     const h = localStorage.getItem(YERLESIM_ANAHTARI);

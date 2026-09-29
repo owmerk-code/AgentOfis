@@ -990,6 +990,8 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .sohbet-balon.lider { align-self: flex-start; background: var(--zemin-2);
                       border: 1px solid var(--cizgi); }
 .sohbet-balon.bekliyor { color: var(--metin-3); font-style: italic; }
+.kabin-izle { font-size: var(--yz-mikro); white-space: nowrap; }
+.kabin-izle.acik { color: var(--iyi); border-color: var(--iyi); }
 /* Takim sohbeti: uzun metin katlanir (veri kesilmez), alt satirda etiketler. */
 .sohbet-balon.katli .sohbet-yazi { display: block; max-height: 12.5em; overflow: hidden;
   -webkit-mask-image: linear-gradient(#000 70%, transparent); mask-image: linear-gradient(#000 70%, transparent); }

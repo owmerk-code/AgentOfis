@@ -12072,3 +12072,50 @@ Toplam **3058/3058** (39 dosya).
 - `@ajan` sorusu salt okunurdur (dosyaya bakamaz); "sonucu göster"
   gerekiyorsa `iş:` ya da lidere yazılır.
 - Birden çok adres (`@a @b`) desteklenmiyor; yalnız ilk adres sayılır.
+
+## TAKIM SOHBETİ AYRI SÜTUN + AJANLAR KABİNDE (29.09.2026)
+
+Kullanıcı: *"muratın sisteminde ajanlar gömülü tarayıcıyı kullanıyor, orda
+oynuyor, bizde de olmalı · takım sohbetini göremiyorum, bazı mesajlar
+kısalmış · takım sohbetinin altında neden Kod var?"*
+
+### Sohbet panosu
+- **Kısalma benim regresyonumdu:** `takim.AZAMI_METIN` 600'dü. Artık 4000;
+  uzun mesaj panelde katlanır, "Tamamını oku" açar. Kalın yazı DOM ile
+  (innerHTML yok).
+- Balonda ad + meslek, işin ŞU ANKİ durumu (tıklayınca görev), notun
+  ulaşıp ulaşmadığı, "Terminalde göster".
+- **Takım sohbeti artık kendi tam boy sütunu** (Kod'la aynı yığında
+  değil). Düzen anahtarı `agentofis.yerlesim.v2` — eski kayıtlı düzen
+  yeni varsayılana döner.
+
+### "Ajanlar kabinde" (`kabin_izle` ayarı, varsayılan KAPALI)
+Kabin çubuğunda **ajanlar: kapalı/burada**. Açıkken ve kabin açıkken,
+tarayıcı kullanacağı en belli olan (anahtar kelime puanı) **TEK iş**
+paylaşılan kabinde, SERBEST (site listesi yok) koşar; patron panelde canlı
+izler, kabindeki oturumlar o işe açılır. Otekiler kendi görünmez
+tarayıcısıyla koşar.
+- Açmak bir yetki genişletmesi: insan açar, `kabin_izle` olayına yazılır.
+- Koruma tıklamada: riskli eylem vekili ve şifre kuralı aynen geçerli.
+- İnsanın işaret ettiği kabinli iş varsa izleme VERİLMEZ — sıra
+  tesadüfüne kalmadan (sınama: insanın işi sırada sonra).
+- Ajana `KABIN_IZLEME_NOTU`: yeni sekme açma (panel yalnız açık sekmeyi
+  gösterir), kullanıcının oturumlarına dokunma.
+
+**Gerçek haiku turu** (geçici OFIS_EV = geçici kabin profili, yerel sayaç
+sayfası): ajan kabinin TEK sekmesinde sayfayı açtı, "Artır"a 3 kez bastı
+(sunucu 3 istek saydı), `sonuc.md`'ye 3 yazdı. 38 sn, 10 araç, ~$0,10
+karşılığı. Yeni sekme açılmadı (CDP `/json` ölçüldü).
+
+**Test kusurum:** `SahteMotor.__init__` `mcp_konusur`'u örnek değişkeniyle
+eziyor (kayıtlı tuzak); koltuk sınamaları bu yüzden boş MCP görüyordu.
+
+`testler/duman_kabin_izle.py` **28**. Dokuz mutasyonun yedisi ateş etti;
+ikisi yedek kapı (koltuktaki `kabinde` hesabı ve orkestradaki
+`not kabin_alindi` — ikisini de başka bir kapı zaten tutuyor).
+
+Toplam **3088/3088** (40 dosya).
+
+### AÇIK KALAN
+- İzleme kabini yalnız claude'da (tarayıcı MCP'si ister).
+- Tek iş kabinde; ikinci tarayıcılı iş aynı anda canlı izlenemez.
