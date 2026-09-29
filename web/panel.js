@@ -3179,6 +3179,14 @@ function takimBalonu(x, D_ajanlar) {
       if (/\.(png|jpe?g|gif|webp|bmp)$/i.test(ad)) {
         const im = el("img"); im.src = url; im.alt = ad; im.loading = "lazy";
         a.append(im);
+      } else if (/\.(mp4|webm|mov|m4v)$/i.test(ad) || /\.(mp3|wav|ogg|m4a)$/i.test(ad)) {
+        // VIDEO / SES balonda oynar; baglanti tam boy acar.
+        const vid = /\.(mp4|webm|mov|m4v)$/i.test(ad);
+        const m = el(vid ? "video" : "audio", "sohbet-ek-oynat");
+        m.src = url; m.controls = true; m.preload = "metadata";
+        m.title = y;
+        kap.append(m);
+        continue;
       } else a.textContent = "📄 " + ad.replace(/^\d{8}-\d{6}-/, "");
       a.title = y;
       kap.append(a);
@@ -5192,8 +5200,42 @@ $("#komut-gonder").onclick = () => komutGonder();
   const f = $("#sohbet-yaz");
   if (f) f.onsubmit = (e) => {
     e.preventDefault();
-    komutGonder($("#sohbet-girdi"), f);
+    komutGonder($("#sohbet-girdi"), f).then(() => boyAyarla($("#sohbet-girdi")));
   };
+  // COK SATIRLI ALAN: Enter gonderir, Shift+Enter yeni satir; alan
+  // yazdikca buyur (tavani CSS'te).
+  const sg = $("#sohbet-girdi");
+  if (sg && f) {
+    sg.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !e.shiftKey && !e.isComposing) {
+        e.preventDefault();
+        f.requestSubmit();
+      }
+    });
+    sg.addEventListener("input", () => boyAyarla(sg));
+  }
+  const sb = $("#sohbet-ses");
+  if (sb && sg) sb.onclick = () => sesleYaz(sg, sb);
+  // SURUKLE-BIRAK: sohbet panosunun uzerine birakilan dosya eklenir.
+  const pano = document.querySelector('.pano-govde[data-pano="sohbet"]');
+  const ip = $("#surukle-ipucu");
+  if (pano && ip) {
+    let derinlik = 0;
+    const dosyaMi = (e) => [...(e.dataTransfer?.types || [])].includes("Files");
+    pano.addEventListener("dragenter", (e) => {
+      if (!dosyaMi(e)) return;
+      e.preventDefault(); derinlik++; ip.hidden = false;
+    });
+    pano.addEventListener("dragover", (e) => { if (dosyaMi(e)) e.preventDefault(); });
+    pano.addEventListener("dragleave", () => {
+      if (--derinlik <= 0) { derinlik = 0; ip.hidden = true; }
+    });
+    pano.addEventListener("drop", (e) => {
+      if (!dosyaMi(e)) return;
+      e.preventDefault(); derinlik = 0; ip.hidden = true;
+      ekYukle([...e.dataTransfer.files]);
+    });
+  }
   const sec = $("#ek-sec"), dos = $("#ek-dosya");
   if (sec && dos) {
     sec.onclick = () => dos.click();
@@ -5251,16 +5293,58 @@ $("#komut-surdur").onclick = () => ($("#komut-surdur").dataset.kip === "durdur"
       (r) => `halka sürdürülüyor · ${r.acik_is} açık iş`));
 $("#komut-girdi").addEventListener("keydown",
   (e) => { if (e.key === "Enter") komutGonder(); });
-$("#komut-ses").onclick = () => {
-  // Desteklemeyen tarayicida SESSIZCE calisiyormus gibi yapmaz.
+/* SESLE YAZ (30.09): iki yazma yerinde de ayni islev. Soylenen kutuya
+   YAZILIR, gonderilmez -- insan duzeltip gonderir (yanlis duyulmus bir
+   "sil" dogrudan lidere gitmesin). Var olan metnin SONUNA eklenir.
+   Tanima tarayicinin kendi hizmetidir (Chrome'da Google); ofis sesi
+   kaydetmez. Desteklemeyen tarayicida SESSIZCE calisiyormus gibi yapmaz. */
+function boyAyarla(g) {
+  if (!g || g.tagName !== "TEXTAREA") return;
+  g.style.height = "auto";
+  g.style.height = Math.min(g.scrollHeight + 2, 160) + "px";
+}
+let _sesAcik = null;
+function sesleYaz(girdi, dugme) {
+  if (_sesAcik) { _sesAcik.stop(); return; }
   const T = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!T) { $("#komut-girdi").placeholder =
-    "Bu tarayıcı ses tanımayı desteklemiyor."; return; }
+  if (!T) {
+    girdi.placeholder = "Bu tarayıcı ses tanımayı desteklemiyor (Chrome ya da Edge kullan).";
+    return;
+  }
   const t = new T();
   t.lang = "tr-TR";
-  t.onresult = (e) => { $("#komut-girdi").value = e.results[0][0].transcript; };
+  t.interimResults = true;
+  t.continuous = true;
+  const once = girdi.value ? girdi.value.trimEnd() + " " : "";
+  let kesin = "";
+  t.onresult = (e) => {
+    let ara = "";
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      const r = e.results[i];
+      if (r.isFinal) kesin += r[0].transcript + " ";
+      else ara += r[0].transcript;
+    }
+    girdi.value = (once + kesin + ara).trimStart();
+    boyAyarla(girdi);
+  };
+  t.onerror = (e) => {
+    girdi.placeholder = e.error === "not-allowed"
+      ? "Mikrofon izni verilmedi (adres çubuğundaki simgeden izin ver)."
+      : "Ses tanıma durdu: " + e.error;
+  };
+  t.onend = () => {
+    _sesAcik = null;
+    dugme.classList.remove("dinliyor");
+    dugme.title = "Sesle yaz (Türkçe)";
+    girdi.value = girdi.value.trimEnd();
+    girdi.focus();
+  };
+  _sesAcik = t;
+  dugme.classList.add("dinliyor");
+  dugme.title = "Dinliyorum — bitirmek için tekrar bas";
   t.start();
-};
+}
+$("#komut-ses").onclick = () => sesleYaz($("#komut-girdi"), $("#komut-ses"));
 
 (async () => {
   // YERLESIM once kurulur: cizim fonksiyonlari panonun ekranda olup

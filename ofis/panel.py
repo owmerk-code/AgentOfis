@@ -2568,8 +2568,8 @@ def _guncelleme_arkada(db_yolu, proje_ad=None) -> None:
     """Panel acikken YENI MODEL / CLI -- fark et ve (otomatik mod aciksa) uygula.
 
     Kullanici (29.09.2026): *"ofis farkedip bana dusen her seyi kendisi
-    yapsa."* Saatte bir bakilir; asil denetim `kontrol_gerekirse` icinde
-    gunde bir. Uygulama `otomatik_ilerle`: deneme turu gecerse kalici,
+    yapsa."* On dakikada bir bakilir; asil denetim `kontrol_gerekirse`
+    icinde yarim saatte bir (30.09: "hemen yapsin"). Uygulama `otomatik_ilerle`: deneme turu gecerse kalici,
     duserse insana duser; is kosarken CLI degistirilmez. Yalniz GERCEK
     defterde -- test ve ornek ofis kullanicinin makinesine npm kurmasin.
     """
@@ -2595,14 +2595,14 @@ def _guncelleme_arkada(db_yolu, proje_ad=None) -> None:
                                       "ORDER BY olusturuldu LIMIT 1").fetchone()
                 if r:
                     ofis = Ofis.proje_ac(db, r["ad"])
-                    G.kontrol_gerekirse(ofis.db, ofis.proje_id)
-                    G.otomatik_ilerle(ofis, fabrika=MOTOR_FABRIKASI)
+                    G.olc_ve_ilerle(ofis, fabrika=MOTOR_FABRIKASI, zorla=False)
             except Exception as exc:     # noqa: BLE001 -- panel olmesin
                 try:
                     db.olay_yaz(None, "uyari", f"Otomatik guncelleme calismadi: {exc}")
                 except Exception:        # noqa: BLE001
                     pass
-            time.sleep(3600)
+            # Is kosarken ertelenen guncelleme de en gec 10 dakikada denenir.
+            time.sleep(600)
 
     threading.Thread(target=dongu, name="guncelleme", daemon=True).start()
 

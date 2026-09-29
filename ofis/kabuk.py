@@ -669,8 +669,7 @@ def komut_guncelle(a) -> None:
         if secim != "simdi":
             raise SystemExit("`guncelle otomatik [simdi|ac|kapat]`")
         yaz("Olculuyor (kataloglar + npm surumleri)...")
-        G.kontrol(ofis.db, ofis.proje_id, npm=not a.npm_yok)
-        sonuc = G.otomatik_ilerle(ofis)
+        sonuc = G.olc_ve_ilerle(ofis, npm=not a.npm_yok)
         if not sonuc:
             yaz("Otomatik uygulanacak bir sey yok.")
         for r in sonuc:

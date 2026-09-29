@@ -15,6 +15,18 @@ Nasil:
 * Boyut siniri `AZAMI_BAYT`. Yazma ATOMIK (`.part` -> ad).
 * `ekler/` GitHub yedegine GIRMEZ (.gitignore): ekran goruntusu ve belge
   ozel bilgi tasiyabilir; ZIP yedeginde (bilgisayar + Drive) durur.
+
+## Ajan ve lider de dosya gonderir (30.09.2026)
+
+Kullanici: *"hem sen hem ajanlar sohbete gorsel video pdf dosyalar
+gonderebilsin."* Olculdu: ajan ekran goruntusunu aldi ama `sohbete_yaz`
+yalniz metin tasiyordu, is "bilmiyorum" diye insana yukseldi.
+
+Kural TEK YERDE (`paylas`): proje kokundeki bir dosya sohbete gosterilecekse
+`ekler/`e KOPYALANIR (ajanin dosyasi yerinde kalir, balon onun o anki
+halini gosterir). Kok disi, gizli (`.env`, `.git/...`) ve sinirdan buyuk
+dosya REDDEDILIR. Ajan `sohbete_yaz(ekler=[...])` ile, lider cevabina
+`[ek] <yol>` satiri yazarak gonderir; ikisi de buradan gecer.
 """
 
 from __future__ import annotations
@@ -47,7 +59,7 @@ def klasor(ofis) -> Path:
     return Path(ofis.kok_klasoru()).resolve() / KLASOR
 
 
-def kaydet(ofis, ad: str, veri: bytes) -> dict:
+def kaydet(ofis, ad: str, veri: bytes, *, ajan_ad: str = "insan") -> dict:
     if not veri:
         raise EkHatasi("Bos dosya eklenemez.")
     if len(veri) > AZAMI_BAYT:
@@ -65,7 +77,7 @@ def kaydet(ofis, ad: str, veri: bytes) -> dict:
     gecici.write_bytes(veri)
     gecici.replace(hedef)
     ofis.db.olay_yaz(ofis.proje_id, "ek_eklendi",
-                     f"{KLASOR}/{hedef.name} ({len(veri)} bayt)", ajan_ad="insan")
+                     f"{KLASOR}/{hedef.name} ({len(veri)} bayt)", ajan_ad=ajan_ad)
     return {"yol": f"{KLASOR}/{hedef.name}", "ad": hedef.name, "boyut": len(veri),
             "gorsel": hedef.suffix.lower() in GORSEL}
 
@@ -80,6 +92,60 @@ def dosya(ofis, ad: str) -> Path:
     if yol.parent != k or not yol.is_file():
         raise EkHatasi("Ek bulunamadi.")
     return yol
+
+
+def paylas(ofis, yol: str, *, ajan_ad: str = "") -> str:
+    """Kokteki bir dosyayi sohbette GOSTERILEBILIR yapar -> 'ekler/<ad>'.
+
+    Yol koke gore ya da kok icinde mutlak olabilir. Zaten `ekler/`deki
+    (ve adi balon kuralina uyan) dosya kopyalanmaz.
+    """
+    ham = str(yol or "").strip().strip("`'\"<>").strip()
+    if not ham:
+        raise EkHatasi("Bos yol.")
+    kok = Path(ofis.kok_klasoru()).resolve()
+    p = Path(ham)
+    if not p.is_absolute():
+        p = kok / p
+    try:
+        p = p.resolve()
+        goreli = p.relative_to(kok)
+    except (OSError, ValueError):
+        raise EkHatasi(f"'{ham}' proje kokunun disinda; yalniz kok icindeki "
+                       "dosya gonderilir.")
+    if any(parca.startswith(".") for parca in goreli.parts):
+        raise EkHatasi(f"'{ham}' gizli dosya/klasor; sohbete gonderilmez.")
+    if not p.is_file():
+        raise EkHatasi(f"'{ham}' bulunamadi.")
+    boyut = p.stat().st_size
+    if boyut > AZAMI_BAYT:
+        raise EkHatasi(f"'{ham}' cok buyuk ({boyut // 1024 // 1024} MB); "
+                       f"sinir {AZAMI_BAYT // 1024 // 1024} MB.")
+    if p.parent == klasor(ofis) and _SATIR.fullmatch(f"[ek] {KLASOR}/{p.name}"):
+        return f"{KLASOR}/{p.name}"
+    return kaydet(ofis, p.name, p.read_bytes(), ajan_ad=ajan_ad or "ajan")["yol"]
+
+
+#: Liderin cevabindaki ek satiri: `[ek] <herhangi bir yol>`.
+_HAM_SATIR = re.compile(r"^[ \t]*\[ek\][ \t]+(\S[^\r\n]*?)[ \t]*$", re.M)
+
+
+def metni_hazirla(ofis, metin: str, *, ajan_ad: str = "") -> tuple:
+    """Liderin cevabi -> (ek satirlari `ekler/`e cevrilmis metin, hatalar).
+
+    Gonderilemeyen ek SESSIZCE dusmez: satirin yerine sebebi yazilir,
+    patron neyin gelmedigini gorur.
+    """
+    hatalar = []
+
+    def cevir(m):
+        try:
+            return SATIR_ONEKI + paylas(ofis, m.group(1), ajan_ad=ajan_ad)
+        except EkHatasi as exc:
+            hatalar.append(str(exc))
+            return f"(ek gonderilemedi: {exc})"
+
+    return _HAM_SATIR.sub(cevir, metin or ""), hatalar
 
 
 def satirlar(yollar) -> str:

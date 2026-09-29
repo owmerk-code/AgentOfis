@@ -153,6 +153,26 @@ SANDBOX_OKUR = "read-only"
 #: istisnayla cikmaz.
 SANDBOX_TAM = "danger-full-access"
 
+#: OLCULDU (29.09.2026, rollout): kancanin reddi Codex'te bu onekle doner:
+#: "Script error:\nCommand blocked by PreToolUse hook: ONAY ISTENDI ...".
+KANCA_RET_IZI = "blocked by PreToolUse hook"
+_KAPI_SOZU = ("ONAY ISTENDI", "ONAY ZATEN BEKLIYOR", "REDDEDILDI")
+
+
+def tui_ret_mi(metin: str) -> bool:
+    """Gercek terminalde bir arac cagrisi ofis kapisinda mi durdu?
+
+    OLCULDU (30.09.2026): eski kural ciktida "OFIS KAPISI" / "ONAY
+    ISTENDI" geciyor mu diye bakiyordu. Ajan BRIFING.md'yi okudu (cikis
+    kodu 0) -- brifing bu sozleri ICERDIGI icin okuma "reddedildi" diye
+    yazildi. Yanlis gosteren gosterge. Simdi yalniz RET IZI sayilir:
+    kancanin onegi, ya da hatali donen ofis araci (tarayici vekili) ciktisi.
+    """
+    if KANCA_RET_IZI in metin:
+        return True
+    hatali = '"isError":true' in metin.replace(" ", "")
+    return hatali and any(k in metin.upper() for k in _KAPI_SOZU)
+
 
 def korumali_alan(yazabilir: bool, kapi_var: bool) -> str:
     """Tek kural, iki kip: kafa okur; kapi varsa tam erisim; yoksa dar."""
@@ -216,8 +236,10 @@ DESTEKSIZ_ISTEK_KODU = -32601
 MCP_HAZIR_SN = 30.0
 
 SISTEM_EKI_ORTAK = (
-    "AgentOfis'te bir ajansin. Baglamin klasorundeki BRIFING.md dosyasidir; "
-    "uzun bir iste savrulursan geri donup oku. "
+    "AgentOfis'te bir ajansin. Gorevin bu konusmanin ILK mesajidir "
+    "(bir brifing ya da ofisin istemi -- ne istiyorsa onu, istedigi "
+    "bicimde yap). Proje kokundeki BRIFING.md BASKA ajana ait "
+    "olabilir; ona guvenme. "
     "Turkce yaz. "
     "Yalniz brifingdeki YAZMA ALANI icine yaz -- disina cikma; o alanlar "
     "baska ajanlara kilitli olabilir. "
@@ -1615,21 +1637,45 @@ class CodexMotoru(Motor):
         oturumlar = Path(ev) / "sessions"
         acilis = time.time()
         tid = str(oturum_id or "")
+        # TUR ISARETI: yeni oturumun dosyasi BU isaretle bulunur.
+        #
+        # OLCULDU (30.09.2026): "acilistan sonraki EN YENI rollout" kurali
+        # ayni CODEX_HOME'da paralel kosan BASKA bir codex turunun
+        # dosyasini secti (arka kipteki bir is + gercek terminaldeki is).
+        # Sarmalayici olaylari yanlis isten okudu, onun "bitti"siyle kendi
+        # turunu erken kapatti; defterde kanit sifir kaldi. Paralel ajanlar
+        # ayni kokte calistigi icin `cwd` de ayirt etmez -- isaret eder.
+        isaret = "ofis-tur-" + uuid.uuid4().hex[:16]
+        bulunan = {}
+
+        def _isaretli(f) -> bool:
+            try:
+                with open(f, "rb") as fh:
+                    return isaret.encode() in fh.read(512 * 1024)
+            except OSError:
+                return False
 
         def dokum():
             if not oturumlar.is_dir():
                 return None
             if tid:
                 aday = list(oturumlar.rglob(f"rollout-*{tid}.jsonl"))
-            else:
-                aday = [f for f in oturumlar.rglob("rollout-*.jsonl")
-                        if f.stat().st_mtime >= acilis - 2]
-            return max(aday, key=lambda f: f.stat().st_mtime) if aday else None
+                return max(aday, key=lambda f: f.stat().st_mtime) if aday else None
+            if bulunan.get("yol") is not None:
+                return bulunan["yol"]
+            for f in sorted((f for f in oturumlar.rglob("rollout-*.jsonl")
+                             if f.stat().st_mtime >= acilis - 2),
+                            key=lambda f: f.stat().st_mtime, reverse=True):
+                if _isaretli(f):
+                    bulunan["yol"] = f
+                    return f
+            return None
 
         return {
             "argv": argv, "ortam": ortam, "kapat": "/quit", "oturum_id": tid,
-            "dokum": dokum,
-            "ilk_on_ek": self._istek_metni("", mcp_yapilandirma).strip() + "\n\n",
+            "dokum": dokum, "isaret": isaret,
+            "ilk_on_ek": (self._istek_metni("", mcp_yapilandirma).strip()
+                          + f"\n\n(tur isareti: {isaret} -- yok say)\n\n"),
             "guven": ("\r",), "guven_isareti": "trust",
             "durdur": "\x1b", "ev": str(ev),
         }
@@ -1685,7 +1731,7 @@ class CodexMotoru(Motor):
             if isinstance(cikti, list):
                 cikti = " ".join(str(b.get("text") or "") for b in cikti if isinstance(b, dict))
             metin = str(cikti or "").strip()
-            reddedildi = "OFIS KAPISI" in metin.upper() or "ONAY ISTENDI" in metin.upper()
+            reddedildi = tui_ret_mi(metin)
             olaylar.append(MotorOlayi("izin" if reddedildi else "arac_sonuc",
                                       (f"{ad} reddedildi: {girdi[:160]}" if reddedildi
                                        else metin[:300]),

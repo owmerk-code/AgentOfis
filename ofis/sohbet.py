@@ -69,6 +69,11 @@ GECMIS_ADEDI = 6
 #: Tek bir cevabin ustunde durulacak uzunluk. Daha uzunu sohbet degil
 #: rapordur; rapor zaten is bitiminde ayrica uretilir.
 CEVAP_SINIRI = 4000
+#: Lider de sohbete dosya gonderir (30.09): satiri ofis `ekler/`e tasir.
+EK_KURALI = ("Patrona bir DOSYA gostermek istersen (gorsel, pdf, video; "
+             "orn. bir ajanin urettigi), cevabina AYRI SATIRDA `[ek] <proje "
+             "kokune gore yol>` yaz; ofis onu sohbete ekler. Var olmayan "
+             "dosya UYDURMA.")
 
 
 class SohbetHatasi(RuntimeError):
@@ -478,6 +483,7 @@ class Sohbet:
             "  Kadroyu SEN kuramazsin -- onerirsin, patron onaylar.",
             "- Bilmedigin bir seyi UYDURMA. Bilmiyorsan `cevap` ile soyle,",
             "  ya da ogrenmek icin `dagit` ile arastirma isi ac.",
+            "- " + EK_KURALI,
         ]
         return "\n".join(satirlar)
 
@@ -585,6 +591,7 @@ class Sohbet:
             cevap = (karar.get("cevap") or "").strip()[:CEVAP_SINIRI]
             if not cevap:
                 cevap = "(Lider cevap metni vermedi.)"
+            cevap = self._ekleri_hazirla(cevap, lider["ad"])
             self.ofis.postane.cevapla(kayit["id"], cevap,
                                       cevaplayan=lider["ad"])
             yield {"tur": "cevap", "govde": cevap, "ek": {}}
@@ -775,12 +782,31 @@ class Sohbet:
             "- KANIT UYDURMA: yukarida yazmayan bir sonucu yazma.",
             "- Ic isleyisi (gorev numarasi, kilit, revizyon) anlatma;",
             "  patron sonucu ister, defteri degil.",
+            "- " + EK_KURALI,
         ]
         ham = self._lideri_kostur(lider, "\n".join(satirlar),
                                   butce_usd, zaman_asimi,
                                   akis=getattr(self, "_akis", None))
         metin = (ham or "").strip()[:CEVAP_SINIRI] or "(Lider rapor yazmadi.)"
-        return metin + self._gercek_durum(plan)
+        return self._ekleri_hazirla(metin, lider["ad"]) + self._gercek_durum(plan)
+
+    def _ekleri_hazirla(self, metin: str, lider_ad: str) -> str:
+        """Liderin `[ek] <yol>` satirlari -> sohbette gorunen ek (kural
+        `ekler.metni_hazirla`da). Lider salt okunurdur, dosyayi kendisi
+        `ekler/`e tasiyamaz; ofis tasir."""
+        from .ekler import metni_hazirla
+        try:
+            metin, hatalar = metni_hazirla(self.ofis, metin, ajan_ad=lider_ad)
+        except Exception as exc:          # noqa: BLE001 -- cevap kaybolmasin
+            self.ofis.db.olay_yaz(self.ofis.proje_id, "uyari",
+                                  f"Liderin ekleri islenemedi: {exc}",
+                                  ajan_ad=lider_ad)
+            return metin
+        for h in hatalar:
+            self.ofis.db.olay_yaz(self.ofis.proje_id, "uyari",
+                                  f"Liderin eki gonderilemedi: {h}",
+                                  ajan_ad=lider_ad)
+        return metin
 
     def _gercek_durum(self, plan: dict) -> str:
         """Raporun sonuna HESAPLANAN gercegi ekler.

@@ -263,6 +263,8 @@ def arac_karar_yaz(oturum: Oturum, args: dict) -> str:
 #: gereken satiri kalabalikta kaybettirir. Ayrintinin yeri kanit ve akis.
 SOHBET_AZAMI_IS_BASINA = 6
 SOHBET_AZAMI_HARF = 1200
+#: Bir bildirimde azami dosya (gorsel, pdf, video...).
+SOHBET_AZAMI_EK = 5
 
 
 def arac_sohbete_yaz(oturum: Oturum, args: dict) -> str:
@@ -273,10 +275,23 @@ def arac_sohbete_yaz(oturum: Oturum, args: dict) -> str:
     cevap beklenmez, kimseye is vermez. Soru `soru_sor`, onay `onay_iste`;
     ikisinin yerine gecmez (ceviri bekleyen bir soru sohbette kaybolurdu).
     Kimlik ortamdan: ajan baskasi adina yazamaz.
+
+    EKLER (30.09): `ekler=[yol, ...]` ile gorsel/pdf/video gonderilir;
+    kural `ekler.paylas`ta (kok ici, gizli degil, sinir). Biri bile
+    gonderilemezse HICBIR SEY yazilmaz ve sebep ajana doner -- yarim
+    mesaj patrona "ekledim" deyip dosyasiz gelirdi.
     """
     metin = str(args.get("metin") or "").strip()
-    if not metin:
+    ham_ekler = args.get("ekler") or []
+    if isinstance(ham_ekler, str):
+        ham_ekler = [ham_ekler]
+    if not isinstance(ham_ekler, list):
+        return "HATA: `ekler` bir yol listesi olmali."
+    ham_ekler = [str(y).strip() for y in ham_ekler if str(y or "").strip()]
+    if not metin and not ham_ekler:
         return "HATA: bos mesaj yazilamaz."
+    if len(ham_ekler) > SOHBET_AZAMI_EK:
+        return f"HATA: bir bildirimde en fazla {SOHBET_AZAMI_EK} dosya."
     if not oturum.ajan_ad:
         return "HATA: ajan kimligi yok; sohbete yazilamaz."
     kesildi = len(metin) > SOHBET_AZAMI_HARF
@@ -297,9 +312,21 @@ def arac_sohbete_yaz(oturum: Oturum, args: dict) -> str:
         return (f"HATA: bu is icin sohbete {SOHBET_AZAMI_IS_BASINA} kez yazdin; "
                 "sohbet gunluk degil. Ayrintiyi `kanit_ekle` ile yaz; patrona "
                 "sorun varsa `soru_sor`.")
-    db.olay_yaz(oturum.proje_id, "ajan_sohbet", metin, ajan_ad=oturum.ajan_ad,
+    from ofis import ekler as _ek
+    yollar, hatalar = [], []
+    for y in ham_ekler:
+        try:
+            yollar.append(_ek.paylas(oturum.ofis, y, ajan_ad=oturum.ajan_ad))
+        except _ek.EkHatasi as exc:
+            hatalar.append(str(exc))
+    if hatalar:
+        return ("HATA: mesaj YAZILMADI, ek gonderilemedi: " + " · ".join(hatalar)
+                + " (yol proje kokune gore olmali; dosyayi once kokte olustur).")
+    govde = "\n".join(x for x in (metin, _ek.satirlar(yollar)) if x)
+    db.olay_yaz(oturum.proje_id, "ajan_sohbet", govde, ajan_ad=oturum.ajan_ad,
                 gorev_id=gorev_id)
     return ("Takim sohbetine yazildi." + (" (1200 harfte kesildi)" if kesildi else "")
+            + (f" {len(yollar)} dosya eklendi." if yollar else "")
             + " Bu bir bildirimdir, cevap BEKLEME; isine devam et.")
 
 
@@ -1125,7 +1152,11 @@ ARACLAR = [
         "name": "sohbete_yaz",
         "description": (
             "Takim sohbetine KISA bir bildirim yazar: bir engel, onemli bir "
-            "bulgu, isin bittigi. Cevap beklenmez, kimseye is vermez; is "
+            "bulgu, isin bittigi. DOSYA da gonderir (gorsel, pdf, video, "
+            "belge): `ekler` alanina proje kokune gore yollarini yaz; "
+            "patron sohbette gorur. Sohbet OFIS ICIDIR (patronun paneli): "
+            "disari cikmaz, ONAY GEREKMEZ -- `onay_iste` cagirma. "
+            "Cevap beklenmez, kimseye is vermez; is "
             "basina en fazla 6 kez. Soru icin `soru_sor`, onay icin "
             "`onay_iste` kullan."
         ),
@@ -1134,6 +1165,10 @@ ARACLAR = [
             "properties": {
                 "metin": {"type": "string",
                           "description": "Takimin gorecegi 1-3 cumle."},
+                "ekler": {"type": "array", "items": {"type": "string"},
+                          "description": "Sohbete eklenecek dosyalar (proje "
+                                         "kokune gore yol, en fazla 5). "
+                                         "Orn. [\"ekler/ekran.png\", \"rapor.pdf\"]"},
             },
             "required": ["metin"],
         },

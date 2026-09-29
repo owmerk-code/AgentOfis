@@ -1359,6 +1359,17 @@ sina("  ayni gonderici (komutGonder) kutuyla cagriliyor",
      'komutGonder($("#sohbet-girdi"), f)' in _j2)
 sina("  oneri yazilan yerin ustunde cikar (yer parametresi)",
      "takimOneriGoster(metin, r.oneriler || [], girdi, oneriYeri)" in _j2)
+# 30.09: "dosya ekleme butonu belli olsun, ses ile gondermek de olsun".
+sina("  dosya dugmesi YAZIYLA gorunur (yalniz simge degil)", " Dosya</button>" in _h2 and "📎" not in _h2[_h2.find('id="ek-sec"')-200:_h2.find('id="ek-sec"')+900])
+sina("  cok satirli alan: Enter gonderir, Shift+Enter satir",
+     '<textarea id="sohbet-girdi"' in _h2 and 'e.key === "Enter" && !e.shiftKey' in _j2)
+sina("  sesle yaz dugmesi kutuda ve tek islev iki yerde",
+     'id="sohbet-ses"' in _h2 and "sesleYaz(sg, sb)" in _j2
+     and 'sesleYaz($("#komut-girdi"), $("#komut-ses"))' in _j2)
+sina("  ses metni GONDERILMEZ, kutuya yazilir (insan duzeltir)",
+     "komutGonder" not in _j2[_j2.find("function sesleYaz"):_j2.find("function sesleYaz") + 2000])
+sina("  surukle-birak ekler", '"drop"' in _j2 and "ekYukle([...e.dataTransfer.files])" in _j2)
+sina("  video/ses balonda oynar", "sohbet-ek-oynat" in _j2)
 
 print(f"\n== sonuc: {GECEN} gecti, {KALAN} kaldi ==")
 sys.exit(1 if KALAN else 0)

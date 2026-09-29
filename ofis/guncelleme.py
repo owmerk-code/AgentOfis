@@ -110,8 +110,12 @@ OTOMATIK_TURLER = ("cli", "takma_ad", "model")
 #: Gecmis kaydinin tuttugu en fazla uygulama (panel son olanlari gosterir).
 AZAMI_GECMIS = 50
 
-#: Gunluk denetim. Katalog okumak bedava; `npm view` birkac saniye surer.
-KONTROL_ARALIGI_SAAT = 24
+#: Denetim araligi. Katalog okumak bedava; `npm view` birkac saniye surer.
+#: 30.09.2026: gunde birden YARIM SAATE indi. Kullanici: *"yeni model ya da
+#: guncelleme geldiginde ofis HEMEN yapsin."* Olculdu: masaustu uygulamasi
+#: `gpt-6.1-sol`u getirmisti, ofis ancak ertesi gece gorecekti. Denetim
+#: yalniz OLCER; deneme turu (kota) yalniz YENI bir sey varsa kosar.
+KONTROL_ARALIGI_SAAT = 0.5
 
 DENEME_ISTEMI = "Sadece OK yaz. Baska hicbir sey yazma, hicbir arac kullanma."
 
@@ -525,8 +529,16 @@ def _bul(db, proje_id: str, no: int) -> dict:
 # Uygulama
 # ---------------------------------------------------------------------------
 
-def deneme_turu(motor_ad: str, model: str, *, fabrika=None, ek_ortam=None) -> dict:
-    """Yeni model/surum GERCEKTEN calisiyor mu -- kucuk bir tur, yazma yok."""
+def deneme_turu(motor_ad: str, model: str, *, fabrika=None, ek_ortam=None,
+                gercek_terminal: bool = False) -> dict:
+    """Yeni model/surum GERCEKTEN calisiyor mu -- kucuk bir tur, yazma yok.
+
+    `gercek_terminal`: ayni istem CLI'in KENDI terminalinde de denenir.
+    OLCULDU (30.09.2026): claude 2.1.285'e otomatik gecildi, arka kipteki
+    deneme gecti -- ama yeni surumun guven sorusu gercek terminal kipini
+    TAMAMEN dusurmustu. Ofis hangi kipte calisiyorsa deneme o kipi de
+    kosmali; yoksa "deneme gecti" yanlis gosterir.
+    """
     if fabrika is None:
         from .motor import motor_ac as fabrika
     try:
@@ -552,8 +564,41 @@ def deneme_turu(motor_ad: str, model: str, *, fabrika=None, ek_ortam=None) -> di
     yazi = "".join(metin).strip()
     if basarili and "OK" not in yazi.upper():
         basarili, sebep = False, f"beklenen cevap gelmedi: {yazi[:120]!r}"
+    if basarili and gercek_terminal and getattr(motor, "tui_destegi", False):
+        t = _terminal_denemesi(motor, model, ek_ortam)
+        if not t["basarili"]:
+            basarili, sebep = False, "GERCEK TERMINAL denemesi dustu: " + t["sebep"]
     return {"basarili": basarili, "sebep": sebep or "", "cevap": yazi[:120],
             "olcum": olcum}
+
+
+def _terminal_denemesi(motor, model: str, ek_ortam=None) -> dict:
+    """Ayni deneme istemi GERCEK terminalde (ConPTY). Terminal her durumda
+    kapatilir; gecici klasor ondan sonra silinir."""
+    from .motor import tui
+    ad = "guncelleme-deneme"
+    metin, basarili, sebep = [], False, ""
+    with tempfile.TemporaryDirectory(prefix="ofis-deneme-tui-") as klasor:
+        try:
+            for olay in tui.TuiMotoru(motor, ajan_ad=ad).tur_kos(
+                    DENEME_ISTEMI, klasor=klasor, model=model, efor="dusuk",
+                    yazabilir=False, zaman_asimi=240, ek_ortam=ek_ortam):
+                if olay.tur == "metin":
+                    metin.append(olay.govde or "")
+                elif olay.tur == "hata":
+                    sebep = olay.govde or sebep
+                elif olay.tur == "bitti":
+                    basarili = bool((olay.ek or {}).get("basarili"))
+        except Exception as exc:          # noqa: BLE001 -- sebep olarak doner
+            sebep = f"terminal patladi: {exc}"
+        finally:
+            for x in tui.acik_oturumlar():
+                if x.get("ajan") == ad:
+                    tui.kapat(x["oturum_id"])
+    yazi = "".join(metin).strip()
+    if basarili and "OK" not in yazi.upper():
+        basarili, sebep = False, f"beklenen cevap gelmedi: {yazi[:120]!r}"
+    return {"basarili": basarili, "sebep": (sebep or "")[:300]}
 
 
 def _denemeyi_olc(db, pid: str, motor: str, deneme: dict) -> None:
@@ -724,7 +769,9 @@ def uygula(ofis, no: int, *, kademe: str = "", fabrika=None,
         olculen = kurulu_surum(motor)
         model = roller.model_sec(motor, "hizli", roller.kademe_haritasi(db, pid))
         model = model_coz(db, pid, motor, model)
-        deneme = (deneme_turu(motor, model, fabrika=fabrika)
+        from .motor.tui import KIP_AYARI
+        gercek = db.ayar_oku(pid, KIP_AYARI, "arka") == "gercek"
+        deneme = (deneme_turu(motor, model, fabrika=fabrika, gercek_terminal=gercek)
                   if olculen == yeni else
                   {"basarili": False, "sebep": f"surum olculdu: {olculen or 'yok'}"})
         _denemeyi_olc(db, pid, motor, deneme)
@@ -924,6 +971,34 @@ def otomatik_ilerle(ofis, *, fabrika=None) -> list:
         return _otomatik_ilerle(ofis, fabrika=fabrika)
     finally:
         _kilit_birak(db, pid, sahip)
+
+
+#: Bir "simdi" cagrisinda en fazla kac olcum+uygulama gecisi.
+AZAMI_GECIS = 3
+
+
+def olc_ve_ilerle(ofis, *, fabrika=None, npm: bool = True, zorla: bool = True) -> list:
+    """Olc -> otomatik uygula -> bir sey UYGULANDIYSA YENIDEN olc.
+
+    OLCULDU (30.09.2026): masaustu uygulamasi `gpt-6.1-sol`u getirmisti.
+    Ofis CLI'lari guncelledi (deneme gecti) ama yeni modeli UYGULAMADI:
+    olcum CLI guncellemesinden ONCE yapilmisti ve modelin ofisin codex
+    evindeki katalogda gorunmesi, yeni CLI'nin ilk turuyla oldu. Ikinci
+    olcumde model onerisi cikti. Yani yeni CLI yeni model getirebilir:
+    uygulanan her seyden sonra yeniden olculur (en fazla AZAMI_GECIS).
+    `zorla=False` ise ilk olcum araliga uyar (panel dongusu).
+    """
+    tum = []
+    for gecis in range(AZAMI_GECIS):
+        if zorla or gecis > 0:
+            kontrol(ofis.db, ofis.proje_id, npm=npm)
+        else:
+            kontrol_gerekirse(ofis.db, ofis.proje_id)
+        sonuc = otomatik_ilerle(ofis, fabrika=fabrika)
+        tum += sonuc
+        if not any(r.get("basarili") for r in sonuc):
+            break
+    return tum
 
 
 def _otomatik_ilerle(ofis, *, fabrika=None) -> list:

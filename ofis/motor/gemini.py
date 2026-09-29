@@ -69,8 +69,10 @@ ONAY_YAZAR = "yolo"
 ONAY_OKUR = "plan"
 
 SISTEM_EKI_ORTAK = (
-    "AgentOfis'te bir ajansin. Baglamin klasorundeki BRIFING.md dosyasidir; "
-    "uzun bir iste savrulursan geri donup oku. "
+    "AgentOfis'te bir ajansin. Gorevin bu konusmanin ILK mesajidir "
+    "(bir brifing ya da ofisin istemi -- ne istiyorsa onu, istedigi "
+    "bicimde yap). Proje kokundeki BRIFING.md BASKA ajana ait "
+    "olabilir; ona guvenme. "
     "Turkce yaz. "
     "Yalniz brifingdeki YAZMA ALANI icine yaz -- disina cikma; o alanlar "
     "baska ajanlara kilitli olabilir."

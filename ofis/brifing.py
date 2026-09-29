@@ -19,9 +19,16 @@ Cozum, kart yerine BRIFING:
 K3 kritik olandir. Elle yazilan durum ozeti bayatlar; bu katman veritabanindan
 dagitim aninda uretildigi icin bayatlayamaz.
 
-Brifing ayrica ajanin klasorune `BRIFING.md` olarak YAZILIR: uzun bir iste
-savrulan ajan kendi kendine tekrar okuyabilsin. Baglam siserken dikkat
-bozulur ("context rot"); geri donup bakilacak sabit bir metin bunu telafi eder.
+Brifing ayrica DISKE yazilir: uzun bir iste savrulan ajan kendi kendine
+tekrar okuyabilsin. Baglam siserken dikkat bozulur ("context rot"); geri
+donup bakilacak sabit bir metin bunu telafi eder.
+
+NEREYE (30.09.2026 duzeltmesi): once ajanin klasorune `BRIFING.md`
+yaziliyordu. "Ajanlar ortak kokte" kararindan beri o klasor HERKESIN
+koku -- her tur ayni dosyayi eziyordu. Olculdu: gercek terminaldeki lider
+kokteki BRIFING.md'yi (bilge'nin eski #33 isi) okudu, kendini bilge sandi
+ve plani reddetti. Artik kopya ofis evinde AJAN BASINA durur
+(`brifing_yolu`) ve yolu brifingin kendisinde yazar; koke hic yazilmaz.
 """
 
 from __future__ import annotations
@@ -46,6 +53,15 @@ JETON_UYARI_ESIGI = 6000
 def _jeton(metin: str) -> int:
     return int(len(metin) / KARAKTER_BASINA_JETON)
 
+
+
+def brifing_yolu(proje_id: str, ajan_ad: str) -> Path:
+    """Ajanin brifing kopyasi: ofis evinde, proje ve AJAN basina (ortak
+    kokte degil -- bkz. modul notu). Ad dosya adina uygun hale getirilir."""
+    from .yollar import ofis_evi
+    import re as _re
+    ad = _re.sub(r"[^A-Za-z0-9._-]+", "-", str(ajan_ad or "ajan")) or "ajan"
+    return ofis_evi() / "brifing" / str(proje_id) / f"{ad}.md"
 
 class Brifing:
     def __init__(self, db, proje_id: str, kadro, tahta, bellek) -> None:
@@ -358,7 +374,10 @@ class Brifing:
         satirlar += ["", "**Takima bildirim:** ofis araclarin varsa onemli "
                          "anlarda (engel, onemli bulgu, is bitti) `sohbete_yaz` "
                          "ile 1-3 cumle yaz; is basina en fazla 6 kez. Cevap "
-                         "bekleme. Soru icin `soru_sor`, onay icin `onay_iste`."]
+                         "bekleme. Patrona gorsel/pdf/video GOSTERMEK icin "
+                         "ayni aracin `ekler` alanina dosya yolunu yaz. "
+                         "Sohbet ofis icidir, disari cikmaz: ONAY GEREKMEZ. "
+                         "Soru icin `soru_sor`, onay icin `onay_iste`."]
         # PATRONUN IZINLERI her turda (devam dahil) soylenir: ajan izinli
         # bir eylem icin `onay_iste` cagirip bosuna durmasin.
         from .izin import brifing_blogu as izin_blogu
@@ -583,6 +602,12 @@ class Brifing:
         devir = self.devir_blogu(no, kesilen=kesilen)
         if devir:
             parcalar.append(devir)
+        hedef = brifing_yolu(self.proje_id, ajan_ad) if diske_yaz else None
+        if hedef is not None:
+            parcalar.append(
+                "Bu brifingin kopyasi (YALNIZ SENIN; uzun iste savrulursan "
+                f"geri donup oku): `{hedef}`. Proje kokunde BRIFING.md "
+                "gorursen o SENIN degil, okuma.")
         metin = "\n\n---\n\n".join(parcalar)
         jeton = _jeton(metin)
 
@@ -596,11 +621,12 @@ class Brifing:
             )
 
         yazildi = ""
-        if diske_yaz and ajan["klasor"]:
+        if hedef is not None:
             try:
-                hedef = Path(ajan["klasor"]) / "BRIFING.md"
                 hedef.parent.mkdir(parents=True, exist_ok=True)
-                hedef.write_text(metin, encoding="utf-8")
+                gecici = hedef.with_name(hedef.name + ".part")
+                gecici.write_text(metin, encoding="utf-8")
+                gecici.replace(hedef)
                 yazildi = str(hedef)
             except OSError:
                 # Diske yazamamak brifingi gecersiz kilmaz; ajan yine de

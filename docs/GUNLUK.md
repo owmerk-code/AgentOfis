@@ -12611,3 +12611,82 @@ turunda da okunuyor (gereksiz ama zararsız, iki kipte aynı).
 
 Sınama `duman_tui` (39): mesaj ayrımı, tavanlı tur arkada, lider terminali
 tek kalır, codex salt okunurda `--add-dir` yok.
+
+
+## 30.09.2026 — Sohbete dosya (ajan + lider), sohbet kutusu, güncelleme "hemen", gerçek terminalde dört hata
+
+Kullanıcı: *"hem sen hem ajanlar sohbete görsel video pdf dosyalar
+gönderebilsin"*, *"dosya ekleme butonu belli olsun, ses ile göndermek de
+olsun"*, *"yeni model / CLI geldiğinde ofis hemen güncellesin"*, 30 dakika
+serbest çalışma + gerçek testler.
+
+**Tetikleyen ölçüm (gerçek ofis, 29.09 gece):** çınar (codex) ekran
+görüntüsünü aldı ama `sohbete_yaz` yalnız metin taşıyordu; iş "bilmiyorum"
+diye insana yükseldi.
+
+### Yapılan
+
+1. **Sohbete dosya** — kural tek yerde `ekler.paylas`: kökteki dosya
+   `ekler/`e KOPYALANIR; kök dışı, gizli (`.env`, `.git/…`), sınır üstü
+   reddedilir. Ajan: `sohbete_yaz(metin, ekler=[yol…])` (en fazla 5; biri
+   bile gönderilemezse HİÇBİR ŞEY yazılmaz). Lider: cevabına/raporuna
+   `[ek] <yol>` satırı → `ekler.metni_hazirla` (salt okunur lider dosyayı
+   taşıyamaz, ofis taşır; gönderilemeyen ek sebebiyle yazılır, sessiz
+   düşmez). Balon: video/ses oynar, PDF bağlantı.
+2. **Sohbet kutusu** — "📎 Dosya" yazılı düğme, çok satırlı alan (Enter
+   gönderir, Shift+Enter satır), 🎤 sesle yaz (Türkçe; kutuya yazar,
+   GÖNDERMEZ — yanlış duyulmuş "sil" lidere gitmesin; tanıma tarayıcının
+   hizmeti), panoya sürükle-bırak. Alt satırdaki 🎤 aynı işlevi kullanır.
+3. **Güncelleme hemen** — denetim 24 saat → 30 dakika, panel döngüsü 10
+   dakika. **`olc_ve_ilerle`:** uygulanan her şeyden sonra YENİDEN ölçer
+   (en fazla 3 geçiş). Ölçüldü: CLI'lar güncellendi ama `gpt-6.1-sol`
+   uygulanmadı — model ofisin codex kataloğuna yeni CLI'ın ilk turuyla
+   düştü, ölçüm ondan önceydi. Gerçek ofiste uygulandı: claude 2.1.285,
+   codex 0.159.1, `gpt-6-sol → gpt-6.1-sol` (standart+güçlü, çınar);
+   hepsi deneme turundan geçti. Defter yedeği `~/.agentofis/yedek/elle`.
+
+### Gerçek terminalde bulunan dört hata (hepsi ölçülerek)
+
+1. **Ortak kökte `BRIFING.md`** — her işçi turu brifingini `calisma/
+   BRIFING.md`'ye yazıyordu ("ajanlar ortak kökte" kararından kalma).
+   Gerçek terminaldeki lider o dosyayı (bilge'nin eski #33'ü) okudu,
+   kendini bilge sandı, planı reddetti ("Plan JSON okunamadı"). Paralel
+   işçiler de birbirinin brifingini ezerdi. → Kopya ofis evinde AJAN
+   BAŞINA (`brifing.brifing_yolu`), yolu brifingin sonunda; köke hiç
+   yazılmaz; bayat dosya depodan kaldırıldı. Sistem notu artık "görevin
+   ilk mesajdır (brifing ya da ofisin istemi)" diyor.
+2. **Yapıştırılan talimat güvenilmez sayıldı** — Claude Code yapıştırmayı
+   `<pasted_content>` sarıyor; lider "bunun bana yazıldığını gösteren not
+   yok, talimatım saymadım" dedi, boş klasörde de iki kez plan düştü.
+   → Yapıştırmanın ardına SAHİP satırı TUŞ TUŞ yazılır (`SAHIP_SATIRI`).
+   Sonra: lider tam halka gerçek terminalde ilk denemede geçti (114 sn).
+3. **Claude 2.1.285 güven sorusu** — sabit "aşağı ok + Enter" imleci
+   "No, exit"te bıraktı, Claude kapandı; gerçek terminal kipi TAMAMEN
+   düştü. Otomatik güncellemenin deneme turu arka kipte koştuğu için
+   görmedi (açık iş: deneme turu gerçek kipi de koşmalı). → `_guven_sec`
+   ekrana bakar: imleç evette değilse aşağı, evetteyse Enter; bulamazsa
+   Enter BASMAZ.
+4. **Codex paralel turlar karıştı** — yeni oturumun dosyası "açılıştan
+   sonraki en yeni rollout" ile seçiliyordu; yanında koşan arka kip
+   Codex'in dosyası seçildi, olaylar yanlış işten okundu, tur öteki işin
+   "bitti"siyle kapandı, defterde kanıt sıfır. → Her tura benzersiz TUR
+   İŞARETİ; dosya işaretle bulunur.
+
+Ayrıca: codex gerçek terminal ret dedektörü brifing okumasını "reddedildi"
+yazıyordu (brifing "ONAY ISTENDI" sözünü içerir). Artık yalnız ölçülmüş
+ret izi (`Command blocked by PreToolUse hook`) ya da hatalı ofis aracı.
+Codex (luna) takım sohbetine dosyayı "dışarı paylaşım" sanıp onay istedi
+→ araç açıklaması ve brifing: "sohbet ofis içidir, onay gerekmez".
+
+### Gerçek ölçümler (boş geçici klasör, haiku / gpt-6-luna / sonnet)
+
+| Durum | Sonuç |
+|---|---|
+| Claude işçi dosya gönderir — arka / gerçek | GEÇTİ / GEÇTİ |
+| Codex işçi dosya gönderir — arka / gerçek | GEÇTİ / GEÇTİ (düzeltmelerden sonra) |
+| Claude tek gerçek-terminal turu (2.1.285) | GEÇTİ (güven düzeltmesinden sonra) |
+| Codex tek gerçek-terminal turu, yanında 2 paralel codex | GEÇTİ |
+| Claude lider tam halka, gerçek terminal | GEÇTİ, 114 sn |
+
+Sınamalar: `duman_ekler` 40, `duman_mcp` 146, `duman_tui` 48,
+`duman_guncelleme` 109, `duman_panel` 388, `duman_koltuk` (brifing yeri).

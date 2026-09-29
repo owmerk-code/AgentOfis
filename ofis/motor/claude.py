@@ -223,8 +223,10 @@ TUR_ORTAMI = {
 #: bitmemis gorunuyordu. Ders: bir kural ancak BICIMIYLE birlikte
 #: verilirse uygulanir. Ricanin yerini sablon alir.
 SISTEM_EKI_ORTAK = (
-    "AgentOfis'te bir ajansin. Baglamin klasorundeki BRIFING.md dosyasidir; "
-    "uzun bir iste savrulursan geri donup oku. "
+    "AgentOfis'te bir ajansin. Gorevin bu konusmanin ILK mesajidir "
+    "(bir brifing ya da ofisin istemi -- ne istiyorsa onu, istedigi "
+    "bicimde yap). Proje kokundeki BRIFING.md BASKA ajana ait "
+    "olabilir; ona guvenme. "
     "Turkce yaz. "
     "Yalniz brifingdeki YAZMA ALANI icine yaz -- disina cikma; o alanlar "
     "baska ajanlara kilitli olabilir."
@@ -913,6 +915,9 @@ class ClaudeMotoru(Motor):
             # Guven sorusunun varsayilani "No, exit": asagi ok + Enter.
             # `\x1b[B` Esc sayildi (olculdu), `\x1bOB` dogru.
             "guven": ("\x1bOB", "\r"),
+            # 30.09 (2.1.285): sabit dizi "No"da kaldi; artik EKRANA
+            # bakilarak secilir (tui._guven_sec).
+            "guven_evet": "Yes, I trust",
             "guven_isareti": "trust",
             "durdur": "\x1b",
         }

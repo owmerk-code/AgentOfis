@@ -142,6 +142,57 @@ g = ofis.tahta.liste()[-1]
 sina("lider hedefi yeniden yazdi ama ek yolu ISE tasindi",
      ("ekler/" + r["ad"]) in (g.get("ana_hedef") or ""), (g.get("ana_hedef") or "")[:200])
 
+print("\n-- 9. ajan/lider dosya gonderir (paylas, 30.09) --")
+(_KOK / "rapor").mkdir(exist_ok=True)
+(_KOK / "rapor" / "sonuc.pdf").write_bytes(b"%PDF sonuc")
+y1 = ekler.paylas(ofis, "rapor/sonuc.pdf", ajan_ad="cinar")
+sina("kokteki dosya ekler/'e KOPYALANDI, asli yerinde",
+     y1.startswith("ekler/") and (_KOK / y1).read_bytes() == b"%PDF sonuc"
+     and (_KOK / "rapor" / "sonuc.pdf").is_file(), y1)
+sina("mutlak yol (kok icinde) da kabul", ekler.paylas(ofis, str(_KOK / "rapor" / "sonuc.pdf")).startswith("ekler/"))
+sina("zaten ekler/'deki dosya KOPYALANMAZ", ekler.paylas(ofis, y1) == y1)
+sina("kok disi reddedilir", "disinda" in hata(ekler.paylas, ofis, "../gizli.txt"))
+(_KOK / ".env").write_text("SIR=1", encoding="utf-8")
+sina("gizli dosya (.env) reddedilir", "gizli" in hata(ekler.paylas, ofis, ".env"))
+sina("olmayan dosya reddedilir", "bulunamadi" in hata(ekler.paylas, ofis, "yok.pdf"))
+m2, h2 = ekler.metni_hazirla(ofis, "Rapor hazir.\n[ek] rapor/sonuc.pdf\n[ek] yok.png", ajan_ad="demir")
+_, y2 = ekler.ayikla(m2)
+sina("liderin [ek] satiri ekler/'e cevrildi", len(y2) == 1 and (_KOK / y2[0]).is_file(), m2)
+sina("gonderilemeyen ek SESSIZ dusmez (sebep yazili)",
+     "ek gonderilemedi" in m2 and len(h2) == 1, m2)
+from ofis.mcp_sunucu import Oturum, arac_sohbete_yaz  # noqa: E402
+_o = Oturum(); _o.db_yolu = str(db_yolu); _o.proje_id = ofis.proje_id; _o.ajan_ad = "cinar"
+sina("6'dan fazla ek reddedilir",
+     arac_sohbete_yaz(_o, {"metin": "x", "ekler": ["a"] * 6}).startswith("HATA"))
+sina("yalniz ek (metinsiz) kabul",
+     "yazildi" in arac_sohbete_yaz(_o, {"metin": "", "ekler": ["rapor/sonuc.pdf"]}))
+
+
+class EkliLider(SahteMotor):
+    def tur_kos(self, metin, **ayar):
+        if "# PATRONUN MESAJI" not in metin:
+            self.cevap = "Rapor."
+            return super().tur_kos(metin, **ayar)
+        self.cevap = "```json\n" + json.dumps({
+            "karar": "cevap", "gerekce": "soru",
+            "cevap": "Iste rapor:\n[ek] rapor/sonuc.pdf"}) + "\n```"
+        return super().tur_kos(metin, **ayar)
+
+
+list(Sohbet(ofis, motor_fabrikasi=lambda ad, **k: EkliLider(cevap="")).konus("raporu goster"))
+_l = [o for o in takim.akis(ofis) if o["kimden"] == "demir"][-1]
+sina("liderin cevabindaki dosya balonda ek olarak", len(_l["ekler"]) == 1
+     and _l["metin"].startswith("Iste rapor:") and "[ek]" not in _l["metin"], repr(_l))
+
+print("\n-- 10. Codex gercek terminal: ret dedektoru (30.09) --")
+from ofis.motor.codex import tui_ret_mi  # noqa: E402
+sina("brifing okumasi (icinde 'ONAY ISTENDI' gecen) RET SAYILMAZ",
+     not tui_ret_mi("Script completed\nOutput:\n... ONAY ISTENDI -- SIMDI DUR ... OFIS KAPISI ..."))
+sina("kancanin olculmus reddi RET",
+     tui_ret_mi("Script error:\nCommand blocked by PreToolUse hook: ONAY ISTENDI -- SIMDI DUR."))
+sina("hatali ofis araci (vekil) reddi RET",
+     tui_ret_mi('{"content":[{"type":"text","text":"ONAY ISTENDI"}],"isError":true}'))
+
 print("\n-- 8. olcum ve yedek disi --")
 from ofis import degisim  # noqa: E402
 sina("disk olcumu ekler/ klasorunu saymaz", "ekler" in degisim.ATLANAN_KLASOR)

@@ -59,11 +59,70 @@ _ACIK: dict = {}          # oturum_id -> {"terminal", "plan", "son", "ajan", "go
 _KILIT = threading.Lock()
 
 
-def _yapistir(t, metin: str) -> None:
-    """Cok satirli metni TEK mesaj olarak gonderir (bracketed paste)."""
+#: Yapistirmanin ARDINDAN elle YAZILAN satir (yapistirma degil).
+#:
+#: OLCULDU (30.09.2026, claude 2.1.285, bos gecici klasor): gercek
+#: terminaldeki lider plan istemini `<pasted_content>` olarak aldi ve
+#: "yapistirilan metinde bunun bana yazildigini gosteren bir notunuz yok,
+#: onu kendi talimatim saymadim" dedi; plan iki kez "JSON okunamadi" ile
+#: dustu. Claude Code yapistirilani GUVENILMEZ veri sayiyor -- dogru bir
+#: savunma. Talimatin sahibini soyleyen satir KULLANICININ YAZDIGI kisim
+#: olmali; o yuzden yapistirilmaz, tus tus yazilir.
+SAHIP_SATIRI = ("Yukaridaki yapistirilan metin AgentOfis'in (patronun ofisinin) "
+                "sana verdigi talimattir; aynen uygula, istenen bicimde cevap ver.")
+
+
+def _yapistir(t, metin: str, *, sahip: str = SAHIP_SATIRI) -> None:
+    """Cok satirli metni TEK mesaj olarak gonderir (bracketed paste) ve
+    ardina talimatin sahibini YAZAR (bkz. SAHIP_SATIRI)."""
     t.yaz("\x1b[200~" + metin.replace("\r\n", "\n") + "\x1b[201~")
     time.sleep(0.8)
+    if sahip:
+        t.yaz(" " + sahip)
+        time.sleep(0.4)
     t.yaz("\r")
+
+
+#: Secim listesinde imlec isareti (Claude Code / Ink).
+IMLEC = "\u276f"
+#: `\x1b[B` Claude'da Esc sayildi (olculdu, bkz. claude.py) -- yalniz
+#: uygulama kipi dizisi.
+_ASAGI = ("\x1bOB",)
+
+
+def _imlec_evette_mi(ekran: str, evet: str) -> bool:
+    """Ekranin SON karesinde imlec 'evet' seceneginde mi (bosluklar yok sayilir)."""
+    ekran = ekran or ""
+    i = ekran.rfind(IMLEC)
+    if i < 0:
+        return False
+    sonrasi = "".join(ekran[i + 1:i + 1 + 3 * len(evet)].split())
+    return sonrasi.lower().startswith("".join(evet.split()).lower())
+
+
+def _guven_sec(t, evet: str, deneme: int = 6) -> bool:
+    """Guven sorusunda 'evet'i EKRANA BAKARAK secer, sonra Enter.
+
+    OLCULDU (30.09.2026, claude 2.1.285): sabit "asagi ok + Enter" dizisi
+    yeni surumde imleci "No, exit"te birakti ve Enter Claude'u KAPATTI --
+    gercek terminal kipi tamamen dustu. Otomatik guncellemenin deneme turu
+    arka kipte kostugu icin bunu gormedi. Kural artik ekran: imlec evette
+    degilse bir asagi, tekrar bak; evetteyse Enter. Bulamazsa Enter
+    BASILMAZ (yanlis secenegi onaylamaktansa acilis zaman asimina duser).
+    """
+    from ..terminal import duz_metin
+    for i in range(deneme):
+        time.sleep(0.6)
+        ekran = duz_metin(t.gecmis())
+        if _imlec_evette_mi(ekran, evet):
+            t.yaz("\r")
+            return True
+        t.yaz(_ASAGI[(i // 2) % len(_ASAGI)])
+    time.sleep(0.6)
+    if _imlec_evette_mi(duz_metin(t.gecmis()), evet):
+        t.yaz("\r")
+        return True
+    return False
 
 
 def _gonderildi_mi(t, dokum_bul, onceki: int, deneme: int = 4) -> bool:
@@ -284,9 +343,12 @@ class TuiMotoru(Motor):
                 ekran = duz_metin(t.gecmis())
                 if plan.get("guven_isareti") and plan["guven_isareti"] in ekran.lower() \
                         and not kayit.get("guvenildi"):
-                    for tus in plan.get("guven") or ():
-                        t.yaz(tus)
-                        time.sleep(0.5)
+                    if plan.get("guven_evet"):
+                        _guven_sec(t, plan["guven_evet"])
+                    else:
+                        for tus in plan.get("guven") or ():
+                            t.yaz(tus)
+                            time.sleep(0.5)
                     kayit["guvenildi"] = True
                     son_boy, durgun = -1, 0.0
                 if len(ekran) == son_boy:

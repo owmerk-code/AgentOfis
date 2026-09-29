@@ -58,7 +58,8 @@ motor matrisinden geçmeden deftere girmez.
   ortak havuzdan yer).
 - **Kademe (kod değil ayar, `roller.kademe_haritasi`):**
   claude hızlı haiku · standart sonnet · güçlü opus;
-  codex hızlı gpt-6-luna · standart gpt-5.6-terra · güçlü gpt-6-sol.
+  codex hızlı gpt-6-luna · standart gpt-6.1-sol · güçlü gpt-6.1-sol
+  (30.09 otomatik güncelleme).
 - **Zorluk → model + efor:** kolay→düşük · orta→normal · zor→yüksek ·
   çok_zor→çok_yüksek (gerekçe zorunlu). `max` YOK. Panelde efor düğmesi.
 - **Model açıkça verilir** (verilmeyen iş hesabın varsayılanına düşer,
@@ -163,7 +164,7 @@ matrisin ölçümüyle karşılaştırır.
 | `ofis/motor_saglik.py` · `kullanim.py` · `tavan.py` · `butce.py` | Oturum/kota hafızası; hesap pencereleri (tur koşmadan okunur); kaçak freni + jeton tavanı; Fable kapı payı. |
 | `ofis/degisim.py` · `geri_al.py` | Diskte ölçülen fark (beyan dışı yazma, canlı izleme) · gölge git ile tur geri alma. |
 | `ofis/devral.py` · `terminal.py` · `konsol.py` | Ajanın terminalini insan devralır (ConPTY) · bağımsız konsol. |
-| `ofis/ekler.py` | Sohbete dosya/görsel: kökün `ekler/` klasörü, `[ek] ekler/ad` satırı, ad/boyut/yol kapıları; GitHub'a ve disk ölçümüne girmez. |
+| `ofis/ekler.py` | Sohbete dosya/görsel: kökün `ekler/` klasörü, `[ek] ekler/ad` satırı, ad/boyut/yol kapıları; `paylas` (ajan `sohbete_yaz(ekler=…)`, lider `[ek] <yol>` satırı; kök dışı/gizli ret); GitHub'a ve disk ölçümüne girmez. |
 | `ofis/gorsel.py` · `video.py` | Medya; codex aboneliğiyle görsel; para kilidi. |
 | `ofis/ekip.py` · `sablon.py` | Ekip önerisi (lider önerir, insan onaylar) · takım şablonları. |
 | `ofis/saglik.py` · `yetenek.py` · `denetim.py` · `baglayici.py` · `klasor.py` · `sartname.py` · `guncelleme.py` · `motor_karti.py` | Tıkanma teşhisi · yetenek envanteri · denetim kaydı · claude.ai bağlayıcıları · dış klasör kapısı · şartname kapısı (fable, araçsız) · otomatik güncelleme · motor kartı. |
@@ -209,7 +210,12 @@ matrisin ölçümüyle karşılaştırır.
   kendi sütunu; "Ajanlar kabinde" (tarayıcılı tek iş panelde canlı).
 - **Codex ajanı kapı varken tam erişimle** koşar (workspace-write'ta `git add` bile yapamıyordu, push sandbox kullanıcısı yüzünden düşüyordu); riskli adım kapıda.
 - **Gerçek terminal kipi** kuruldu ve panelde (üst çubuk anahtarı, ajan panosu = gerçek terminal); lider de gerçek terminalde (her tur temiz); varsayılan hâlâ `arka`.
-- **Sınamalar:** 43 duman dosyası, **3253/3253** (29.09). Deneme seti 15/15
+  30.09 düzeltmeleri: brifing kopyası ajan başına ofis evinde (ortak kökte
+  `BRIFING.md` YOK), yapıştırmanın ardına elle yazılan sahip satırı, güven
+  sorusu ekrana bakarak, codex oturum dosyası tur işaretiyle.
+- **Güncelleme hemen:** 30 dakikada bir ölçer, uyguladıktan sonra yeniden
+  ölçer (`olc_ve_ilerle`). Açık: deneme turu gerçek terminal kipini koşmuyor.
+- **Sınamalar:** 44 duman dosyası, **3295/3295** (30.09). Deneme seti 15/15
   (Claude ve Codex, işçi+lider).
 - **Kullanıcının belirttiği eksikler (29.09):** her panoda her zaman açık
   yazma yeri; sesli orkestratör;

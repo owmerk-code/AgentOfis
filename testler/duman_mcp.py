@@ -886,12 +886,24 @@ _akis = _tk.akis(ofis)
 sina("takim akisinda 'bildirim' olarak gorunuyor",
      any(x["tur"] == "bildirim" and x["kimden"] == "cinar" for x in _akis))
 sina("bos mesaj reddedilir", _ss.arac("sohbete_yaz", metin="  ").startswith("HATA"))
+# EKLER (30.09): ajan sohbete DOSYA gonderir -- gercek sunucu surecinden.
+_kok_s = Path(ofis.kok_klasoru())
+(_kok_s / "cikti").mkdir(parents=True, exist_ok=True)
+(_kok_s / "cikti" / "grafik.png").write_bytes(b"\x89PNG grafik")
+_c = _ss.arac("sohbete_yaz", metin="grafik hazir", ekler=["cikti/grafik.png"])
+sina("ekli bildirim yazildi", "1 dosya eklendi" in _c, _c[:160])
+_x = [x for x in _tk.akis(ofis) if x["tur"] == "bildirim"][-1]
+sina("balonda ek gorunuyor, metin temiz",
+     _x["metin"] == "grafik hazir" and len(_x["ekler"]) == 1
+     and (_kok_s / _x["ekler"][0]).read_bytes() == b"\x89PNG grafik", str(_x)[:200])
+_c = _ss.arac("sohbete_yaz", metin="bak", ekler=["yok.png"])
+sina("olmayan ek: HATA ve hicbir sey yazilmadi", _c.startswith("HATA") and "YAZILMADI" in _c, _c[:160])
 for _i in range(10):
     _son = _ss.arac("sohbete_yaz", metin=f"bildirim {_i}")
 sina("is basina ust sinir uygulaniyor", _son.startswith("HATA") and "6 kez" in _son, _son[:120])
 with ofis.db.baglanti() as _cn:
     _n = _cn.execute("SELECT COUNT(*) FROM olay WHERE tur='ajan_sohbet' AND ajan_ad='cinar'").fetchone()[0]
-sina("sinirdan fazlasi deftere GIRMEDI", _n == 6, str(_n))
+sina("sinirdan fazlasi deftere GIRMEDI (ekli bildirim dahil)", _n == 6, str(_n))
 
 print(f"\n== sonuc: {GECEN} gecti, {KALAN} kaldi ==")
 print(f"klasor: {kok}")

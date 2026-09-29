@@ -237,8 +237,64 @@ if _cm.tui_ikilisi():
     sina("salt okunur turda --add-dir verilmez (codex terminali kapatiyordu)",
          "--add-dir" not in _plan(False))
     sina("yazabilen turda --add-dir verilir", "--add-dir" in _plan(True))
+
+    print("\n-- 15. codex paralel turlar: oturum dosyasi TUR ISARETIYLE (30.09) --")
+    import json as _js  # noqa: E402
+    import os as _os  # noqa: E402
+    _ev = _KOK / "codex-ev"
+    # Ev ACIKCA gecici klasor: gercek codex evine dosya yazilmaz.
+    _p = _cm.tui_plani(oturum_id="", model="", efor="", yazabilir=True,
+                       ek_klasorler=(), mcp_yapilandirma="", izinli_araclar=(),
+                       ek_ortam={"CODEX_HOME": str(_ev)},
+                       kanca_komutu=tui.kanca_komutu(), gecici=_KOK)
+    sina("sinama gercek codex evine DOKUNMUYOR", Path(_p["ev"]) == _ev, _p["ev"])
+    _ses = Path(_p["ev"]) / "sessions" / "2099" / "01" / "01"
+    _ses.mkdir(parents=True, exist_ok=True)
+    _benim = _ses / "rollout-a-benim.jsonl"
+    _baska = _ses / "rollout-b-baska.jsonl"
+    _benim.write_text(_js.dumps({"type": "response_item", "payload": {
+        "type": "message", "content": [{"text": _p["ilk_on_ek"]}]}}) + "\n", encoding="utf-8")
+    time.sleep(0.05)
+    _baska.write_text('{"type":"event_msg","payload":{"type":"task_complete"}}\n', encoding="utf-8")
+    sina("isaret ilk mesajda", _p["isaret"] in _p["ilk_on_ek"])
+    sina("paralel BASKA turun daha yeni dosyasi SECILMEZ; isaretli dosya secilir",
+         _p["dokum"]() == _benim, str(_p["dokum"]()))
+    _benim.unlink(); _baska.unlink()
 else:
     print("  [ATLANDI] codex ikilisi yok")
+
+print("\n-- 16. guven sorusu EKRANA bakarak (30.09, claude 2.1.285) --")
+_s = ("Quick safety check ... ❯No, exit\n Yes, I trust this folder\n"
+      "No, exit❯Yes, I trust this folder")
+sina("imlec evette (son kare)", tui._imlec_evette_mi(_s, "Yes, I trust"))
+sina("imlec hayirda iken evet DENMEZ",
+     not tui._imlec_evette_mi(_s + "\n❯No, exit Yes, I trust", "Yes, I trust"))
+sina("imlec yoksa evet denmez", not tui._imlec_evette_mi("Yes, I trust", "Yes, I trust"))
+sina("asagi tusu Esc sayilan '\\x1b[B' DEGIL", "\x1b[B" not in tui._ASAGI)
+
+
+class _SahteT:
+    def __init__(self):
+        self.yazilan = []
+
+    def yaz(self, x):
+        self.yazilan.append(x)
+
+    def gecmis(self):
+        return "❯No, exit Yes, I trust"
+
+
+_st = _SahteT()
+sina("evet bulunamazsa Enter BASILMAZ (yanlis secenek onaylanmaz)",
+     tui._guven_sec(_st, "Yes, I trust", deneme=2) is False and "\r" not in _st.yazilan,
+     str(_st.yazilan))
+
+print("\n-- 17. yapistirmanin ardina SAHIP satiri ELLE yazilir (30.09) --")
+_st = _SahteT()
+tui._yapistir(_st, "plan istemi")
+sina("once yapistirma, sonra duz yazilmis sahip satiri, sonra Enter",
+     _st.yazilan[0].startswith("\x1b[200~") and _st.yazilan[1].strip() == tui.SAHIP_SATIRI
+     and "\x1b[200~" not in _st.yazilan[1] and _st.yazilan[-1] == "\r", str(_st.yazilan)[:200])
 
 for x in tui.acik_oturumlar():
     tui.kapat(x["oturum_id"])

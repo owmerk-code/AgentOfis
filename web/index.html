@@ -102,14 +102,24 @@
         <!-- SOHBETE YAZ: panonun kendi kutusu (akis yeniden cizilir, bu
              kutu cizilmez -- yazilan kaybolmaz). Alttaki satirla AYNI
              gonderici. -->
+        <!-- 30.09: kullanici "dosya ekleme butonu belli olsun, ses ile
+             gondermek de olsun". Ekler kutunun USTUNDE cip; alan cok
+             satirli (Enter gonderir, Shift+Enter yeni satir); pano
+             uzerine birakilan dosya da eklenir. -->
         <form class="sohbet-yaz" id="sohbet-yaz" autocomplete="off">
-          <button class="dugme ek-dugme" type="button" id="ek-sec"
-                  title="Dosya ya da görsel ekle (ekran görüntüsünü kutuya Ctrl+V ile de yapıştırabilirsin)">📎</button>
-          <input type="file" id="ek-dosya" multiple hidden>
           <span class="ek-ciplari" id="ek-ciplari"></span>
-          <input id="sohbet-girdi" type="text" maxlength="4000"
-                 placeholder="Takıma yaz — adres yoksa lidere · @ad · @ad iş: … · @TAKIM">
-          <button class="dugme olumlu" type="submit">Gönder</button>
+          <div class="sohbet-yaz-satir">
+            <button class="dugme ek-dugme" type="button" id="ek-sec"
+                    title="Dosya, görsel, PDF, video ekle — ekran görüntüsünü Ctrl+V ile yapıştırabilir, dosyayı panoya sürükleyebilirsin"><svg class="simge" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M21 11.5l-8.6 8.6a5.5 5.5 0 0 1-7.8-7.8l8.6-8.6a3.7 3.7 0 0 1 5.2 5.2l-8.6 8.6a1.8 1.8 0 0 1-2.6-2.6l7.9-7.9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Dosya</button>
+            <input type="file" id="ek-dosya" multiple hidden>
+            <textarea id="sohbet-girdi" rows="1" maxlength="4000"
+                   placeholder="Takıma yaz… (@ad · @ad iş: · @TAKIM)"
+                   title="Adres yoksa lidere gider. @ad: o ajana · @ad iş: işi ona ver · @TAKIM: o takımın liderine. Enter gönderir, Shift+Enter yeni satır."></textarea>
+            <button class="dugme ses-dugme" type="button" id="sohbet-ses"
+                    title="Sesle yaz (Türkçe). Söylediğin kutuya yazılır, göndermeden önce düzeltebilirsin." aria-label="Sesle yaz"><svg class="simge" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+            <button class="dugme olumlu" type="submit">Gönder</button>
+          </div>
+          <div class="surukle-ipucu" id="surukle-ipucu" hidden>Dosyayı bırak — sohbete eklenecek</div>
         </form>
       </div>
       <!-- KONSOL: ofisten BAGIMSIZ, insanin kendi terminali (28.09). -->

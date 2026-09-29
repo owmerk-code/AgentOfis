@@ -620,5 +620,61 @@ sina("BAYAT kilit devralindi ve is yapildi",
      any(x.get("basarili") for x in r8) and SURUM["codex"] == "0.160.0", str(r8))
 sina("is bitince kilit BIRAKILDI", d8.ayar_oku(p8, G.ANAHTAR_KILIT, "") == "")
 
+print("\n-- OLC VE ILERLE: uygulanan her seyden sonra YENIDEN olcer (30.09) --")
+# Olculen hata: yeni CLI yeni modeli getirdi, olcum ondan ONCEYDI ve model
+# ayni turda uygulanmadi. Sahne: 1. gecis CLI uygular, 2. gecis modeli,
+# 3. gecis bos -- uc olcum, iki uygulama.
+_asil = (G.kontrol, G.kontrol_gerekirse, G.otomatik_ilerle)
+_iz = []
+_sira = [[{"basarili": True, "ozet": "cli"}], [{"basarili": True, "ozet": "model"}], []]
+G.kontrol = lambda db, pid, npm=True: _iz.append("olc")
+G.kontrol_gerekirse = lambda db, pid: _iz.append("olc_gerekirse")
+G.otomatik_ilerle = lambda ofis, fabrika=None: _sira.pop(0) if _sira else []
+try:
+    _r = G.olc_ve_ilerle(of8, npm=False)
+    sina("uygulama olunca YENIDEN olculdu (cli -> model ayni cagrida)",
+         _iz == ["olc", "olc", "olc"] and [x["ozet"] for x in _r] == ["cli", "model"],
+         f"{_iz} {_r}")
+    _iz.clear(); _sira[:] = [[{"basarili": False, "ertelendi": True}]]
+    G.olc_ve_ilerle(of8, npm=False)
+    sina("hicbir sey uygulanmadiysa TEK olcum (dongu yok)", _iz == ["olc"], str(_iz))
+    _iz.clear(); _sira[:] = [[]]
+    G.olc_ve_ilerle(of8, zorla=False)
+    sina("panel dongusu ilk olcumde ARALIGA uyar", _iz == ["olc_gerekirse"], str(_iz))
+    _iz.clear(); _sira[:] = [[{"basarili": True}]] * 10
+    G.olc_ve_ilerle(of8, npm=False)
+    sina("gecis sayisi TAVANLI (sonsuz dongu yok)", len(_iz) == G.AZAMI_GECIS, str(_iz))
+finally:
+    G.kontrol, G.kontrol_gerekirse, G.otomatik_ilerle = _asil
+sina("denetim araligi yarim saat (hemen guncelle)", G.KONTROL_ARALIGI_SAAT <= 0.5)
+
+print("\n-- DENEME TURU GERCEK TERMINALI DE KOSAR (30.09) --")
+# Olculen hata: claude 2.1.285 arka denemeden gecti, gercek terminal kipi
+# tamamen dusmustu. Terminal denemesi duserse deneme DUSER.
+_asil_t = G._terminal_denemesi
+_cagri = []
+
+
+def _tui_fab(ad, **kw):
+    m = SahteMotor(cevap="OK")
+    m.tui_destegi = True
+    return m
+
+
+G._terminal_denemesi = lambda motor, model, ek_ortam=None: (
+    _cagri.append(model) or {"basarili": False, "sebep": "guven sorusu"})
+try:
+    _d1 = G.deneme_turu("claude", "m1", fabrika=_tui_fab, gercek_terminal=True)
+    sina("terminal denemesi dusunce DENEME DUSER (sebep soylenir)",
+         not _d1["basarili"] and "GERCEK TERMINAL" in _d1["sebep"], str(_d1))
+    _d2 = G.deneme_turu("claude", "m2", fabrika=_tui_fab, gercek_terminal=False)
+    sina("arka kipteki ofiste terminal denemesi KOSMAZ", _d2["basarili"] and _cagri == ["m1"],
+         f"{_d2} {_cagri}")
+    _d3 = G.deneme_turu("claude", "m3", fabrika=lambda ad, **k: SahteMotor(cevap="OK"),
+                        gercek_terminal=True)
+    sina("terminali desteklemeyen motorda terminal denemesi atlanir", _d3["basarili"])
+finally:
+    G._terminal_denemesi = _asil_t
+
 print(f"\n== sonuc: {GECEN} gecti, {KALAN} kaldi")
 sys.exit(1 if KALAN else 0)

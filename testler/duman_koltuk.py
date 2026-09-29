@@ -195,7 +195,12 @@ g7 = gorev_ac("Klasorsuz is", [])
 reddetmeli("klasorsuz ajan reddediliyor",
            lambda: koltuk.kos(g7["no"], "ayaz"), KoltukHatasi)
 sina("ajan klasoru olusturuldu", (kok / "cinar").is_dir())
-sina("BRIFING.md ajanin klasorune yazildi", (kok / "cinar" / "BRIFING.md").is_file())
+from ofis.brifing import brifing_yolu as _by  # noqa: E402
+sina("brifing kopyasi AJANA OZEL yerde (ofis evi)", _by(ofis.proje_id, "cinar").is_file())
+sina("ortak koke / ajan klasorune BRIFING.md YAZILMADI (30.09)",
+     not (kok / "cinar" / "BRIFING.md").exists() and not (kok / "BRIFING.md").exists())
+sina("brifing kendi kopyasinin yolunu soyluyor",
+     str(_by(ofis.proje_id, "cinar")) in izler[-1].cagrilar[-1]["metin"])
 
 # --------------------------------------------------------------------------
 print("\n7. TEMIZ OTURUM -- yeni is birikmis baglami tasimiyor (Yasa 4)")
