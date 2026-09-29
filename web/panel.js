@@ -685,7 +685,9 @@ function panoKur(a, secenek) {
   }
   // DEVRAL (E18): elinde is olan ajanin panosunda. Kosan tur varken
   // sunucu reddeder ve SEBEBINI soyler ("once Durdur").
-  if (!s.gecmis && a.gorev_no && !devralinmisMi(a.gorev_no)) {
+  // Gercek terminal kipinde Devral YOK: insan terminale zaten yazabiliyor;
+  // devral ikinci bir terminal acardi.
+  if (!s.gecmis && a.gorev_no && !devralinmisMi(a.gorev_no) && !(D.tui || {})[a.ad]) {
     const dv = el("button", "pano-dugme devral-dugme", "⌨ Devral");
     dv.title = "Bu işi al: ajanın kendi oturumu gerçek bir terminalde açılır. " +
                "Ajan o sırada çalışmaz; işin bitince 'Ofise geri ver'.";
@@ -749,6 +751,24 @@ function panoKur(a, secenek) {
     D.panolar[a.ad] = ic;
     return p;
   }
+  // GERCEK TERMINAL KIPI: ajan Claude/Codex'in KENDI terminalinde kosuyor.
+  // Pano o terminalin ta kendisi; insan icine yazabilir. Akis satirlari
+  // (ic) kaybolmaz, yalniz gosterilmez -- canli olaylar ona yazilmaya
+  // devam eder, kip degisince geri gelir.
+  const tu = !s.gecmis && (D.tui || {})[a.ad];
+  if (tu) {
+    p.classList.add("gercek-terminal");
+    const r = el("span", "pano-gercek", "gerçek terminal");
+    r.title = "Ajan Claude/Codex'in kendi terminalinde çalışıyor. İçine yazabilirsin; " +
+              "riskli adımlar yine ofis kapısından geçer.";
+    bas.insertBefore(r, bas.children[3] || null);
+    p.append(terminalAlani("t:" + tu.oturum, `/ws/tui/${encodeURIComponent(tu.oturum)}`,
+                           "[ajanın terminali kapandı]"));
+    if (a.gorev_no) p.append(notSatiri(a));
+    if (term) p.append(durumSatiri(a));
+    D.panolar[a.ad] = ic;
+    return p;
+  }
   p.append(ic);
   // YAZMA SATIRI yalniz elinde IS olan ajanda: not verilmis bir isin
   // yonunu duzeltir, is dagitmaz (yeni is lidere yazilir).
@@ -778,6 +798,10 @@ async function devralAl() {
     for (const d of r.isler || []) m[d.no] = d;
     D.devral = m;
     D.devralPty = r.pty || "";
+    // GERCEK TERMINAL KIPI: ajan adi -> canli terminali.
+    const t = {};
+    for (const x of r.tui || []) if (x.ajan) t[x.ajan] = x;
+    D.tui = t;
   } catch (e) { /* olcum yoksa dugme yine sunucuya sorar */ }
 }
 
@@ -5019,6 +5043,27 @@ async function cizEfor() {
     kap.appendChild(not);
   }
 }
+/* AJAN TERMINALI KIPI: 'arka' (yapili akis) | 'gercek' (Claude/Codex'in
+   kendi terminali). Kural koltukta; panel yalniz ayari yazar. Degisiklik
+   SONRAKI turlardan itibaren gecerli -- kosan tur yarida degismez. */
+async function cizKip() {
+  const kap = $("#kip-sec");
+  if (!kap) return;
+  let d;
+  try { d = await al("/api/terminal_kipi"); }
+  catch (e) { kap.title = "kip okunamadi: " + e.message; return; }
+  kap.querySelectorAll("button").forEach(b =>
+    b.classList.toggle("secili", b.dataset.kip === d.kip));
+}
+document.querySelectorAll("#kip-sec button").forEach(b => {
+  b.onclick = async () => {
+    try { await yolla("/api/terminal_kipi", { kip: b.dataset.kip }); }
+    catch (e) { bildir("kip değiştirilemedi: " + (e.message || e), "kotu"); }
+    cizKip();
+  };
+});
+cizKip();
+
 document.querySelectorAll("#efor-sec button").forEach(b => {
   b.onclick = async () => {
     try { await yolla("/api/efor", { mod: b.dataset.mod }); }

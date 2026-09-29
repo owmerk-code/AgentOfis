@@ -12448,3 +12448,19 @@ Tam takım **3185/3185** (43 dosya).
 
 Sıradaki: panelde ajan panosu bu terminali göstersin ve insan içine
 yazabilsin; panelde kip anahtarı.
+
+### Panele bağlandı (29.09.2026)
+
+- Üst çubukta **"ajan terminali: arka plan / gerçek"** anahtarı
+  (`/api/terminal_kipi`; kural koltukta, panel ayarı yazar; sonraki
+  turlardan itibaren geçerli, koşan tur yarıda değişmez).
+- Canlı gerçek terminali olan ajanın panosu **o terminalin kendisi**
+  (xterm, `/ws/tui/{oturum}`, yalnız bu bilgisayardan; devral/konsol ile
+  AYNI köprü). İnsan içine yazabilir; riskli adım yine kapıdan geçer.
+  Başlıkta "gerçek terminal" rozeti; Devral düğmesi bu panoda YOK (ikinci
+  terminal açardı).
+- Yazılı sınır: halka kabuktan başlatılırsa terminal O süreçtedir, panel
+  onu göremez (liste boş gelir, uydurmaz).
+- Tarayıcıda ölçüldü (geçici panel 8911, sahte CLI): pano xterm'i çizdi,
+  ekran geldi. Sınama `duman_tui` 11. bölüm (33/33): liste, köprü, insanın
+  yazdığının CLI'a ulaşması, olmayan terminal hatası, kip anahtarı.

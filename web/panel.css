@@ -1640,3 +1640,10 @@ details > summary.hf-bas { cursor: pointer; }
   border-radius: 4px; padding: 0 5px; align-self: center; }
 .dn-ayrinti { grid-column: 2 / -1; color: var(--metin-3); font-size: var(--yz-kucuk);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* GERCEK TERMINAL KIPI rozeti: ajan Claude/Codex'in kendi terminalinde. */
+.pano-gercek {
+  font-size: var(--yz-mikro); color: var(--iyi);
+  border: 1px solid var(--iyi); border-radius: 4px; padding: 0 5px;
+  white-space: nowrap;
+}

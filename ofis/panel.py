@@ -436,6 +436,10 @@ class KonsolGovdesi(BaseModel):
     satir: int = 32
 
 
+class KipGovdesi(BaseModel):
+    kip: str = ""
+
+
 class SebepGovdesi(BaseModel):
     """Ret ve iptal icin. Sebep ZORUNLU -- cekirdek zaten reddediyor;
     burada ayrica alan olmasi, panelin onu SORMASI icin."""
@@ -1679,8 +1683,57 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
         from . import devral as _dv
         from . import terminal as _tr
         ofis = ofis_ac()
+        from .motor import tui as _tui
+        # GERCEK TERMINAL KIPI: canli ajan terminalleri (bu surecte).
+        # Halka kabuktan baslatildiysa terminal O surectedir ve burada
+        # GORUNMEZ -- panel uydurmaz, liste bos gelir.
+        acik = [{"ajan": x["ajan"], "gorev": x["gorev"], "oturum": x["oturum_id"]}
+                for x in _tui.acik_oturumlar()]
         return {"isler": _dv.devralinanlar(ofis.db, ofis.proje_id),
+                "pty": _tr.pty_durumu() or "hazir", "tui": acik}
+
+    @uygulama.get("/api/terminal_kipi")
+    def api_terminal_kipi():
+        """Ajanlar hangi kipte kosar: 'arka' (yapili akis) | 'gercek'
+        (Claude/Codex'in kendi terminali). Kural koltukta (`_motor_ac`);
+        panel yalniz ayari okur/yazar."""
+        from . import terminal as _tr
+        from .koltuk import Koltuk
+        ofis = ofis_ac()
+        return {"kip": ofis.db.ayar_oku(ofis.proje_id, Koltuk.TERMINAL_KIPI, "arka"),
                 "pty": _tr.pty_durumu() or "hazir"}
+
+    @uygulama.post("/api/terminal_kipi")
+    def api_terminal_kipi_yaz(govde: KipGovdesi):
+        from . import terminal as _tr
+        from .koltuk import Koltuk
+        if govde.kip not in ("arka", "gercek"):
+            raise HTTPException(400, "Kip 'arka' ya da 'gercek' olmali.")
+        if govde.kip == "gercek" and _tr.pty_durumu():
+            raise HTTPException(400, _tr.pty_durumu())
+        ofis = ofis_ac()
+        ofis.db.ayar_yaz(ofis.proje_id, Koltuk.TERMINAL_KIPI, govde.kip)
+        ofis.db.olay_yaz(ofis.proje_id, "terminal_kipi",
+                         f"{govde.kip} (panelden) -- sonraki turlardan itibaren")
+        return {"kip": govde.kip}
+
+    @uygulama.websocket("/ws/tui/{oturum}")
+    async def ws_tui(soket: WebSocket, oturum: str):
+        """Ajanin CANLI gercek terminali: ekran -> panel, tuslar -> terminal.
+        Insan araya yazabilir (terminalde yazar gibi). Yalniz bu bilgisayar."""
+        from .motor import tui as _tui
+        await soket.accept()
+        if soket.client and soket.client.host not in TERMINAL_YEREL:
+            await soket.send_json({"tur": "hata",
+                                   "govde": "Terminal yalniz bu bilgisayardan acilir."})
+            await soket.close()
+            return
+        t = _tui.oturum_terminali(oturum)
+        if t is None:
+            await soket.send_json({"tur": "hata", "govde": "Bu ajan terminali kapali."})
+            await soket.close()
+            return
+        await _terminal_kopru(soket, t)
 
     @uygulama.websocket("/ws/terminal/{no}")
     async def ws_terminal(soket: WebSocket, no: int):

@@ -57,37 +57,7 @@ def sina(baslik: str, kosul: bool, not_: str = "") -> None:
         print(f"  [KALDI] {baslik} {not_}")
 
 
-class SahteTui(Motor):
-    ad = "sahte-tui"
-    mcp_konusur = True
-    tui_destegi = True
-
-    def musait_mi(self):
-        return True
-
-    def tur_kos(self, metin, **k):          # arka plan kipi kullanilmaz
-        yield MotorOlayi("bitti", "", {"basarili": True})
-
-    def tui_plani(self, *, oturum_id, gecici, **k):
-        oid = oturum_id or str(uuid.uuid4())
-        dokum = Path(gecici) / f"sahte-{oid}.jsonl"
-        return {"argv": [sys.executable, SAHTE_CLI, str(dokum)],
-                "ortam": dict(os.environ), "kapat": "/exit", "oturum_id": oid,
-                "dokum": lambda: dokum, "guven": (), "guven_isareti": "",
-                "durdur": "\x1b"}
-
-    def tui_cevir(self, k, durum):
-        t = k.get("tur")
-        if t == "metin":
-            durum.setdefault("metin", []).append(k["metin"])
-            return [MotorOlayi("metin", k["metin"])], False
-        if t == "arac":
-            durum["arac_sayisi"] = durum.get("arac_sayisi", 0) + 1
-            durum.setdefault("kullanim", {})[str(len(durum.get("kullanim", {})))] = 10
-            return [MotorOlayi("arac", k["ad"], {"ozet": k["ozet"]})], False
-        if t == "girdi":
-            durum.setdefault("girdiler", []).append(k["metin"])
-        return [], t == "bitti"
+from sahte_tui_motor import SahteTui  # noqa: E402
 
 
 _KOK = Path(tempfile.mkdtemp(prefix="ofis-tui-"))
@@ -202,6 +172,34 @@ r = subprocess.run([sys.executable, str(tui.KANCA), "--codex"],
                    input=json.dumps({"tool_name": "Bash", "tool_input": {"command": "rm x"}}),
                    capture_output=True, text=True, encoding="utf-8", env=cevre, timeout=60)
 sina("ret -> deny JSON", '"deny"' in r.stdout)
+
+print("\n-- 11. panel --")
+try:
+    from fastapi.testclient import TestClient
+    from ofis.panel import olustur
+    ol, bit = kos("panel icin tur")
+    poid = bit.get("oturum_id")
+    ist = TestClient(olustur(db_yolu))
+    d = ist.get("/api/devralinanlar").json()
+    sina("canli ajan terminali listede", any(x["oturum"] == poid for x in d.get("tui", [])),
+         str(d.get("tui"))[:200])
+    with ist.websocket_connect(f"/ws/tui/{poid}") as ws:
+        ilk = ws.receive_json()
+        sina("kopru ekrani getirdi", ilk.get("tur") == "veri" and "sahte-cli" in ilk.get("govde", ""))
+        ws.send_json({"tur": "girdi", "govde": chr(27) + "[200~PANELDEN YAZILDI" + chr(27) + "[201~" + chr(13)})
+        time.sleep(3)
+    dk = Path(tempfile.gettempdir()) / "agentofis-tui" / f"sahte-{poid}.jsonl"
+    sina("insanin yazdigi terminale ulasti",
+         dk.exists() and "PANELDEN YAZILDI" in dk.read_text(encoding="utf-8"))
+    with ist.websocket_connect("/ws/tui/olmayan") as ws:
+        sina("olmayan terminal: hata", ws.receive_json().get("tur") == "hata")
+    sina("kip okunuyor", ist.get("/api/terminal_kipi").json().get("kip") in ("arka", "gercek"))
+    sina("yanlis kip 400", ist.post("/api/terminal_kipi", json={"kip": "uzay"}).status_code == 400)
+    r = ist.post("/api/terminal_kipi", json={"kip": "arka"})
+    sina("kip yazildi", r.status_code == 200 and
+         db.ayar_oku(ofis.proje_id, "terminal_kipi", "") == "arka")
+except ImportError as exc:
+    print(f"  [ATLANDI] fastapi yok: {exc}")
 
 for x in tui.acik_oturumlar():
     tui.kapat(x["oturum_id"])
