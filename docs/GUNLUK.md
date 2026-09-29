@@ -12464,3 +12464,31 @@ yazabilsin; panelde kip anahtarı.
 - Tarayıcıda ölçüldü (geçici panel 8911, sahte CLI): pano xterm'i çizdi,
   ekran geldi. Sınama `duman_tui` 11. bölüm (33/33): liste, köprü, insanın
   yazdığının CLI'a ulaşması, olmayan terminal hatası, kip anahtarı.
+
+## CODEX AJANI COMMIT/PUSH YAPAMIYORDU — kapı varken tam erişim (29.09.2026)
+
+Ölçüldü (geçici klasör, yerel sahte uzak depo, push izni önceden verildi):
+**workspace-write'ta codex ajanı iki kipte de `git add` bile yapamadı**
+(`.git` korumalı). Claude ajanlarında böyle bir kısıt yok → iki motor
+eşit değildi. Dar çözüm denendi: `sandbox_workspace_write.writable_roots`
+ile `.git` + `network_access=true` → commit GEÇTİ ama push "dubious
+ownership" ile DÜŞTÜ: Windows'ta sandbox ayrı bir kullanıcı gibi koşuyor,
+depoya ve insanın git kimliğine yabancı. Yani sandbox açıkken codex ajanı
+push yapamaz — patron onaylasa bile.
+
+**Karar:** `codex.korumali_alan(yazabilir, kapi_var)` — kafa okur; ofisin
+kapısı VARSA (app-server onay kanalı ya da gerçek terminal kancası)
+`danger-full-access`; yoksa (görsel exec'i) `workspace-write`. Claude
+ajanları zaten böyle koşuyor (kabuğun sandbox'ı yok, riskli adım kapıda);
+kullanıcının kendi codex'i de "Full access". Codex'te kanca düşerse komut
+koşuyor (ölçülmüştü) → terminal her açılışta kapıyı sınar.
+
+Ölçüm, tam erişimle:
+
+| | arka plan | gerçek terminal |
+|---|---|---|
+| commit + (izinli) push | uzak depoya gitti, `izinle_gecti` | aynı |
+| `rm` | kapıda DURDU, tek kart, onayla silindi, iş incelemeye | aynı |
+
+Sınama `duman_codex_app` (72): kapı varken tam, yokken dar, kafa okur;
+iki mutasyon ateş etti.

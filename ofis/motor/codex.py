@@ -137,6 +137,28 @@ EFOR_CEVRIMI = {"dusuk": "low", "normal": "medium", "yuksek": "high",
 #: edilmez, SUREC duzeyinde uygulanir.
 SANDBOX_YAZAR = "workspace-write"
 SANDBOX_OKUR = "read-only"
+#: TAM ERISIM -- yalniz OFISIN KAPISI varken (29.09.2026 karari).
+#:
+#: OLCULDU: workspace-write'ta codex ajani `git add` bile yapamadi (`.git`
+#: korumali, iki kipte de). `.git` yazilabilir kok verilince commit gecti
+#: ama push "dubious ownership" ile dustu: Windows'ta sandbox AYRI bir
+#: kullanici gibi kosuyor, depoya ve insanin git kimligine yabanci. Yani
+#: sandbox acikken codex ajani push YAPAMAZ -- patron onaylasa bile.
+#:
+#: Claude ajanlari zaten boyle kosuyor: kabugun sandbox'i yok, her riskli
+#: adim ofisin kapisindan gecer. Kullanicinin kendi codex'i de "Full
+#: access". Esitlik icin: kapi VARSA tam erisim, yoksa (gorsel exec'i)
+#: workspace-write. Codex'te kanca duserse komut KOSUYOR (olculdu) --
+#: bu yuzden terminal her acilista kapiyi SINAR (tui.py) ve kanca.py hic
+#: istisnayla cikmaz.
+SANDBOX_TAM = "danger-full-access"
+
+
+def korumali_alan(yazabilir: bool, kapi_var: bool) -> str:
+    """Tek kural, iki kip: kafa okur; kapi varsa tam erisim; yoksa dar."""
+    if not yazabilir:
+        return SANDBOX_OKUR
+    return SANDBOX_TAM if kapi_var else SANDBOX_YAZAR
 
 #: Hesap limitini ele veren imzalar. Olculdu: gercek mesaj
 #: "You've hit your usage limit. Upgrade to Pro ...".
@@ -1181,7 +1203,7 @@ class CodexMotoru(Motor):
         # Yazabilirlik SUREC duzeyinde: sandbox (exec ile ayni kural).
         politika = "untrusted" if izin_hedefi else "never"
         thread_ayari = {"cwd": kok, "approvalPolicy": politika,
-                        "sandbox": SANDBOX_YAZAR if yazabilir else SANDBOX_OKUR}
+                        "sandbox": korumali_alan(yazabilir, bool(izin_hedefi))}
         model = str(model or "").strip()
         if model:
             thread_ayari["model"] = model
@@ -1561,7 +1583,7 @@ class CodexMotoru(Motor):
         if oturum_id:
             argv += ["resume", self._oturum_dogrula(oturum_id)]
         argv += ["--no-alt-screen", "-c", "check_for_update_on_startup=false",
-                 "-s", SANDBOX_YAZAR if yazabilir else SANDBOX_OKUR,
+                 "-s", korumali_alan(yazabilir, True),
                  "-a", "never", "--dangerously-bypass-hook-trust",
                  "-c", "hooks.PreToolUse=[{matcher=\"*\",hooks=[{type=\"command\","
                        "command=" + json.dumps(kanca) + "}]}]"]

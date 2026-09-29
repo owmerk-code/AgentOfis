@@ -275,12 +275,17 @@ try:
     sina("decline", (cevap(gelen, "s1") or {}).get("result") == {"decision": "decline"})
     ts = istekler(gelen, "thread/start")
     sina("kancasiz politika `never`", bool(ts) and ts[0]["params"].get("approvalPolicy") == "never")
+    # KAPI YOKSA DAR ALAN: tam erisim yalniz ofisin kapisi varken.
+    sina("kancasiz sandbox workspace-write (dar)",
+         bool(ts) and ts[0]["params"].get("sandbox") == "workspace-write")
     ol, ek, gelen = kos("kancali_politika", [{"bitir": "completed"}])
     ts = istekler(gelen, "thread/start")
     sina("kancali politika `untrusted`",
          bool(ts) and ts[0]["params"].get("approvalPolicy") == "untrusted")
-    sina("sandbox workspace-write (yazabilir)",
-         bool(ts) and ts[0]["params"].get("sandbox") == "workspace-write")
+    # 29.09 karari: kapi VARKEN tam erisim (workspace-write'ta codex `git
+    # add` bile yapamiyordu; push "dubious ownership" ile dusuyordu).
+    sina("kancali sandbox danger-full-access (kapi var)",
+         bool(ts) and ts[0]["params"].get("sandbox") == "danger-full-access")
     ol, ek, gelen = kos("kafa", [{"bitir": "completed"}], yazabilir=False)
     ts = istekler(gelen, "thread/start")
     sina("yazamaz -> sandbox read-only",

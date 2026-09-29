@@ -205,8 +205,9 @@ matrisin ölçümüyle karşılaştırır.
   medya · **F8** panel · **F9** masaüstü · **F10** kabul. Ayrıntı `PLAN.md`.
 - **Son işler:** liderin cevabı panelde akıyor; takım sohbeti (`@ajan`) ve
   kendi sütunu; "Ajanlar kabinde" (tarayıcılı tek iş panelde canlı).
+- **Codex ajanı kapı varken tam erişimle** koşar (workspace-write'ta `git add` bile yapamıyordu, push sandbox kullanıcısı yüzünden düşüyordu); riskli adım kapıda.
 - **Gerçek terminal kipi** kuruldu ve panelde (üst çubuk anahtarı, ajan panosu = gerçek terminal); varsayılan hâlâ `arka`.
-- **Sınamalar:** 43 duman dosyası, **3192/3192** (29.09). Deneme seti 15/15
+- **Sınamalar:** 43 duman dosyası, **3194/3194** (29.09). Deneme seti 15/15
   (Claude ve Codex, işçi+lider).
 - **Kullanıcının belirttiği eksikler (29.09):** her panoda her zaman açık
   yazma yeri; takım sohbeti panosunun İÇİNDE kutu (bugün yazılan yer
