@@ -95,7 +95,14 @@ sina("eski is TIKALI bildiriliyor", bulgu_var(r, "ilerlemiyor"))
 sina("tikali agirligi 'tikali'", r["tikali"] >= 1)
 tikali = [b for b in r["bulgular"] if "ilerlemiyor" in b["baslik"]][0]
 sina("care SOYLENIYOR", "devam" in tikali["care"], f"({tikali['care']})")
-sina("ayrinti kac saniyedir durdugunu soyluyor", "saniyedir" in tikali["ayrinti"])
+sina("ayrinti ne kadardir durdugunu OKUNUR soyluyor",
+     "son degisiklik" in tikali["ayrinti"] and "saniyedir" not in tikali["ayrinti"],
+     tikali["ayrinti"][:120])
+from ofis.saglik import sure_yazi  # noqa: E402
+sina("sure: 508267 sn -> 5 gun 21 saat", sure_yazi(508267) == "5 gun 21 saat", sure_yazi(508267))
+sina("sure: 3 saat 12 dk", sure_yazi(3 * 3600 + 12 * 60 + 5) == "3 saat 12 dk")
+sina("sure: 4 dk", sure_yazi(245) == "4 dk")
+sina("sure: 40 sn", sure_yazi(40) == "40 sn")
 
 # --------------------------------------------------------------------------
 print("\n3. BEKLEYEN AJAN tikali SAYILMAZ -- durdurulmus, olmemis")

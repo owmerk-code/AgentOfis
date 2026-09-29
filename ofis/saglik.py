@@ -40,6 +40,23 @@ from .tahta import KILIT_KIRA_SANIYE, _yas_saniye
 #: Kilit kirasindan uzun tutuldu: kira dolmadan is zaten canli sayilir.
 TIKANMA_SANIYE = KILIT_KIRA_SANIYE * 2
 
+def sure_yazi(saniye) -> str:
+    """Insanin okuyacagi sure: "5 gun 21 saat", "3 saat 12 dk", "4 dk".
+
+    Kullanici (29.09.2026) karti gosterip sordu: "508267 saniyedir
+    degismedi" OKUNMUYOR. Iki birimden fazlasi gurultudur.
+    """
+    s = max(0, int(saniye or 0))
+    gun, s = divmod(s, 86400)
+    saat, s = divmod(s, 3600)
+    dk = s // 60
+    if gun:
+        return f"{gun} gun" + (f" {saat} saat" if saat else "")
+    if saat:
+        return f"{saat} saat" + (f" {dk} dk" if dk else "")
+    return f"{dk} dk" if dk else f"{int(saniye or 0)} sn"
+
+
 #: Incelemede bu kadar bekleyen is, liderin ona hic bakmadigini gosterir.
 INCELEME_SANIYE = KILIT_KIRA_SANIYE * 2
 
@@ -209,7 +226,7 @@ class Saglik:
                 bulgular.append(_bulgu(
                     "tikali",
                     f"#{g['no']} '{g['baslik']}' calisiyor gorunuyor ama ilerlemiyor",
-                    f"{int(yas)} saniyedir degismedi, sahibi: {g['sahip'] or '-'}. "
+                    f"son degisiklik {sure_yazi(yas)} once, sahibi: {g['sahip'] or '-'}. "
                     "Hicbir surec onu kosturmuyor.",
                     "`python -m ofis.kabuk devam` ile halkayi dondur."))
         return bulgular
@@ -228,7 +245,7 @@ class Saglik:
             if yas > INCELEME_SANIYE:
                 bulgular.append(_bulgu(
                     "tikali",
-                    f"#{g['no']} '{g['baslik']}' {int(yas)} saniyedir INCELEMEDE",
+                    f"#{g['no']} '{g['baslik']}' {sure_yazi(yas)} once INCELEMEYE verildi",
                     "Isci isini bitirdi, lider hukum vermedi. Kilit hala tutuluyor.",
                     "`devam` ile lideri incelemeye sok."))
         return bulgular

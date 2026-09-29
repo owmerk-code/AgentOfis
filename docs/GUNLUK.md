@@ -12520,3 +12520,13 @@ Sınama `duman_takim` (80): takım adı/önek/küçük harf, ajan önceliği,
 `is:` reddi, lidersiz takım, öneri sıralaması, eşleşme yokken 0, panel
 mesaj yazmadan öneri döner, kabuk. Mutasyonlar ateş etti (biri önce
 sınamayı ÇÖKERTTİ → çağrılar korundu; biri yanlış kurulmuştu → düzeltildi).
+
+### Küçük düzeltmeler (29.09.2026)
+- Sağlık kartı "508267 saniyedir değişmedi" diyordu; kullanıcı kartı
+  gösterip sordu, okunmuyordu. Artık "son değişiklik 5 gün 21 saat önce"
+  (`saglik.sure_yazi`, iki birimden fazlası yok). Kullanıcının gördüğü
+  kartlar örnek ofisin demo verisindendi; gerçek ofis sağlıklı.
+- `duman_panel`'deki eski sınama "çok liderli ofiste kanatsız istek 400"
+  bekliyordu; genel kanal kararıyla bilinçli olarak "öneri döner" oldu,
+  sınama yeni sözleşmeye çevrildi. (Önceki kayıt bu sınama kalmışken
+  gönderildi — benim hatam; düzeltildi, tam takım yeniden koştu.)

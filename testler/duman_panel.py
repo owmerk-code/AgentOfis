@@ -276,11 +276,13 @@ try:
     # COK LIDERLI OFIS: kanat verilmeden SESSIZCE biri secilmez.
     # Ilk surumum `kadro[0]` aliyordu -- isi yanlis kanada vermenin en
     # sessiz yolu; panelde hicbir sey yanlis gorunmezdi.
+    # 29.09 (GENEL KANAL): ret yerine ONERI doner -- ofis yine SECMEZ,
+    # lider kosmaz, insan takimi secer.
     y0 = istemci.post("/api/lidere", json={"metin": "kanatsiz"})
-    sina("cok liderli ofiste KANATSIZ istek reddediliyor",
-         y0.status_code == 400, str(y0.status_code))
-    sina("  ret hangi kanadi secmesi gerektigini soyluyor",
-         "KANAT" in y0.text)
+    j0 = y0.json() if y0.status_code == 200 else {}
+    sina("cok liderli ofiste KANATSIZ istek: ofis SECMEZ, oneri doner",
+         j0.get("yol") == "oneri" and j0.get("kosuyor") is False, y0.text[:160])
+    sina("  oneri secilecek takimlari sayiyor", bool(j0.get("oneriler")))
 
     y = istemci.post("/api/lidere",
                      json={"metin": "Ofiste ne durumdayiz?", "kanat": kanat})
