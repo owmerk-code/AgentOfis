@@ -12969,3 +12969,25 @@ AGENTS.md depoya eklenmedi (kullanıcının dosyası; karar onun).
   planı reddeder (öğretir), SON denemede planı düşürmez: izin atılır,
   `uyari`. duman_izin 61, duman_orkestra 62.
 - Codex G14 geçti → **14 işin 14'ü iki motorda**. Tam duman takımı: 45 dosya, **3396 geçti, 0 kaldı**.
+
+## 01.10.2026 öğleden sonra — elektrik kesintisi, hız
+
+- Elektrik kesintisi: kaydedilmemiş kod yoktu, defter `integrity_check ok`,
+  artık geçici klasörler silindi. Kesilen yalnız bir ölçüm betiğiydi.
+- `AGENTS.md` silindi (kullanıcı: Codex'i geliştirici olarak kullanmayacak).
+- **Gerçek terminal turunun zamanı ölçüldü** (aynı küçük tur): arka kip
+  claude 3 sn / codex 4–6 sn; gerçek terminal claude 14,6 / codex 11,5 sn.
+  Dağılım: CLI'ın kendi açılışı ~4 sn (onaylı klasörde güven sorusu yok),
+  bizim "2 sn durgun + en az 4 sn" açılış beklememiz, "gönderildi mi"
+  kontrolünde SABİT 2,5 sn uyku.
+  → `hazir_mi` işareti (claude: giriş kutusu `────`+`❯`; codex: `›` ve
+  "loading" bitti), gönderim 0,25 sn'de bir yoklanır. Sonra: claude ~10 sn,
+  codex ~9 sn; 8 turda gönderim hatası 0.
+  → **Liderin turları ayrı ayar** `lider_terminal_kipi` (varsayılan
+  `arka`): işçi gerçek terminalde kalır; lider 3–4 kısa tur × ~6 sn.
+- Uçtan uca ölçüm (önce → sonra): claude G01 104→80, G09 101→70, G02
+  18→7; codex G01 110→72, G05 98→79, G09 117→79 sn.
+- Claude G05: arka kipteki lider CSV'yi okuyup hesapladı ama "rapor.md'yi
+  YAZAMADIM" dedi → `YAPAMAM_CEVABI` geçmiş zaman + yazma fiilleri
+  (yazamadım, oluşturamadım, kaydedemedim); 14 örnekle sınandı. Sonra G05 geçti.
+- Yan bulgu: Codex ekranı "haftalık kotanın %25'inden azı kaldı" uyarısı veriyor.
