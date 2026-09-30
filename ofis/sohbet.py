@@ -70,6 +70,13 @@ GECMIS_ADEDI = 6
 #: Tek bir cevabin ustunde durulacak uzunluk. Daha uzunu sohbet degil
 #: rapordur; rapor zaten is bitiminde ayrica uretilir.
 CEVAP_SINIRI = 4000
+#: Liderin aracsiz triyajinda "bakamiyorum" demesi (bkz. `_konus`). Bilgi
+#: eksikligi ("bilmiyorum") DEGIL, ARAC eksikligi kalibi: acamiyorum,
+#: bakamiyorum, erisemiyorum, dogrulayamiyorum, goremiyorum, alamiyorum.
+YAPAMAM_CEVABI = re.compile(
+    r"(?:a[cç]am|bakam|eri[sş]em|do[gğ]rulayam|g[oö]rem|alam|kontrol edem"
+    r"|[cç]al[iı][sş]t[iı]ram)[iı]yorum", re.I)
+
 #: Lider de sohbete dosya gonderir (30.09): satiri ofis `ekler/`e tasir.
 EK_KURALI = ("Patrona bir DOSYA gostermek istersen (gorsel, pdf, video; "
              "orn. bir ajanin urettigi), cevabina AYRI SATIRDA `[ek] <proje "
@@ -609,6 +616,21 @@ class Sohbet:
         else:
             karar = self._triyaj(lider, mesaj, butce_usd, zaman_asimi,
                                  ek_klasorler=ekler)
+        # "BAKAMIYORUM" CEVABI PATRONA GITMEZ -- YAPI, RICA DEGIL (30.09.2026).
+        # Olculdu (gercek set G09, codex, araliki): "sayfadaki fiyat ne?" ->
+        # lider `cevap` secip "bu turda sayfayi acip dogrulayamiyorum" dedi;
+        # istemde "yapamam deme, dagit" kurali VARDI. Liderin triyaj turu
+        # aracsizdir, ajanlarinki degil: ofis cevabi patrona gondermek
+        # yerine isi bir ajana verir ve bunu kayda gecirir.
+        if (karar.get("karar") == "cevap"
+                and YAPAMAM_CEVABI.search(karar.get("cevap") or "")):
+            self.ofis.db.olay_yaz(
+                self.ofis.proje_id, "uyari",
+                "Lider 'bakamiyorum/acamiyorum' diye cevapladi; ofis cevabi "
+                "patrona gondermedi, isi ajana verdi.", ajan_ad=lider["ad"])
+            karar = {**karar, "karar": "dagit", "hedef": mesaj,
+                     "gerekce": (karar.get("gerekce") or "")
+                     + " [ofis: aracsiz triyaj 'yapamam' dedi -> ajana verildi]"}
         yield {"tur": "triyaj", "govde": karar["karar"],
                "ek": {"gerekce": karar.get("gerekce", ""),
                       "hedef": karar.get("hedef", "")}}

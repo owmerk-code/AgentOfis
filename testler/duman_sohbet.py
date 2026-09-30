@@ -787,6 +787,33 @@ sina("rapor incelemenin PATRONA taslagi", _prap and _prap[0].startswith("a.txt y
      str(_prap))
 sina("ayri rapor turu KOSMADI", _tur_say["rapor"] == 0, str(_tur_say))
 
+print("\n'BAKAMIYORUM' CEVABI PATRONA GITMEZ, IS AJANA VERILIR (30.09, G09)")
+_bo = Ofis.proje_ac(Veritabani(_pk / "b.sqlite3"), "Bakamam", amac="a", basari_olcutu="b",
+                    kok_klasor=str(_pk))
+_bkn = _bo.kanat_ac("A", "A")
+_bo.kadro.ise_al("lale", "lider", lider_mi=True, kanat_id=_bkn, motor="sahte", klasor=str(_pk))
+_bo.kadro.ise_al("cem", "backend", kanat_id=_bkn, motor="sahte", klasor=str(_pk))
+
+
+class _Bakamayan(_AkisMotor):
+    def tur_kos(self, metin, **ayar):
+        if "# PATRONUN MESAJI" in metin:
+            self.cevap = triyaj("cevap", "bilgi sorusu",
+                                cevap="Bu turda sayfayi acip dogrulayamiyorum; fiyati uydurmam.")
+            return SahteMotor.tur_kos(self, metin, **ayar)
+        return super().tur_kos(metin, **ayar)
+
+
+_bol = list(Sohbet(_bo, motor_fabrikasi=lambda ad, **a: _Bakamayan(cevap="")).konus(
+    "http://x/urun sayfasindaki fiyat ne?", azami_tik=4))
+sina("is ACILDI (ajana verildi)", len(_bo.tahta.liste()) == 1, str(_bo.tahta.liste()))
+sina("'dogrulayamiyorum' cumlesi patrona GITMEDI",
+     not any("dogrulayamiyorum" in (o.get("govde") or "") for o in _bol
+             if o["tur"] in ("cevap", "rapor")), str([o["govde"][:60] for o in _bol if o["tur"] == "cevap"]))
+with _bo.db.baglanti() as _c:
+    sina("ofis bunu kayda gecirdi", bool(_c.execute(
+        "SELECT 1 FROM olay WHERE tur='uyari' AND govde LIKE '%ajana verdi%'").fetchone()))
+
 print("\nDEFTER SATIRLARI PATRONA GITMEZ (30.09, gercek set G01)")
 _tm = Sohbet(ofis)._ekleri_hazirla(
     "Istenen goruntu sohbete eklendi.\n\n\nKANIT terminal: `Get-Item x` -> ok\n"
