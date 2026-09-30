@@ -12959,3 +12959,12 @@ AGENTS.md depoya eklenmedi (kullanıcının dosyası; karar onun).
     `onay_iste` ile kart açtı → patronun KENDİ cümlesi iş açılırken
     `patron_sozu` olayı olarak yazılır, brifing K4 aynen gösterir: "açıkça
     istediği adım için onay_iste ÇAĞIRMA; riskliyse kapı sorar".
+- Codex G13 yeniden koşuda GEÇTİ (ekler/ hazır). G14 yeni bir hatayla
+  kaldı: lider bu kez izin yazdı ama `izin.olumsuz_mu` "Ad: **Deneme**"
+  kelimesini (-me eki) olumsuz fiil sandı → izin reddedildi → plan iki
+  denemede de reddedildi → **iş hiç açılmadı** ("Plan alınamadı").
+  Düzeltmeler: (1) olumsuz ek yalnız KÖKÜ bir eylemse sayılır
+  (`_EYLEM_KOKLERI` ya da alıntının kendi kelimeleri); 8 eski örnek
+  aynen, "Deneme" artık olumlu. (2) Geçersiz izin önceki denemelerde
+  planı reddeder (öğretir), SON denemede planı düşürmez: izin atılır,
+  `uyari`. duman_izin 61, duman_orkestra 62.

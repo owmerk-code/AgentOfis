@@ -99,6 +99,26 @@ _OLUMSUZ_DEGIL = frozenset(
 
 _AYRAC = re.compile(r"[.;!?\n]|,|\bama\b|\bfakat\b|\bancak\b")
 
+#: OLUMSUZ EK YALNIZ EYLEMDE sayilir (01.10.2026). Olculdu (gercek set G14):
+#: "formu Ad: Deneme ... ile doldur ve gonder" -- "deneme" (-me) olumsuz
+#: fiil sanildi, izin reddedildi, plan DUSTU. Turkcede -me/-ma ile biten isim
+#: cok (deneme, dolma, cizme). Ekli kelime ancak KOKU bir EYLEMSE olumsuzdur:
+#: bilinen riskli eylem kokleri ya da alintinin kendi kelimeleri.
+_EYLEM_KOKLERI = frozenset(
+    "push pushla deploy deployla gonder yolla yayinla yayimla sil kaydet "
+    "yukle commit commitle et yap calistir kur ac bas tikla ode al sat "
+    "paylas gonderil yayinlan".split())
+_OLUMSUZ_EKLER = ("meyiniz", "mayiniz", "meyin", "mayin", "mezsin", "mazsin",
+                  "meden", "madan", "me", "ma")
+
+
+def _olumsuz_eylem_mi(kelime: str, alinti_kelimeleri: set) -> bool:
+    for ek in _OLUMSUZ_EKLER:
+        if kelime.endswith(ek) and len(kelime) - len(ek) >= 2:
+            kok = kelime[:-len(ek)]
+            return kok in _EYLEM_KOKLERI or kok in alinti_kelimeleri
+    return False
+
 
 def _jeton(metin: str) -> list:
     metin = re.sub(r"(?<=[a-z0-9])(?=[A-Z])", " ", str(metin or ""))
@@ -155,8 +175,11 @@ def olumsuz_mu(patron_sozu: str, alinti: str) -> bool:
     cumle = re.sub(r"[^a-z0-9 ]", " ", soz[bas:son])
     if _OLUMSUZ_KELIME.search(cumle):
         return True
+    alinti_kelimeleri = set(re.sub(r"[^a-z0-9 ]", " ", al).split())
     for m in _OLUMSUZ_EK.finditer(cumle):
-        if m.group(0) not in _OLUMSUZ_DEGIL:
+        if m.group(0) in _OLUMSUZ_DEGIL:
+            continue
+        if _olumsuz_eylem_mi(m.group(0), alinti_kelimeleri):
             return True
     return False
 

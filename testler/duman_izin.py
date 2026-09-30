@@ -252,12 +252,28 @@ sina("izin yeni isin kaydinda",
      [i["desen"] for i in izin.liste(db, PID, gorev_id=yeni["id"], kalici=False)] == ["git push"])
 sina("plan istemi patronun mesajini tasiyor",
      "PATRONUN KENDI SOZU" in kutu["istekler"][-1] and SOZ in kutu["istekler"][-1])
+# 01.10 (gercek set G14): gecersiz izin ONCEKI denemelerde plani reddeder
+# (ret ogretir), SON denemede plani DUSURMEZ -- izin atilir, kayda gecer.
 kutu["cevap"] = plan([{"eylem": "git push", "alinti": "pushla hemen"}])
-h = hata_mi(ork.hedef_ver, "Giris hatasi 2", deneme=1, patron_sozu=SOZ)
-sina("uydurma alinti plani REDDETTI", "KELIMESI KELIMESINE" in h, h[:160])
+_s2 = ork.hedef_ver("Giris hatasi 2", deneme=2, patron_sozu=SOZ)
+with db.baglanti() as _c:
+    _red = [r[0] for r in _c.execute("SELECT govde FROM olay WHERE tur='uyari' AND "
+                                    "govde LIKE 'Plan reddedildi (1. deneme)%'")]
+    _at = [r[0] for r in _c.execute("SELECT govde FROM olay WHERE tur='uyari' AND "
+                                   "govde LIKE 'Planin izinleri ATILDI%'")]
+sina("uydurma alinti ILK denemede plani REDDETTI (ogretir)",
+     any("KELIMESI KELIMESINE" in x for x in _red), str(_red[-1:]))
+sina("SON denemede plan DUSMEDI, izin ATILDI ve kayda gecti",
+     bool(_s2["gorevler"]) and not _s2.get("izinler") and bool(_at), str(_s2.get("izinler")))
 kutu["cevap"] = plan([{"eylem": "git push", "alinti": "pushla"}])
-h = hata_mi(ork.hedef_ver, "Patronsuz", deneme=1)
-sina("patron sozu olmadan izin plani REDDETTI", "patron" in h.lower(), h[:160])
+_s3 = ork.hedef_ver("Patronsuz", deneme=1)
+sina("patron sozu olmadan izin YAZILMADI, plan yine de acildi",
+     bool(_s3["gorevler"]) and not _s3.get("izinler"), str(_s3.get("izinler")))
+sina("'Deneme' kelimesi olumsuz SAYILMAZ (G14)",
+     izin.olumsuz_mu("formu Ad: Deneme, E-posta: deneme@ornek.com ile doldur ve gonder",
+                     "formu Ad: Deneme, E-posta: deneme@ornek.com ile doldur ve gonder") is False)
+sina("'formu doldur ama gonderme' -> gonder olumsuz",
+     izin.olumsuz_mu("formu doldur, gonderme", "doldur, gonderme") is True)
 kutu["istekler"].clear()
 kutu["cevap"] = plan([])
 ork.hedef_ver("Sozsuz", deneme=1)

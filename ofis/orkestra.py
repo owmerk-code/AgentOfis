@@ -480,7 +480,8 @@ class Orkestra:
         return chr(10).join(satirlar[:60])
 
     def _plani_dogrula(self, plan, kanat_id: str, ek_klasorler=None,
-                       atanan: str = "", patron_sozu: str = "") -> str:
+                       atanan: str = "", patron_sozu: str = "",
+                       son_sans: bool = False) -> str:
         """Plani kapilardan gecirir. Sorun varsa ANLATAN metin doner."""
         if not isinstance(plan, dict):
             return "Plan JSON olarak okunamadi."
@@ -489,10 +490,17 @@ class Orkestra:
                     "alti ay sonra 'bunu neden boyle yapmistik' sorusunun "
                     "cevabi o satirdir.")
         # IZINLER patronun SOZUNE karsi dogrulanir (alinti + olumsuzluk
-        # + sinif). Gecersiz izin plani reddeder: ret ogretir.
+        # + sinif). Gecersiz izin plani reddeder: ret ogretir -- ama SON
+        # DENEMEDE plani dusurmez (01.10.2026, gercek set G14: gecersiz tek
+        # bir izin butun isi "Plan alinamadi" ile oldurdu). Son denemede izin
+        # ATILIR, kayda gecer; bedeli o adimin patrona sorulmasidir.
         _, izin_hatasi = izin_mod.plan_izinleri(plan.get("izinler"),
                                                 patron_sozu)
-        if izin_hatasi:
+        if izin_hatasi and son_sans:
+            self.db.olay_yaz(self.proje_id, "uyari",
+                             f"Planin izinleri ATILDI (son deneme): {izin_hatasi}")
+            plan["izinler"] = []
+        elif izin_hatasi:
             return izin_hatasi
         kollar = plan.get("kollar")
         if not isinstance(kollar, list) or not kollar:
@@ -612,7 +620,8 @@ class Orkestra:
             cevap = self._lideri_kostur(lider, metin, butce_usd, zaman_asimi)
             plan = _json_ayikla(cevap)
             hata = self._plani_dogrula(plan, kanat_id, ek_klasorler,
-                                       atanan=atanan, patron_sozu=patron_sozu)
+                                       atanan=atanan, patron_sozu=patron_sozu,
+                                       son_sans=(sira == max(1, deneme) - 1))
             # KAPI GOREV BASINA BIR KEZ KOSAR, deneme basina degil.
             #
             # Olculdu (21.09.2026): tek bir sartname turu 46.773 jeton /
