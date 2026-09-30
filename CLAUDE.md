@@ -215,10 +215,10 @@ matrisin ölçümüyle karşılaştırır.
   sorusu ekrana bakarak, codex oturum dosyası tur işaretiyle.
 - **Aşama 1 (gerçek iş kalitesi) sürüyor:** `testler/gercek_set.py` patron gibi
   sohbetten 12 iş verir; gece 03:30 iki motor (`gece_kos.py`). 30.09: codex
-  10/10, claude 10/10 (G01–G10). Kural: gerçek motorla geçmeyen "bitti" değil.
+  10/10, claude 10/10 (G01–G10); G11 görsel, G12 web araştırması iki motorda geçti. Kural: gerçek motorla geçmeyen "bitti" değil.
 - **Güncelleme hemen:** 30 dakikada bir ölçer, uyguladıktan sonra yeniden
   ölçer (`olc_ve_ilerle`). Açık: deneme turu gerçek terminal kipini koşmuyor.
-- **Sınamalar:** 44 duman dosyası, **3349/3349** (30.09; 45 dosya) + gerçek set (`gercek_set.py`, her gece 03:30). Deneme seti 15/15
+- **Sınamalar:** 44 duman dosyası, **3370/3370** (30.09; 45 dosya) + gerçek set (`gercek_set.py`, her gece 03:30). Deneme seti 15/15
   (Claude ve Codex, işçi+lider).
 - **Kullanıcının belirttiği eksikler (29.09):** her panoda her zaman açık
   yazma yeri; sesli orkestratör;

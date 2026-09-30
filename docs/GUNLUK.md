@@ -12896,3 +12896,13 @@ liderin yönetim turları.
 
 **Yeni işler:** G11 görsel üret + sohbete gönder, G12 web araştırması +
 kaynaklı cevap (kuru kipte doğrulayıcılar sağlam, 21/21).
+- G11/G12 gerçek motorda: codex ilk koşuda 0/2 — G11'de codex'in yerleşik
+  görsel üreticisi `image_genimagegen` TANINMAYAN ARAÇ sayılıp onaya düştü
+  (abonelik kotası, fatura yok → serbest listeye); G12'de CEVAP DOĞRUYDU
+  ("5.910.320, kaynak TÜİK"), doğrulayıcı "milyon" kelimesi arıyordu → ölçüm
+  aracı düzeltildi (sayı biçimi). Sonra **codex 2/2, claude 2/2**; claude
+  G12'yi lider triyajda WebSearch ile 29 sn'de kaynaklı cevapladı.
+- Tur sonu toplamı (30.09 sabah): 12 işin 12'si iki motorda en az bir kez
+  bütün düzeltmelerle geçti. Tek seferde tam 12'li koşu ilk gece seti olacak
+  (01.10 03:30).
+- Tam duman takımı: 45 dosya, **3370 geçti, 0 kaldı** (06:06).
