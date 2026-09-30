@@ -12991,3 +12991,13 @@ AGENTS.md depoya eklenmedi (kullanıcının dosyası; karar onun).
   YAZAMADIM" dedi → `YAPAMAM_CEVABI` geçmiş zaman + yazma fiilleri
   (yazamadım, oluşturamadım, kaydedemedim); 14 örnekle sınandı. Sonra G05 geçti.
 - Yan bulgu: Codex ekranı "haftalık kotanın %25'inden azı kaldı" uyarısı veriyor.
+- **Tam set (hız yamalarıyla), tek koşu:** claude 13/14, codex 12/14.
+  Kalanlar: claude G06 — inceleyen "dosya ölçütü karşılıyor ama kanıt
+  eksik" deyip reddetti → inceleme kural 9 (kendin doğruladıysan kapat);
+  codex G08 — ajan DURUM satırını `sehirler.md`nin İÇİNE yazdı (haklı ret)
+  → brifing: DURUM cevaba yazılır, dosyaya değil; yeniden koşuda yeni hata:
+  inceleyen bölünmüş hedefin şehirler kolunu "üst hedef renkler.md'yi de
+  istiyor" diye reddetti → inceleme metni KARDEŞ KOLLARI gösterir, "yalnız
+  bu kolun ölçütü". codex G14 — kanıt değerleri göstermiyordu (haklı ret).
+  Yeniden koşular: claude G06, G08; codex G08 GEÇTİ.
+- Tam duman takımı: 45 dosya, **3408 geçti, 0 kaldı**.
