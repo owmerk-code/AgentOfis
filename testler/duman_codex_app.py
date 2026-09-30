@@ -470,6 +470,21 @@ try:
         ek_klasorler=("C:/a",), mcp_yapilandirma="")
     sina("app komutu --strict-config tasiyor", "--strict-config" in k and k[1] == "app-server")
     sina("ek klasor yazilabilir kok olarak", any("writable_roots" in x for x in k))
+    # 01.10 olculdu: ust klasordeki AGENTS.md (gelistirici anayasasi) her
+    # codex ajanina yukleniyordu. Dort baslatma yolunda da KAPALI olmali.
+    _pb = "project_doc_max_bytes=0"
+    _cx = CX.CodexMotoru(calistirilabilir="codex")
+    sina("AGENTS.md kapali: app-server", _pb in k)
+    sina("AGENTS.md kapali: exec", _pb in _cx._komut_kur(
+        "", devam=False, model="m", efor="", yazabilir=False, ek_klasorler=(),
+        klasor=str(ANA)))
+    sina("AGENTS.md kapali: devralinan terminal", _pb in _cx.etkilesimli_komut(
+        klasor=str(ANA))["argv"])
+    if _cx.tui_ikilisi():
+        sina("AGENTS.md kapali: gercek terminal", _pb in _cx.tui_plani(
+            oturum_id="", model="", efor="", yazabilir=False, ek_klasorler=(),
+            mcp_yapilandirma="", izinli_araclar=(), ek_ortam={"CODEX_HOME": str(ANA / "ev")},
+            kanca_komutu="k", gecici=ANA)["argv"])
 finally:
     import shutil
     shutil.rmtree(ANA, ignore_errors=True)

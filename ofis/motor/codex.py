@@ -153,6 +153,19 @@ SANDBOX_OKUR = "read-only"
 #: istisnayla cikmaz.
 SANDBOX_TAM = "danger-full-access"
 
+#: UST KLASORDEKI AGENTS.md AJANA GITMEZ (01.10.2026, olculdu).
+#:
+#: Codex calistigi klasorden git kokune kadar her AGENTS.md'yi her tura
+#: bagla yukler. Ofisin koku (`calisma/`) AgentOfis deposunun ICINDE;
+#: depoya 22 bin harflik bir AGENTS.md (gelistirici anayasasi) dustu.
+#: Olcum (bos gecici klasor, ust klasorde "GIZLI_KELIME: incir"):
+#: ofisin codex adaptoru "incir" dedi -- yani gercek ofisteki her codex
+#: ajani o belgeyi aliyordu (jeton + "sen AgentOfis gelistiricisisin"
+#: karisikligi). `project_doc_max_bytes=0` ile "YOK" dedi. Claude ayni
+#: sahnede ust CLAUDE.md'yi ALMADI (davranis testi, 2/2). Ajanin baglami
+#: ofisin brifingidir; iki motor esit.
+PROJE_BELGESI_KAPALI = ("-c", "project_doc_max_bytes=0")
+
 #: OLCULDU (29.09.2026, rollout): kancanin reddi Codex'te bu onekle doner:
 #: "Script error:\nCommand blocked by PreToolUse hook: ONAY ISTENDI ...".
 KANCA_RET_IZI = "blocked by PreToolUse hook"
@@ -633,7 +646,7 @@ class CodexMotoru(Motor):
         argv += (["resume", oturum_id] if oturum_id else [])
         if model:
             argv += ["-m", model]
-        argv += ["-c", "check_for_update_on_startup=false"]
+        argv += ["-c", "check_for_update_on_startup=false", *PROJE_BELGESI_KAPALI]
         ortam = ortam_hazirla(os.environ, ek={**(ek_ortam or {}), "CODEX_HOME": str(ev)},
                               izinli=tuple(ek_ortam or ()) + ("CODEX_HOME",))
         return {"argv": argv, "ortam": ortam, "kapat": "/quit"}
@@ -1039,7 +1052,8 @@ class CodexMotoru(Motor):
         """app-server sureci. Tur ayarlari (model, efor, sandbox) JSON-RPC ile
         gider; burada yalniz surec BASINDA sabitlenmesi gerekenler var."""
         komut = [self.calistirilabilir, "app-server",
-                 "--strict-config"]   # sessizce dusen ayar olmasin (exec ile ayni)
+                 "--strict-config",   # sessizce dusen ayar olmasin (exec ile ayni)
+                 *PROJE_BELGESI_KAPALI]
         if ek_klasorler:
             komut += ["-c", "sandbox_workspace_write.writable_roots="
                       + json.dumps([str(ek) for ek in ek_klasorler])]
@@ -1605,6 +1619,7 @@ class CodexMotoru(Motor):
         if oturum_id:
             argv += ["resume", self._oturum_dogrula(oturum_id)]
         argv += ["--no-alt-screen", "-c", "check_for_update_on_startup=false",
+                 *PROJE_BELGESI_KAPALI,
                  "-s", korumali_alan(yazabilir, True),
                  "-a", "never", "--dangerously-bypass-hook-trust",
                  "-c", "hooks.PreToolUse=[{matcher=\"*\",hooks=[{type=\"command\","
@@ -1754,7 +1769,7 @@ class CodexMotoru(Motor):
                    yazabilir: bool, ek_klasorler: tuple, klasor: str,
                    mcp_yapilandirma: str = "") -> list:
         sandbox = SANDBOX_YAZAR if yazabilir else SANDBOX_OKUR
-        komut = [self.calistirilabilir, "exec"]
+        komut = [self.calistirilabilir, "exec", *PROJE_BELGESI_KAPALI]
         if devam:
             # `codex exec resume <UUID> -`: kimlik motorun, bizim degil.
             komut += ["resume", oturum]

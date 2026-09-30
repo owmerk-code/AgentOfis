@@ -12907,3 +12907,21 @@ kaynaklı cevap (kuru kipte doğrulayıcılar sağlam, 21/21).
   (01.10 03:30).
 - Tam duman takımı: 45 dosya, **3370 geçti, 0 kaldı** (06:06).
 - Kullanıcı (30.09 sabah): PC gece kapalı; gece görevi DEVRE DIŞI bırakıldı (silinmedi). Gerçek set gündüz oturumda koşulacak: `python testler/gercek_set.py --motor claude|codex` ya da `python testler/gece_kos.py`. Yeniden açmak: `schtasks /Change /TN "AgentOfis Gece Seti" /ENABLE`.
+
+## 01.10.2026 — Üst klasördeki AGENTS.md codex ajanlarına gidiyordu
+
+Sabah depoda kullanıcının (büyük olasılıkla Codex'in) oluşturduğu 22 bin
+harflik `AGENTS.md` bulundu: CLAUDE.md'nin "Claude"→"Codex" çevrilmiş kopyası
+("Codex + Codex (GPT)" gibi bozuk yerleriyle). Ofisin kökü `calisma/` bu
+deponun İÇİNDE. Ölçüldü (boş geçici klasör, üst klasörde "GIZLI_KELIME"):
+- ofisin **codex** adaptörü üst AGENTS.md'yi yüklüyor ("incir") → gerçek
+  ofisteki her codex ajanı geliştirici anayasasını alıyordu.
+- ofisin **claude** adaptörü üst CLAUDE.md'yi ALMIYOR (davranış testi:
+  "her cevabın sonuna ZEYTIN yaz" → 2/2 uymadı).
+- Yan bulgu: düz `claude -p` bu makinede ~242 bin jetonla sınırı aşıyor
+  (hesabın bağlayıcı/eklenti tanımları); ofis `ENABLE_CLAUDEAI_MCP_SERVERS=
+  false` ile zaten kesiyor.
+Düzeltme: `codex.PROJE_BELGESI_KAPALI` (`-c project_doc_max_bytes=0`) dört
+başlatma yolunda (app-server, gerçek terminal, exec, devralınan terminal).
+Sonra app-server ve gerçek terminal "YOK" dedi. `duman_codex_app` 75.
+AGENTS.md depoya eklenmedi (kullanıcının dosyası; karar onun).
