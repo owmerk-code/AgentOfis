@@ -1,0 +1,94 @@
+{
+ "ayar": {
+  "motor": "claude",
+  "kip": "gercek terminal",
+  "modeller": {
+   "lider": "sonnet",
+   "isci": "haiku"
+  },
+  "basla": "2026-09-30 16:41",
+  "sure_dk": 2.4,
+  "kota_farki": {
+   "claude": {
+    "5s": 2.0,
+    "7g": 0.0,
+    "7g_kapi": 0.0
+   }
+  }
+ },
+ "sonuclar": [
+  {
+   "no": "G08",
+   "ad": "Iki bagimsiz is -- paralel ajanlar",
+   "motor": "claude",
+   "kip": "gercek",
+   "mesaj": "Birbirinden bagimsiz iki is var, ikisini ayri ajanlara paralel yaptir: sehirler.md dosyasina Turkiye'nin en kalabalik 5 sehrini, renkler.md dosyasina 5 renk adini madde madde yaz.",
+   "olcutler": [
+    {
+     "olcut": "sehirler.md 5 madde",
+     "gecti": true,
+     "not": "5"
+    },
+    {
+     "olcut": "renkler.md 5 madde",
+     "gecti": true,
+     "not": "5"
+    },
+    {
+     "olcut": "is BOLUNDU (en az 2 gorev, 2 ajan)",
+     "gecti": true,
+     "not": "3 gorev, sahipler ['ada', 'cem', 'su']"
+    }
+   ],
+   "kalite": [
+    {
+     "olcut": "lider patrona cevap verdi",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "lider 'yapamam / sen yap' DEMEDI",
+     "gecti": true,
+     "not": "İki dosya da hazır ve her birinde tam 5 madde var. Üçüncü iş, yani uçtan uca doğrulama, henüz kapanm"
+    },
+    {
+     "olcut": "rapor ic konusma / KANIT satiri tasimiyor",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "gereksiz ret yok",
+     "gecti": true,
+     "not": "0 ret"
+    },
+    {
+     "olcut": "sohbet temiz (en fazla 4 mesaj)",
+     "gecti": true,
+     "not": "2 mesaj: insan/sohbet, lale/cevap"
+    }
+   ],
+   "durum": "gecti",
+   "sohbet": [
+    "insan/sohbet: Birbirinden bagimsiz iki is var, ikisini ayri ajanlara paralel yaptir: sehirler.md dosyasina Turkiye'nin en kalabalik 5 sehrini, renkler.md dosyasina 5 renk adini madde madde yaz.",
+    "lale/cevap: İki dosya da hazır ve her birinde tam 5 madde var. Üçüncü iş, yani uçtan uca doğrulama, henüz kapanmadı.\n\n- **Sehirler (bitti):** `sehirler.md` nüfus sırasına göre şu 5 ili içeriyor:\n  - İstanbul 15.7"
+   ],
+   "sureler": {
+    "lider": [
+     12,
+     22,
+     14
+    ],
+    "isci": [
+     35,
+     61
+    ],
+    "inceleme": [
+     7,
+     15,
+     8
+    ]
+   },
+   "sure_sn": 140.0
+  }
+ ]
+}
