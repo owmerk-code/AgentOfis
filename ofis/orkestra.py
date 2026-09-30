@@ -678,6 +678,15 @@ class Orkestra:
         # "pushla" dedi. Lider KAYNAK degildir -- izin patronun sozunden
         # gelir, alintisiyla birlikte kayda gecer ve kartta gorunur.
         izinler, _ = izin_mod.plan_izinleri(plan.get("izinler"), patron_sozu)
+        # PATRONUN SOZU ISE YAZILIR (01.10.2026). Olculdu (gercek set G14,
+        # codex): patron "formu doldur ve GONDER" dedi; lider izin yazmadi
+        # (kapi o tiklamayi zaten sormuyordu), ajan patronun sozunu hic
+        # gormedigi icin `onay_iste` ile kart acti ve is durdu. Ajan
+        # brifinginde patronun KENDI cumlesini gorur (brifing K4).
+        if patron_sozu:
+            for g in acilan:
+                self.db.olay_yaz(self.proje_id, "patron_sozu", patron_sozu[:1500],
+                                 ajan_ad="insan", gorev_id=g["id"])
         verilen = []
         for iz in izinler:
             for g in acilan:

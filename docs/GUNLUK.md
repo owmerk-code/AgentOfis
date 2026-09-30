@@ -12949,3 +12949,13 @@ AGENTS.md depoya eklenmedi (kullanıcının dosyası; karar onun).
   denenmedi, patrona "kendi AI aracında üret" diye istem dosyası kaldı.
   → Ajanın seçtiği üretici düşerse ofis otomatik sıraya döner (para kilidi
   korunur, ücretli atlanır); araç açıklaması "BOŞ BIRAK". duman_mcp 154.
+- **claude 12/12** (G11 yeniden koşuda geçti, abonelik yoluyla). Yeni işler:
+  claude G13 (Excel) ve G14 (form doldur+gönder) 2/2; codex 0/2:
+  - G13: plan dosyayı `ekler/urunler.xlsx`e yazdırdı, klasör yoktu; brifingin
+    "DOSYA — klasör AÇMA" satırıyla çelişti, ajan patrona sordu → `ekler/`
+    her iş başında ofisçe açılır (`koltuk.akit`).
+  - G14: patron "doldur ve GÖNDER" dedi; kapı "Kaydol" tıklamasını zaten
+    sormuyordu, lider izin yazmadı, ajan patronun sözünü görmediği için
+    `onay_iste` ile kart açtı → patronun KENDİ cümlesi iş açılırken
+    `patron_sozu` olayı olarak yazılır, brifing K4 aynen gösterir: "açıkça
+    istediği adım için onay_iste ÇAĞIRMA; riskliyse kapı sorar".

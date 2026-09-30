@@ -786,6 +786,12 @@ sina("is kapandi", [g["durum"] for g in _po.tahta.liste()] == ["bitti"],
 sina("rapor incelemenin PATRONA taslagi", _prap and _prap[0].startswith("a.txt yazildi"),
      str(_prap))
 sina("ayri rapor turu KOSMADI", _tur_say["rapor"] == 0, str(_tur_say))
+# 01.10 (G14): patronun KENDI sozu ise yazilir ve brifingde gorunur.
+_pg = _po.tahta.liste()[0]
+_pb = _po.brifing.uret(_pg["no"], "cem", diske_yaz=False)["metin"]
+sina("patronun sozu brifingde AYNEN ve 'onay_iste cagirma' kuraliyla",
+     "a.txt'ye merhaba yaz" in _pb and "onay_iste` CAGIRMA" in _pb, _pb[-400:])
+sina("ekler/ klasoru is basinda HAZIR", (_pk / "ekler").is_dir())
 
 print("\n'BAKAMIYORUM' CEVABI PATRONA GITMEZ, IS AJANA VERILIR (30.09, G09)")
 _bo = Ofis.proje_ac(Veritabani(_pk / "b.sqlite3"), "Bakamam", amac="a", basari_olcutu="b",

@@ -381,6 +381,19 @@ class Brifing:
                          "Sohbet ofis icidir, disari cikmaz: ONAY GEREKMEZ. "
                          "`ekler/` klasoru HER ISTE SERBESTTIR (yazma alani gerekmez): patrona gosterilecek dosya oraya kaydedilir -- sayfa goruntusu icin `browser_take_screenshot` araci `filename: \"ekler/<ad>.png\"` ile -- ve `sohbete_yaz(ekler=[...])` ile gonderilir. Oradaki dosyayi SILME. "
                          "Soru icin `soru_sor`, onay icin `onay_iste`."]
+        # PATRONUN KENDI SOZU (01.10.2026, gercek set G14): ajan patronun
+        # acikca istedigi adim icin kart acmasin.
+        with self.db.baglanti() as _c:
+            _ps = _c.execute("SELECT govde FROM olay WHERE proje_id = ? AND gorev_id = ? "
+                             "AND tur = 'patron_sozu' ORDER BY rowid DESC LIMIT 1",
+                             (self.proje_id, g["id"])).fetchone()
+        if _ps and (_ps["govde"] or "").strip():
+            satirlar += ["", "**Patronun kendi sozu (bu is buradan dogdu):** "
+                             f"\"{_ps['govde'].strip()[:600]}\"",
+                         "Patronun burada ACIKCA istedigi adim (orn. 'gonder', "
+                         "'kaydet', 'yayinla') icin `onay_iste` CAGIRMA: dogrudan "
+                         "yap. Gercekten riskliyse (para, silme) ofis kapisi "
+                         "kendisi sorar."]
         # PATRONUN IZINLERI her turda (devam dahil) soylenir: ajan izinli
         # bir eylem icin `onay_iste` cagirip bosuna durmasin.
         from .izin import brifing_blogu as izin_blogu

@@ -187,6 +187,17 @@ class Koltuk:
         sozlugunun ustune koltugun kendi olaylari eklenir:
         `sahiplenildi`, `brifing`, `kanit`, `incelemede`, `birakildi`.
         """
+        # `ekler/` HER ISTE HAZIR (01.10.2026). Olculdu (gercek set G13,
+        # codex): plan dosyayi `ekler/urunler.xlsx`e yazdirdi, klasor yoktu;
+        # brifingin "DOSYA -- klasor ACMA" satiriyla celisti, ajan patrona
+        # "klasoru siz acin" diye sordu ve is durdu. Klasoru ofis acar --
+        # yalniz kok TANIMLIYSA (bos kok bulunulan klasore acardi).
+        try:
+            if self.ofis.kok_klasoru():
+                from .ekler import klasor as _ek_klasor
+                _ek_klasor(self.ofis).mkdir(parents=True, exist_ok=True)
+        except (OSError, Exception):             # noqa: BLE001 -- is durmasin
+            pass
         ajan = self.ofis.kadro.ajan(ajan_ad)
         if ajan["faz"] == "basarisiz":
             raise KoltukHatasi(
