@@ -180,7 +180,14 @@ VARSAYILAN_BAYRAKLAR = (
     "--timeout-action", "8000",
     "--timeout-navigation", "30000",
     "--block-service-workers",
+    "--allow-unrestricted-file-access",
 )
+# `--allow-unrestricted-file-access` (01.10.2026). OLCULDU (gercek set G18,
+# claude): ajan kendi yazdigi todo uygulamasini `file:///...` ile acmak
+# istedi; Playwright MCP "Access to file: protocol is blocked" dedi (--help:
+# file:// VARSAYILAN KAPALI), is geri dondu. Bayrak tarayiciya kok disini
+# da acar -- ama ajanin kabuk erisimi zaten diski okuyabiliyor; yeni bir
+# yetenek degil, kendi sayfasini GORMESI. Brifing de `file:///` diyor.
 
 
 class TarayiciHatasi(Exception):
@@ -299,7 +306,7 @@ def sunucu_girdisi(kaynaklar, *, profil: str = "", gorunur: bool = False,
         # (beyan disi gidis `net::ERR_BLOCKED_BY_CLIENT` ile reddedildi).
         # Tutmasaydi kabin, yazma kilidinin web halini sessizce
         # kaldirirdi ve bu ozellik hic yazilmazdi.
-        bayraklar = ["--cdp-endpoint", cdp,
+        bayraklar = ["--cdp-endpoint", cdp, "--allow-unrestricted-file-access",
                      "--timeout-action", "8000",
                      "--timeout-navigation", "30000"]
     else:
