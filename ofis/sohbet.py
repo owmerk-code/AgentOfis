@@ -73,9 +73,12 @@ CEVAP_SINIRI = 4000
 #: Liderin aracsiz triyajinda "bakamiyorum" demesi (bkz. `_konus`). Bilgi
 #: eksikligi ("bilmiyorum") DEGIL, ARAC eksikligi kalibi: acamiyorum,
 #: bakamiyorum, erisemiyorum, dogrulayamiyorum, goremiyorum, alamiyorum.
+#: 01.10: gecmis zaman ("yazamadim") ve YAZMA fiilleri de (gercek set G05,
+#: claude: lider CSV'yi okuyup hesapladi ama "rapor.md'yi yazamadim" dedi).
 YAPAMAM_CEVABI = re.compile(
-    r"(?:a[cç]am|bakam|eri[sş]em|do[gğ]rulayam|g[oö]rem|alam|kontrol edem"
-    r"|[cç]al[iı][sş]t[iı]ram)[iı]yorum", re.I)
+    r"(?:a[cç]|bak|eri[sş]|do[gğ]rula|g[oö]r|al|kontrol ed|[cç]al[iı][sş]t[iı]r"
+    r"|yaz|olu[sş]tur|kayded|g[oö]nder|y[uü]kle|indir|d[uü]zenle|d[uü]zelt)"
+    r"(?:a|e|ya|ye)m(?:[iı]yorum|ad[iı]m|ed[iı]m)", re.I)
 
 #: Lider de sohbete dosya gonderir (30.09): satiri ofis `ekler/`e tasir.
 EK_KURALI = ("Patrona bir DOSYA gostermek istersen (gorsel, pdf, video; "

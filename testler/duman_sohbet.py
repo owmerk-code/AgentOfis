@@ -820,6 +820,15 @@ with _bo.db.baglanti() as _c:
     sina("ofis bunu kayda gecirdi", bool(_c.execute(
         "SELECT 1 FROM olay WHERE tur='uyari' AND govde LIKE '%ajana verdi%'").fetchone()))
 
+from ofis.sohbet import YAPAMAM_CEVABI as _YC  # noqa: E402
+for _t, _b in (("Bu turda sayfayi acip dogrulayamiyorum", True),
+               ("rapor.md dosyasini yazamadim", True),       # 01.10 G05, claude
+               ("dosyayi olusturamadim", True), ("kaydedemedim", True),
+               ("Liste degistirilebilir, demet degistirilemez.", False),
+               ("Toplam ciro 11.185 TL, en cok satan Cay.", False),
+               ("Bu konuda bilgim yok, bilmiyorum.", False), ("Yazdim ve gonderdim.", False)):
+    sina(f"  yapamam kalibi: {_t[:40]} -> {_b}", bool(_YC.search(_t)) is _b)
+
 print("\nDEFTER SATIRLARI PATRONA GITMEZ (30.09, gercek set G01)")
 _tm = Sohbet(ofis)._ekleri_hazirla(
     "Istenen goruntu sohbete eklendi.\n\n\nKANIT terminal: `Get-Item x` -> ok\n"
