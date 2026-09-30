@@ -13001,3 +13001,33 @@ AGENTS.md depoya eklenmedi (kullanıcının dosyası; karar onun).
   bu kolun ölçütü". codex G14 — kanıt değerleri göstermiyordu (haklı ret).
   Yeniden koşular: claude G06, G08; codex G08 GEÇTİ.
 - Tam duman takımı: 45 dosya, **3408 geçti, 0 kaldı**.
+
+## 01.10.2026 akşam — set 18 işe çıktı; durdur/sürdür, not, belge, proje
+
+Kullanıcı: "benim yerime üçünü de yap" (gerçek ofiste deneme, iki tam koşu,
+eksik durumlar). Yeni işler: G15 iş sürerken patron notu, G16 Durdur→Sürdür,
+G17 Word belgesi, G18 çok adımlı proje (plan + uygulama). Gerçek sete
+"gözcü" iş parçacığı (insan yerine not bırakır / Durdur'a basar) ve
+`sonra` adımı (Sürdür) eklendi; kuru kipte 27/27.
+
+İlk koşuda çıkanlar ve düzeltmeler:
+- **Codex haftalık kotası %85** → ofis işçileri kendiliğinden Claude'a
+  geçirdi (zincir, tasarım gereği). Kotayı korumak için tam koşular yalnız
+  Claude'la.
+- G16: lider incelemeyi yazdı, `KARAR:` satırını UNUTTU → iş incelemede
+  asılı kaldı → hüküm satırı yoksa lidere KENDİ metni gösterilip yalnız
+  hüküm sorulur (kısa, araçsız tur). duman_lider 46.
+- G16: Durdur süren aracı keser, CLI bunu "kullanıcı reddetti" diye
+  bildirir; sürdürülen ajan "Bash reddedildi, Write çalışmıyor" deyip iki
+  kez lidere danıştı → devam metni: "Patron DURDURDU, reddi durdurma
+  getirdi, araçların çalışıyor; var olan dosyayı yazmadan önce oku".
+  duman_koltuk 65. Sonra G16 claude 122 sn'de GEÇTİ.
+- G18: Playwright MCP `file://`i VARSAYILAN olarak engelliyor ("Access to
+  file: protocol is blocked" — `--help` okundu); dünkü brifing "kendi
+  HTML'ini file:/// ile aç" diyordu → `--allow-unrestricted-file-access`
+  (ajanın kabuk erişimi zaten diski okuyor; yeni yetenek değil). Sonra G18
+  GEÇTİ.
+- G15 (not) ve G17 (Word) iki motorda ilk seferde geçti.
+- `testler/ofis_kopyasi.py`: patronun GERÇEK defteri + `calisma/` geçici
+  klasöre kopyalanır (`sqlite backup`), ajan klasörleri kopyaya çevrilir,
+  gerçek iş verilir. Gerçek defter/klasör değişmez.
