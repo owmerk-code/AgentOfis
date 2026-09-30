@@ -281,6 +281,21 @@ class Lider:
         ]
         if g["govde"]:
             satirlar += ["", "**Gorev tarifi:**", "", g["govde"]]
+        # PATRONUN KENDI SOZU incelemede de (01.10.2026). Olculdu (gercek set
+        # G07, claude): patron "yilan oyunu yap" dedi; plani yazan lider
+        # olcute "oyun SURERKEN cekilmis ekran goruntusu" ekledi; basliksiz
+        # tarayicida yilan hemen oldugu icin her goruntu "Oyun Bitti" cikti,
+        # kod dogru oldugu halde is 5 kez geri gonderildi (825 sn).
+        with self.db.baglanti() as _c:
+            _ps = _c.execute("SELECT govde FROM olay WHERE proje_id = ? AND gorev_id = ? AND "
+                             "tur = 'patron_sozu' ORDER BY rowid DESC LIMIT 1",
+                             (self.proje_id, g["id"])).fetchone()
+        if _ps and (_ps["govde"] or "").strip():
+            satirlar += ["", f"**Patronun KENDI sozu:** \"{_ps['govde'].strip()[:600]}\"",
+                         "Olcutun, patronun ISTEMEDIGI bir kanit bicimini (orn. oyun "
+                         "surerken ekran goruntusu, video) sart kosan kismi RET SEBEBI "
+                         "DEGILDIR: is patronun istedigini yapiyorsa kapat, eksik "
+                         "bicimi nota yaz."]
         # KARDES KOLLAR (01.10.2026). Olculdu (gercek set G08, codex): hedef
         # iki kola bolundu (sehirler / renkler); inceleyen sehirler kolunu
         # "ust hedef renkler.md'yi de istiyor" diye GERI GONDERDI, ajan

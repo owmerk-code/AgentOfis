@@ -205,6 +205,13 @@ sina("inceleme kardes kolu gosteriyor ve 'bu koldan isteme' diyor",
 sina("tek isli hedefte kardes bolumu YOK",
      "BIR KOLUDUR" not in Lider(ofis).inceleme_metni(_gi["no"]))
 
+_kp = ofis.tahta.gorev_ac("Oyun", neden="n", ana_hedef="yilan oyunu", kabul_olcutu="oynanis goruntusu",
+                          govde="g", yazma_alani=["oyun/"], kanat_id=kn)
+ofis.db.olay_yaz(ofis.proje_id, "patron_sozu", "yilan oyunu yap", ajan_ad="insan", gorev_id=_kp["id"])
+_kpm = Lider(ofis).inceleme_metni(_kp["no"])
+sina("inceleme patronun KENDI sozunu ve 'istemedigi bicim ret sebebi degil' kuralini tasiyor (G07)",
+     "Patronun KENDI sozu" in _kpm and "yilan oyunu yap" in _kpm and "RET SEBEBI" in _kpm)
+
 print("\n-- 9c. kanitta gecen ama sohbete GITMEMIS ek olculur (30.09, G01) --")
 _gg = ofis.tahta.gorev_ac("Goruntu", neden="n", ana_hedef="h", kabul_olcutu="k",
                           govde="g", yazma_alani=["x/"], kanat_id=kn, sahip="cinar")

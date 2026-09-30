@@ -281,7 +281,10 @@ class Orkestra:
             "kendisini olc (ornek: 'sayfanin ekran goruntusu sohbette'). "
             "Istenmeyen ara adim (yeni sekme, git durumu, dosya zamani) "
             "SART YAZMA. Paylasilan kabinde yeni sekme ACILMAZ; olcute "
-            "sekme sarti yazma.",
+            "sekme sarti yazma. Patron gorsel istemediyse ekran goruntusu / "
+            "video SART YAZMA (01.10: 'oyun surerken ekran goruntusu' sarti "
+            "dogru kodu 5 kez geri gonderdi); kod isinde kanit kodun "
+            "kendisi ve calistigini gosteren cikti.",
             "",
             "`ekler/` klasoru HER ISTE SERBESTTIR (yazma alani gerekmez): patrona gosterilecek dosya oraya kaydedilir -- sayfa goruntusu icin `browser_take_screenshot` araci `filename: \"ekler/<ad>.png\"` ile -- ve `sohbete_yaz(ekler=[...])` ile gonderilir. Oradaki dosyayi SILME. Patrona dosya/goruntu gidecek iste 'dosya "
             "yazma' deme; `ekler/` yazma alanina girmez.",
