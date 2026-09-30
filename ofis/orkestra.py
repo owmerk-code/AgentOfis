@@ -806,6 +806,14 @@ class Orkestra:
                         yedek[:] = parcalar
                     parcalar = []
                     _akit(None)
+                elif olay.tur == "hata":
+                    # LIDER TURUNUN HATASI DA DEFTERE (30.09.2026). Olculdu
+                    # (gercek set G06, claude): lider turu 11 sn'de dustu,
+                    # defterde yalniz "basarili: false" vardi -- NEDENI hicbir
+                    # yerde yoktu. Isci turunda hata yaziliyordu, liderde degil.
+                    self.db.olay_yaz(self.proje_id, "hata",
+                                     f"Lider turu: {str(olay.govde or '')[:600]}",
+                                     ajan_ad=lider["ad"])
                 elif olay.tur == "bitti":
                     ek = dict(olay.ek or {})
                     # LIDER TURU DA OLCULUR -- devredilen basamak dahil:

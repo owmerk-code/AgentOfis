@@ -12858,3 +12858,14 @@ sayılmaz.** Sahte duman sınamaları kalıyor (kod bozuldu mu, saniyede).
   (patronun geliştirme sunucusu veri yazabilir); brifing: kendi HTML'ini
   `file:///` ile aç. `duman_riskli` 225.
 - Tam duman takımı: 45 dosya, **3349 geçti, 0 kaldı**.
+- 3. koşu (bütün düzeltmelerle) ilk yarı: **codex G01–G04 4/4 GEÇTİ**.
+  Claude G04: lider "testler kırmızı, düzelt" mesajına `cevap` verip hatayı
+  ANLATTI, dosyaya dokunulmadı → triyaj: "patron bir şeyin YAPILMASINI
+  istiyorsa anlatma, YAPTIR; cevap yalnız soru/bilgi/sohbet". Claude G06:
+  lider turu 11 sn'de düştü ve NEDENİ defterde yoktu (yalnız "basarili:
+  false") → lider turunun `hata` olayı deftere yazılır.
+- Not: claude haftalık pencere %85'te olduğu için ofis işçi basamaklarını
+  (tasarım gereği) codex'e ÖNCEDEN GEÇİRDİ — bu gecenin "claude" seti kısmen
+  codex işçiyle koştu; haftalık pencere yenilenince yeniden ölçülecek.
+- Gerçek set bedeli ÖLÇÜLDÜ: tam claude seti 5s +8, 7g +1 puan; codex 5s +6,
+  7g +1 puan (gece koşusu ≈ haftalığın %1'i, motor başına).

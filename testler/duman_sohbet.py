@@ -727,6 +727,24 @@ _ol = akit(Sohbet(ofis, motor_fabrikasi=lambda ad, **a: _CevapSonraArac(cevap=""
 _cv = [o["govde"] for o in _ol if o["tur"] == "cevap"]
 sina("cevaptan SONRA arac cagrilsa da cevap korunur", _cv and "Tamam patron" in _cv[0], str(_cv))
 
+print("\nLIDER TURUNUN HATASI DEFTERE YAZILIR (30.09, gercek set G06)")
+
+
+class _DusenLider(SahteMotor):
+    def tur_kos(self, metin, **ayar):
+        yield MotorOlayi("hata", "Terminal acilirken kapandi: guven sorusu")
+        yield MotorOlayi("bitti", "", {"basarili": False, "sebep": "cikis"})
+
+
+try:
+    Sohbet(ofis, motor_fabrikasi=lambda ad, **a: _DusenLider(cevap=""))._lideri_kostur(
+        ofis.kadro.lider(kanat), "x", None, 30)
+except Exception:                                   # noqa: BLE001 -- dusmesi bekleniyor
+    pass
+with ofis.db.baglanti() as _c:
+    _lh = [r[0] for r in _c.execute("SELECT govde FROM olay WHERE tur='hata' AND govde LIKE 'Lider turu:%'")]
+sina("lider turu hatasi NEDENIYLE deftere yazildi", any("guven sorusu" in x for x in _lh), str(_lh[-1:]))
+
 print("\nDEFTER SATIRLARI PATRONA GITMEZ (30.09, gercek set G01)")
 _tm = Sohbet(ofis)._ekleri_hazirla(
     "Istenen goruntu sohbete eklendi.\n\n\nKANIT terminal: `Get-Item x` -> ok\n"

@@ -456,6 +456,12 @@ class Sohbet:
             "sohbete gonderir; kod yazar, komut kosturur, dosya/gorsel "
             "uretir, arastirir. Bunlardan birini gerektiren mesaja "
             "'yapamam / sen yap' diye CEVAP VERME -- `kendi` ya da `dagit` sec.",
+            # 30.09 olculdu (gercek set G04, claude): "testler kirmizi,
+            # hatayi duzelt" -> lider `cevap` secip hatanin nerede oldugunu
+            # ve nasil duzeltilecegini ANLATTI; dosyaya dokunulmadi.
+            "Patron bir seyin YAPILMASINI istiyorsa (duzelt, yaz, yap, ac, "
+            "gonder, kur, degistir) NASIL yapilacagini anlatma -- YAPTIR. "
+            "`cevap` yalniz soru, bilgi ve sohbet icindir.",
         ]
 
         satirlar += [
