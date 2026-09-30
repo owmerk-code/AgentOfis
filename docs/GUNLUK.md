@@ -12942,3 +12942,10 @@ AGENTS.md depoya eklenmedi (kullanıcının dosyası; karar onun).
   `ctime` ≥ işin açılışı ise izin verir, `kendi_dosyasini_sildi` olayı.
   İlk yazımda `riskli` işlevde içe aktarılmamıştı → NameError geniş
   except'te yutuldu, kural hiç uygulanmadı; duman_mcp yakaladı (152).
+- Codex yeniden koşu G03/G11/G12 3/3 → **codex 12/12**.
+- Claude G11 yeniden koşuda KALDI: ajan `gorsel_uret`e üreticiyi ACIKÇA
+  verdi (önce gemini — günlük kota dolu, sonra openai — ücretli, para
+  kilidi); ofisin sırasındaki abonelik yolu (codex, fatura yok) hiç
+  denenmedi, patrona "kendi AI aracında üret" diye istem dosyası kaldı.
+  → Ajanın seçtiği üretici düşerse ofis otomatik sıraya döner (para kilidi
+  korunur, ücretli atlanır); araç açıklaması "BOŞ BIRAK". duman_mcp 154.

@@ -515,12 +515,26 @@ def arac_gorsel_uret(oturum: Oturum, args: dict) -> str:
     except Exception as exc:                     # noqa: BLE001 -- ajana ANLATILIR
         return f"HATA: {exc}"
 
+    # AJANIN SECTIGI URETICI DUSERSE OFIS SIRAYI DENER (01.10.2026).
+    # Olculdu (gercek set G11, claude): ajan once 'gemini'yi (gunluk kota
+    # dolu), sonra 'openai'yi (ucretli, para kilidi) ACIKCA secti; ofisin
+    # sirasindaki ABONELIK yolu (codex, fatura yok) hic denenmedi ve patrona
+    # "kendi AI aracinda uret" diye istem dosyasi birakildi. Ureticiyi
+    # AJAN secti, patron degil: dusunce otomatik siraya donulur. Para kilidi
+    # korunur -- otomatik sira ucretliyi zaten atlar.
+    secilen = str(args.get("uretici") or "")
+    notlar = []
     try:
-        sonuc = _gorsel.uret(istem, hedef,
-                             uretici=str(args.get("uretici") or ""),
+        sonuc = _gorsel.uret(istem, hedef, uretici=secilen,
                              model=str(args.get("model") or ""))
     except _gorsel.GorselHatasi as exc:
-        return f"HATA: {exc}"
+        if not secilen:
+            return f"HATA: {exc}"
+        notlar.append(f"(secilen '{secilen}' olmadi: {str(exc)[:160]} -- otomatik sira denendi)")
+        try:
+            sonuc = _gorsel.uret(istem, hedef, uretici="", model="")
+        except _gorsel.GorselHatasi as exc2:
+            return f"HATA: {exc2}\n" + notlar[0]
 
     # Kanit: dosya GERCEKTEN diskte. Olculdu, iddia edilmedi.
     # MALIYET KANITA YAZILIR. Olcmedigimiz sey yonetilemez -- ve para
@@ -542,6 +556,7 @@ def arac_gorsel_uret(oturum: Oturum, args: dict) -> str:
              "  KANIT olarak tahtaya yazildi (ayrica `kanit_ekle` cagirma)."]
     for a in (sonuc.get("atlananlar") or []):
         satir.append(f"  (atlandi: {a['uretici']} -- {a['sebep'][:120]})")
+    satir += notlar
     return chr(10).join(satir)
 
 
@@ -1299,7 +1314,9 @@ ARACLAR = [
                 "dosya_adi": {"type": "string",
                               "description": "Orn. 'kreatif-1.png'. Yalniz dosya adi, yol degil."},
                 "uretici": {"type": "string",
-                            "description": "Bos birak (otomatik). 'gemini' ya da 'openai' zorlanabilir."},
+                            "description": "BOS BIRAK: ofis once Codex aboneligini (fatura "
+                                           "yok) sonra ucretsiz Gemini'yi dener. Secersen ve "
+                                           "olmazsa ofis yine otomatik siraya doner."},
                 "model": {"type": "string", "description": "Bos birak (varsayilan)."},
             },
             "required": ["istem"],

@@ -868,6 +868,21 @@ sina("uygun alan yoksa ajana HATA ANLATILIR", _mc2.startswith("HATA"), _mc2[:120
 sina("rapor.md'nin ustune YAZILMADI",
      (_kok_c / "rapor.md").read_text(encoding="utf-8") == "metin")
 
+# 01.10 (gercek set G11): ajanin SECTIGI uretici duserse ofis otomatik siraya
+# doner. Sira burada yalniz sahte uretici -- gercek codex uretimi KOSMAZ.
+_asil_sira = _gor.TERCIH_SIRASI
+_gor.TERCIH_SIRASI = ("sahtegorsel",)
+try:
+    _gm3 = ofis.tahta.gorev_ac("Logo", neden="n", ana_hedef="h", kabul_olcutu="k",
+                               yazma_alani=["logo.png"], sahip="cinar")
+    _mc3 = _ms.arac_gorsel_uret(_SahteOturum(ofis, "cinar", _gm3["no"]),
+                                {"istem": "logo", "dosya_adi": "logo.png", "uretici": "openai"})
+    sina("secilen ucretli uretici (para kilidi) dusunce OTOMATIK siraya donuldu",
+         _mc3.startswith("Gorsel uretildi") and "otomatik sira" in _mc3, _mc3[:200])
+    sina("  para kilidi yine korundu (ucretli kullanilmadi)", "openai" not in _mc3.split("\n")[1])
+finally:
+    _gor.TERCIH_SIRASI = _asil_sira
+
 # --------------------------------------------------------------------------
 print("\nSOHBETE_YAZ -- ajan takim sohbetine kendisi yazar (29.09)")
 _ss = Sunucu({"OFIS_DB": str(db_yolu), "OFIS_PROJE": ofis.proje_id,
