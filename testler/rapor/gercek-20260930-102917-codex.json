@@ -1,0 +1,201 @@
+{
+ "ayar": {
+  "motor": "codex",
+  "kip": "gercek terminal",
+  "modeller": {
+   "lider": "gpt-6-luna",
+   "isci": "gpt-6-luna"
+  },
+  "basla": "2026-09-30 10:22",
+  "sure_dk": 6.9,
+  "kota_farki": {
+   "codex": {
+    "5s": 2.0,
+    "7g": 0.0
+   }
+  }
+ },
+ "sonuclar": [
+  {
+   "no": "G03",
+   "ad": "Kod + test yaz",
+   "motor": "codex",
+   "kip": "gercek",
+   "mesaj": "hesap.py adinda bir dosya yaz: topla(a, b) ve carp(a, b) fonksiyonlari olsun. pytest testlerini de yaz ve calistir.",
+   "olcutler": [
+    {
+     "olcut": "hesap.py calisiyor: topla(2,3)=5, carp(4,5)=20",
+     "gecti": true,
+     "not": "5 20"
+    },
+    {
+     "olcut": "pytest testi yazildi ve geciyor",
+     "gecti": true,
+     "not": "2 passed in 0.01s"
+    }
+   ],
+   "kalite": [
+    {
+     "olcut": "lider patrona cevap verdi",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "lider 'yapamam / sen yap' DEMEDI",
+     "gecti": true,
+     "not": "`hesap.py` içinde `topla(a, b)` ve `carp(a, b)` fonksiyonları, `test_hesap.py` içinde de bunları doğ"
+    },
+    {
+     "olcut": "rapor ic konusma / KANIT satiri tasimiyor",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "gereksiz ret yok",
+     "gecti": true,
+     "not": "0 ret"
+    },
+    {
+     "olcut": "sohbet temiz (en fazla 4 mesaj)",
+     "gecti": true,
+     "not": "2 mesaj: insan/sohbet, lale/cevap"
+    }
+   ],
+   "durum": "gecti",
+   "sohbet": [
+    "insan/sohbet: hesap.py adinda bir dosya yaz: topla(a, b) ve carp(a, b) fonksiyonlari olsun. pytest testlerini de yaz ve calistir.",
+    "lale/cevap: `hesap.py` içinde `topla(a, b)` ve `carp(a, b)` fonksiyonları, `test_hesap.py` içinde de bunları doğrulayan pytest testleri mevcut. Sunulan çalıştırma çıktısında testler başarılı: 2 passed."
+   ],
+   "sureler": {
+    "lider": [
+     19,
+     22
+    ],
+    "isci": [
+     35
+    ],
+    "inceleme": [
+     24
+    ]
+   },
+   "sure_sn": 110.0
+  },
+  {
+   "no": "G11",
+   "ad": "Gorsel uret, sohbete gonder",
+   "motor": "codex",
+   "kip": "gercek",
+   "mesaj": "Kahve Duragi adli kafe icin sade bir logo gorseli uret ve bana gonder.",
+   "olcutler": [
+    {
+     "olcut": "sohbete uretilmis gorsel geldi",
+     "gecti": true,
+     "not": "['ekler/20260930-102812-kahve-duragi-logo.png']"
+    }
+   ],
+   "kalite": [
+    {
+     "olcut": "lider patrona cevap verdi",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "lider 'yapamam / sen yap' DEMEDI",
+     "gecti": true,
+     "not": "Kahve Durağı için sade, okunaklı fincan simgesi ve marka adını içeren logo hazır. 1254×1254 piksel P"
+    },
+    {
+     "olcut": "rapor ic konusma / KANIT satiri tasimiyor",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "gereksiz ret yok",
+     "gecti": true,
+     "not": "0 ret"
+    },
+    {
+     "olcut": "sohbet temiz (en fazla 4 mesaj)",
+     "gecti": true,
+     "not": "3 mesaj: insan/sohbet, ada/bildirim, lale/cevap"
+    }
+   ],
+   "durum": "gecti",
+   "sohbet": [
+    "insan/sohbet: Kahve Duragi adli kafe icin sade bir logo gorseli uret ve bana gonder.",
+    "ada/bildirim: Kahve Durağı için sade fincan simgesi ve okunaklı marka adı içeren logo.",
+    "lale/cevap: Kahve Durağı için sade, okunaklı fincan simgesi ve marka adını içeren logo hazır. 1254×1254 piksel PNG dosyası: kahve-duragi-logo.png."
+   ],
+   "sureler": {
+    "lider": [
+     26,
+     25
+    ],
+    "isci": [
+     188
+    ],
+    "inceleme": [
+     28
+    ]
+   },
+   "sure_sn": 279.3
+  },
+  {
+   "no": "G12",
+   "ad": "Web arastirmasi, kaynakli cevap",
+   "motor": "codex",
+   "kip": "gercek",
+   "mesaj": "Ankara'nin guncel nufusu kac? Internetten arastir, kaynagini da yaz; kisa cevap ver.",
+   "olcutler": [
+    {
+     "olcut": "Ankara'nin nufusu soylendi (4-7 milyon arasi sayi)",
+     "gecti": true,
+     "not": "TÜİK’in 2025 ADNKS sonuçlarına göre Ankara’nın nüfusu 5.910.320 kişidir (31 Aralık 2025 itibarıyla). [Kaynak: TÜİK](https://data.tuik.gov.tr/Bulten/Index?p=Adre"
+    },
+    {
+     "olcut": "kaynak verildi (adres ya da kurum adi)",
+     "gecti": true,
+     "not": ""
+    }
+   ],
+   "kalite": [
+    {
+     "olcut": "lider patrona cevap verdi",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "lider 'yapamam / sen yap' DEMEDI",
+     "gecti": true,
+     "not": "TÜİK’in 2025 ADNKS sonuçlarına göre Ankara’nın nüfusu 5.910.320 kişidir (31 Aralık 2025 itibarıyla)."
+    },
+    {
+     "olcut": "rapor ic konusma / KANIT satiri tasimiyor",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "gereksiz ret yok",
+     "gecti": true,
+     "not": "0 ret"
+    },
+    {
+     "olcut": "sohbet temiz (en fazla 4 mesaj)",
+     "gecti": true,
+     "not": "2 mesaj: insan/sohbet, lale/cevap"
+    }
+   ],
+   "durum": "gecti",
+   "sohbet": [
+    "insan/sohbet: Ankara'nin guncel nufusu kac? Internetten arastir, kaynagini da yaz; kisa cevap ver.",
+    "lale/cevap: TÜİK’in 2025 ADNKS sonuçlarına göre Ankara’nın nüfusu 5.910.320 kişidir (31 Aralık 2025 itibarıyla). [Kaynak: TÜİK](https://data.tuik.gov.tr/Bulten/Index?p=Adrese-Dayali-Nufus-Kayit-Sistemi-Sonuclari-"
+   ],
+   "sureler": {
+    "lider": [
+     23
+    ]
+   },
+   "sure_sn": 24.9
+  }
+ ]
+}
