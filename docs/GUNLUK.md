@@ -12850,3 +12850,11 @@ sayılmaz.** Sahte duman sınamaları kalıyor (kod bozuldu mu, saniyede).
   %49; codex 7g %55. Gerçek set her raporda kota farkını yazar.
 - Heredoc tuzağı yine: `\b` geri-silme karakterine döndü (gercek_set
   regex'i); depo taraması temiz.
+- Kapı yanlış alarmları (2. koşu): codex web araması `webrun` TANINMAYAN
+  ARAC sayılıp onaya düştü (G08 durdu) → yerleşik serbest (Claude'un
+  WebSearch'ü zaten serbestti). `file://` sayfada test kodu (dispatchEvent,
+  click) artık sorulmaz; ÖLÇÜLDÜ ki codex G07'de oyunu `127.0.0.1:8765`
+  yerel sunucudan açmıştı — yerel sunucu bilerek SORULMAYA devam ediyor
+  (patronun geliştirme sunucusu veri yazabilir); brifing: kendi HTML'ini
+  `file:///` ile aç. `duman_riskli` 225.
+- Tam duman takımı: 45 dosya, **3349 geçti, 0 kaldı**.

@@ -215,7 +215,7 @@ matrisin ölçümüyle karşılaştırır.
   sorusu ekrana bakarak, codex oturum dosyası tur işaretiyle.
 - **Güncelleme hemen:** 30 dakikada bir ölçer, uyguladıktan sonra yeniden
   ölçer (`olc_ve_ilerle`). Açık: deneme turu gerçek terminal kipini koşmuyor.
-- **Sınamalar:** 44 duman dosyası, **3295/3295** (30.09). Deneme seti 15/15
+- **Sınamalar:** 44 duman dosyası, **3349/3349** (30.09; 45 dosya) + gerçek set (`gercek_set.py`, her gece 03:30). Deneme seti 15/15
   (Claude ve Codex, işçi+lider).
 - **Kullanıcının belirttiği eksikler (29.09):** her panoda her zaman açık
   yazma yeri; sesli orkestratör;

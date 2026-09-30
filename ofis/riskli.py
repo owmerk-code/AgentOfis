@@ -420,6 +420,14 @@ def degerlendir(arac: str, argumanlar: dict, *, url: str = "",
         if bulunan:
             return _bulgu("belirsiz", bulunan, arac, hedef, url, kimlik)
 
+    # YEREL DOSYA SAYFASI (file://): ajanin KENDI yazdigi sayfayi kodla sinamasi
+    # (tus olayi gondermek, butona tiklatmak) disari cikmaz, para yok, geri
+    # alinir. OLCULDU (30.09.2026, gercek set G07): codex yilan oyununu
+    # `dispatchEvent` ile test etmek istedi, kapi "SAYFAYI DEGISTIREN KOD"
+    # diye patrona sordu. Yalniz file:// -- yerel SUNUCU (localhost) bir
+    # veritabanina yazabilir, o sorulmaya devam eder.
+    if kod and sadelestir(url).startswith("file:"):
+        kod = ""
     if kod:
         sade_kod = sadelestir(kod)
         bulunan = (_esles(sade_kod, KOD_ETKISI)
@@ -586,8 +594,12 @@ KAPI_DISI_ONEKLER = ("mcp__ofis", "mcp__tarayici")
 #: kendisi degil.
 YERLESIK_SERBEST = frozenset("""
 Read Glob Grep LS Write Edit MultiEdit NotebookEdit WebFetch WebSearch
-TodoWrite ToolSearch
+TodoWrite ToolSearch webrun
 """.split())
+# `webrun`: codex'in yerlesik WEB ARAMASI (salt okunur). OLCULDU (30.09.2026,
+# gercek set G08): kanca onu TANINMAYAN ARAC sayip patrona onay karti dusurdu,
+# is ("5 buyuk sehri yaz") duruverdi. Claude'daki karsiligi WebSearch zaten
+# serbestti -- iki motor esit olmali.
 
 KABUK_ARACLARI = frozenset({"Bash", "PowerShell"})
 
@@ -902,7 +914,9 @@ def brifing_blogu(tarayici_var: bool = False, *, serbest: bool = False) -> str:
         "tarayicisini ya da masaustunu ACMA/SURME (webbrowser, "
         "Start-Process <url>, SendKeys, pencere one alma, ekrani "
         "yakalama): bunlar patrona SORULUR. Sayfanin goruntusu "
-        "gerekiyorsa `browser_take_screenshot`.",
+        "gerekiyorsa `browser_take_screenshot`. Kendi yazdigin HTML'i "
+        "sinarken onu `file:///<tam yol>` ile ac (sunucu kurma): o sayfada "
+        "test kodu (tus olayi, tiklama) SORULMAZ; yerel sunucuda sorulur.",
     ]
     if tarayici_var and serbest:
         parcalar += [

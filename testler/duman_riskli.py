@@ -950,6 +950,18 @@ for komut in ("Remove-Item sil.txt", "Remove-Item -Recurse -Force build",
     _b = R.arac_degerlendir("Bash", {"command": komut})
     sina(f"  dosya silme HALA sorulur: {komut}", bool(_b) and _b["sinif"] == "silme")
 
+print("\n-- codex web aramasi ve yerel dosya sayfasinda test kodu (30.09, G08/G07) --")
+sina("codex `webrun` (web aramasi, salt okunur) serbest",
+     R.arac_degerlendir("webrun", {"search_query": [{"q": "tuik nufus"}]}) is None)
+_kd = {"function": "() => { document.dispatchEvent(new KeyboardEvent('keydown',"
+                   "{key:'ArrowUp'})); document.querySelector('#b').click(); }"}
+sina("file:// sayfada test kodu SORULMAZ",
+     R.degerlendir("browser_evaluate", _kd, url="file:///C:/x/oyun/index.html") is None)
+for _u in ("http://127.0.0.1:8765/oyun/index.html", "https://magaza.com/"):
+    _b = R.degerlendir("browser_evaluate", _kd, url=_u)
+    sina(f"  sunucudaki sayfada test kodu HALA sorulur: {_u}", bool(_b) and _b["sinif"] == "kod")
+sina("brifing kendi HTML'ini file:// ile acmayi soyluyor", "file:///" in R.brifing_blogu())
+
 from ofis import izin as _iz  # noqa: E402
 sina("masaustu IZINLE ACILAMAZ (patron sozu de kalici izin de)",
      "masaustu" in _iz.HER_ZAMAN_SORULUR and "masaustu" not in _iz.IZIN_VERILEBILIR)
