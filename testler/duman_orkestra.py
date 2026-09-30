@@ -566,6 +566,36 @@ sina("12 isin 12'si de incelemeye ulasti", _r["incelemede"] == 12, str(_r["durum
 sina("hic hata olayi yok", _r["hata_olayi"] == 0, str(_r["hata_olayi"]))
 sina("12'si de paralel baslatildi", _r["baslatilan"] == 12 and _r["paralel"] == 12, str(_r))
 
+print("\nINCELEMELER PARALEL (30.09, gercek set G08)")
+import time as _time  # noqa: E402
+_ik = Path(tempfile.mkdtemp(prefix="ofis-incpar-"))
+_io = Ofis.proje_ac(Veritabani(_ik / "o.sqlite3"), "IncPar", amac="a", basari_olcutu="b",
+                    kok_klasor=str(_ik))
+_ikn = _io.kanat_ac("A", "A")
+_io.kadro.ise_al("lale", "lider", lider_mi=True, kanat_id=_ikn, motor="sahte", klasor=str(_ik))
+_io.kadro.ise_al("cem", "backend", kanat_id=_ikn, motor="sahte", klasor=str(_ik))
+for _i in (1, 2):
+    _g = _io.tahta.gorev_ac(f"is{_i}", neden="n", ana_hedef="h", kabul_olcutu="k", govde="g",
+                            yazma_alani=[f"{_i}.txt"], kanat_id=_ikn)
+    _g = _io.tahta.sahiplen(_g["no"], "cem", _g["revizyon"])
+    _io.tahta.kanit_ekle(_g["no"], "dosya", f"{_i}.txt", "yazildi", ekleyen="cem")
+    _io.tahta.incelemeye_ver(_g["no"], _io.tahta.gorev(_g["no"])["revizyon"])
+
+
+class _YavasHakem(SahteMotor):
+    def tur_kos(self, metin, **ayar):
+        _time.sleep(1.5)
+        self.cevap = "KARAR: kapat\nPATRONA: tamam"
+        return super().tur_kos(metin, **ayar)
+
+
+_t0 = _time.monotonic()
+_oz = Orkestra(_io, motor_fabrikasi=lambda ad, **a: _YavasHakem(cevap="")).tik(paralel=2)
+_sure = _time.monotonic() - _t0
+sina("iki inceleme de kapatti", sorted(x["hukum"] for x in _oz["incelenen"]) == ["kapat", "kapat"],
+     str(_oz["incelenen"]))
+sina("incelemeler PARALEL kostu (< 2.7 sn; sirayla 3+ sn olurdu)", _sure < 2.7, f"{_sure:.1f} sn")
+
 print(f"\n== sonuc: {GECEN} gecti, {KALAN} kaldi ==")
 print(f"klasor: {kok}")
 sys.exit(1 if KALAN else 0)

@@ -966,13 +966,30 @@ class Orkestra:
         except Exception:        # noqa: BLE001 -- olcum isi durdurmaz
             pass
 
-        # a) incelemedekileri lidere incelet
-        for g in self.ofis.tahta.liste(durum="inceleme"):
+        # a) incelemedekileri lidere incelet -- PARALEL (30.09.2026).
+        #
+        # Olculdu (gercek set G08, codex): iki is 67. ve 74. saniyede
+        # bitti, incelemeleri 21 + 22 sn ARKA ARKAYA kostu. Incelemeler
+        # birbirinden bagimsizdir (her biri kendi isinin kanitina bakar,
+        # kapatma CAS'li); isciler gibi paralel kosar, en fazla `paralel`.
+        incelenecek = self.ofis.tahta.liste(durum="inceleme")
+
+        def _incele(g):
             try:
-                sonuc = self.lider.incele(
-                    g["no"], butce_usd=butce_usd, zaman_asimi=zaman_asimi)
+                return g, self.lider.incele(
+                    g["no"], butce_usd=butce_usd, zaman_asimi=zaman_asimi), None
             except LiderHatasi as exc:
-                ozet["engel"].append(f"#{g['no']} incelenemedi: {exc}")
+                return g, None, exc
+
+        if len(incelenecek) > 1 and paralel > 1:
+            from concurrent.futures import ThreadPoolExecutor as _Havuz
+            with _Havuz(max_workers=min(paralel, len(incelenecek))) as havuz:
+                sonuclar = list(havuz.map(_incele, incelenecek))
+        else:
+            sonuclar = [_incele(g) for g in incelenecek]
+        for g, sonuc, hata in sonuclar:
+            if hata is not None:
+                ozet["engel"].append(f"#{g['no']} incelenemedi: {hata}")
                 continue
             ozet["incelenen"].append({"no": g["no"], **sonuc})
             if sonuc["hukum"] != "belirsiz":

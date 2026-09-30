@@ -1,0 +1,202 @@
+{
+ "ayar": {
+  "motor": "codex",
+  "kip": "gercek terminal",
+  "modeller": {
+   "lider": "gpt-6-luna",
+   "isci": "gpt-6-luna"
+  },
+  "basla": "2026-09-30 05:31",
+  "sure_dk": 3.7,
+  "kota_farki": {
+   "codex": {
+    "5s": 5.0,
+    "7g": 0.0
+   }
+  }
+ },
+ "sonuclar": [
+  {
+   "no": "G01",
+   "ad": "Siteyi ac, ekran goruntusu gonder",
+   "motor": "codex",
+   "kip": "gercek",
+   "mesaj": "http://127.0.0.1:56782/menu sayfasini ac ve bana ekran goruntusunu gonder",
+   "olcutler": [
+    {
+     "olcut": "sohbete ekran goruntusu (gorsel ek) geldi",
+     "gecti": true,
+     "not": "['ekler/menu.png']"
+    }
+   ],
+   "kalite": [
+    {
+     "olcut": "lider patrona cevap verdi",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "lider 'yapamam / sen yap' DEMEDI",
+     "gecti": true,
+     "not": "Menü sayfasının ekran görüntüsü ektedir. Dosya: ekler/menu.png"
+    },
+    {
+     "olcut": "rapor ic konusma / KANIT satiri tasimiyor",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "gereksiz ret yok",
+     "gecti": true,
+     "not": "0 ret"
+    },
+    {
+     "olcut": "sohbet temiz (en fazla 4 mesaj)",
+     "gecti": true,
+     "not": "3 mesaj: insan/sohbet, ada/bildirim, lale/cevap"
+    }
+   ],
+   "durum": "gecti",
+   "sohbet": [
+    "insan/sohbet: http://127.0.0.1:56782/menu sayfasini ac ve bana ekran goruntusunu gonder",
+    "ada/bildirim: Menü sayfasının ekran görüntüsü ektedir.",
+    "lale/cevap: Menü sayfasının ekran görüntüsü ektedir. Dosya: ekler/menu.png"
+   ],
+   "sureler": {
+    "lider": [
+     15,
+     17
+    ],
+    "isci": [
+     27
+    ],
+    "inceleme": [
+     28
+    ]
+   },
+   "sure_sn": 92.8
+  },
+  {
+   "no": "G05",
+   "ad": "Veri oku, rapor yaz, sonucu soyle",
+   "motor": "codex",
+   "kip": "gercek",
+   "mesaj": "satislar.csv dosyasindaki toplam ciroyu (adet x birim fiyat) ve en cok satilan urunu bul; rapor.md dosyasina yaz, sonucu bana da soyle.",
+   "olcutler": [
+    {
+     "olcut": "rapor.md toplam ciroyu dogru yaziyor (11185)",
+     "gecti": true,
+     "not": "# Satış Raporu\n\n- **Toplam ciro:** 11.185 TL\n- **En çok satılan ürün:** Çay (120 adet)\n"
+    },
+    {
+     "olcut": "rapor.md en cok satani dogru yaziyor (Cay)",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "lider sonucu patrona da soyledi",
+     "gecti": true,
+     "not": "toplam ciro 11.185 tl, en cok satilan urun cay (120 adet). sonuclar `rapor.md` dosyasina yazilmis; olculen degisiklik yalnizca bu dosyada."
+    }
+   ],
+   "kalite": [
+    {
+     "olcut": "lider patrona cevap verdi",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "lider 'yapamam / sen yap' DEMEDI",
+     "gecti": true,
+     "not": "Toplam ciro 11.185 TL, en çok satılan ürün Çay (120 adet). Sonuçlar `rapor.md` dosyasına yazılmış; ö"
+    },
+    {
+     "olcut": "rapor ic konusma / KANIT satiri tasimiyor",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "gereksiz ret yok",
+     "gecti": true,
+     "not": "0 ret"
+    },
+    {
+     "olcut": "sohbet temiz (en fazla 4 mesaj)",
+     "gecti": true,
+     "not": "2 mesaj: insan/sohbet, lale/cevap"
+    }
+   ],
+   "durum": "gecti",
+   "sohbet": [
+    "insan/sohbet: satislar.csv dosyasindaki toplam ciroyu (adet x birim fiyat) ve en cok satilan urunu bul; rapor.md dosyasina yaz, sonucu bana da soyle.",
+    "lale/cevap: Toplam ciro 11.185 TL, en çok satılan ürün Çay (120 adet). Sonuçlar `rapor.md` dosyasına yazılmış; ölçülen değişiklik yalnızca bu dosyada."
+   ],
+   "sureler": {
+    "lider": [
+     14,
+     22
+    ],
+    "isci": [
+     38
+    ],
+    "inceleme": [
+     30
+    ]
+   },
+   "sure_sn": 111.0
+  },
+  {
+   "no": "G09",
+   "ad": "Sayfadan bilgi oku, soyle",
+   "motor": "codex",
+   "kip": "gercek",
+   "mesaj": "http://127.0.0.1:58383/urun sayfasindaki urunun fiyati ne?",
+   "olcutler": [
+    {
+     "olcut": "lider fiyati dogru soyledi (1.249,90)",
+     "gecti": false,
+     "not": "Bu turda sayfayı açıp doğrulayamıyorum; fiyatı uydurmak istemem."
+    }
+   ],
+   "kalite": [
+    {
+     "olcut": "lider patrona cevap verdi",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "lider 'yapamam / sen yap' DEMEDI",
+     "gecti": true,
+     "not": "Bu turda sayfayı açıp doğrulayamıyorum; fiyatı uydurmak istemem."
+    },
+    {
+     "olcut": "rapor ic konusma / KANIT satiri tasimiyor",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "gereksiz ret yok",
+     "gecti": true,
+     "not": "0 ret"
+    },
+    {
+     "olcut": "sohbet temiz (en fazla 4 mesaj)",
+     "gecti": true,
+     "not": "2 mesaj: insan/sohbet, lale/cevap"
+    }
+   ],
+   "durum": "kaldi",
+   "sohbet": [
+    "insan/sohbet: http://127.0.0.1:58383/urun sayfasindaki urunun fiyati ne?",
+    "lale/cevap: Bu turda sayfayı açıp doğrulayamıyorum; fiyatı uydurmak istemem."
+   ],
+   "sureler": {
+    "lider": [
+     15
+    ]
+   },
+   "sure_sn": 16.3,
+   "saklandi": "C:\\Users\\pc\\AppData\\Local\\Temp\\ofis-gercek-G09-lp0dz4hw"
+  }
+ ]
+}
