@@ -12869,3 +12869,30 @@ sayılmaz.** Sahte duman sınamaları kalıyor (kod bozuldu mu, saniyede).
   codex işçiyle koştu; haftalık pencere yenilenince yeniden ölçülecek.
 - Gerçek set bedeli ÖLÇÜLDÜ: tam claude seti 5s +8, 7g +1 puan; codex 5s +6,
   7g +1 puan (gece koşusu ≈ haftalığın %1'i, motor başına).
+
+## 30.09.2026 (45 dk bölümü) — gerçek set yeşile, hız, iki yeni iş
+
+Başlangıç 05:26. Kullanıcı: "45 dakika, soru sormadan, gerçek testlerle."
+
+**Gerçek set sonuçları (bütün düzeltmelerle):**
+- **codex 10/10** (3. koşu). **claude 10/10** (3. koşu 7/10 + kalan üçü
+  G01/G04/G06 yeniden koşuda 3/3).
+- Claude G01 kalıyordu: ajan görüntüyü `ekler/`e koydu, `sohbete_yaz`ı
+  unuttu, lider reddetti → `ekler.gonderilmemisler` (kanıtta geçip sohbete
+  gitmemiş dosya, gorsel kanıt dahil) raporda lidere gösterilir / kısayolda
+  ofisçe eklenir; inceleme kural 8: bu yüzden reddetme.
+- Codex G09 (aralıklı): lider "sayfayı açıp doğrulayamıyorum" diye cevapladı
+  → YAPI: `sohbet.YAPAMAM_CEVABI` araç-eksikliği kalıbı; böyle bir `cevap`
+  patrona gitmez, iş ajana verilir, `uyari` yazılır. G02 (bilgi sorusu) iki
+  motorda yine 16–20 sn'de doğrudan cevaplandı (kural basit soruyu bozmadı).
+
+**Hız (ölçülerek):** süre dağılımı gerçek sete eklendi. Codex G01 120 sn:
+triyaj 16 · plan 31 · İŞÇİ 25 · inceleme 22 · rapor 21 — sürenin %80'i
+liderin yönetim turları.
+- Tek işli planda **rapor = kapatan incelemenin `PATRONA:` taslağı** (ayrı
+  rapor turu yok). Ölçüldü: codex G01 121→93 sn, G05 150→111 sn.
+- **İncelemeler paralel** (G08'de iki inceleme sırayla 21+22 sn koşuyordu).
+- Sıradaki aday (ölçülecek): triyaj+plan tek tur (~15–30 sn daha).
+
+**Yeni işler:** G11 görsel üret + sohbete gönder, G12 web araştırması +
+kaynaklı cevap (kuru kipte doğrulayıcılar sağlam, 21/21).
