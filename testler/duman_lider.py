@@ -171,6 +171,8 @@ sina("inceleme turu tur_ozeti YAZIYOR (gorevle etiketli)",
 sina("  ve motorunu yaziyor",
      any(o.get("yol") == "inceleme" and o.get("motor") == "sahte" for o in _oz))
 
+
+
 # --------------------------------------------------------------------------
 print("\n6. LIDER TEMIZ OTURUMDA VE YAZAMAZ olarak aciliyor")
 cagri = izler[-1].cagrilar[-1]
@@ -245,6 +247,30 @@ g2 = acilan[1]
 ofis.tahta.sahiplen(g2["no"], "cinar", ofis.tahta.gorev(g2["no"])["revizyon"])
 reddetmeli("kanitsiz is lidere gitmiyor",
            lambda: lider.incele(g2["no"], lider_ad="demir"), LiderHatasi)
+
+# 01.10 (gercek set G16): hukum satiri UNUTULDUYSA bir kez kisa tur sorulur.
+_gh = ofis.tahta.gorev_ac("Hukumu unutulan is", neden="n", ana_hedef="unutulan hukum",
+                         kabul_olcutu="dosyalar", yazma_alani=["hukum/"], kanat_id=kanat)
+ofis.tahta.sahiplen(_gh["no"], "cinar", _gh["revizyon"])
+ofis.tahta.kanit_ekle(_gh["no"], "terminal", "yazildi", "ok", "cinar")
+ofis.tahta.incelemeye_ver(_gh["no"], ofis.tahta.gorev(_gh["no"])["revizyon"])
+from ofis.lider import Lider as _Lider  # noqa: E402
+_sorular = []
+
+
+class _UnutanHakem(SahteMotor):
+    def tur_kos(self, metin, **ayar):
+        _sorular.append(metin)
+        self.cevap = ("KARAR: kapat\nPATRONA: Dosyalar yazildi." if "HUKUM SATIRI YOK" in metin
+                      else "Kanitlar tutarli, dosyalar dogru, fazladan satir yok.")
+        return super().tur_kos(metin, **ayar)
+
+
+_s5 = _Lider(ofis, motor_fabrikasi=lambda ad, **a: _UnutanHakem(cevap="")).incele(_gh["no"], lider_ad="demir")
+sina("hukumsuz incelemeden sonra kisa HUKUM sorusu soruldu", any("HUKUM SATIRI YOK" in m for m in _sorular),
+     str(len(_sorular)))
+sina("  ve is KAPANDI", _s5["hukum"] == "kapat" and ofis.tahta.gorev(_gh["no"])["durum"] == "bitti",
+     str(_s5))
 
 print(f"\n== sonuc: {GECEN} gecti, {KALAN} kaldi ==")
 print(f"klasor: {kok}")

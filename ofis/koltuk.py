@@ -1509,6 +1509,26 @@ class Koltuk:
                 "yapman gerekirse yeniden onay istenir.",
             ]
             parcalar.append(chr(10).join(satirlar))
+        # DURDURULDUKTAN SONRA SURDURME (01.10.2026). Olculdu (gercek set
+        # G16, claude): Durdur suren arac cagrisini keser; CLI bunu modele
+        # "kullanici bu araci reddetti" diye bildirir. Surdurulen ajan
+        # "Bash reddedildi, Write calismiyor" deyip iki kez lidere danisti.
+        # Durdurmanin ne oldugu ACIKCA soylenir.
+        try:
+            with self.db.baglanti() as _c:
+                _son = _c.execute(
+                    "SELECT govde FROM olay WHERE proje_id = ? AND gorev_id = "
+                    "(SELECT id FROM gorev WHERE proje_id = ? AND no = ?) AND tur = 'birakildi' "
+                    "ORDER BY rowid DESC LIMIT 1", (self.proje_id, self.proje_id, no)).fetchone()
+        except Exception:                        # noqa: BLE001
+            _son = None
+        if _son and "durdur" in (_son[0] or "").lower():
+            parcalar.append(
+                "**Onceki turun PATRON TARAFINDAN DURDURULDU; simdi 'Surdur' dedi.** "
+                "Durdurma aninda suren aracin 'reddedildi / interrupted' sonucu "
+                "DURDURMADAN geldi -- araclarin calisiyor, yasak yok. Kaldigin "
+                "yerden devam et: once diske bak (hangi dosya yazilmis), yarim "
+                "kalan adimi tamamla. Var olan bir dosyayi yazmadan once OKU.")
         uyanis = self.ofis.brifing.uyanis_metni(ajan_ad, self._son_isaret(ajan_ad))
         if uyanis:
             parcalar.append(uyanis)

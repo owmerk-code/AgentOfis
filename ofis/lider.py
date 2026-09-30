@@ -733,6 +733,29 @@ class Lider:
                 no, "Inceleme turu basarisiz oldu, hukum alinamadi.")
 
         hukum = "".join(parcalar)
+        # HUKUM SATIRI UNUTULDUYSA BIR KEZ SORULUR (01.10.2026). Olculdu
+        # (gercek set G16): lider incelemeyi yazdi, sonuna `KARAR:` satirini
+        # koymadi; is "inceleme sonucsuz" ile asili kaldi. Yeniden tam
+        # inceleme pahali; liderin KENDI metni ona gosterilir, yalniz hukum
+        # istenir (kisa, aracsiz tur). Yine yoksa eski yol: belirsiz.
+        if hukum.strip() and not KARAR_DESENI.search(hukum):
+            metin = ("Az once asagidaki incelemeyi yazdin ama HUKUM SATIRI YOK:\n\n---\n"
+                     + hukum[-3000:] + "\n---\n\nYalnizca hukmunu yaz, baska hicbir sey yazma:\n"
+                     "`KARAR: kapat` ve altinda `PATRONA: <1-4 cumle sonuc>`\n"
+                     "ya da `KARAR: geri -- <ne eksik, somut>`")
+            try:
+                _b2, _ek2, parcalar2 = limitte_devret(
+                    basamaklar, kostur,
+                    devir=lambda eski, yeni: lider_devri(
+                        self.ofis, lider, eski, yeni, gorev_id=gorev["id"]))
+                ek_hukum = "".join(parcalar2)
+                if KARAR_DESENI.search(ek_hukum):
+                    hukum = hukum + "\n" + ek_hukum
+                    self.db.olay_yaz(self.proje_id, "uyari",
+                                     f"#{no} liderin hukum satiri eksikti; ayrica soruldu.",
+                                     ajan_ad=lider["ad"], gorev_id=gorev["id"])
+            except (ZincirBitti, MotorHatasi):
+                pass
         return self._hukmu_uygula(no, hukum, lider["ad"], isci_ad)
 
     # -- ic isleyis --------------------------------------------------------

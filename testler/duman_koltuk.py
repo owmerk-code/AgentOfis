@@ -460,6 +460,15 @@ with ofis.db.baglanti() as _c:
 sina("basarili turda hata olayi YOK (uydurmuyor)", _n == 0, f"{_n} hata")
 
 
+print("\nDURDURULAN IS SURDURULUNCE ajana ne oldugu soylenir (01.10, gercek set G16)")
+_gd = gorev_ac("Durdurulan is", ["durdur/"])
+ofis.db.olay_yaz(ofis.proje_id, "birakildi", f"#{_gd['no']} birakildi: insan durdurdu",
+                 ajan_ad="cinar", gorev_id=_gd["id"])
+_dm = koltuk._devam_metni(_gd["no"], "cinar")
+sina("devam metni 'patron durdurdu, araclarin calisiyor' diyor",
+     "DURDURULDU" in _dm and "araclarin calisiyor" in _dm, _dm[:200])
+sina("durdurulmamis iste bu not YOK", "DURDURULDU" not in koltuk._devam_metni(g1["no"], "cinar"))
+
 print(f"\n== sonuc: {GECEN} gecti, {KALAN} kaldi ==")
 print(f"klasor: {kok}")
 sys.exit(1 if KALAN else 0)
