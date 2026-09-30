@@ -194,6 +194,17 @@ _im = Lider(ofis).inceleme_metni(_gi["no"])
 sina("inceleme metninde patrona gonderilen ek var",
      "GONDERILENLER" in _im and y1 in _im, _im[-300:])
 
+print("\n-- 9b2. bolunmus hedefin kolu yalniz KENDI olcutuyle incelenir (01.10, G08) --")
+_k1 = ofis.tahta.gorev_ac("Sehirler", neden="n", ana_hedef="sehirler ve renkler", kabul_olcutu="5 sehir",
+                          govde="g", yazma_alani=["s.md"], kanat_id=kn)
+_k2 = ofis.tahta.gorev_ac("Renkler", neden="n", ana_hedef="sehirler ve renkler", kabul_olcutu="5 renk",
+                          govde="g", yazma_alani=["r.md"], kanat_id=kn)
+_km = Lider(ofis).inceleme_metni(_k1["no"])
+sina("inceleme kardes kolu gosteriyor ve 'bu koldan isteme' diyor",
+     "BIR KOLUDUR" in _km and "Renkler" in _km and "ISTEME" in _km, _km[:300])
+sina("tek isli hedefte kardes bolumu YOK",
+     "BIR KOLUDUR" not in Lider(ofis).inceleme_metni(_gi["no"]))
+
 print("\n-- 9c. kanitta gecen ama sohbete GITMEMIS ek olculur (30.09, G01) --")
 _gg = ofis.tahta.gorev_ac("Goruntu", neden="n", ana_hedef="h", kabul_olcutu="k",
                           govde="g", yazma_alani=["x/"], kanat_id=kn, sahip="cinar")

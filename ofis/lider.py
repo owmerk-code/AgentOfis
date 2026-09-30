@@ -281,6 +281,23 @@ class Lider:
         ]
         if g["govde"]:
             satirlar += ["", "**Gorev tarifi:**", "", g["govde"]]
+        # KARDES KOLLAR (01.10.2026). Olculdu (gercek set G08, codex): hedef
+        # iki kola bolundu (sehirler / renkler); inceleyen sehirler kolunu
+        # "ust hedef renkler.md'yi de istiyor" diye GERI GONDERDI, ajan
+        # yanlis yonlenip dosyayi bozdu. Ust hedef ORTAK; her kol yalniz
+        # kendi olcutuyle yargilanir.
+        with self.db.baglanti() as _c:
+            kardesler = _c.execute(
+                "SELECT no, baslik, sahip, durum FROM gorev WHERE proje_id = ? AND "
+                "ana_hedef = ? AND id != ? AND silindi = 0 ORDER BY no",
+                (self.proje_id, g["ana_hedef"], g["id"])).fetchall()
+        if kardesler:
+            satirlar += ["", "**Bu is BOLUNMUS bir hedefin BIR KOLUDUR.** Ust hedefin "
+                             "geri kalani BASKA kollarda:"]
+            satirlar += [f"- #{k['no']} {k['baslik']} ({k['sahip'] or 'sahipsiz'}, {k['durum']})"
+                         for k in kardesler[:8]]
+            satirlar += ["YALNIZ bu kolun KABUL OLCUTUNU degerlendir; kardes kolun "
+                         "isini bu koldan ISTEME, bu yuzden geri gonderme."]
         # PATRONUN NOTLARI isin tanimina EKTIR ve incelemeye girer. Girmeseydi
         # lider, patronun "dur, sunu degistir" dedigi isi "olcutten sapti"
         # diye geri gonderirdi. ULASMAYAN not ayrica soylenir: ajan onu hic
