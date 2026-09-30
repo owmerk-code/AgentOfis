@@ -459,6 +459,12 @@ class Lider:
             "8. Patrona gidecek dosya `ekler/` altinda HAZIRSA, sirf ajan",
             "   `sohbete_yaz` cagirmadi diye GERI GONDERME: kapat; ofis",
             "   raporda gitmemis dosyayi sana gosterir, sen eklersin.",
+            # 01.10 olculdu (G06, claude): "dosyanin kendisi olcutu
+            # karsiliyor ama kanit iki maddeyi kapsamiyor" -> geri gonderdi.
+            "9. Olcutu dosyayi / ciktiyi KENDIN okuyup dogruladiysan, sirf",
+            "   ajanin kaniti eksik anlatti diye GERI GONDERME: kapat ve",
+            "   neyi kendin gordugunu gerekceye yaz. Senin bagimsiz okuman,",
+            "   ajanin anlatisindan GUCLU bir kanittir.",
             "",
             "### Hukmunu TAM OLARAK su bicimde yaz",
             "",
