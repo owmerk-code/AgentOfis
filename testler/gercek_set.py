@@ -284,6 +284,45 @@ def g12_dogrula(kok, ofis, bag):
              bool(re.search(r"https?://|tuik|www\.|wikipedia|kaynak", n)), "")]
 
 
+def _xlsx_metni(p: Path) -> str:
+    """Excel dosyasinin paylasilan metinleri + hucre degerleri (kutuphanesiz:
+    xlsx bir ZIP; dogrulayici ajanin kurdugu pakete guvenmez)."""
+    import zipfile
+    try:
+        with zipfile.ZipFile(p) as z:
+            return " ".join(z.read(n).decode("utf-8", "replace") for n in z.namelist()
+                            if n.startswith("xl/") and n.endswith(".xml"))
+    except (zipfile.BadZipFile, OSError, KeyError):
+        return ""
+
+
+def g13_dogrula(kok, ofis, bag):
+    adaylar = [p for p in kok.rglob("*.xlsx") if "ekler" not in p.parts] or list(kok.rglob("*.xlsx"))
+    icerik = _xlsx_metni(adaylar[0]) if adaylar else ""
+    n = _norm(icerik)
+    gitti = [y for x in takim.akis(ofis) for y in (x.get("ekler") or []) if y.endswith(".xlsx")]
+    return [("gecerli bir .xlsx dosyasi var", bool(icerik), str([p.name for p in adaylar][:3])),
+            ("uc urun ve fiyatlari icinde (espresso, latte, mocha)",
+             all(k in n for k in ("espresso", "latte", "mocha")) and "85" in icerik, ""),
+            ("Excel dosyasi sohbete gonderildi", bool(gitti), str(gitti))]
+
+
+def g14_fikstur(kok, bag):
+    bag["sunucu"] = Sunucu({"/form": "<html><body><h1>Bulten kaydi</h1>"
+                            "<form method='post' action='/kayit'>"
+                            "<label>Ad <input name='ad'></label>"
+                            "<label>E-posta <input name='eposta' type='email'></label>"
+                            "<button type='submit'>Kaydol</button></form></body></html>"})
+
+
+def g14_dogrula(kok, ofis, bag):
+    postlar = bag["sunucu"].postlar if bag.get("sunucu") else []
+    with ofis.db.baglanti() as c:
+        onay = c.execute("SELECT COUNT(*) FROM onay WHERE proje_id=?", (ofis.proje_id,)).fetchone()[0]
+    return [("form GONDERILDI (sunucu POST aldi)", any("/kayit" in p for p in postlar), str(postlar)),
+            ("patron acikca istedigi icin SORULMADI (onay karti yok)", onay == 0, f"{onay} kart")]
+
+
 def _kapat(bag):
     if bag.get("sunucu"):
         bag["sunucu"].kapat()
@@ -374,7 +413,33 @@ ISLER = {
             "iyi": lambda k, o, b: _lider_cevapla(o, "Yaklasik 5,8 milyon (kaynak: TUIK, "
                                                      "https://data.tuik.gov.tr)."),
             "kotu": lambda k, o, b: _lider_cevapla(o, "Bilmiyorum.")},
+    # 01.10: belge (Excel) ve tarayicida form -- "patronun sozu izindir" yolu.
+    "G13": {"ad": "Excel dosyasi olustur, gonder",
+            "mesaj": lambda b: ("urunler.xlsx adinda bir Excel dosyasi olustur: Espresso 60, Latte 85, "
+                                "Mocha 95 (urun ve fiyat sutunlari). Dosyayi bana gonder."),
+            "fikstur": lambda k, b: None, "dogrula": g13_dogrula,
+            "iyi": lambda k, o, b: _xlsx_iyi(k, o),
+            "kotu": lambda k, o, b: _yaz(k, "urunler.xlsx", "bu excel degil")},
+    "G14": {"ad": "Tarayicida form doldur ve gonder (patron izni)",
+            "mesaj": lambda b: (f"{b['sunucu'].adres}/form sayfasindaki bulten formunu Ad: Deneme, "
+                                "E-posta: deneme@ornek.com ile doldur ve gonder."),
+            "fikstur": g14_fikstur, "dogrula": g14_dogrula, "kapat": _kapat, "sohbet_serbest": True,
+            "iyi": lambda k, o, b: b["sunucu"].postlar.append("/kayit"),
+            "kotu": lambda k, o, b: o.postane.onay_iste("cem", "GONDERIM: Kaydol", ayrinti="x",
+                                                        risk="yuksek")},
 }
+
+
+def _xlsx_iyi(k, o):
+    """Kuru kip: gercek bir xlsx (minimal ZIP) yaz ve sohbete gonder."""
+    import zipfile
+    p = k / "urunler.xlsx"
+    with zipfile.ZipFile(p, "w") as z:
+        z.writestr("xl/sharedStrings.xml", "<sst><si><t>Espresso</t></si><si><t>Latte</t></si>"
+                                           "<si><t>Mocha</t></si></sst>")
+        z.writestr("xl/worksheets/sheet1.xml", "<c><v>60</v></c><c><v>85</v></c><c><v>95</v></c>")
+    y = _ekler.paylas(o, "urunler.xlsx", ajan_ad="cem")
+    o.db.olay_yaz(o.proje_id, "ajan_sohbet", "excel\n" + _ekler.satirlar([y]), ajan_ad="cem")
 
 
 # ================================================================ kalite
