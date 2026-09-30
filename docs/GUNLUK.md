@@ -12906,3 +12906,4 @@ kaynaklı cevap (kuru kipte doğrulayıcılar sağlam, 21/21).
   bütün düzeltmelerle geçti. Tek seferde tam 12'li koşu ilk gece seti olacak
   (01.10 03:30).
 - Tam duman takımı: 45 dosya, **3370 geçti, 0 kaldı** (06:06).
+- Kullanıcı (30.09 sabah): PC gece kapalı; gece görevi DEVRE DIŞI bırakıldı (silinmedi). Gerçek set gündüz oturumda koşulacak: `python testler/gercek_set.py --motor claude|codex` ya da `python testler/gece_kos.py`. Yeniden açmak: `schtasks /Change /TN "AgentOfis Gece Seti" /ENABLE`.
