@@ -228,6 +228,15 @@ sina("yazma alanindaki GORSEL kanit da gitmemis sayilir",
 _kopya = ekler.paylas(ofis, "logo/logo.png", ajan_ad="cinar")
 ofis.db.olay_yaz(ofis.proje_id, "ajan_sohbet", "logo\n[ek] " + _kopya, ajan_ad="cinar",
                  gorev_id=_gg["id"])
+(_KOK / "toplanti.docx").write_bytes(b"PK" + b"0" * 2000)
+(_KOK / "app.py").write_text("print(1)", encoding="utf-8")
+ofis.tahta.kanit_ekle(_gg["no"], "dosya", "belge", "toplanti.docx yazildi; app.py de guncellendi",
+                      ekleyen="cinar")
+_gm_ = ekler.gonderilmemisler(ofis, [_gg["id"]])
+sina("kokteki Word belgesi de gitmemis sayilir (G17), kod dosyasi SAYILMAZ",
+     "toplanti.docx" in _gm_ and "app.py" not in _gm_, str(_gm_))
+ofis.db.olay_yaz(ofis.proje_id, "ajan_sohbet", "belge\n[ek] " + ekler.paylas(ofis, "toplanti.docx"),
+                 ajan_ad="cinar", gorev_id=_gg["id"])
 sina("zaman damgali kopyasi gidince listeden cikti",
      ekler.gonderilmemisler(ofis, [_gg["id"]]) == [], str(ekler.gonderilmemisler(ofis, [_gg["id"]])))
 

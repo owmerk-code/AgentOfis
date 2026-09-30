@@ -149,6 +149,8 @@ def metni_hazirla(ofis, metin: str, *, ajan_ad: str = "") -> tuple:
 
 
 _KANITTA_EK = re.compile(r"ekler/[A-Za-z0-9._-]+")
+_KANITTA_BELGE = re.compile(
+    r"[\w./\\:-]+\.(?:png|jpe?g|gif|webp|pdf|docx|xlsx|pptx|mp4|webm|mov|mp3|wav)\b", re.I)
 
 
 def gonderilmemisler(ofis, gorev_idleri) -> list:
@@ -177,6 +179,22 @@ def gonderilmemisler(ofis, gorev_idleri) -> list:
                 y = y.rstrip(".")
                 if y not in adaylar:
                     adaylar.append(y)
+            # BELGE/MEDYA YOLU (01.10.2026, gercek set G17): kokte uretilen
+            # `toplanti.docx` kanitta geciyordu ama `ekler/` altinda olmadigi
+            # icin sayilmadi, patrona hic gitmedi. Patrona gosterilecek TURDEN
+            # (belge, gorsel, video, ses) dosya adi kanitta geciyorsa sayilir;
+            # kod dosyasi sayilmaz.
+            for y in _KANITTA_BELGE.findall(f"{r['baslik'] or ''} {r['icerik'] or ''}"):
+                y = y.strip("`'\"<>()[]").replace("\\", "/")
+                p = Path(y) if Path(y).is_absolute() else kok / y
+                try:
+                    if p.is_file() and p.resolve().is_relative_to(kok) and not any(
+                            parca.startswith(".") for parca in p.resolve().relative_to(kok).parts):
+                        y = p.resolve().relative_to(kok).as_posix()
+                        if y not in adaylar:
+                            adaylar.append(y)
+                except (OSError, ValueError):
+                    pass
             # GORSEL KANIT: `gorsel_uret` dosyayi isin yazma alanina koyar,
             # `ekler/`e degil; kanitin icerigi dosyanin yoludur.
             if r["tur"] == "gorsel":
