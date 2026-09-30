@@ -12968,3 +12968,4 @@ AGENTS.md depoya eklenmedi (kullanıcının dosyası; karar onun).
   aynen, "Deneme" artık olumlu. (2) Geçersiz izin önceki denemelerde
   planı reddeder (öğretir), SON denemede planı düşürmez: izin atılır,
   `uyari`. duman_izin 61, duman_orkestra 62.
+- Codex G14 geçti → **14 işin 14'ü iki motorda**. Tam duman takımı: 45 dosya, **3396 geçti, 0 kaldı**.
