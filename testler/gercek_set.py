@@ -50,6 +50,7 @@ import re
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 import traceback
 from pathlib import Path
@@ -430,6 +431,166 @@ ISLER = {
 }
 
 
+# ---- 01.10: is surerken not, durdur/surdur, Word belgesi, cok adimli proje
+
+_BEKLE_KOMUT = '`python -c "import time; time.sleep(4)"`'
+G15_KOD = "ZUMRUT-4471"
+
+
+def _calisan_sahip(ofis) -> str:
+    for g in ofis.tahta.liste():
+        if g.get("durum") == "calisiyor" and g.get("sahip"):
+            return g["sahip"]
+    return ""
+
+
+def g15_gozcu(kok, ofis, bag):
+    """a1.txt yazilinca (is surerken) patron calisan ajana NOT birakir."""
+    if bag.get("not_yazildi") or not (kok / "a1.txt").exists():
+        return
+    sahip = _calisan_sahip(ofis)
+    if not sahip:
+        return
+    bag["not_yazildi"] = time.time()
+    ofis.postane.not_birak(sahip, f"Ek istek: a3.txt'ye 3'un ALTINA ikinci satir olarak "
+                                  f"{G15_KOD} yaz. Diger dosyalar ayni kalsin.")
+
+
+def g15_dogrula(kok, ofis, bag):
+    def sat(ad):
+        p = kok / ad
+        return [s.strip() for s in p.read_text(encoding="utf-8-sig").splitlines() if s.strip()] \
+            if p.exists() else []
+    return [("not is surerken birakildi", bool(bag.get("not_yazildi")), ""),
+            ("a1=1, a2=2", sat("a1.txt") == ["1"] and sat("a2.txt") == ["2"],
+             f"{sat('a1.txt')} {sat('a2.txt')}"),
+            ("not UYGULANDI: a3 = 3 + ZUMRUT-4471", sat("a3.txt") == ["3", G15_KOD], str(sat("a3.txt")))]
+
+
+def g16_gozcu(kok, ofis, bag):
+    """b1.txt yazilinca patron DURDUR'a basar (panelin yaptigi gibi, defterden)."""
+    if bag.get("durduruldu") or not (kok / "b1.txt").exists():
+        return
+    from ofis.koltuk import durdurma_iste
+    bag["durduruldu"] = time.time()
+    durdurma_iste(ofis.db, ofis.proje_id, "insan (gercek set G16)")
+
+
+def g16_sonra(kok, ofis, bag, zaman_asimi):
+    """Patron 'Surdur'e basar: istek kalkar, halka yeniden doner."""
+    from ofis.koltuk import durdurma_temizle
+    from ofis.orkestra import Orkestra
+    bag["surdur_oncesi"] = [g["durum"] for g in ofis.tahta.liste()]
+    durdurma_temizle(ofis.db, ofis.proje_id)
+    list(Orkestra(ofis).kos(azami_tik=8, zaman_asimi=zaman_asimi, paralel=2))
+
+
+def g16_dogrula(kok, ofis, bag):
+    def sat(ad):
+        p = kok / ad
+        return [s.strip() for s in p.read_text(encoding="utf-8-sig").splitlines() if s.strip()] \
+            if p.exists() else []
+    with ofis.db.baglanti() as c:
+        birak = [r[0] for r in c.execute("SELECT govde FROM olay WHERE proje_id=? AND "
+                                        "tur='birakildi'", (ofis.proje_id,))]
+    return [("durdur is surerken basildi", bool(bag.get("durduruldu")), ""),
+            ("tur insanin istegiyle KESILDI", any("durdur" in g.lower() for g in birak),
+             " | ".join(g[:60] for g in birak)[:200]),
+            ("Surdur sonrasi uc dosya dogru (1, 2, 3)",
+             [sat(f"b{i}.txt") for i in (1, 2, 3)] == [["1"], ["2"], ["3"]],
+             str([sat(f"b{i}.txt") for i in (1, 2, 3)])),
+            ("is sonunda KAPANDI", [g["durum"] for g in ofis.tahta.liste()] == ["bitti"],
+             f"once {bag.get('surdur_oncesi')} sonra {[g['durum'] for g in ofis.tahta.liste()]}")]
+
+
+def _docx_metni(p: Path) -> str:
+    import zipfile
+    try:
+        with zipfile.ZipFile(p) as z:
+            return re.sub(r"<[^>]+>", " ", z.read("word/document.xml").decode("utf-8", "replace"))
+    except (zipfile.BadZipFile, OSError, KeyError):
+        return ""
+
+
+def g17_dogrula(kok, ofis, bag):
+    adaylar = [p for p in kok.rglob("*.docx") if "ekler" not in p.parts] or list(kok.rglob("*.docx"))
+    n = _norm(_docx_metni(adaylar[0])) if adaylar else ""
+    gitti = [y for x in takim.akis(ofis) for y in (x.get("ekler") or []) if y.endswith(".docx")]
+    return [("gecerli bir .docx var", bool(n), str([p.name for p in adaylar][:3])),
+            ("baslik ve uc madde icinde", all(k in n for k in ("haftalik toplanti", "butce", "takvim", "ekip")),
+             n[:120]),
+            ("Word dosyasi sohbete gonderildi", bool(gitti), str(gitti))]
+
+
+def g18_dogrula(kok, ofis, bag):
+    d = kok / "todo"
+    plan = (d / "PLAN.md").read_text(encoding="utf-8", errors="replace") if (d / "PLAN.md").exists() else ""
+    html = (d / "index.html").read_text(encoding="utf-8", errors="replace") if (d / "index.html").exists() else ""
+    js = (d / "app.js").read_text(encoding="utf-8", errors="replace") if (d / "app.js").exists() else ""
+    adim = len([s for s in plan.splitlines() if re.match(r"\s*(?:[-*+]|\d+[.)])\s+\S", s)])
+    return [("todo/PLAN.md 3+ adimli plan", adim >= 3, f"{adim} adim"),
+            ("index.html app.js'i yukluyor", "app.js" in html and _html_gecerli(html), f"{len(html)} harf"),
+            ("app.js: localStorage + olay dinleyici", "localStorage" in js and "addEventListener" in js,
+             f"{len(js)} harf"),
+            ("ekle / tamamla / sil var", all(re.search(k, js, re.I) for k in (r"ekle|add", r"tamam|done|complete|toggle",
+                                                                             r"sil|delete|remove")), "")]
+
+
+ISLER.update({
+    "G15": {"ad": "Is surerken patron notu",
+            "mesaj": lambda b: ("a1.txt, a2.txt, a3.txt dosyalarini SIRAYLA yaz; her birinin icine yalniz adim "
+                                f"numarasini (1, 2, 3) yaz. Her dosyadan sonra {_BEKLE_KOMUT} komutunu calistir."),
+            "fikstur": lambda k, b: None, "dogrula": g15_dogrula, "gozcu": g15_gozcu,
+            "iyi": lambda k, o, b: (b.update(not_yazildi=1), _yaz(k, "a1.txt", "1"), _yaz(k, "a2.txt", "2"),
+                                    _yaz(k, "a3.txt", f"3\n{G15_KOD}\n")),
+            "kotu": lambda k, o, b: (_yaz(k, "a1.txt", "1"), _yaz(k, "a2.txt", "2"), _yaz(k, "a3.txt", "3"))},
+    "G16": {"ad": "Durdur -> Surdur, kaldigi yerden",
+            "mesaj": lambda b: ("b1.txt, b2.txt, b3.txt dosyalarini SIRAYLA yaz; her birinin icine yalniz adim "
+                                f"numarasini (1, 2, 3) yaz. Her dosyadan sonra {_BEKLE_KOMUT} komutunu calistir."),
+            "fikstur": lambda k, b: None, "dogrula": g16_dogrula, "gozcu": g16_gozcu,
+            "sonra": g16_sonra, "sohbet_serbest": True, "cevap_serbest": True,
+            "iyi": lambda k, o, b: (b.update(durduruldu=1), [_yaz(k, f"b{i}.txt", str(i)) for i in (1, 2, 3)],
+                                    o.db.olay_yaz(o.proje_id, "birakildi", "insan durdurdu"),
+                                    o.tahta.gorev_ac("b", neden="x", ana_hedef="x", kabul_olcutu="x",
+                                                     govde="x", yazma_alani=["b1.txt"]),
+                                    _kapat_hepsini(o)),
+            "kotu": lambda k, o, b: _yaz(k, "b1.txt", "1")},
+    "G17": {"ad": "Word belgesi olustur, gonder",
+            "mesaj": lambda b: ("toplanti.docx adinda bir Word belgesi olustur: baslik 'Haftalik Toplanti', altinda "
+                                "uc madde: Butce, Takvim, Ekip. Dosyayi bana gonder."),
+            "fikstur": lambda k, b: None, "dogrula": g17_dogrula,
+            "iyi": lambda k, o, b: _docx_iyi(k, o),
+            "kotu": lambda k, o, b: _yaz(k, "toplanti.docx", "bu word degil")},
+    "G18": {"ad": "Cok adimli proje: plan + uygulama",
+            "mesaj": lambda b: ("Basit bir yapilacaklar (todo) web uygulamasi yap: todo/index.html ve todo/app.js. "
+                                "Madde ekle, tamamlandi isaretle ve sil calissin; veriler localStorage'da kalsin. "
+                                "Once todo/PLAN.md dosyasina 3-5 adimlik plan yaz, sonra uygula."),
+            "fikstur": lambda k, b: None, "dogrula": g18_dogrula,
+            "iyi": lambda k, o, b: (_yaz(k, "todo/PLAN.md", "1. arayuz\n2. ekle\n3. sil\n"),
+                                    _yaz(k, "todo/index.html", "<html><body><script src='app.js'></script>"
+                                                               "</body></html>"),
+                                    _yaz(k, "todo/app.js", "function ekle(){} function tamamla(){} function sil(){}"
+                                                           " localStorage.setItem('x','1');"
+                                                           " document.addEventListener('x',()=>{});")),
+            "kotu": lambda k, o, b: _yaz(k, "todo/index.html", "<html>todo</html>")},
+})
+
+
+def _kapat_hepsini(o):
+    with o.db.baglanti() as c:
+        c.execute("UPDATE gorev SET durum='bitti' WHERE proje_id=?", (o.proje_id,))
+
+
+def _docx_iyi(k, o):
+    import zipfile
+    p = k / "toplanti.docx"
+    with zipfile.ZipFile(p, "w") as z:
+        z.writestr("word/document.xml", "<w:document><w:t>Haftalik Toplanti</w:t><w:t>Butce</w:t>"
+                                        "<w:t>Takvim</w:t><w:t>Ekip</w:t></w:document>")
+    y = _ekler.paylas(o, "toplanti.docx", ajan_ad="cem")
+    o.db.olay_yaz(o.proje_id, "ajan_sohbet", "word\n" + _ekler.satirlar([y]), ajan_ad="cem")
+
+
 def _xlsx_iyi(k, o):
     """Kuru kip: gercek bir xlsx (minimal ZIP) yaz ve sohbete gonder."""
     import zipfile
@@ -452,8 +613,8 @@ def kalite(ofis, tanim, sure_sn: float) -> list:
     with ofis.db.baglanti() as c:
         ret = c.execute("SELECT COUNT(*) FROM olay WHERE proje_id=? AND tur='ret'",
                         (ofis.proje_id,)).fetchone()[0]
-    olcut = [
-        ("lider patrona cevap verdi", bool(son), ""),
+    olcut = [] if tanim.get("cevap_serbest") else [("lider patrona cevap verdi", bool(son), "")]
+    olcut += [
         ("lider 'yapamam / sen yap' DEMEDI", not _YAPAMAM.search(son or ""), (son or "")[:100]),
         ("rapor ic konusma / KANIT satiri tasimiyor", not _IC_KONUSMA.search(son or ""),
          (_IC_KONUSMA.search(son or "") or [""])[0][:80] if son else ""),
@@ -505,8 +666,25 @@ def is_kos(no: str, motor: str, *, kuru: str = "", zaman_asimi: int = 600,
             tanim["iyi" if kuru == "kuru_iyi" else "kotu"](kok, ofis, bag)
         else:
             from ofis.sohbet import Sohbet
-            for _ in Sohbet(ofis).konus(mesaj, zaman_asimi=zaman_asimi, azami_tik=8, paralel=2):
-                pass
+            # GOZCU: insanin yerine hareket eder (not birakir, Durdur'a basar)
+            # -- defteri ve diski izleyen ayri bir is parcacigi.
+            dur = threading.Event()
+            if tanim.get("gozcu"):
+                def _izle():
+                    while not dur.is_set():
+                        try:
+                            tanim["gozcu"](kok, ofis, bag)
+                        except Exception:              # noqa: BLE001 -- izleme isi dusurmez
+                            pass
+                        dur.wait(0.5)
+                threading.Thread(target=_izle, daemon=True).start()
+            try:
+                for _ in Sohbet(ofis).konus(mesaj, zaman_asimi=zaman_asimi, azami_tik=8, paralel=2):
+                    pass
+            finally:
+                dur.set()
+            if tanim.get("sonra"):
+                tanim["sonra"](kok, ofis, bag, zaman_asimi)
         sure = time.time() - t0
         sonuc["olcutler"] = [{"olcut": o, "gecti": bool(g), "not": n}
                              for o, g, n in tanim["dogrula"](kok, ofis, bag)]
