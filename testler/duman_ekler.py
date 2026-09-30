@@ -184,6 +184,16 @@ _l = [o for o in takim.akis(ofis) if o["kimden"] == "demir"][-1]
 sina("liderin cevabindaki dosya balonda ek olarak", len(_l["ekler"]) == 1
      and _l["metin"].startswith("Iste rapor:") and "[ek]" not in _l["metin"], repr(_l))
 
+print("\n-- 9b. lider incelemesi sohbete GONDERILENI goruyor (30.09, G01) --")
+from ofis.lider import Lider  # noqa: E402
+_gi = ofis.tahta.gorev_ac("Goruntu gonder", neden="n", ana_hedef="h", kabul_olcutu="sohbete gitti",
+                          govde="g", yazma_alani=["rapor/"], kanat_id=kn, sahip="cinar")
+ofis.db.olay_yaz(ofis.proje_id, "ajan_sohbet", "goruntu\n[ek] " + y1, ajan_ad="cinar",
+                 gorev_id=_gi["id"])
+_im = Lider(ofis).inceleme_metni(_gi["no"])
+sina("inceleme metninde patrona gonderilen ek var",
+     "GONDERILENLER" in _im and y1 in _im, _im[-300:])
+
 print("\n-- 10. Codex gercek terminal: ret dedektoru (30.09) --")
 from ofis.motor.codex import tui_ret_mi  # noqa: E402
 sina("brifing okumasi (icinde 'ONAY ISTENDI' gecen) RET SAYILMAZ",

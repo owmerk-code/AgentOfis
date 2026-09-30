@@ -377,9 +377,19 @@ class TuiMotoru(Motor):
             kayit["ofset"] = dokum.stat().st_size
         _yapistir(t, metin)
         if not _gonderildi_mi(t, plan["dokum"], kayit["ofset"]):
+            # OLCULDU (30.09.2026, gercek set G01, claude): mesaj gitmedi,
+            # tur yine de zaman asimina (10 dk) kadar "bitti" bekledi -- hic
+            # gelmeyecek bir sonu. Gonderilemeyen tur HEMEN duser; ekranin
+            # son hali sebebi gosterir (tahmin degil).
+            ekran = duz_metin(t.gecmis())[-700:]
             yield MotorOlayi("hata",
                              "Brifing terminale yapistirildi ama GONDERILMEDI "
-                             "(oturum dosyasi buyumedi).", {"sebep": "gonderilemedi"})
+                             "(oturum dosyasi buyumedi). Ekranin sonu: " + ekran,
+                             {"sebep": "gonderilemedi"})
+            kapat(oturum_id)
+            yield MotorOlayi("bitti", "", {"basarili": False, "sebep": "gonderilemedi",
+                                           "oturum_id": oturum_id})
+            return
         kayit["son"] = time.time()
 
         sinir = float(zaman_asimi or 1800)

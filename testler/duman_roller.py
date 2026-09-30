@@ -113,7 +113,7 @@ c = ofis.kadro.ise_al("cinar", "backend", motor="claude")
 sina("model rolden doldu (claude/guclu -> opus)", c["model"] == "opus")
 k = ofis.kadro.ise_al("kerem", "backend", motor="codex")
 sina("ayni rol, baska motor -> baska model",
-     k["model"] == "gpt-5.6-sol")
+     k["model"] == "gpt-6.1-sol")
 ozel = ofis.kadro.ise_al("ozel", "backend", motor="claude", model="haiku")
 # Rol bir VARSAYILANDIR, dayatma degil: kullanicinin sectigini sessizce
 # iptal etmek, zincirin "ajanin KENDI motorundan baslar" kuraliyla

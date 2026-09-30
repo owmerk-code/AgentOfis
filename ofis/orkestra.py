@@ -283,6 +283,9 @@ class Orkestra:
             "SART YAZMA. Paylasilan kabinde yeni sekme ACILMAZ; olcute "
             "sekme sarti yazma.",
             "",
+            "`ekler/` klasoru HER ISTE SERBESTTIR (yazma alani gerekmez): patrona gosterilecek dosya oraya kaydedilir -- sayfa goruntusu icin `browser_take_screenshot` araci `filename: \"ekler/<ad>.png\"` ile -- ve `sohbete_yaz(ekler=[...])` ile gonderilir. Oradaki dosyayi SILME. Patrona dosya/goruntu gidecek iste 'dosya "
+            "yazma' deme; `ekler/` yazma alanina girmez.",
+            "",
             "`tarayici_alani` alanini NORMALDE YAZMA. Yalniz bir isi BILEREK "
             "birkac siteyle SINIRLAMAK istersen doldur; doldurursan ajan "
             "listede olmayan her site icin patrona sormak zorunda kalir.",
@@ -763,7 +766,7 @@ class Orkestra:
             motor = kipe_gore(self.db, self.proje_id,
                               self.motor_fabrikasi(b["motor"]),
                               ajan_ad=lider["ad"], butce_usd=butce_usd)
-            parcalar, ek = [], {}
+            parcalar, ek, yedek = [], {}, []
             # Butce, DESTEKLEYEN motora verilir. Desteklemeyen motor (codex)
             # butce gelince turu hic baslatmadan reddeder -- para kontrolleri
             # kapali kalarak basarisiz olur. Burada filtrelemeseydik
@@ -792,6 +795,17 @@ class Orkestra:
                 if olay.tur == "metin":
                     parcalar.append(olay.govde)
                     _akit(olay.govde)
+                elif olay.tur == "arac":
+                    # CEVAP, SON ARACTAN SONRA yazilandir (30.09.2026).
+                    # Olculdu (gercek set G01): rapor "Once dosyanin var
+                    # olup olmadigina bakiyorum." diye basladi -- aractan
+                    # ONCEKI ara cumle cevaba yapismisti. Aractan once
+                    # yazilan anlatimdir; yedek olarak saklanir (lider
+                    # cevabi yazip SONRA bir arac cagirip susarsa kaybolmasin).
+                    if parcalar:
+                        yedek[:] = parcalar
+                    parcalar = []
+                    _akit(None)
                 elif olay.tur == "bitti":
                     ek = dict(olay.ek or {})
                     # LIDER TURU DA OLCULUR -- devredilen basamak dahil:
@@ -800,7 +814,7 @@ class Orkestra:
                         self.db, self.proje_id, ek, ajan_ad=lider["ad"],
                         motor=b["motor"], hesap=b.get("hesap") or "",
                         yol="lider")
-            return ek, parcalar
+            return ek, (parcalar or yedek)
 
         try:
             _b, ek, parcalar = limitte_devret(

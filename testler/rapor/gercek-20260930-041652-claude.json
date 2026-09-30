@@ -1,0 +1,71 @@
+{
+ "ayar": {
+  "motor": "claude",
+  "kip": "gercek terminal",
+  "modeller": {
+   "lider": "sonnet",
+   "isci": "haiku"
+  },
+  "basla": "2026-09-30 04:14",
+  "sure_dk": 2.2,
+  "kota_farki": {
+   "claude": {
+    "5s": 0.0,
+    "7g": 0.0,
+    "7g_kapi": 0.0
+   }
+  }
+ },
+ "sonuclar": [
+  {
+   "no": "G01",
+   "ad": "Siteyi ac, ekran goruntusu gonder",
+   "motor": "claude",
+   "kip": "gercek",
+   "mesaj": "http://127.0.0.1:53837/menu sayfasini ac ve bana ekran goruntusunu gonder",
+   "olcutler": [
+    {
+     "olcut": "sohbete ekran goruntusu (gorsel ek) geldi",
+     "gecti": true,
+     "not": "['ekler/20260930-041540-menu-screenshot.png']"
+    }
+   ],
+   "kalite": [
+    {
+     "olcut": "lider patrona cevap verdi",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "lider 'yapamam / sen yap' DEMEDI",
+     "gecti": true,
+     "not": "**Patron için rapor**\n\n**Ne istendi:** http://127.0.0.1:53837/menu sayfasını açıp ekran görüntüsünü "
+    },
+    {
+     "olcut": "rapor ic konusma / KANIT satiri tasimiyor",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "gereksiz ret yok",
+     "gecti": false,
+     "not": "1 ret"
+    },
+    {
+     "olcut": "sohbet temiz (en fazla 4 mesaj)",
+     "gecti": true,
+     "not": "4 mesaj: insan/sohbet, ada/bildirim, ada/onay, lale/cevap"
+    }
+   ],
+   "durum": "kaldi",
+   "sohbet": [
+    "insan/sohbet: http://127.0.0.1:53837/menu sayfasini ac ve bana ekran goruntusunu gonder",
+    "ada/bildirim: http://127.0.0.1:53837/menu sayfası açılarak ekran görüntüsü alındı.",
+    "ada/onay: ada: GERI ALINAMAZ SILME: ls -la menu-screenshot.png 2>&1 && rm menu-screenshot.png && echo \"Dosya silindi\" || echo \"Dosya yok\" (risk: yuksek)",
+    "lale/cevap: **Patron için rapor**\n\n**Ne istendi:** http://127.0.0.1:53837/menu sayfasını açıp ekran görüntüsünü size göndermek.\n\n**Ne yapıldı:**\n- Ajan sayfanın başarıyla açıldığını ve tarayıcı üzerinden ekran gö"
+   ],
+   "sure_sn": 129.3,
+   "saklandi": "C:\\Users\\pc\\AppData\\Local\\Temp\\ofis-gercek-G01-3z9ghdf4"
+  }
+ ]
+}

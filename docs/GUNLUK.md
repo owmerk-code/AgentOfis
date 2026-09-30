@@ -12791,3 +12791,42 @@ bunun neresinde". Düzeltmeler:
 Kalan (ölçüldü, sonraki kalite turunun işi): basit iş 200+ sn; yine 1 ret;
 lider raporu iç cümleyle ("Önce dosyaya bakıyorum") başlıyor ve "KANIT
 dosya:" satırı taşıyor; codex aynı görüntüyü iki kez gönderdi.
+
+## 30.09.2026 — Aşama 1 başladı: uçtan uca GERÇEK SET + gece koşusu
+
+Kullanıcı: *"sahte motor, sahte veri, sahte test yerine gerçek işlerle
+ilerle"*; *"gece otomatik olur, saatleri belirlersin, bilgisayarı açık
+bırakırım."* Kural: **gerçek motorla gerçek işte geçmeyen özellik "bitti"
+sayılmaz.** Sahte duman sınamaları kalıyor (kod bozuldu mu, saniyede).
+
+- `testler/gercek_set.py`: patron gibi SOHBETTEN iş verir (triyaj → plan →
+  ajanlar gerçek terminalde → inceleme → tek rapor), boş geçici ofiste,
+  ucuz modelle. 10 iş: ekran görüntüsü (yerel sayfa), bilgi sorusu (iş
+  açmadan), kod+test, hata düzelt (test değişmeden), veri→rapor→söyle, web
+  sitesi, tarayıcı oyunu, iki paralel iş, sayfadan fiyat oku, silme
+  onaya düşer. Her işte KALİTE: lider cevap verdi mi, "yapamam" dedi mi,
+  rapor iç konuşma/KANIT taşıyor mu, gereksiz ret, sohbet mesaj sayısı.
+  Kuru kip: her doğrulayıcı iyiye GEÇTİ, kötüye KALDI (`duman_gercek_set`).
+- `testler/gece_kos.py` + Windows Görev Zamanlayıcısı "AgentOfis Gece
+  Seti", her gün **03:30**, iki motor SIRAYLA; patronun ofisinde iş koşuyorsa
+  2 saate kadar bekler, yine koşuyorsa atlar. Özet `testler/rapor/gece-*.md`.
+
+İlk gerçek koşudan çıkan ve düzeltilenler:
+- TUI'de "brifing yapıştırıldı ama GÖNDERİLMEDİ" olunca tur 10 dk "bitti"
+  bekliyordu → hemen düşer, ekranın sonu hataya yazılır (kök neden
+  aralıklı; ekran kaydı bir sonraki olayda görülecek).
+- Lider incelemesi ajanın sohbete gönderdiğini görmüyordu → "Patronun
+  sohbetine GÖNDERİLENLER (ofisin kaydı)" bölümü; gereksiz ret kalkar.
+- `ekler/` HER İŞTE SERBEST (brifing + plan + inceleme aynı cümle): görsel
+  sohbete ancak dosyayla gider; lider "dosya yazma" deyip reddediyordu,
+  ajan dosyayı `rm` ile silmeye kalkınca patrona onay kartı düşüyordu.
+  Sayfa görüntüsü `browser_take_screenshot filename: "ekler/<ad>.png"`
+  (Playwright: adlı dosya çalışma köküne göre — `--help` okundu).
+- Liderin cevabı = SON ARAÇTAN SONRA yazılan (öncesi anlatım; yedek
+  korunur). Mutasyonla doğrulandı.
+- Rapor sonundaki "Defterden (ofis yazdı…)" bloğu: her şey bittiyse hiç
+  eklenmez; açık iş/bekleyen karar varsa tek sade satır.
+- Rapor istemi: başlık ve ara cümle yok, ilk cümle sonuç.
+- Koddaki codex kademe varsayılanı eskimişti (temiz ofis gpt-5.6-luna
+  aldı) → gpt-6-luna / gpt-6.1-sol / gpt-6.1-sol.
+- Panelden "sahte" motor rozeti kaldırıldı.

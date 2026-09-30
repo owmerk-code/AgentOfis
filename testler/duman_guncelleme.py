@@ -35,6 +35,12 @@ from ofis import roller as R
 from ofis.motor.sahte import SahteMotor
 from ofis.saglik import Saglik
 
+# SAHNE: ofis ESKI nesil modellerde (30.09'a kadar koddaki varsayilan buydu).
+# Guncellemenin "yeni nesli fark et" davranisi bu sahneyle olculur; koddaki
+# varsayilan artik guncel oldugu icin sahne ACIKCA kurulur.
+R.KADEME_MODEL["codex"] = {"hizli": "gpt-5.6-luna", "standart": "gpt-5.6-terra",
+                           "guclu": "gpt-5.6-sol"}
+
 GECEN = 0
 KALAN = 0
 

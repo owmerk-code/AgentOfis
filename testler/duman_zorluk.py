@@ -100,8 +100,8 @@ sina("'orta' gerekce istemiyor", go["zorluk"] == "orta")
 print("\n2. zorluk -> model eslemesi")
 sina("claude kolay -> haiku", R.model_sec("claude", "hizli") == "haiku")
 sina("claude zor -> opus", R.model_sec("claude", "guclu") == "opus")
-sina("codex kolay -> luna", R.model_sec("codex", "hizli") == "gpt-5.6-luna")
-sina("codex zor -> sol", R.model_sec("codex", "guclu") == "gpt-5.6-sol")
+sina("codex kolay -> luna", R.model_sec("codex", "hizli") == "gpt-6-luna")
+sina("codex zor -> sol", R.model_sec("codex", "guclu") == "gpt-6.1-sol")
 
 # ------------------------------------------- 3. MODEL MOTORA ULASIYOR MU
 print("\n3. secilen model MOTORA ulasiyor mu")

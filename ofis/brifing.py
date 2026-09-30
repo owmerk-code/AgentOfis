@@ -379,6 +379,7 @@ class Brifing:
                          "Cevap bekleme. Patrona gorsel/pdf/video GOSTERMEK icin "
                          "ayni aracin `ekler` alanina dosya yolunu yaz. "
                          "Sohbet ofis icidir, disari cikmaz: ONAY GEREKMEZ. "
+                         "`ekler/` klasoru HER ISTE SERBESTTIR (yazma alani gerekmez): patrona gosterilecek dosya oraya kaydedilir -- sayfa goruntusu icin `browser_take_screenshot` araci `filename: \"ekler/<ad>.png\"` ile -- ve `sohbete_yaz(ekler=[...])` ile gonderilir. Oradaki dosyayi SILME. "
                          "Soru icin `soru_sor`, onay icin `onay_iste`."]
         # PATRONUN IZINLERI her turda (devam dahil) soylenir: ajan izinli
         # bir eylem icin `onay_iste` cagirip bosuna durmasin.

@@ -347,12 +347,15 @@ sina("rapor uretildi", bool(_rapor11))
 _r = _rapor11[0] if _rapor11 else ""
 sina("modelin abartisi DURUYOR (sansurlenmiyor)",
      "bekleyen is yok" in _r.lower(), f"({_r[:80]})")
-sina("ama OFISIN yazdigi blok da var",
-     "Defterden (ofis yazdi, lider degil)" in _r, f"({_r[-260:]})")
-sina("kapanmayan is ACIKCA sayiliyor", "HENUZ KAPANMADI" in _r,
+sina("ama OFISIN yazdigi not da var",
+     "Not (ofisin kaydı)" in _r, f"({_r[-260:]})")
+sina("kapanmayan is ACIKCA sayiliyor", "henüz bitmedi" in _r,
      f"({_r[-260:]})")
-sina("isin gercek durumu yaziyor",
-     "#" + str(_g11["no"]) in _r and ofis.tahta.gorev(_g11["no"])["durum"] in _r)
+sina("isin numarasi yaziyor", "#" + str(_g11["no"]) in _r, f"({_r[-200:]})")
+# 30.09: her sey kapaliyken rapora HICBIR SEY eklenmez (gurultu).
+sina("her sey bitmisken ek not YOK",
+     _s11._gercek_durum({"gorevler": []}) == "" or bool(
+         ofis.postane.insan_bekleyenler() + ofis.postane.bekleyen_onaylar()))
 
 
 # ---------------------------------------------------------------------------
@@ -687,6 +690,42 @@ sina("akis DEFTERE yazilmiyor", "ayar_yaz" not in
 sina("hizli parcalar SEYREK guncelleniyor", 1 <= _yazim["n"] <= 4,
      str(_yazim["n"]))
 
+
+# --------------------------------------------------------------------------
+print("\nCEVAP = SON ARACTAN SONRA yazilan (30.09, gercek set G01)")
+from ofis.motor.tip import MotorOlayi  # noqa: E402
+
+
+class _AraCumleli(SahteMotor):
+    """Once ara cumle, sonra arac, sonra asil cevap -- gercekte olculen sira."""
+
+    def tur_kos(self, metin, **ayar):
+        yield MotorOlayi("metin", "Önce dosyanın var olup olmadığına bakıyorum.")
+        yield MotorOlayi("arac", "Read", {"ozet": "a.png"})
+        yield MotorOlayi("metin", triyaj("cevap", "bilgi", cevap="Dosya yerinde."))
+        yield MotorOlayi("bitti", "", {"basarili": True})
+
+
+# HAM metne bakilir: triyaj JSON'u ayikladigi icin ara cumleyi zaten atar;
+# sizinti RAPOR gibi duz metinde (olculdu). Sinama o siniri olcmeli.
+_sa = Sohbet(ofis, motor_fabrikasi=lambda ad, **a: _AraCumleli(cevap=""))
+_ham = _sa._lideri_kostur(ofis.kadro.lider(kanat), "rapor yaz", None, 30)
+sina("aractan ONCEKI ara cumle liderin metnine YAPISMADI (rapor yolu)",
+     "Önce" not in _ham and "Dosya yerinde" in _ham, repr(_ham[:120]))
+
+
+class _CevapSonraArac(SahteMotor):
+    """Cevap yazildi, SONRA bir arac cagrildi ve tur sustu: cevap kaybolmamali."""
+
+    def tur_kos(self, metin, **ayar):
+        yield MotorOlayi("metin", triyaj("cevap", "bilgi", cevap="Tamam patron."))
+        yield MotorOlayi("arac", "Read", {"ozet": "x"})
+        yield MotorOlayi("bitti", "", {"basarili": True})
+
+
+_ol = akit(Sohbet(ofis, motor_fabrikasi=lambda ad, **a: _CevapSonraArac(cevap="")), "nasilsin?")
+_cv = [o["govde"] for o in _ol if o["tur"] == "cevap"]
+sina("cevaptan SONRA arac cagrilsa da cevap korunur", _cv and "Tamam patron" in _cv[0], str(_cv))
 
 print(f"\n== sonuc: {GECEN} gecti, {KALAN} kaldi ==")
 print(f"klasor: {kok}")

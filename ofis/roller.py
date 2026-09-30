@@ -80,8 +80,12 @@ KADEMELER = ("hizli", "standart", "guclu")
 #:   isci koltugu icin artik onerilmiyor (bkz. modul docstring).
 KADEME_MODEL = {
     "claude": {"hizli": "haiku", "standart": "sonnet", "guclu": "opus"},
-    "codex": {"hizli": "gpt-5.6-luna", "standart": "gpt-5.6-terra",
-              "guclu": "gpt-5.6-sol"},
+    # 30.09.2026: gercek ofisin otomatik guncellemeden gecmis kademeleri.
+    # Varsayilan eskiyse YENI her ofis (ve gercek set) eski modelle kosar:
+    # olculdu, temiz ofiste codex iscisi gpt-5.6-luna aldi. Guncelleme
+    # yalniz defteri yazar; bu tablo yeni ofisin baslangicidir.
+    "codex": {"hizli": "gpt-6-luna", "standart": "gpt-6.1-sol",
+              "guclu": "gpt-6.1-sol"},
     # Sahte motor jeton yakmaz; kademe ayrimi anlamsiz ama SESSIZ
     # kalmamali -- eksik anahtar KeyError verirdi, testte gurultu olur.
     "sahte": {"hizli": "", "standart": "", "guclu": ""},

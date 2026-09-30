@@ -329,6 +329,9 @@ function cizSerit() {
   const m = $("#motor-rozetleri");
   m.innerHTML = "";
   for (const [ad, acik] of Object.entries(o.motorlar)) {
+    // SAHTE MOTOR patronun paneline ait degil (30.09, kullanici: "sahte
+    // motor, sahte veri yerine gercek"); yalniz sinamalarda yasar.
+    if (ad === "sahte") continue;
     // Uydurmaz: kurulu mu degil mi OLCULUR.
     const d = el("div", "motor-rozet" + (acik ? " acik" : ""));
     d.append(el("i"), el("span", null, ad));

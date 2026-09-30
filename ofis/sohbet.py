@@ -805,6 +805,8 @@ class Sohbet:
             "- Ne ISTENDI, ne YAPILDI, KANITI ne -- bu ucu gecir.",
             "- Kapanmayan ya da beklemede kalan is varsa ACIKCA soyle.",
             "- KANIT UYDURMA: yukarida yazmayan bir sonucu yazma.",
+            "- BASLIK ya da ara cumle YAZMA ('Patrona rapor', 'Once bakiyorum');",
+            "  ilk cumle SONUC olsun. 'KANIT' / 'DURUM:' satiri yazma.",
             "- Ic isleyisi (gorev numarasi, kilit, revizyon) anlatma;",
             "  patron sonucu ister, defteri degil.",
             "- " + EK_KURALI,
@@ -864,21 +866,26 @@ class Sohbet:
 
         bekleyen = (self.ofis.postane.insan_bekleyenler()
                     + self.ofis.postane.bekleyen_onaylar())
-        if not satirlar and not bekleyen:
+        # 30.09.2026: her sey kapandiysa HICBIR SEY eklenmez. Once her
+        # raporun sonuna "Defterden (ofis yazdi...)" + is listesi + kanit
+        # sayisi ekleniyordu; kullanici sohbeti "profesyonel degil" buldu.
+        # Blogun gorevi LIDERIN ABARTISINI duzeltmekti -- duzeltilecek bir
+        # sey yoksa yazmak gurultudur. Kalan: sade, tek satir, jargonsuz.
+        if not acik and not bekleyen:
             return ""
-
-        parca = [chr(10) * 2, "---", "", "**Defterden (ofis yazdi, lider degil):**", ""]
-        parca += satirlar
+        durum_adi = {"bekliyor": "sırada", "hazir": "sırada",
+                     "calisiyor": "çalışıyor", "inceleme": "incelemede",
+                     "engelli": "takıldı"}
+        parca = [chr(10) * 2, "---", ""]
         if acik:
-            parca.append("")
             parca.append(
-                f"**{len(acik)} is HENUZ KAPANMADI.** Kapanmayan is, "
-                "yapilmamis is degildir ama BITMIS de degildir -- kanit "
-                "kapisi ondan gecmedi.")
+                f"**Not (ofisin kaydı):** {len(acik)} iş henüz bitmedi — "
+                + "; ".join(f"#{g['no']} {g['baslik']} "
+                            f"({durum_adi.get(g['durum'], g['durum'])})"
+                            for g, _ in acik) + ".")
         if bekleyen:
-            parca.append("")
-            parca.append(f"**{len(bekleyen)} istek SENI bekliyor.** "
-                         "`python -m ofis.kabuk bekleyen`")
+            parca.append(f"**{len(bekleyen)} karar seni bekliyor** "
+                         "(Senden bekleniyor bölümünde).")
         return chr(10).join(parca)
 
     def _lideri_kostur(self, lider: dict, metin: str, butce_usd,

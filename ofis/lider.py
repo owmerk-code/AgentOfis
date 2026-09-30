@@ -377,6 +377,27 @@ class Lider:
                     "_Paralel tur kostugu icin bazi satirlarda 'kim yazdi'",
                     "OLCULEMEDI; beyan denetimi o satirlarda yapilmadi._",
                 ]
+        # PATRONA GONDERILENLER -- ofisin kaydi, ajanin sozu degil.
+        # OLCULDU (30.09.2026, gercek set G01, codex): ajan ekran goruntusunu
+        # `sohbete_yaz` ile gondermisti; lider "sohbete gonderildigine dair
+        # kanit yok" deyip isi GERI GONDERDI, ajan goruntuyu ikinci kez
+        # yolladi. Lider, olcutu karsilayan olguyu goremiyordu.
+        try:
+            with self.db.baglanti() as _c:
+                _giden = [r["govde"] for r in _c.execute(
+                    "SELECT govde FROM olay WHERE proje_id = ? AND gorev_id = ? "
+                    "AND tur = 'ajan_sohbet' ORDER BY rowid", (self.proje_id, g["id"]))]
+        except sqlite3.Error:
+            _giden = None
+        if _giden:
+            from .ekler import ayikla as _ayikla
+            satirlar += ["", "### Patronun sohbetine GONDERILENLER (ofisin kaydi)", ""]
+            for _m in _giden[:6]:
+                _metin, _yollar = _ayikla(_m)
+                satirlar.append(f"- \"{_metin[:160]}\""
+                                + (f" · ekler: {', '.join(_yollar)}" if _yollar else ""))
+        satirlar += ["", "_Not: `ekler/` klasoru her iste serbesttir; patrona "
+                         "gosterilecek dosyanin oraya yazilmasi ihlal DEGILDIR._"]
         # Olcum YOKSA sessiz kalinir -- "hicbir sey degismedi" DEMEZ.
         # Kod yazmayan bir is (arastirma, inceleme) zaten dosya
         # degistirmez; ona "degisiklik yok" demek, olcmedigimiz bir seye

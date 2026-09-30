@@ -263,6 +263,32 @@ if _cm.tui_ikilisi():
 else:
     print("  [ATLANDI] codex ikilisi yok")
 
+print("\n-- 15b. gonderilemeyen tur HEMEN duser (30.09, gercek set G01) --")
+
+
+class _Gitmeyen(SahteTui):
+    """Oturum dosyasi hic buyumez: mesaj CLI'a ulasmamis gibi."""
+
+    def tui_plani(self, **k):
+        p = super().tui_plani(**k)
+        bos = Path(k["gecici"]) / "hic-yazilmayan.jsonl"
+        p["dokum"] = lambda: bos
+        return p
+
+
+_t0 = time.monotonic()
+_ol = list(tui.TuiMotoru(_Gitmeyen(), ajan_ad="gitmeyen").tur_kos(
+    "gitmeyecek brifing", klasor=str(_KOK), zaman_asimi=300))
+_son = _ol[-1] if _ol else None
+sina("gonderilemeyince tur DUSTU (basarisiz, sebep 'gonderilemedi')",
+     _son is not None and _son.tur == "bitti" and not _son.ek.get("basarili")
+     and _son.ek.get("sebep") == "gonderilemedi", str(_son and _son.ek))
+sina("  ve zaman asimini BEKLEMEDI (< 60 sn)", time.monotonic() - _t0 < 60,
+     f"{time.monotonic() - _t0:.0f} sn")
+sina("  hata mesaji ekranin sonunu tasiyor",
+     any(o.tur == "hata" and "Ekranin sonu" in o.govde for o in _ol))
+sina("  terminali acik KALMADI", not [x for x in tui.acik_oturumlar() if x["ajan"] == "gitmeyen"])
+
 print("\n-- 16. guven sorusu EKRANA bakarak (30.09, claude 2.1.285) --")
 _s = ("Quick safety check ... ❯No, exit\n Yes, I trust this folder\n"
       "No, exit❯Yes, I trust this folder")
