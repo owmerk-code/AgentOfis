@@ -638,6 +638,10 @@ def kalite(ofis, tanim, sure_sn: float) -> list:
 
 # ================================================================ kosu
 
+#: `--kota-esigi` ile verilir; bos = ofisin varsayilani.
+KOTA_ESIGI = ""
+
+
 def _ofis_kur(ana: Path, no: str, motor: str, kuru: bool):
     kok = ana / "calisma"
     kok.mkdir()
@@ -645,6 +649,11 @@ def _ofis_kur(ana: Path, no: str, motor: str, kuru: bool):
     ofis = Ofis.proje_ac(db, f"Gercek {no}", amac="gercek set",
                          basari_olcutu="dogrulayici gecer", kok_klasor=str(kok))
     db.ayar_yaz(ofis.proje_id, "terminal_kipi", "gercek")
+    # KOTA ESIGI (01.10.2026): isci %85 haftalik esikte hesabi sona alir;
+    # codex %86 iken "codex kosusu" isleri Claude'a kaydiriyordu, codex
+    # sinanmiyordu. Yalniz BU gecici ofiste gevsetilir; gercek ofis ayni kalir.
+    if KOTA_ESIGI:
+        db.ayar_yaz(ofis.proje_id, "gecis_esigi:isci:7g", str(KOTA_ESIGI))
     kanat = ofis.kanat_ac("GENEL", "GN")
     m = MODELLER.get(motor, {})
     ofis.kadro.ise_al("lale", "lider", lider_mi=True, kanat_id=kanat, klasor=str(kok),
@@ -778,7 +787,14 @@ def main() -> int:
     ap.add_argument("--kuru", action="store_true", help="$0: dogrulayicilarin kendisini sina")
     ap.add_argument("--sakla", action="store_true", help="kalan isin klasorunu birak")
     ap.add_argument("--zaman-asimi", type=int, default=600)
+    ap.add_argument("--kota-esigi", type=float, default=0.0,
+                    help="isci haftalik gecis esigi (orn. 0.95); yalniz gecici ofiste")
     a = ap.parse_args()
+    global KOTA_ESIGI
+    if a.kota_esigi:
+        if not 0 < a.kota_esigi <= 0.97:
+            ap.error("--kota-esigi 0 ile 0.97 arasinda olmali")
+        KOTA_ESIGI = a.kota_esigi
     isler = a.isler or list(ISLER)
     if a.kuru:
         bozuk = 0

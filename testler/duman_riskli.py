@@ -971,6 +971,12 @@ sina("satir devamli 'cd && rm -f a b' iki hedef",
      == [r"C:\K\calisma\a.html", r"C:\K\calisma\b.html"])
 sina("PowerShell virgullu liste", R.silme_hedefleri("Remove-Item -Path a.txt,b.txt -Force", _k)
      == [r"C:\K\calisma\a.txt", r"C:\K\calisma\b.txt"])
+# 01.10 (G17, codex): veri blogu (`@' ... '@`) atlanir, `{ }` blogundaki silme bulunur.
+_g17 = "$v = @'\nimport zipfile\nprint(f'OK: {p}')\n'@ | Set-Content -Encoding utf8 karalama/none\nif (Test-Path karalama/none) { Remove-Item karalama/none }\npython karalama/x.py"
+sina("PowerShell veri blogu + if { Remove-Item }: hedef bulunur",
+     R.silme_hedefleri(_g17, _k) == [r"C:\K\calisma\karalama\none"], str(R.silme_hedefleri(_g17, _k)))
+sina("  veri blogunda silme izi (os.remove) varsa -> None (sorulur)",
+     R.silme_hedefleri(_g17.replace("import zipfile", "import os; os.remove('a')"), _k) is None)
 for _c in ("rm -rf build", "rm -R x", "rm *.tmp", "Remove-Item -Recurse x", "del /s x", "git status"):
     sina(f"  emin degil -> None: {_c}", R.silme_hedefleri(_c, _k) is None)
 

@@ -735,6 +735,12 @@ def _yol_coz(ham: str, cwd: str) -> str:
     return os.path.normpath(y)
 
 
+#: Veri blogunun govdesinde silme izi -- varsa blok atlanmaz, sorulur.
+_GOVDE_SILME_IZI = re.compile(
+    r"(?i)\b(?:remove-item|rm|rmdir|del|erase|rd|ri|unlink|rmtree|remove|"
+    r"removedirs|truncate|clear-content)\b")
+
+
 def silme_hedefleri(komut: str, kok: str):
     """Bir kabuk komutundaki SILME hedeflerini mutlak yol olarak dondurur.
 
@@ -742,9 +748,19 @@ def silme_hedefleri(komut: str, kok: str):
     tirnak, silme disinda bilinmeyen bicim): cagiran o zaman SORAR.
     """
     import shlex
+    # POWERSHELL VERI BLOGU (`@' ... '@`) komut degil VERIDIR (01.10.2026,
+    # gercek set G17, codex: Python betigi burada duruyordu, icindeki
+    # tirnaklar ayristirmayi bozdu). Govdede silme IZI varsa (Remove-Item,
+    # os.remove, unlink, rmtree...) blok calistirilabilir olabilir -> None,
+    # SORULUR. Yoksa blok atlanir.
+    for _t, govde in re.findall(r"@(['\"])[ \t]*\r?\n(.*?)\r?\n\1@", komut or "", re.S):
+        if _GOVDE_SILME_IZI.search(govde):
+            return None
+    komut = re.sub(r"@(['\"])[ \t]*\r?\n.*?\r?\n\1@", " ", komut or "", flags=re.S)
     # Satir devami (bash `\`, PowerShell `` ` ``) tek satira birlesir.
     komut = re.sub(r"[\\`][ \t]*\r?\n", " ", komut or "")
-    parcalar = re.split(r"&&|\|\||;|\r?\n", komut)
+    # Blok parantezi de ayirir: `if (Test-Path x) { Remove-Item x }` (G17).
+    parcalar = re.split(r"&&|\|\||;|\r?\n|\{|\}", komut)
     cwd, hedefler = kok, []
     for parca in parcalar:
         parca = parca.strip()

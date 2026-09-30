@@ -1,0 +1,291 @@
+{
+ "ayar": {
+  "motor": "codex",
+  "kip": "gercek terminal",
+  "modeller": {
+   "lider": "gpt-6-luna",
+   "isci": "gpt-6-luna"
+  },
+  "basla": "2026-10-01 01:56",
+  "sure_dk": 6.0,
+  "kota_farki": {
+   "codex": {
+    "5s": 1.0,
+    "7g": 0.0
+   }
+  }
+ },
+ "sonuclar": [
+  {
+   "no": "G08",
+   "ad": "Iki bagimsiz is -- paralel ajanlar",
+   "motor": "codex",
+   "kip": "gercek",
+   "mesaj": "Birbirinden bagimsiz iki is var, ikisini ayri ajanlara paralel yaptir: sehirler.md dosyasina Turkiye'nin en kalabalik 5 sehrini, renkler.md dosyasina 5 renk adini madde madde yaz.",
+   "olcutler": [
+    {
+     "olcut": "sehirler.md 5 madde",
+     "gecti": true,
+     "not": "5"
+    },
+    {
+     "olcut": "renkler.md 5 madde",
+     "gecti": true,
+     "not": "5"
+    },
+    {
+     "olcut": "is BOLUNDU (en az 2 gorev, 2 ajan)",
+     "gecti": true,
+     "not": "2 gorev, sahipler ['ada', 'cem']"
+    }
+   ],
+   "kalite": [
+    {
+     "olcut": "lider patrona cevap verdi",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "lider 'yapamam / sen yap' DEMEDI",
+     "gecti": true,
+     "not": "İstenen iki iş de tamamlandı: `sehirler.md` dosyasında Türkiye’nin en kalabalık beş şehri doğru sıra"
+    },
+    {
+     "olcut": "rapor ic konusma / KANIT satiri tasimiyor",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "gereksiz ret yok",
+     "gecti": true,
+     "not": "0 ret"
+    },
+    {
+     "olcut": "sohbet temiz (en fazla 4 mesaj)",
+     "gecti": true,
+     "not": "2 mesaj: insan/sohbet, lale/cevap"
+    }
+   ],
+   "durum": "gecti",
+   "sohbet": [
+    "insan/sohbet: Birbirinden bagimsiz iki is var, ikisini ayri ajanlara paralel yaptir: sehirler.md dosyasina Turkiye'nin en kalabalik 5 sehrini, renkler.md dosyasina 5 renk adini madde madde yaz.",
+    "lale/cevap: İstenen iki iş de tamamlandı: `sehirler.md` dosyasında Türkiye’nin en kalabalık beş şehri doğru sırayla, `renkler.md` dosyasında beş renk madde madde yer alıyor.\n\n- Şehirler kanıtı: `Get-Content -Raw "
+   ],
+   "sureler": {
+    "lider": [
+     9,
+     10,
+     8
+    ],
+    "isci": [
+     23,
+     43
+    ],
+    "inceleme": [
+     12,
+     14
+    ]
+   },
+   "sure_sn": 89.8
+  },
+  {
+   "no": "G13",
+   "ad": "Excel dosyasi olustur, gonder",
+   "motor": "codex",
+   "kip": "gercek",
+   "mesaj": "urunler.xlsx adinda bir Excel dosyasi olustur: Espresso 60, Latte 85, Mocha 95 (urun ve fiyat sutunlari). Dosyayi bana gonder.",
+   "olcutler": [
+    {
+     "olcut": "gecerli bir .xlsx dosyasi var",
+     "gecti": true,
+     "not": "['urunler.xlsx']"
+    },
+    {
+     "olcut": "uc urun ve fiyatlari icinde (espresso, latte, mocha)",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "Excel dosyasi sohbete gonderildi",
+     "gecti": true,
+     "not": "['ekler/urunler.xlsx']"
+    }
+   ],
+   "kalite": [
+    {
+     "olcut": "lider patrona cevap verdi",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "lider 'yapamam / sen yap' DEMEDI",
+     "gecti": true,
+     "not": "`urunler.xlsx` hazır. Espresso 60, Latte 85 ve Mocha 95 fiyatları dosyada yer alıyor."
+    },
+    {
+     "olcut": "rapor ic konusma / KANIT satiri tasimiyor",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "gereksiz ret yok",
+     "gecti": true,
+     "not": "0 ret"
+    },
+    {
+     "olcut": "sohbet temiz (en fazla 4 mesaj)",
+     "gecti": true,
+     "not": "2 mesaj: insan/sohbet, lale/cevap"
+    }
+   ],
+   "durum": "gecti",
+   "sohbet": [
+    "insan/sohbet: urunler.xlsx adinda bir Excel dosyasi olustur: Espresso 60, Latte 85, Mocha 95 (urun ve fiyat sutunlari). Dosyayi bana gonder.",
+    "lale/cevap: `urunler.xlsx` hazır. Espresso 60, Latte 85 ve Mocha 95 fiyatları dosyada yer alıyor."
+   ],
+   "sureler": {
+    "lider": [
+     7,
+     18
+    ],
+    "isci": [
+     25
+    ],
+    "inceleme": [
+     26
+    ]
+   },
+   "sure_sn": 79.6
+  },
+  {
+   "no": "G14",
+   "ad": "Tarayicida form doldur ve gonder (patron izni)",
+   "motor": "codex",
+   "kip": "gercek",
+   "mesaj": "http://127.0.0.1:64026/form sayfasindaki bulten formunu Ad: Deneme, E-posta: deneme@ornek.com ile doldur ve gonder.",
+   "olcutler": [
+    {
+     "olcut": "form GONDERILDI (sunucu POST aldi)",
+     "gecti": true,
+     "not": "['/kayit']"
+    },
+    {
+     "olcut": "patron acikca istedigi icin SORULMADI (onay karti yok)",
+     "gecti": true,
+     "not": "0 kart"
+    }
+   ],
+   "kalite": [
+    {
+     "olcut": "lider patrona cevap verdi",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "lider 'yapamam / sen yap' DEMEDI",
+     "gecti": true,
+     "not": "Bülten formu Deneme ve deneme@ornek.com bilgileriyle gönderildi. Sayfada sonuç YAYINLANDI olarak doğ"
+    },
+    {
+     "olcut": "rapor ic konusma / KANIT satiri tasimiyor",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "gereksiz ret yok",
+     "gecti": true,
+     "not": "0 ret"
+    }
+   ],
+   "durum": "gecti",
+   "sohbet": [
+    "insan/sohbet: http://127.0.0.1:64026/form sayfasindaki bulten formunu Ad: Deneme, E-posta: deneme@ornek.com ile doldur ve gonder.",
+    "lale/cevap: Bülten formu Deneme ve deneme@ornek.com bilgileriyle gönderildi. Sayfada sonuç YAYINLANDI olarak doğrulandı."
+   ],
+   "sureler": {
+    "lider": [
+     7,
+     13,
+     8
+    ],
+    "isci": [
+     30
+    ],
+    "inceleme": [
+     20
+    ]
+   },
+   "sure_sn": 82.7
+  },
+  {
+   "no": "G17",
+   "ad": "Word belgesi olustur, gonder",
+   "motor": "codex",
+   "kip": "gercek",
+   "mesaj": "toplanti.docx adinda bir Word belgesi olustur: baslik 'Haftalik Toplanti', altinda uc madde: Butce, Takvim, Ekip. Dosyayi bana gonder.",
+   "olcutler": [
+    {
+     "olcut": "gecerli bir .docx var",
+     "gecti": true,
+     "not": "['toplanti.docx']"
+    },
+    {
+     "olcut": "baslik ve uc madde icinde",
+     "gecti": true,
+     "not": " \n        haftalik toplanti         butce         takvim         ekip           "
+    },
+    {
+     "olcut": "Word dosyasi sohbete gonderildi",
+     "gecti": true,
+     "not": "['ekler/toplanti.docx']"
+    }
+   ],
+   "kalite": [
+    {
+     "olcut": "lider patrona cevap verdi",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "lider 'yapamam / sen yap' DEMEDI",
+     "gecti": true,
+     "not": "Haftalik Toplanti belgesi oluşturuldu; içinde Butce, Takvim ve Ekip maddeleri yer alıyor. Dosya: ekl"
+    },
+    {
+     "olcut": "rapor ic konusma / KANIT satiri tasimiyor",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "gereksiz ret yok",
+     "gecti": true,
+     "not": "0 ret"
+    },
+    {
+     "olcut": "sohbet temiz (en fazla 4 mesaj)",
+     "gecti": true,
+     "not": "3 mesaj: insan/sohbet, ada/bildirim, lale/cevap"
+    }
+   ],
+   "durum": "gecti",
+   "sohbet": [
+    "insan/sohbet: toplanti.docx adinda bir Word belgesi olustur: baslik 'Haftalik Toplanti', altinda uc madde: Butce, Takvim, Ekip. Dosyayi bana gonder.",
+    "ada/bildirim: Gmail gönderimini tamamlayabilmem için patronun e-posta adresi gerekiyor. Belge hazır; adresi paylaşır mısınız?",
+    "lale/cevap: Haftalik Toplanti belgesi oluşturuldu; içinde Butce, Takvim ve Ekip maddeleri yer alıyor. Dosya: ekler/toplanti.docx. Gmail gönderimi için e-posta adresiniz gerekiyor; adresinizi paylaşırsanız belgeyi"
+   ],
+   "sureler": {
+    "lider": [
+     11,
+     48
+    ],
+    "isci": [
+     29
+    ],
+    "inceleme": [
+     17
+    ]
+   },
+   "sure_sn": 109.6
+  }
+ ]
+}

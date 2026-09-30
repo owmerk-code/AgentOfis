@@ -824,6 +824,8 @@ from ofis.sohbet import YAPAMAM_CEVABI as _YC  # noqa: E402
 for _t, _b in (("Bu turda sayfayi acip dogrulayamiyorum", True),
                ("rapor.md dosyasini yazamadim", True),       # 01.10 G05, claude
                ("dosyayi olusturamadim", True), ("kaydedemedim", True),
+               ("BRIFING.md bulunamadi ve dosya yazma izni yok. Gorevi yeniden baslatin.", True),  # 01.10 G08
+               ("Izin verdin, dosyalar yazildi.", False),
                ("Liste degistirilebilir, demet degistirilemez.", False),
                ("Toplam ciro 11.185 TL, en cok satan Cay.", False),
                ("Bu konuda bilgim yok, bilmiyorum.", False), ("Yazdim ve gonderdim.", False)):

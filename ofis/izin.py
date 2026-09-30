@@ -125,6 +125,21 @@ def _jeton(metin: str) -> list:
     return re.findall(r"[a-z0-9]+", riskli.sadelestir(metin))
 
 
+def _kokler(jetonlar) -> list:
+    """Jetonlar + Turkce MASTAR kokleri (`gondermek` -> `gonder`).
+
+    01.10.2026 olculdu (gercek set G14, codex lider): izin "...bilgileriyle
+    gondermek" yazildi; kalip yalniz `gonder` kokunu taniyordu, izin
+    "riskli eylem tanimlamiyor" diye reddedildi, gonderim patrona soruldu.
+    """
+    cikti = []
+    for j in jetonlar:
+        cikti.append(j)
+        if len(j) > 5 and j.endswith(("mek", "mak")):
+            cikti.append(j[:-3])
+    return cikti
+
+
 def _ardisik_icerir(buyuk: list, kucuk: list) -> bool:
     if not kucuk:
         return False
@@ -144,7 +159,8 @@ def desen_sinifi(desen: str) -> str:
     k = riskli.kabuk_degerlendir("Bash", {"command": desen})
     if k:
         return k["sinif"]
-    sade = riskli.sadelestir(desen)
+    # Mastar kokleri de denenir: "gondermek" -> "gonder" kalibina uyar.
+    sade = riskli.sadelestir(desen) + " " + " ".join(_kokler(_jeton(desen)))
     for sinif, kaliplar in (("para", riskli.PARA), ("silme", riskli.SILME),
                             ("yayin", riskli.YAYIN),
                             ("gonderim", riskli.GONDERIM)):
@@ -300,10 +316,20 @@ def eslesen(db, proje_id: str, gorev_id, bulgu: dict):
         if YIKICI_BICIM.search(str(bulgu.get("hedef") or "")):
             return None
         hedef_j = _jeton(hedef)
+        # TARAYICI tiklamasi (01.10.2026, G14): hedef, ajanin dugmeyi
+        # ANLATISIDIR ("Bulten formunu Kaydol dugmesiyle gonder"); izin
+        # patronun cumlesinden gelir ("formu ... gondermek"). Kelimesi
+        # kelimesine ortusmezler. Olculen sey: kapinin SORMA SEBEBI olan
+        # kelime (`esles`, orn. "gonder") izinde koku ile geciyor mu.
+        # Kabuk komutu (`git push`) SIKI eslesmede kalir.
+        tarayici = bool(bulgu.get("element")) and bool(bulgu.get("esles"))
+        sebep_j = _jeton(str(bulgu.get("esles") or "")) if tarayici else []
         for iz in liste(db, proje_id, gorev_id=gorev_id):
             if iz["sinif"] != sinif:
                 continue
             if _ardisik_icerir(hedef_j, _jeton(iz["desen"])):
+                return iz
+            if sebep_j and _ardisik_icerir(_kokler(_jeton(iz["desen"])), sebep_j):
                 return iz
     except Exception:
         return None

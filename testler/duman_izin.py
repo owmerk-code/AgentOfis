@@ -174,6 +174,22 @@ sina("Turkce 'yayınla' deseni kabul edildi", not _h, _h)
 tb = riskli.degerlendir("browser_click", {"element": "Yayınla düğmesi"})
 sina("tarayici: 'Yayınla' izinle gecer",
      tb is not None and izin.eslesen(db, PID, g2["id"], tb) is not None)
+# 01.10.2026 (gercek set G14, codex): dogal cumleli izin tarayici gonderimini acar.
+_iz14 = izin.plan_izinleri(
+    [{"eylem": "Bülten formunu Deneme ve deneme@ornek.com bilgileriyle göndermek",
+      "alinti": "ile doldur ve gonder"}],
+    "http://x/form sayfasindaki bulten formunu Ad: Deneme, E-posta: deneme@ornek.com ile doldur ve gonder.")
+sina("mastarli izin ('...gondermek') gonderim sinifi olarak KABUL edildi",
+     not _iz14[1] and _iz14[0] and _iz14[0][0]["sinif"] == "gonderim", str(_iz14))
+izin.tanimla(db, PID, desen=(_iz14[0][0]["desen"] if _iz14[0] else "git push"), alinti="ile doldur ve gonder", veren="lale",
+             kaynak="patron_sozu", gorev_id=g1["id"])
+_tb14 = riskli.degerlendir("browser_click", {"element": "Bülten formunu Kaydol düğmesiyle gönder"})
+sina("tarayici 'Kaydol dugmesiyle gonder' tiklamasi o izinle GECER",
+     _tb14 is not None and izin.eslesen(db, PID, g1["id"], _tb14) is not None, str(_tb14))
+sina("  baska isin tiklamasi GECMEZ", izin.eslesen(db, PID, g2["id"], _tb14) is None)
+_tb14b = riskli.degerlendir("browser_click", {"element": "Yorumu paylas"})
+sina("  izinde gecmeyen sebep kelimesi ('paylas') GECMEZ",
+     _tb14b is not None and izin.eslesen(db, PID, g1["id"], _tb14b) is None, str(_tb14b))
 para = riskli.arac_degerlendir("mcp__x__create-discount", {})
 sina("para bulgusu hic eslesmez", izin.eslesen(db, PID, g2["id"], para) is None)
 sina("bozuk bulgu patlamaz (None)", izin.eslesen(db, PID, g1["id"], {"sinif": None}) is None)

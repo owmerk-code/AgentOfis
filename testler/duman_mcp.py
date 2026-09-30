@@ -950,6 +950,13 @@ _iz2 = _izin("rm -f eski_dosya.txt")
 sina("isten ONCE var olan dosyayi silmek SORULDU", _iz2.get("behavior") == "deny", str(_iz2)[:200])
 _iz3 = _izin("rm -f preview.html eski_dosya.txt")
 sina("hedeflerden biri eskiyse hepsi SORULUR", _iz3.get("behavior") == "deny", str(_iz3)[:200])
+# 01.10 (G17, codex): ayni komut karalama/'da dosya yazip siliyor; dosya
+# kapi sorulurken HENUZ YOK. karalama/ icindeki silme serbest.
+_iz5 = _izin("$v = @'\nimport zipfile\nprint(f'OK: {p}')\n'@ | Set-Content -Encoding utf8 karalama/none\nif (Test-Path karalama/none) { Remove-Item karalama/none }\npython karalama/x.py")
+sina("karalama/'daki (henuz olmayan) yardimci dosyayi silmek SORULMADI",
+     _iz5.get("behavior") == "allow", str(_iz5)[:200])
+_iz6 = _izin("Remove-Item karalama")
+sina("  karalama klasorunun KENDISINI silmek SORULUR", _iz6.get("behavior") == "deny", str(_iz6)[:200])
 _iz4 = _izin("rm -rf logo")
 sina("ozyinelemeli silme SORULUR", _iz4.get("behavior") == "deny", str(_iz4)[:200])
 

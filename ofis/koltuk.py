@@ -196,6 +196,10 @@ class Koltuk:
             if self.ofis.kok_klasoru():
                 from .ekler import klasor as _ek_klasor
                 _ek_klasor(self.ofis).mkdir(parents=True, exist_ok=True)
+                # `karalama/` da hazir: codex sistem eki yardimci betigi
+                # `[IO.File]::WriteAllText('karalama/x.py')` ile yazdirir;
+                # klasor yoksa o cagri hata verir (01.10.2026).
+                (_ek_klasor(self.ofis).parent / "karalama").mkdir(exist_ok=True)
         except (OSError, Exception):             # noqa: BLE001 -- is durmasin
             pass
         ajan = self.ofis.kadro.ajan(ajan_ad)

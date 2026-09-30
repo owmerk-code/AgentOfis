@@ -79,7 +79,9 @@ CEVAP_SINIRI = 4000
 YAPAMAM_CEVABI = re.compile(
     r"(?:a[cç]|bak|eri[sş]|do[gğ]rula|g[oö]r|al|kontrol ed|[cç]al[iı][sş]t[iı]r"
     r"|yaz|olu[sş]tur|kayded|g[oö]nder|y[uü]kle|indir|d[uü]zenle|d[uü]zelt)"
-    r"(?:a|e|ya|ye)m(?:[iı]yorum|ad[iı]m|ed[iı]m)", re.I)
+    r"(?:a|e|ya|ye)m(?:[iı]yorum|ad[iı]m|ed[iı]m)"
+    # 01.10 (G08, codex): "yazma izni yok ... gorevi yeniden baslatin"
+    r"|(?:yazma |dosya |arac )?izn?[iı] yok|yetkim yok|yeniden ba[sş]lat[iı]n", re.I)
 
 #: Lider de sohbete dosya gonderir (30.09): satiri ofis `ekler/`e tasir.
 EK_KURALI = ("Patrona bir DOSYA gostermek istersen (gorsel, pdf, video; "

@@ -13102,3 +13102,49 @@ kanıtsızdı); kalite ölçütü "hiç ret yok" her reddi gereksiz sayıyor. Ü
 sınamayı geçsin diye gevşetilmedi. Önceki koşularda G15 0 retle geçmişti.
 Süreler: basit işler 60–95 sn, bilgi sorusu 8 sn, web araştırması 16 sn,
 paralel iki iş 245 sn, çok adımlı proje 226 sn.
+
+## 01.10.2026 — Codex tam koşusu: 14/18, dört kök sebep, sonra 4/4
+
+Codex haftalık %87'deydi; ofisin işçi eşiği (%85) işleri Claude'a
+kaydırdığı için "codex koşusu" Codex'i sınamıyordu. `gercek_set.py
+--kota-esigi 0.95`: eşik YALNIZ geçici sınama ofisinde gevşer (gerçek ofis
+%85'te kalır, üst sınır 0.97). Ölçüldü: Codex 5s %11→%14 (işi Codex yaptı).
+Tam koşu bedeli: 7 gün **1 puan**, 5 saat 10 puan. Kullanıcının tek
+sıfırlama hakkı (29 Ekim'e kadar) kullanılmadı; "Codex'in sıfırlama
+haklarını kullanmasına izin ver" anahtarı KAPALI kalmalı (ajanlar isteyebilir).
+
+Kalan dört iş ve kökleri:
+- **G08 (22 sn):** lider (gpt-6-luna) triyajda patrona "BRIFING.md
+  bulunamadı, yazma izni yok, yeniden başlatın" dedi. Üç motorun sistem eki
+  "Proje kökündeki BRIFING.md başka ajana ait olabilir" diyordu; 30.09'dan
+  beri kökte o dosya YOK — var olmayan dosyayı anmak onu aratır. → dosya adı
+  anılmaz ("görevini bir dosyada arama"); üç kopya birlikte düzeltildi.
+  `YAPAMAM_CEVABI` "izni yok / yeniden başlatın" biçimini de yakalar.
+- **G13 (Excel, 2 haklı ret):** başlık `?r?n`. ÖLÇÜLDÜ: temiz Windows
+  PowerShell 5'te `$OutputEncoding` US-ASCII → `'Ürün' | python` Python'a
+  `?r?n` verir; Python çıktısı da DOS kod sayfasıyla okunur (`�r�n`). Codex
+  sistem ekine tam tarif: Türkçe metni boruyla/`python -c` ile verme, betiği
+  `[IO.File]::WriteAllText('karalama/x.py')` ile yaz, `print(ascii())` ile
+  doğrula. `karalama/` her iş başında ofisçe açılır (klasör yoksa o çağrı
+  patlar). Claude ajanı bash kullanır, etkilenmez.
+- **G14 (form):** lider izni doğal cümleyle yazdı ("…bilgileriyle
+  göndermek"); `izin.desen_sinifi` mastarı tanımıyordu → izin iki kez
+  reddedildi, gönderim patrona soruldu. Ayrıca izin kabul edilse de uzun
+  cümle tarayıcı hedefiyle ("Kaydol düğmesiyle gönder") kelimesi kelimesine
+  örtüşmezdi. Önceki geçişler şanstı (ajan düğmeyi "gönder"siz anlatınca
+  kapı sormuyordu). → mastar kökü (`gondermek`→`gonder`); TARAYICI
+  bulgusunda izin, kapının sorma sebebi olan kelimeyle (`esles`) kökten
+  eşleşir; kabuk komutu sıkı eşleşmede kalır. duman_izin 65.
+- **G17 (Word):** komut `@' …python… '@ | Set-Content karalama/none;
+  if (Test-Path karalama/none) { Remove-Item karalama/none }` → kapı "geri
+  alınamaz silme" diye sordu. `silme_hedefleri` `{ }` bloğunu bölmüyordu ve
+  veri bloğundaki Python tırnaklarında boğuluyordu. → veri bloğu atlanır
+  (gövdesinde silme izi varsa None = sorulur), `{ }` ayırır; `karalama/`
+  içindeki silme serbest (klasörün kendisi değil). duman_riskli 236,
+  duman_mcp 156.
+- **Açık kalan (ayrı iş):** ÖLÇÜLDÜ, kapı satır içi Python silmesini
+  (`os.remove`, `unlink`, `rmtree`) görmüyor. Tasarım gereği geri dönüş
+  gölge depoda; kapıya eklenmesi ayrıca değerlendirilecek.
+
+Yeniden koşu: **G08, G13, G14, G17 4/4 GEÇTİ.** Böylece 18 işin 18'i iki
+motorda da geçti (tek koşuda claude 17/18, codex 14/18).

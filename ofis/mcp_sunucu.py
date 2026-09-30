@@ -287,8 +287,15 @@ def _kendi_yeni_dosyalari(ofis, gorev_id: str, girdi: dict) -> bool:
         if not r:
             return False
         acilis = _dt.datetime.fromisoformat(r["olusturuldu"]).timestamp()
+        karalama = _P(kok) / "karalama"
         for h in hedefler:
             p = _P(h).resolve()
+            # KARALAMA (01.10.2026, G17 codex): ayni komut `karalama/`da
+            # gecici dosya yazip siliyordu; kapi komuttan ONCE bakar, dosya
+            # henuz yoktu -> soruldu, is durdu. Orasi yalniz yardimci
+            # dosyalarin yeri; icindeki (klasorun kendisi degil) silme serbest.
+            if p != karalama and p.is_relative_to(karalama) and ".git" not in p.parts:
+                continue
             if not p.is_relative_to(kok) or not p.is_file() or ".git" in p.parts:
                 return False
             if p.stat().st_ctime < acilis:
