@@ -207,6 +207,18 @@ sina("gitmemis ek bulundu (diskte olmayan sayilmadi)",
 ofis.db.olay_yaz(ofis.proje_id, "ajan_sohbet", "ekte\n[ek] ekler/menu.png", ajan_ad="cinar",
                  gorev_id=_gg["id"])
 sina("sohbete gidince listeden cikti", ekler.gonderilmemisler(ofis, [_gg["id"]]) == [])
+# gorsel_uret dosyayi YAZMA ALANINA koyar (ekler/ degil): kanit icerigi yoldur.
+(_KOK / "logo").mkdir(exist_ok=True)
+(_KOK / "logo" / "logo.png").write_bytes(b"\x89PNG" + b"1" * 2000)
+ofis.tahta.kanit_ekle(_gg["no"], "gorsel", "logo", "logo/logo.png", ekleyen="cinar")
+sina("yazma alanindaki GORSEL kanit da gitmemis sayilir",
+     ekler.gonderilmemisler(ofis, [_gg["id"]]) == ["logo/logo.png"],
+     str(ekler.gonderilmemisler(ofis, [_gg["id"]])))
+_kopya = ekler.paylas(ofis, "logo/logo.png", ajan_ad="cinar")
+ofis.db.olay_yaz(ofis.proje_id, "ajan_sohbet", "logo\n[ek] " + _kopya, ajan_ad="cinar",
+                 gorev_id=_gg["id"])
+sina("zaman damgali kopyasi gidince listeden cikti",
+     ekler.gonderilmemisler(ofis, [_gg["id"]]) == [], str(ekler.gonderilmemisler(ofis, [_gg["id"]])))
 
 print("\n-- 10. Codex gercek terminal: ret dedektoru (30.09) --")
 from ofis.motor.codex import tui_ret_mi  # noqa: E402

@@ -170,14 +170,34 @@ def gonderilmemisler(ofis, gorev_idleri) -> list:
                            f"AND gorev_id IN ({soru})", (ofis.proje_id, *idler)):
             gidenler.update(ayikla(r["govde"] or "")[1])
         adaylar = []
-        for r in c.execute(f"SELECT baslik, icerik FROM kanit WHERE gorev_id IN ({soru}) "
+        kok = Path(ofis.kok_klasoru()).resolve()
+        for r in c.execute(f"SELECT tur, baslik, icerik FROM kanit WHERE gorev_id IN ({soru}) "
                            "ORDER BY rowid", idler):
             for y in _KANITTA_EK.findall(f"{r['baslik'] or ''} {r['icerik'] or ''}"):
                 y = y.rstrip(".")
                 if y not in adaylar:
                     adaylar.append(y)
-    kok = Path(ofis.kok_klasoru()).resolve()
-    return [y for y in adaylar if y not in gidenler and (kok / y).is_file()]
+            # GORSEL KANIT: `gorsel_uret` dosyayi isin yazma alanina koyar,
+            # `ekler/`e degil; kanitin icerigi dosyanin yoludur.
+            if r["tur"] == "gorsel":
+                y = str(r["icerik"] or "").strip().strip("`'\"")
+                p = Path(y) if Path(y).is_absolute() else kok / y
+                try:
+                    if (p.suffix.lower() in GORSEL and p.is_file()
+                            and p.resolve().is_relative_to(kok)):
+                        y = p.resolve().relative_to(kok).as_posix()
+                        if y not in adaylar:
+                            adaylar.append(y)
+                except (OSError, ValueError):
+                    pass
+    adlar = {Path(g).name for g in gidenler}
+
+    def gitti(y: str) -> bool:
+        # Kokten paylasilan dosya `ekler/`e ZAMAN DAMGALI adla kopyalanir.
+        ad = Path(y).name
+        return y in gidenler or ad in adlar or any(a.endswith("-" + ad) for a in adlar)
+
+    return [y for y in adaylar if not gitti(y) and (kok / y).is_file()]
 
 
 def satirlar(yollar) -> str:
