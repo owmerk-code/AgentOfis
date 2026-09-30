@@ -371,10 +371,12 @@ class Brifing:
                                 + ("" if n["okundu"] else " **YENI**")
                                 + f" {n['govde']}")
         # TAKIMA BILDIRIM (29.09): ajan onemli anlari sohbete kendisi yazar.
-        satirlar += ["", "**Takima bildirim:** ofis araclarin varsa onemli "
-                         "anlarda (engel, onemli bulgu, is bitti) `sohbete_yaz` "
-                         "ile 1-3 cumle yaz; is basina en fazla 6 kez. Cevap "
-                         "bekleme. Patrona gorsel/pdf/video GOSTERMEK icin "
+        # 30.09: sohbet PATRONUN konusmasidir; "is bitti"yi lider rapor eder.
+        satirlar += ["", "**Patrona bildirim:** `sohbete_yaz` YALNIZ patronun "
+                         "gormesi gereken bir DOSYA (gorsel, pdf, video) ya da "
+                         "seni durduran bir ENGEL icindir; 1-2 cumle. 'Is bitti', "
+                         "ara durum, kanit ozeti YAZMA -- onu lider rapor eder. "
+                         "Cevap bekleme. Patrona gorsel/pdf/video GOSTERMEK icin "
                          "ayni aracin `ekler` alanina dosya yolunu yaz. "
                          "Sohbet ofis icidir, disari cikmaz: ONAY GEREKMEZ. "
                          "Soru icin `soru_sor`, onay icin `onay_iste`."]

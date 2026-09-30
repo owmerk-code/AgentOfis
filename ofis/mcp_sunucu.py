@@ -1151,8 +1151,10 @@ ARACLAR = [
     {
         "name": "sohbete_yaz",
         "description": (
-            "Takim sohbetine KISA bir bildirim yazar: bir engel, onemli bir "
-            "bulgu, isin bittigi. DOSYA da gonderir (gorsel, pdf, video, "
+            "Patronun sohbetine KISA bir bildirim yazar -- YALNIZ patronun "
+            "gormesi gereken bir dosya ya da seni durduran bir engel icin. "
+            "'Is bitti' / ara durum YAZMA (lider rapor eder). DOSYA "
+            "gonderir (gorsel, pdf, video, "
             "belge): `ekler` alanina proje kokune gore yollarini yaz; "
             "patron sohbette gorur. Sohbet OFIS ICIDIR (patronun paneli): "
             "disari cikmaz, ONAY GEREKMEZ -- `onay_iste` cagirma. "

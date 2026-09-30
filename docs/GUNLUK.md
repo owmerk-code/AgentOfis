@@ -12734,3 +12734,60 @@ etiket). `duman_sohbet` 113.
 Ayrıca `duman_panel`'deki "kabin kapalıyken paylaşıldı denmiyor"
 sınaması kullanıcının GERÇEK kabinine (9222) bakıyordu; kullanıcı kabini
 açınca kaldı. Kabin kapalı sahnesi artık açıkça kuruluyor (388/388).
+
+
+## RAKİP CANLI YAYINI (30.09.2026, ~6 dk, 19 kare) — AgentSpace v0.3.0-dev.25
+
+Kaynak: youtube.com/@MuratifyAI/live ("OpenAI Dev Day, Çay Kahve GoyGoy AI
+Ekibimle"), 1080p kareler `docs/rakip/canli_3009/k01–k19.jpg` (git'te,
+yedekli — `.playwright-mcp/` silinip kaybolduğu için). Ses dinlenmedi;
+yalnız ekran okundu. Kanalın en yeni videosu hâlâ 27.09 "2 gün otopilot"
+(29.09'da okundu, bulgular yukarıda).
+
+Ekranda ölçülen:
+- **Masaüstü uygulaması** (Electron; macOS menüsü "AgentSpace Dev";
+  bantta "Windows Sürümü Çıktı!"). Dev/prod ayrı ("DEV · bulut:…").
+- Üst çubuk: takım sekmeleri (ÇEKİRDEK, ÜRÜN, YÖNETİM, PLATFORM, BÜYÜME,
+  PAZARLAMA, QA, OPERASYON, +3) · "+ Takım" · kayıt · bildirim (sayaçlı) ·
+  ayarlar dişlisi · yardım.
+- Sol: **Tarayıcı** + "Element Seç"; tarayıcı eylemi için **satır içi izin
+  şeridi**: "kamil-amca · click · tab[data-cat=izgara] — Bu görev boyunca
+  izin ver · Yalnız bu eylem · Reddet" (sayfada, kart değil).
+- Orta: gerçek Claude Code terminalleri ("bypass permissions on"); Codex
+  terminali kota sınırına takılmış ("You've hit your usage limit") —
+  ekranda öylece duruyor.
+- Sağ: piksel ofis (SEN karakteri, masalar, oda adları), üstte "Lider
+  önersin · Motoru değiştir · Karakterim · Kişiler · Kararlar · Teslimler ·
+  Yönet · Düzenle"; altında takım sohbeti: ajan ürettiği görseli
+  ("Selam, canlı yayın!") sohbete koymuş.
+- **Yeni (HIFI-03 prototip): uygulama içi kod editörü** — dosya ağacı,
+  sekmeler, "Değişiklikleri gör" (diff), "Canlı izle", "Ajana yaz",
+  "perceptor bu dosyada çalışıyor", Vim kipi, satır içi / yan yana diff.
+- **"Yardımcı" paneli — "İlk 10 dakika 1/10"** açılış listesi: AI motorunu
+  bağla · Ofisini kur · Lidere ilk işini yaz · Açılan kartları gör · Bir
+  çalışanı işbaşında izle · İlk sonuç raporunu oku · Ekibine bir skill
+  öğret · Sesle bir iş ver · El kontrolünü dene · Topluluğa katıl.
+- **Kısayollar** paneli (⌘P dosya aç, komutlar, dosyada bul/değiştir…).
+
+Farkımız (kullanıcı, 30.09): Murat ürünü içerik ve kendi şirketi için
+kullanıyor; biz kişisel kullanım için yapıyoruz. Rakip İLHAM, kopya değil.
+
+## 30.09.2026 — Sohbet yalnız patronun konuşması; liderin "yapamam"ı; ölçüt orantısı
+
+Kullanıcı (ekran görüntüleriyle): tek ekran görüntüsü işi için sohbete ajan
+raporu, iki ret gerekçesi, ikinci rapor ve "kapandı" düştü; "profesyonellik
+bunun neresinde". Düzeltmeler:
+- `takim.AKIS_OLAYLARI` = onay + ajanın `sohbete_yaz`ı; ajanlar arası
+  mesaj sohbete girmez. Rapor/ret/kapandı/iş açıldı görev ayrıntısında.
+- `sohbete_yaz` yalnız patronun görmesi gereken dosya/engel ("iş bitti"
+  yazılmaz, lider rapor eder) — araç açıklaması + brifing.
+- Plan istemi: kabul ölçütü işle orantılı; istenmeyen ara adım (yeni
+  sekme, git durumu, dosya zamanı) şart yazılmaz; kabinde yeni sekme yok.
+- **Triyaj istemine "AJANLARININ ELİNDEKİLER"**: ölçüldü, iki motorda da
+  lider "example.com'u açıp ekran görüntüsü alamıyorum, sen at" dedi (kendi
+  araçsız turunu ofisin sınırı sandı). Düzeltmeden sonra iki motor da
+  `dagit` seçti, görüntü sohbete düştü.
+
+Kalan (ölçüldü, sonraki kalite turunun işi): basit iş 200+ sn; yine 1 ret;
+lider raporu iç cümleyle ("Önce dosyaya bakıyorum") başlıyor ve "KANIT
+dosya:" satırı taşıyor; codex aynı görüntüyü iki kez gönderdi.

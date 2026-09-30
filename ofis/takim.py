@@ -42,8 +42,18 @@ _IS = re.compile(r"^\s*(?:is|iş|IS|İŞ|Is|İş)\s*[:\-]\s*(.*)$", re.S)
 
 #: Akista gosterilen olaylar. Terminal olaylari (arac, cikti, nabiz)
 #: GIRMEZ: sohbet bir kayit defteri degil, konusmadir.
-AKIS_OLAYLARI = ("rapor", "gorev_acildi", "kapandi", "ret", "onay_istendi",
-                 "ajan_sohbet")
+#: SOHBET = PATRONUN KONUSMASI (30.09.2026).
+#:
+#: Kullanici (ekran goruntusuyle): *"sohbet kismi normal olacak, burada
+#: seninle nasil konusuyorsam oyle; bir ekran goruntusu almak bu kadar zor
+#: olmamali, bu kadar seyi sohbete neden yazdi?"* Tek bir is icin sohbete
+#: ajanin tur raporu, liderin uzun ret gerekcesi, ikinci rapor ve
+#: "kapandi" satiri dustu. Bunlar ISIN ayrintisidir: gorev cekmecesinde ve
+#: terminalde durur. Sohbete yalniz patronu ilgilendiren girer: patronun
+#: mesaji, liderin cevabi/raporu, patrona sorulan soru ve onay, ajanin
+#: patrona gonderdigi dosya/engel (`sohbete_yaz`). Ajanlar arasi soru da
+#: sohbete girmez (patron o konusmanin tarafi degil).
+AKIS_OLAYLARI = ("onay_istendi", "ajan_sohbet")
 #: Akista metin KESILMEZ (4000 = cevap siniri, yalniz bellek korumasi).
 #: OLCULDU (29.09.2026): ilk surum her ogeyi 600 harfte kesiyordu ve
 #: liderin uzun cevabi panelde "**3..." diye yarida kaldi -- eski sohbet
@@ -253,6 +263,8 @@ def akis(ofis, *, kanat_id=None, adet: int = 80) -> list:
         m = dict(m)
         if not takimda(m["gonderen"], m["alici"]):
             continue
+        if "insan" not in (m["gonderen"], m["alici"]):
+            continue          # ajanlar arasi: isin ayrintisi, sohbet degil
         if m["mod"] == "yonlendirme":
             tur = "not"
         elif m["gonderen"] == "insan" and kadro.get(m["alici"], {}).get("lider_mi"):

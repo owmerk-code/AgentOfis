@@ -273,6 +273,16 @@ class Orkestra:
             "da 'masaustu ekran goruntusu' YAZMA; kanit sayfanin "
             "`browser_take_screenshot` goruntusudur.",
             "",
+            # 30.09 olculdu (#36, "sitemizi ac, ekran goruntusu at"): olcut
+            # "yeni sekmede acildi" ve "git status" istedi; kabin yeni sekmeyi
+            # yasakliyor, git bu isle ilgisiz. Is iki kez geri gonderildi,
+            # sohbete bes uzun mesaj dustu.
+            "KABUL OLCUTU ISLE ORANTILI olsun: patronun istedigi sonucun "
+            "kendisini olc (ornek: 'sayfanin ekran goruntusu sohbette'). "
+            "Istenmeyen ara adim (yeni sekme, git durumu, dosya zamani) "
+            "SART YAZMA. Paylasilan kabinde yeni sekme ACILMAZ; olcute "
+            "sekme sarti yazma.",
+            "",
             "`tarayici_alani` alanini NORMALDE YAZMA. Yalniz bir isi BILEREK "
             "birkac siteyle SINIRLAMAK istersen doldur; doldurursan ajan "
             "listede olmayan her site icin patrona sormak zorunda kalir.",

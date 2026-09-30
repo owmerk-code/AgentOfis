@@ -134,10 +134,22 @@ sina("cevap sorusundan SONRA", turler.index(("insan", "demir", "sohbet"))
      < turler.index(("demir", "insan", "cevap")))
 notlar = [x for x in ak if x["tur"] == "not"]
 sina("not akista, ULASMADI diye", notlar and notlar[0]["ulasti"] is False, str(notlar))
-sina("ajan->ajan sorusu akista (haritada kalmiyor)", ("cinar", "bilge", "soru") in turler)
-sina("cevapsiz soru BEKLIYOR isaretli",
-     any(x["id"] == m3["id"] and x["bekliyor"] for x in ak))
-sina("rapor olayi akista", any(x["tur"] == "rapor" and x["gorev_no"] == g["no"] for x in ak))
+# 30.09: sohbet PATRONUN konusmasi -- ajanlar arasi soru ve tur raporu
+# isin ayrintisidir (gorev cekmecesi, terminal), sohbete dusmez.
+sina("ajan->ajan sorusu sohbette YOK", ("cinar", "bilge", "soru") not in turler, str(turler))
+sina("ajanin tur raporu sohbette YOK", not any(x["tur"] == "rapor" for x in ak))
+m3b = ofis.postane.soru_sor("cinar", "insan", "hangi renk?", gorev_no=g["no"])
+ak = takim.akis(ofis)
+sina("patrona sorulan cevapsiz soru BEKLIYOR isaretli",
+     any(x["id"] == m3b["id"] and x["bekliyor"] for x in ak))
+ofis.db.olay_yaz(ofis.proje_id, "ajan_sohbet", "grafik hazir", ajan_ad="cinar",
+                 gorev_id=g["id"])
+for _tur_ in ("kapandi", "ret", "gorev_acildi"):
+    ofis.db.olay_yaz(ofis.proje_id, _tur_, f"{_tur_} kaydi", ajan_ad="demir", gorev_id=g["id"])
+ak = takim.akis(ofis)
+sina("ajanin patrona bildirimi sohbette", any(x["tur"] == "bildirim" for x in ak))
+sina("kapandi / ret / is acildi sohbette YOK",
+     not any(x["metin"].endswith(" kaydi") for x in ak))
 sina("terminal olayi (arac) akista YOK", not any(x["metin"] == "Bash" for x in ak))
 sina("sessiz mesaj akista YOK", all(x["tur"] != "" for x in ak))
 ak2 = takim.akis(ofis, kanat_id=kn2)
@@ -154,7 +166,7 @@ cev = [x for x in takim.akis(ofis) if x["id"] == mu["id"] and x["tur"] == "cevap
 sina("uzun cevap KESILMEDEN geliyor", cev and len(cev[0]["metin"]) == len(uzun.strip()),
      str(cev and len(cev[0]["metin"])))
 sina("konusanin meslegi geliyor (demir · lider)", cev and cev[0]["meslek"] == "lider")
-rap = [x for x in takim.akis(ofis) if x["tur"] == "rapor"]
+rap = [x for x in takim.akis(ofis) if x["tur"] == "bildirim"]
 sina("is etiketi isin SU ANKI durumu", rap and rap[0]["gorev_durum"] == "calisiyor",
      str(rap and rap[0]["gorev_durum"]))
 _js = (Path(__file__).resolve().parent.parent / "web" / "panel.js").read_text(encoding="utf-8")

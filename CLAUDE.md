@@ -283,6 +283,10 @@ matrisin ölçümüyle karşılaştırır.
 - Codex sandbox'ının açtığı `.pytest_cache` kullanıcıya kapalı olabilir
   (yönetici izni); yedek ve ölçüm onu atlar.
 - Mutasyon koşularında `PYTHONDONTWRITEBYTECODE=1` (bayat `.pyc` tuzağı).
+- **`.playwright-mcp/` SİLİNMEZ**: rakip dökümleri/kareleri orada ve yedeğe
+  girmiyor (30.09'da ekran görüntüsü temizliğiyle silindi, geri gelmedi).
+  Geçici ekran görüntüsü tek tek dosya adıyla silinir; kalıcı rakip dökümü
+  `docs/rakip/`e (metin) yazılır.
 - Ortam: Python 3.12 · `claude`, `codex` CLI'ları npm'de; kullanıcının öteki
   kodu `C:\Users\pc\Desktop\JarvisForge` (çalışan parça varsa ödünç al).
 

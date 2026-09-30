@@ -440,6 +440,23 @@ class Sohbet:
                 if g["cevap"]:
                     satirlar.append(f"  sen: {g['cevap'][:200]}")
 
+        # AJANLARIN ELINDEKILER (30.09.2026). OLCULDU, iki motorda da:
+        # "example.com'u ac, ekran goruntusu at" -> lider 'cevap' yolunu
+        # secip "bu oturumda acamiyorum, sen at" dedi; is hic acilmadi.
+        # Lider KENDI araçsiz triyaj turunu ofisin siniri sandi. Plan
+        # isteminde bu bolum vardi, triyajda yoktu.
+        satirlar += [
+            "",
+            "# AJANLARININ ELINDEKILER",
+            "",
+            "Senin bu turun aracsiz; AJANLARIN degil. Ajanlar terminaldeki "
+            "Claude Code / Codex gibi calisir: TARAYICIYLA siteye gider, "
+            "tiklar, form doldurur, sayfanin ekran goruntusunu alir ve "
+            "sohbete gonderir; kod yazar, komut kosturur, dosya/gorsel "
+            "uretir, arastirir. Bunlardan birini gerektiren mesaja "
+            "'yapamam / sen yap' diye CEVAP VERME -- `kendi` ya da `dagit` sec.",
+        ]
+
         satirlar += [
             "",
             "---",
