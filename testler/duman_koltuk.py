@@ -267,8 +267,13 @@ sina("DEVAM turunda oturum korundu", bool(cagri["oturum_id"]))
 sina("devam turunda TAM brifing TEKRARLANMADI", "K1 —" not in cagri["metin"])
 sina("devam turunda gorev fisi var", "K4 —" in cagri["metin"])
 sina("devam turunda DEGISEN dunya verildi", "Iyzico" in cagri["metin"])
-sina("devam metni tam brifingden cok daha kisa",
-     len(cagri["metin"]) < 1500, f"-- {len(cagri['metin'])} karakter")
+# Sabit sinir (1500) yerine ILK turun tam brifingine gore: gorev fisine
+# eklenen her kural (01.10: `karalama/`) sabit siniri asiyordu; olculen
+# sey ise 'devam tam brifingi tekrarlamiyor'.
+_ilk = next(c["metin"] for _iz in reversed(izler) for c in _iz.cagrilar if "K1 —" in c["metin"])
+sina("devam metni tam brifingden cok daha kisa (yarisindan az)",
+     len(cagri["metin"]) < len(_ilk) / 2,
+     f"-- devam {len(cagri['metin'])} / tam {len(_ilk)} karakter")
 
 print("\nKAYNAK TUKENMESINDEN SONRA DEVAM -- is bastan kosmasin")
 # OLCULDU (19.09.2026): arastirma turu butce tavanina takildi, `birak`

@@ -380,6 +380,7 @@ class Brifing:
                          "ayni aracin `ekler` alanina dosya yolunu yaz. "
                          "Sohbet ofis icidir, disari cikmaz: ONAY GEREKMEZ. "
                          "`ekler/` klasoru HER ISTE SERBESTTIR (yazma alani gerekmez): patrona gosterilecek dosya oraya kaydedilir -- sayfa goruntusu icin `browser_take_screenshot` araci `filename: \"ekler/<ad>.png\"` ile -- ve `sohbete_yaz(ekler=[...])` ile gonderilir. Oradaki dosyayi SILME. "
+                         "`karalama/` klasoru de SERBESTTIR: isi yaparken gereken YARDIMCI betik (belgeyi ureten, dosyayi dogrulayan gecici kod) oraya yazilir; ofis orayi olcmez. Yardimci betigi koke ya da yazma alani disina BIRAKMA. "
                          "Soru icin `soru_sor`, onay icin `onay_iste`."]
         # PATRONUN KENDI SOZU (01.10.2026, gercek set G14): ajan patronun
         # acikca istedigi adim icin kart acmasin.

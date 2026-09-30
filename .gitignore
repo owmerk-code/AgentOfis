@@ -19,6 +19,7 @@ clewase-review/
 # Sohbete eklenen dosyalar (ekran goruntusu, belge) OZEL olabilir: GitHub'a
 # gitmez, ZIP yedeginde durur (ofis/ekler.py).
 calisma/ekler/
+calisma/karalama/
 calisma/**/*.png
 calisma/**/*.jpg
 calisma/**/*.jpeg

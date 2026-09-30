@@ -60,6 +60,7 @@ from .ekip import Ekip, EkipHatasi
 from .klasor import klasorleri_dogrula, metinler
 from .tarayici import kaynaklari_dogrula as tarayici_kaynaklari_dogrula
 from .orkestra import Orkestra, OrkestraHatasi, _json_ayikla
+from .lider import ARAC_SUSKUNLUGU
 
 #: Triyajda lidere gosterilecek son konusma sayisi. Az tutuluyor:
 #: sohbetin tamami her mesajda tasinirsa maliyet dogrusal buyur ve
@@ -857,6 +858,7 @@ class Sohbet:
             "  ilk cumle SONUC olsun. 'KANIT' / 'DURUM:' satiri yazma.",
             "- Ic isleyisi (gorev numarasi, kilit, revizyon) anlatma;",
             "  patron sonucu ister, defteri degil.",
+            "- " + ARAC_SUSKUNLUGU,
             "- " + EK_KURALI,
         ]
         ham = self._lideri_kostur(lider, "\n".join(satirlar),

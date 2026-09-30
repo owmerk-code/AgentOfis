@@ -13031,3 +13031,33 @@ G17 Word belgesi, G18 çok adımlı proje (plan + uygulama). Gerçek sete
 - `testler/ofis_kopyasi.py`: patronun GERÇEK defteri + `calisma/` geçici
   klasöre kopyalanır (`sqlite backup`), ajan klasörleri kopyaya çevrilir,
   gerçek iş verilir. Gerçek defter/klasör değişmez.
+
+## 01.10.2026 gece — Claude 2. tam koşu 16/18; G17 ve G07 kökleri
+
+- **2. tam koşu (claude): 16/18.** G07 (oyun) ekran görüntüsü ölçütüyle 5
+  ret (önceki kayıtta düzeltildi: inceleme patronun sözünü görür, plan
+  görsel istenmediyse ekran görüntüsü şartı koymaz). G17 (Word) 4 retle
+  kaldı: ajan belgeyi üretmek/doğrulamak için KÖKTE iki yardımcı betik
+  yazdı (`create_toplanti.py`, `verify_toplanti.py`); ölçüm "beyan dışı"
+  dedi, lider plandaki "yazma alanı dışına dosya yazılmaz" maddesine
+  dayanıp geri gönderdi.
+- **Düzeltme (yapı):** `karalama/` klasörü — yardımcı betiklerin yeri,
+  ofis orayı ÖLÇMEZ (`degisim.ATLANAN`), GitHub'a gitmez. Brifing ve plan
+  bunu söyler; plan ölçüte "yazma alanı dışına yazılmaz" maddesi KOYMAZ
+  (ofis zaten ölçer); inceleme notu da serbest der. duman_degisim 106
+  (yeni sınama düzeltme geri alınınca düşüyor).
+- **Sonra G17 GEÇTİ** (139 sn, 0 ret).
+- G07 yine KALDI (587 sn, 2 ret). Rapor ret SAYISINI veriyordu, sebebini
+  değil → gerçek set artık ret gerekçelerini rapora yazar.
+- G07'de liderin cevabı: "Ben bugün terminalde hiçbir test
+  koşturamadım, komut çalıştırma aracı kapalıydı… çalışıyor görünüyor".
+  Rapor/inceleme turu BİLEREK araçsız; patron liderin araç durumunu
+  sormaz. Kural tek yerde (`lider.ARAC_SUSKUNLUGU`), rapor turu ve PATRONA
+  taslağı ikisi de kullanır; gerçek setin kalite denetimi bu kalıbı
+  yakalar.
+- duman_koltuk'taki "devam metni < 1500 harf" sabit sınırı, görev fişine
+  eklenen her kuralla (karalama) aşılıyordu; ölçtüğü şey "devam tam
+  brifingi tekrarlamıyor" → sınır ilk turun tam brifingine oranlandı
+  (yarısından az).
+- Düzeltmelerden sonra **G07 GEÇTİ** (174 sn, 0 ret; önceki 587 sn).
+  Tam duman takımı 3419/3419.

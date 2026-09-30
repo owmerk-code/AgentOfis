@@ -554,6 +554,12 @@ _tara = degisim.tarama(ck2)
 sina("canli tarama anlik ile AYNI klasorleri atliyor",
      not any(y.startswith(("__pycache__", "node_modules")) for y in _tara)
      and set(_tara) == set(degisim.anlik(ck2)), str(sorted(_tara)))
+# 01.10 (G17): yardimci betiklerin yeri `karalama/`; ofis orayi olcmez.
+(ck2 / "karalama").mkdir()
+(ck2 / "karalama" / "yap.py").write_text("1\n", encoding="utf-8")
+sina("karalama/ olculmuyor (yardimci betik beyan disi sayilmaz)",
+     not any(y.startswith("karalama") for y in degisim.tarama(ck2))
+     and not any(y.startswith("karalama") for y in degisim.anlik(ck2)))
 
 # --------------------------------------------------------------------------
 print("\n14. CANLI DEFTER -- tek satir, kosan is, temizlik")

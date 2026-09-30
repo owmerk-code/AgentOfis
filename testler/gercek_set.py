@@ -88,7 +88,8 @@ _YAPAMAM = re.compile(r"\byapamam\b|alam[iı]yorum|a[cç]am[iı]yorum|eri[sş]em
 #: satiri. Sade "Kanıt: goruntu sohbette" cumlesi patrona uygun, sayilmaz.
 _IC_KONUSMA = re.compile(r"(?im:^\s*(?:Önce|Once|Şimdi|Simdi)\b.*(?:bak[iı]yorum|"
                          r"kontrol ediyorum|okuyorum))|(?m:^\s*KANIT\s+\S+\s*:)"
-                         r"|(?m:^\s*DURUM:)")
+                         r"|(?m:^\s*DURUM:)"
+                         r"|(?i:ara[cç](?:[iı]m)?\s+kapal[iı]|ko[sş]turamad[iı]m|[cç]al[iı][sş]t[iı]ramad[iı]m)")
 
 
 # ---------------------------------------------------------------- yardimci
@@ -611,14 +612,19 @@ def kalite(ofis, tanim, sure_sn: float) -> list:
     lider = [x for x in ak if x["kimden"] == "lale"]
     son = lider[-1]["metin"] if lider else ""
     with ofis.db.baglanti() as c:
-        ret = c.execute("SELECT COUNT(*) FROM olay WHERE proje_id=? AND tur='ret'",
-                        (ofis.proje_id,)).fetchone()[0]
+        # Ret GEREKCESI de rapora girer: sayi tek basina neyin duzeltilecegini
+        # soylemez (01.10, G07 ikinci kez 2 retle kaldi, sebep gorunmuyordu).
+        _retler = [r[0] or "" for r in c.execute(
+            "SELECT govde FROM olay WHERE proje_id=? AND tur='ret' ORDER BY rowid",
+            (ofis.proje_id,))]
+        ret = len(_retler)
     olcut = [] if tanim.get("cevap_serbest") else [("lider patrona cevap verdi", bool(son), "")]
     olcut += [
         ("lider 'yapamam / sen yap' DEMEDI", not _YAPAMAM.search(son or ""), (son or "")[:100]),
         ("rapor ic konusma / KANIT satiri tasimiyor", not _IC_KONUSMA.search(son or ""),
          (_IC_KONUSMA.search(son or "") or [""])[0][:80] if son else ""),
-        ("gereksiz ret yok", ret == 0, f"{ret} ret"),
+        ("gereksiz ret yok", ret == 0, f"{ret} ret" + "".join(
+            f" | {i}. {g[:400]}" for i, g in enumerate(_retler, 1))),
     ]
     if not tanim.get("sohbet_serbest"):
         payi = 2 + SOHBET_EK_PAYI

@@ -218,7 +218,7 @@ matrisin ölçümüyle karşılaştırır.
   14 işin 14'ü iki motorda geçti (01.10; G13 Excel, G14 form+patron izni dahil); tek koşuda claude 13/14, codex 12/14 (kalanlar düzeltildi, yeniden geçti). Liderin turları varsayılan ARKA kipte (`lider_terminal_kipi`), işçi gerçek terminalde; basit iş ~70–80 sn. Gece görevi DEVRE DIŞI (PC gece kapalı), set gündüz koşulur. Kural: gerçek motorla geçmeyen "bitti" değil.
 - **Güncelleme hemen:** 30 dakikada bir ölçer, uyguladıktan sonra yeniden
   ölçer (`olc_ve_ilerle`). CLI güncellemesinin deneme turu, ofis gerçek terminal kipindeyse terminalde de koşar (30.09).
-- **Sınamalar:** 44 duman dosyası, **3408/3408** (01.10; 45 dosya) + gerçek set (`gercek_set.py`, her gece 03:30). Deneme seti 15/15
+- **Sınamalar:** 44 duman dosyası, **3419/3419** (01.10; 45 dosya) + gerçek set (`gercek_set.py`, her gece 03:30). Deneme seti 15/15
   (Claude ve Codex, işçi+lider).
 - **Kullanıcının belirttiği eksikler (29.09):** her panoda her zaman açık
   yazma yeri; sesli orkestratör;

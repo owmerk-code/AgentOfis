@@ -51,6 +51,11 @@ from .tahta import TahtaHatasi, yol_normalle, yollar_cakisir
 KARAR_DESENI = re.compile(r"^\s*KARAR\s*:\s*(kapat|geri)\b[ \t:-]*(.*)$",
                           re.IGNORECASE | re.MULTILINE)
 
+#: Patrona giden metinde liderin kendi arac durumu anlatilmaz (01.10,
+#: gercek set G07: 'komut calistirma aracim kapaliydi, calisiyor
+#: gorunuyor'). Rapor turu ve inceleme taslagi AYNI kurali kullanir.
+ARAC_SUSKUNLUGU = ("Kendi araclarindan, neyi calistiramadigindan SOZ ETME (bu tur bilerek aracsiz; dogrulama kanitta ve ofisin olcumunde). 'gorunuyor' deme: kanit ne diyorsa onu soyle.")
+
 #: `PATRONA:` blogu: satirdan baslar, bir sonraki hukum satirina ya da
 #: kod citine kadar surer.
 _PATRONA = re.compile(r"^[ \t]*PATRONA:[ \t]*(.*?)(?=^[ \t]*(?:KARAR|DERS|BILGI):|^```|\Z)",
@@ -443,7 +448,8 @@ class Lider:
                 satirlar.append(f"- \"{_metin[:160]}\""
                                 + (f" · ekler: {', '.join(_yollar)}" if _yollar else ""))
         satirlar += ["", "_Not: `ekler/` klasoru her iste serbesttir; patrona "
-                         "gosterilecek dosyanin oraya yazilmasi ihlal DEGILDIR._"]
+                         "gosterilecek dosyanin oraya yazilmasi ihlal DEGILDIR. "
+                         "`karalama/` (yardimci betikler) da serbesttir, olculmez._"]
         # Olcum YOKSA sessiz kalinir -- "hicbir sey degismedi" DEMEZ.
         # Kod yazmayan bir is (arastirma, inceleme) zaten dosya
         # degistirmez; ona "degisiklik yok" demek, olcmedigimiz bir seye
@@ -508,6 +514,7 @@ class Lider:
             "```",
             "`PATRONA:` metni patrona DOGRUDAN gider: baslik, KANIT/DURUM satiri,",
             "ic konusma YAZMA; ilk cumle sonuc olsun. Is numarasi anlatma.",
+            ARAC_SUSKUNLUGU,
             "Geri gonderiyorsan (gerekce zorunlu -- ajan neyi duzeltecegini bilmeli):",
             "```",
             "KARAR: geri -- <ne eksik, somut olarak>",

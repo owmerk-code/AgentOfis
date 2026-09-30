@@ -67,6 +67,11 @@ ATLANAN_KLASOR = frozenset({
     # yonetir; tur surerken eklenen dosya ajanin "beyan disi yazmasi"
     # sayilmasin.
     "ekler",
+    # 01.10 (gercek set G17, claude): ajan belgeyi uretmek ve dogrulamak
+    # icin kokte iki yardimci betik yazdi; olcum "beyan disi" dedi, lider
+    # 4 kez geri gonderdi. Yardimci betiklerin yeri `karalama/`dir; ofis
+    # onu olcmez, yazma alani gerekmez.
+    "karalama",
 })
 ATLANAN_UZANTI = frozenset({".pyc", ".pyo", ".pyd", ".so", ".dll", ".exe"})
 
