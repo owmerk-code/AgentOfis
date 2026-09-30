@@ -194,6 +194,20 @@ _im = Lider(ofis).inceleme_metni(_gi["no"])
 sina("inceleme metninde patrona gonderilen ek var",
      "GONDERILENLER" in _im and y1 in _im, _im[-300:])
 
+print("\n-- 9c. kanitta gecen ama sohbete GITMEMIS ek olculur (30.09, G01) --")
+_gg = ofis.tahta.gorev_ac("Goruntu", neden="n", ana_hedef="h", kabul_olcutu="k",
+                          govde="g", yazma_alani=["x/"], kanat_id=kn, sahip="cinar")
+(_KOK / "ekler" / "menu.png").write_bytes(b"\x89PNG" + b"0" * 2000)
+ofis.tahta.kanit_ekle(_gg["no"], "gorsel", "menu goruntusu", "ekler/menu.png kaydedildi",
+                      ekleyen="cinar")
+ofis.tahta.kanit_ekle(_gg["no"], "dosya", "olmayan", "ekler/yok.png", ekleyen="cinar")
+sina("gitmemis ek bulundu (diskte olmayan sayilmadi)",
+     ekler.gonderilmemisler(ofis, [_gg["id"]]) == ["ekler/menu.png"],
+     str(ekler.gonderilmemisler(ofis, [_gg["id"]])))
+ofis.db.olay_yaz(ofis.proje_id, "ajan_sohbet", "ekte\n[ek] ekler/menu.png", ajan_ad="cinar",
+                 gorev_id=_gg["id"])
+sina("sohbete gidince listeden cikti", ekler.gonderilmemisler(ofis, [_gg["id"]]) == [])
+
 print("\n-- 10. Codex gercek terminal: ret dedektoru (30.09) --")
 from ofis.motor.codex import tui_ret_mi  # noqa: E402
 sina("brifing okumasi (icinde 'ONAY ISTENDI' gecen) RET SAYILMAZ",

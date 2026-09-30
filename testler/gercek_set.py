@@ -420,6 +420,20 @@ def is_kos(no: str, motor: str, *, kuru: str = "", zaman_asimi: int = 600,
         tum = sonuc["olcutler"] + sonuc["kalite"]
         sonuc["durum"] = "gecti" if tum and all(o["gecti"] for o in tum) else "kaldi"
         sonuc["sohbet"] = [f"{x['kimden']}/{x['tur']}: {x['metin'][:200]}" for x in takim.akis(ofis)]
+        # SURE NEREYE GIDIYOR: tur basina motor suresi, yola gore (lider =
+        # triyaj/plan/rapor, inceleme, isci). Hiz iyilestirmesi olcumsuz
+        # yapilmasin diye.
+        dagilim: dict = {}
+        with ofis.db.baglanti() as c:
+            for r in c.execute("SELECT ajan_ad, govde FROM olay WHERE proje_id=? AND "
+                               "tur='tur_ozeti' ORDER BY rowid", (ofis.proje_id,)):
+                try:
+                    v = json.loads(r["govde"] or "{}")
+                except ValueError:
+                    continue
+                yol = v.get("yol") or "isci"
+                dagilim.setdefault(yol, []).append(round((v.get("sure_ms") or 0) / 1000))
+        sonuc["sureler"] = dagilim
     except Exception as exc:                    # noqa: BLE001 -- bir is digerini durdurmasin
         sonuc["durum"] = "hata"
         sonuc["hata"] = f"{exc.__class__.__name__}: {exc}"
@@ -459,6 +473,12 @@ def rapor_yaz(sonuclar: list, ayar: dict) -> Path:
                  for o in (r.get("olcutler", []) + r.get("kalite", [])) if not o["gecti"]]
         s.append(f"| {r['no']} {r['ad']} | {r['durum'].upper()} | {r.get('sure_sn', 0):.0f} sn | "
                  + ("; ".join(kalan)[:400] or r.get("hata", "")[:200]).replace("|", "/") + " |")
+    s += ["", "## Sure dagilimi (motor turu, sn)", ""]
+    for r in sonuclar:
+        if r.get("sureler"):
+            s.append(f"- {r['no']}: " + " · ".join(
+                f"{y} {'+'.join(str(x) for x in v)}" for y, v in r["sureler"].items())
+                + f" (toplam {r.get('sure_sn', 0):.0f})")
     s += ["", "## Sohbette gorunen (kalanlar)", ""]
     for r in sonuclar:
         if r.get("durum") != "gecti":

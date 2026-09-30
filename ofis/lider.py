@@ -435,6 +435,12 @@ class Lider:
             "   kucuk yazim hatasi. Olcut karsilaniyorsa KAPAT; istersen",
             "   kapatirken kisaca not dus. Geri gondermek yalniz olcut",
             "   karsilanmiyorsa ya da bir sey BOZULDUYSA.",
+            # 30.09 olculdu (G01, claude): goruntu ekler/'de hazirdi, ajan
+            # sohbete gondermeyi unuttu, lider isi geri gonderdi. Raporda
+            # ofis gitmemis dosyayi listeler, lider `[ek]` ile ekler.
+            "8. Patrona gidecek dosya `ekler/` altinda HAZIRSA, sirf ajan",
+            "   `sohbete_yaz` cagirmadi diye GERI GONDERME: kapat; ofis",
+            "   raporda gitmemis dosyayi sana gosterir, sen eklersin.",
             "",
             "### Hukmunu TAM OLARAK su bicimde yaz",
             "",

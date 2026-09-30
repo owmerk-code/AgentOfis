@@ -793,6 +793,18 @@ class Sohbet:
                                 f"{(k['icerik'] or '')[:200]}")
             satirlar.append("")
 
+        from .ekler import gonderilmemisler
+        try:
+            _gitmemis = gonderilmemisler(self.ofis, [
+                self.ofis.tahta.gorev(g0["no"])["id"] for g0 in plan["gorevler"]])
+        except Exception:                        # noqa: BLE001 -- rapor yine yazilir
+            _gitmemis = []
+        if _gitmemis:
+            satirlar += ["# PATRONA HENUZ GITMEMIS DOSYALAR (ofisin olcumu)", ""]
+            satirlar += [f"- {y}" for y in _gitmemis]
+            satirlar += ["", "Patronun gormesi gerekiyorsa raporuna AYRI SATIRDA "
+                             "`[ek] <yol>` olarak ekle.", ""]
+
         bekleyen = (self.ofis.postane.insan_bekleyenler()
                     + self.ofis.postane.bekleyen_onaylar())
         if bekleyen:

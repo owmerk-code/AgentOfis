@@ -148,6 +148,38 @@ def metni_hazirla(ofis, metin: str, *, ajan_ad: str = "") -> tuple:
     return _HAM_SATIR.sub(cevir, metin or ""), hatalar
 
 
+_KANITTA_EK = re.compile(r"ekler/[A-Za-z0-9._-]+")
+
+
+def gonderilmemisler(ofis, gorev_idleri) -> list:
+    """Islerin KANITINDA gecen ama patronun sohbetine HIC gitmemis ekler.
+
+    OLCULDU (30.09.2026, gercek set G01, claude): ajan ekran goruntusunu
+    `ekler/menu.png`ye kaydetti, kanitina yazdi, ama `sohbete_yaz`i
+    cagirmadi; lider isi bu yuzden geri gonderdi. Rica ("gondermeyi
+    unutma") yerine YAPI: ofis eksigi olcer, lider raporuna ekler.
+    Yalniz diskte GERCEKTEN duran dosya sayilir.
+    """
+    idler = [g for g in (gorev_idleri or []) if g]
+    if not idler:
+        return []
+    soru = ",".join("?" * len(idler))
+    with ofis.db.baglanti() as c:
+        gidenler = set()
+        for r in c.execute(f"SELECT govde FROM olay WHERE proje_id = ? AND tur = 'ajan_sohbet' "
+                           f"AND gorev_id IN ({soru})", (ofis.proje_id, *idler)):
+            gidenler.update(ayikla(r["govde"] or "")[1])
+        adaylar = []
+        for r in c.execute(f"SELECT baslik, icerik FROM kanit WHERE gorev_id IN ({soru}) "
+                           "ORDER BY rowid", idler):
+            for y in _KANITTA_EK.findall(f"{r['baslik'] or ''} {r['icerik'] or ''}"):
+                y = y.rstrip(".")
+                if y not in adaylar:
+                    adaylar.append(y)
+    kok = Path(ofis.kok_klasoru()).resolve()
+    return [y for y in adaylar if y not in gidenler and (kok / y).is_file()]
+
+
 def satirlar(yollar) -> str:
     return "\n".join(SATIR_ONEKI + y for y in yollar)
 
