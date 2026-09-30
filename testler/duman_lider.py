@@ -272,6 +272,15 @@ sina("hukumsuz incelemeden sonra kisa HUKUM sorusu soruldu", any("HUKUM SATIRI Y
 sina("  ve is KAPANDI", _s5["hukum"] == "kapat" and ofis.tahta.gorev(_gh["no"])["durum"] == "bitti",
      str(_s5))
 
+
+# 01.10 (patronun ofis kopyasi): PATRONA'nin altina yazilan inceleme notu
+# patrona gitmez.
+from ofis.lider import patrona_ayikla as _pa
+_pm = _pa('KARAR: kapat\nPATRONA: Gorsel hazir.\n\nNot: Gorseli actim, karalama/yazi.py.\nBILGI: a -> b')
+sina("PATRONA metni 'Not:' satirinda biter", _pm == 'Gorsel hazir.', repr(_pm))
+sina("'Not' ile baslayan kelime (Nota) kesmez",
+     _pa('KARAR: kapat\nPATRONA: Nota gore yazildi.') == 'Nota gore yazildi.')
+
 print(f"\n== sonuc: {GECEN} gecti, {KALAN} kaldi ==")
 print(f"klasor: {kok}")
 sys.exit(1 if KALAN else 0)

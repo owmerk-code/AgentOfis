@@ -246,6 +246,13 @@ ofis.db.olay_yaz(ofis.proje_id, "ajan_sohbet", "belge\n[ek] " + ekler.paylas(ofi
                  ajan_ad="cinar", gorev_id=_gg["id"])
 sina("zaman damgali kopyasi gidince listeden cikti",
      ekler.gonderilmemisler(ofis, [_gg["id"]]) == [], str(ekler.gonderilmemisler(ofis, [_gg["id"]])))
+# 01.10 (patronun ofis kopyasi): karalama/ ara urunu patrona gitmez.
+(_KOK / "karalama").mkdir(exist_ok=True)
+(_KOK / "karalama" / "arka-plan.png").write_bytes(b"\x89PNG" + b"0" * 500)
+ofis.tahta.kanit_ekle(_gg["no"], "dosya", "ara", "arka plan karalama/arka-plan.png uretildi",
+                      ekleyen="cinar")
+sina("karalama/ ara urunu gitmemis SAYILMAZ (patrona eklenmez)",
+     ekler.gonderilmemisler(ofis, [_gg["id"]]) == [], str(ekler.gonderilmemisler(ofis, [_gg["id"]])))
 
 print("\n-- 10. Codex gercek terminal: ret dedektoru (30.09) --")
 from ofis.motor.codex import tui_ret_mi  # noqa: E402

@@ -13061,3 +13061,30 @@ G17 Word belgesi, G18 çok adımlı proje (plan + uygulama). Gerçek sete
   (yarısından az).
 - Düzeltmelerden sonra **G07 GEÇTİ** (174 sn, 0 ret; önceki 587 sn).
   Tam duman takımı 3419/3419.
+
+## 01.10.2026 gece — patronun GERÇEK ofisinin kopyasında ilk deneme
+
+`testler/ofis_kopyasi.py`: gerçek defter + `calisma/` geçici klasöre
+kopyalandı; lider demir (Opus), gerçek kadro (bilge, cinar…), dolu hafıza.
+İlk koşu işi başlamadan DURDU (denetim doğru ateşledi): proje kökü ayrı
+tutuluyor (`proje.kok_klasor`), yalnız ajan klasörleri çevrilmişti →
+kopyada o da çevrilir, kalan her gerçek-kök izi uyarı olarak yazılır
+(yalnız geçmiş turların `tur_anlik.kok` kaydı kaldı; yeni yazma yapmaz).
+
+Dört iş, dördü de BİTTİ (gerçek defter 19:47'den beri yazılmadı, `calisma/`
+değişmedi):
+1. semuparfum.com ekran görüntüsü — 103 sn, görüntü sohbete geldi (bilge).
+2. Araştırma raporu (3 gelişme + kaynak, rapor.md) — 160 sn.
+3. Kahve Durağı Instagram görseli — 170 sn (cinar, codex).
+4. "calisma'da ne var" özeti — 21 sn, iş açılmadan cevap.
+
+Bulgular ve düzeltmeler:
+- **Yanlış ek (iş 3):** ajan arka planı `karalama/kahve-arka-plan.png`de
+  üretip kanıtta andı; `ekler.gonderilmemisler` onu "gitmemiş" sayıp
+  patrona ekledi (asıl görsel zaten ajanın mesajıyla gitmişti). →
+  `karalama/` patrona hiç gitmez. duman_ekler 50.
+- **İnceleme notu patrona sızdı (iş 1, 3):** kural 7 "kapatırken kısaca not
+  düş" diyor; lider notu PATRONA'nın ALTINA yazdı, patron "karalama/
+  yazi_bas.py, georgia.ttf, çekirdek 5 değil 6" okudu. → PATRONA bloğu
+  `Not:` / `İnceleme notu:` satırında biter; kural 7 notu KARAR'ın üstüne
+  yazdırır. duman_lider 48. İki sınama da düzeltme geri alınınca düşüyor.

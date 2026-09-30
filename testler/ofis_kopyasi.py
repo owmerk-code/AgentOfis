@@ -64,6 +64,23 @@ def kopya_kur() -> tuple:
     for r in hedef.execute("SELECT ad, klasor FROM ajan").fetchall():
         if (r[1] or "").lower().replace("\\", "/").rstrip("/") == gercek:
             hedef.execute("UPDATE ajan SET klasor=? WHERE ad=?", (str(calisma), r[0]))
+    # Projenin KOKU ayri tutulur (`proje.kok_klasor`); ajan klasoru gibi
+    # o da kopyaya cevrilir. Olculdu (01.10): ilk kosuda yalniz ajanlar
+    # cevrilmisti, `main`deki denetim isi baslamadan durdurdu.
+    for r in hedef.execute("SELECT id, kok_klasor FROM proje").fetchall():
+        if (r[1] or "").lower().replace("\\", "/").rstrip("/") == gercek:
+            hedef.execute("UPDATE proje SET kok_klasor=? WHERE id=?", (str(calisma), r[0]))
+    # Kalan her gercek-kok izi SOYLENIR (sessiz kalan yol, gercek klasore yazar).
+    for (tablo,) in hedef.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall():
+        sutunlar = [c[1] for c in hedef.execute(f"PRAGMA table_info({tablo})")]
+        for sut in sutunlar:
+            try:
+                n = hedef.execute(f"SELECT COUNT(*) FROM {tablo} WHERE lower(replace(CAST({sut} AS TEXT),'\\','/')) "
+                                  f"LIKE ?", (gercek + "%",)).fetchone()[0]
+            except sqlite3.Error:
+                continue
+            if n and tablo not in ("olay", "kanit", "gorev", "karar", "mesaj"):
+                print(f"UYARI: kopyada gercek koku gosteren {n} kayit: {tablo}.{sut}")
     # Kopyada yarim kalmis is/onay patronun gercek kuyrugunu taklit etmesin.
     hedef.execute("UPDATE gorev SET durum='iptal' WHERE durum IN ('bekliyor','hazir','calisiyor','inceleme')")
     hedef.commit()

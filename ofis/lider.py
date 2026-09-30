@@ -58,7 +58,11 @@ ARAC_SUSKUNLUGU = ("Kendi araclarindan, neyi calistiramadigindan SOZ ETME (bu tu
 
 #: `PATRONA:` blogu: satirdan baslar, bir sonraki hukum satirina ya da
 #: kod citine kadar surer.
-_PATRONA = re.compile(r"^[ \t]*PATRONA:[ \t]*(.*?)(?=^[ \t]*(?:KARAR|DERS|BILGI):|^```|\Z)",
+#: `Not:` / `Inceleme notu:` ile baslayan satir da biter (01.10, patronun
+#: ofis kopyasi): kural 7 "kapatirken kisaca not dus" diyor; lider notu
+#: PATRONA'nin ALTINA yazdi ve patrona "karalama/yazi_bas.py, georgia.ttf,
+#: cekirdek sayisi 5 degil 6" gibi inceleme ayrintisi gitti.
+_PATRONA = re.compile(r"^[ \t]*PATRONA:[ \t]*(.*?)(?=^[ \t]*(?:KARAR|DERS|BILGI|Not|NOT|[İI]nceleme notu):|^```|\Z)",
                       re.M | re.S)
 
 
@@ -489,7 +493,8 @@ class Lider:
             "7. ANLAMI DEGISTIRMEYEN fark ret sebebi DEGILDIR: Turkce harf",
             "   (Cay/Çay), buyuk-kucuk harf, siralama, uslup, telif yili,",
             "   kucuk yazim hatasi. Olcut karsilaniyorsa KAPAT; istersen",
-            "   kapatirken kisaca not dus. Geri gondermek yalniz olcut",
+            "   kapatirken KARAR satirinin USTUNE kisaca not dus (not patrona",
+            "   gitmez). Geri gondermek yalniz olcut",
             "   karsilanmiyorsa ya da bir sey BOZULDUYSA.",
             # 30.09 olculdu (G01, claude): goruntu ekler/'de hazirdi, ajan
             # sohbete gondermeyi unuttu, lider isi geri gonderdi. Raporda

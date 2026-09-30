@@ -215,7 +215,12 @@ def gonderilmemisler(ofis, gorev_idleri) -> list:
         ad = Path(y).name
         return y in gidenler or ad in adlar or any(a.endswith("-" + ad) for a in adlar)
 
-    return [y for y in adaylar if not gitti(y) and (kok / y).is_file()]
+    # KARALAMA (01.10.2026, patronun ofis kopyasi, is 3): ajan arka plan
+    # gorselini `karalama/`da uretip kanitta andi; ofis onu "gitmemis" sayip
+    # patrona ekledi -- asil gorsel zaten gitmisti. Yardimci dosya patrona
+    # hic gitmez.
+    return [y for y in adaylar if not gitti(y) and (kok / y).is_file()
+            and Path(y).parts[:1] != ("karalama",)]
 
 
 def satirlar(yollar) -> str:
