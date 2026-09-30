@@ -12842,3 +12842,11 @@ sayılmaz.** Sahte duman sınamaları kalıyor (kod bozuldu mu, saniyede).
   araçsız lider turu da alıyor); sade "Kanıt: …" cümlesi kalır.
 - İkinci koşuda G01 iki motorda: görüntü sohbette, ret YOK, sohbet temiz;
   yalnız KANIT satırı kalmıştı (yukarıdaki düzeltmeyle kapandı).
+- **Gereksiz ret kuralları (inceleme istemi 6–7):** salt okunur incelemede
+  çalışmayan komut (codex: pytest geçici klasör yazamadı) ajanın hatası
+  değildir, ret sebebi olmaz; anlamı değiştirmeyen fark (Cay/Çay, telif
+  yılı, küçük yazım) ret sebebi olmaz — ölçüt karşılanıyorsa kapat, not düş.
+- Kota ölçüldü (gece 04:50): claude 7g %85 (06:00 civarı yenileniyor), 5s
+  %49; codex 7g %55. Gerçek set her raporda kota farkını yazar.
+- Heredoc tuzağı yine: `\b` geri-silme karakterine döndü (gercek_set
+  regex'i); depo taraması temiz.

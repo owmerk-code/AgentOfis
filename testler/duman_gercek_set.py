@@ -47,6 +47,8 @@ print("\n-- 2. kalite kaliplari (30.09'da gorulen cumleler) --")
 sina("'acamiyorum, sen at' yakalanir",
      bool(GS._YAPAMAM.search("Bu oturumda example.com'u açıp ekran görüntüsü alamıyorum. "
                              "Ekran görüntüsünü buraya ekleyebilir misin?")))
+sina("'dogrulama yapamadim' (sen yap degil) SAYILMAZ",
+     not GS._YAPAMAM.search("rapor.md dogru. Ayri bir komutla dogrulama yapamadim."))
 sina("temiz cevap 'yapamam' SAYILMAZ",
      not GS._YAPAMAM.search("Ekran görüntüsü sohbette. Sayfa sorunsuz açıldı."))
 sina("'Önce dosyaya bakıyorum' ic konusma yakalanir",

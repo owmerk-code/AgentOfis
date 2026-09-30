@@ -421,6 +421,20 @@ class Lider:
             "   bilmeyen bir defter, kayit tutmuyor demektir.",
             "5. Kanit yetersizse ya da olcutu karsilamiyorsa GERI GONDER.",
             "   'Anlatisi mantikli' kanit degildir.",
+            # 30.09.2026, gercek set: dort gereksiz ret. Codex lideri pytest'i
+            # salt okunur incelemede calistiramadi (gecici klasor yazilamiyor)
+            # ve isi bu yuzden geri gonderdi; claude lideri "Cay" yerine
+            # "Çay", "© 2024" yili ve bir harf hatasi icin geri gonderdi.
+            # Her ret bir tur daha, bir mesaj daha ve patronun beklemesi.
+            "6. SEN SALT OKUNURSUN: bir komut yazma gerektirdigi icin (pytest",
+            "   gecici klasoru vb.) senin incelemende calismazsa bu AJANIN",
+            "   hatasi DEGILDIR; ajanin kanitini ve ofisin disk olcumunu tart,",
+            "   yalniz bu yuzden GERI GONDERME.",
+            "7. ANLAMI DEGISTIRMEYEN fark ret sebebi DEGILDIR: Turkce harf",
+            "   (Cay/Çay), buyuk-kucuk harf, siralama, uslup, telif yili,",
+            "   kucuk yazim hatasi. Olcut karsilaniyorsa KAPAT; istersen",
+            "   kapatirken kisaca not dus. Geri gondermek yalniz olcut",
+            "   karsilanmiyorsa ya da bir sey BOZULDUYSA.",
             "",
             "### Hukmunu TAM OLARAK su bicimde yaz",
             "",

@@ -80,7 +80,7 @@ KADRO = (("cem", "backend"), ("ada", "arayuz"), ("su", "arastirma"))
 SOHBET_EK_PAYI = 2
 
 #: Liderin "yapamam, sen yap" kalibi (30.09 olculdu, iki motorda).
-_YAPAMAM = re.compile(r"yapam[ai]|alam[iı]yorum|a[cç]am[iı]yorum|eri[sş]emiyorum"
+_YAPAMAM = re.compile(r"\byapamam\b|alam[iı]yorum|a[cç]am[iı]yorum|eri[sş]emiyorum"
                       r"|sen (?:at|yap|ekle|gonder|gönder)", re.I)
 #: Raporda patrona gitmemesi gereken ic kalip.
 #: KANIT satiri: makine bicimi ("KANIT dosya: a.png -> ...") -- ajanin defter
