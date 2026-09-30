@@ -12925,3 +12925,20 @@ Düzeltme: `codex.PROJE_BELGESI_KAPALI` (`-c project_doc_max_bytes=0`) dört
 başlatma yolunda (app-server, gerçek terminal, exec, devralınan terminal).
 Sonra app-server ve gerçek terminal "YOK" dedi. `duman_codex_app` 75.
 AGENTS.md depoya eklenmedi (kullanıcının dosyası; karar onun).
+
+## 01.10.2026 sabah — ilk tek koşu tam set
+
+- **claude 11/12, codex 10/12'ye yakın** (tek koşuda, 09:42–10:17). Claude
+  G01–G10 tek koşuda 10/10.
+- Codex G03: inceleyen lider salt okunur tarafta pytest'i çalıştıramadı ve
+  bunu kanıtla "çelişki" saydı (madde 4 madde 6'yı ezdi) → madde 6'ya:
+  "çalışamaması çelişki değildir; çelişki ancak komut çalışıp farklı sonuç
+  verirse".
+- Claude G11: ajan kendi açtığı `preview.html`'i `rm -f` ile silmek isteyince
+  patrona "GERİ ALINAMAZ SİLME" kartı düştü → **ajanın bu işte kendi
+  yarattığı dosyayı silmesi sorulmaz**: `riskli.silme_hedefleri` hedefleri
+  çıkarır (joker/`-r`/klasör/çözülmeyen → None = sorulur),
+  `mcp_sunucu._kendi_yeni_dosyalari` her hedef kök içinde, düz dosya ve
+  `ctime` ≥ işin açılışı ise izin verir, `kendi_dosyasini_sildi` olayı.
+  İlk yazımda `riskli` işlevde içe aktarılmamıştı → NameError geniş
+  except'te yutuldu, kural hiç uygulanmadı; duman_mcp yakaladı (152).

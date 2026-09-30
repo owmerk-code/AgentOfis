@@ -708,6 +708,81 @@ KABUK_KURALLARI = (
 )
 
 
+# ---------------------------------------------------------------------------
+# AJANIN KENDI GECICI DOSYASINI SILMESI (01.10.2026)
+#
+# Olculdu (gercek set G11, claude): ajan logoyu cizerken `preview.html`,
+# `logo-viewer.html` gibi ara dosyalar acti, sonra `rm -f` ile temizlemek
+# istedi -- kapi "GERI ALINAMAZ SILME" deyip patrona ONAY KARTI dusurdu.
+# Aynı iste AJANIN KENDI yarattigi bir dosyayi silmek patronun bir seyini
+# kaybettirmez. Kural dar: hedeflerin HEPSI cozulebilmeli, kokun icinde, duz
+# dosya (klasor/joker/-r yok) ve ISIN acilisindan SONRA yaratilmis olmali.
+# Biri bile supheliyse eski yol: sorulur.
+# ---------------------------------------------------------------------------
+
+_SILME_KOMUTU = {"rm", "del", "erase", "remove-item", "ri", "unlink"}
+_CD_KOMUTU = {"cd", "set-location", "sl", "pushd"}
+
+
+def _yol_coz(ham: str, cwd: str) -> str:
+    import os
+    y = ham.strip().strip("'\"")
+    m = re.match(r"^/([a-zA-Z])/(.*)$", y)          # git-bash: /c/Users -> C:/Users
+    if m:
+        y = f"{m.group(1).upper()}:/{m.group(2)}"
+    if not os.path.isabs(y):
+        y = os.path.join(cwd, y)
+    return os.path.normpath(y)
+
+
+def silme_hedefleri(komut: str, kok: str):
+    """Bir kabuk komutundaki SILME hedeflerini mutlak yol olarak dondurur.
+
+    Emin olunamayan her durumda `None` (joker, ozyinelemeli bayrak, cozulmeyen
+    tirnak, silme disinda bilinmeyen bicim): cagiran o zaman SORAR.
+    """
+    import shlex
+    # Satir devami (bash `\`, PowerShell `` ` ``) tek satira birlesir.
+    komut = re.sub(r"[\\`][ \t]*\r?\n", " ", komut or "")
+    parcalar = re.split(r"&&|\|\||;|\r?\n", komut)
+    cwd, hedefler = kok, []
+    for parca in parcalar:
+        parca = parca.strip()
+        if not parca:
+            continue
+        try:
+            t = shlex.split(parca, posix=True)
+        except ValueError:
+            return None
+        if not t:
+            continue
+        ad = t[0].lower()
+        if ad in _CD_KOMUTU:
+            if len(t) < 2:
+                return None
+            cwd = _yol_coz(t[1], cwd)
+            continue
+        if ad not in _SILME_KOMUTU:
+            continue
+        for a in t[1:]:
+            al = a.lower()
+            if al.startswith("-") or al.startswith("/s"):
+                # Ozyinelemeli / klasor silme: kisa bayrakta `r` (-r, -rf,
+                # -fr) ya da uzun `-recurse`, cmd `/s`. Bunlar SORULUR.
+                kisa = not al.startswith("--") and len(al) <= 4
+                if al in ("-recurse", "--recursive", "/s", "-d", "--dir") or (kisa and "r" in al):
+                    return None
+                continue
+            for y in a.split(","):
+                if not y.strip():
+                    continue
+                if any(c in y for c in "*?[]"):
+                    return None
+                hedefler.append(_yol_coz(y, cwd))
+    return hedefler or None
+
+
+
 def kabuk_degerlendir(arac: str, girdi: dict = None) -> dict | None:
     """Bir kabuk komutu insan onayi ister mi. `None` = serbest.
 

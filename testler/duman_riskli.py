@@ -964,6 +964,16 @@ for _u in ("http://127.0.0.1:8765/oyun/index.html", "https://magaza.com/"):
     sina(f"  sunucudaki sayfada test kodu HALA sorulur: {_u}", bool(_b) and _b["sinif"] == "kod")
 sina("brifing kendi HTML'ini file:// ile acmayi soyluyor", "file:///" in R.brifing_blogu())
 
+print("\n-- silme_hedefleri: emin degilse None (01.10, G11) --")
+_k = r"C:\K\calisma"
+sina("satir devamli 'cd && rm -f a b' iki hedef",
+     R.silme_hedefleri("cd '/c/K/calisma' && \\\nrm -f a.html b.html && \\\necho ok", _k)
+     == [r"C:\K\calisma\a.html", r"C:\K\calisma\b.html"])
+sina("PowerShell virgullu liste", R.silme_hedefleri("Remove-Item -Path a.txt,b.txt -Force", _k)
+     == [r"C:\K\calisma\a.txt", r"C:\K\calisma\b.txt"])
+for _c in ("rm -rf build", "rm -R x", "rm *.tmp", "Remove-Item -Recurse x", "del /s x", "git status"):
+    sina(f"  emin degil -> None: {_c}", R.silme_hedefleri(_c, _k) is None)
+
 from ofis import izin as _iz  # noqa: E402
 sina("masaustu IZINLE ACILAMAZ (patron sozu de kalici izin de)",
      "masaustu" in _iz.HER_ZAMAN_SORULUR and "masaustu" not in _iz.IZIN_VERILEBILIR)

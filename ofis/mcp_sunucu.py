@@ -267,6 +267,37 @@ SOHBET_AZAMI_HARF = 1200
 SOHBET_AZAMI_EK = 5
 
 
+def _kendi_yeni_dosyalari(ofis, gorev_id: str, girdi: dict) -> bool:
+    """Silme komutunun HER hedefi: kokun icinde, duz dosya, isin acilisindan
+    SONRA yaratilmis mi. Olcemedigimiz her durumda False (= sorulur)."""
+    import datetime as _dt
+    from pathlib import Path as _P
+    # Sunucu betik olarak kosar; `riskli` modul duzeyinde YOK (kapi
+    # islevi kendi icinde ice aktarir). Ilk yazimda burada yoktu: NameError
+    # asagidaki genis except'te yutuldu ve kural hic uygulanmadi (duman_mcp
+    # yakaladi).
+    from ofis import riskli
+    try:
+        kok = str(_P(ofis.kok_klasoru()).resolve())
+        hedefler = riskli.silme_hedefleri(str(girdi.get("command") or ""), kok)
+        if not hedefler:
+            return False
+        with ofis.db.baglanti() as c:
+            r = c.execute("SELECT olusturuldu FROM gorev WHERE id = ?", (gorev_id,)).fetchone()
+        if not r:
+            return False
+        acilis = _dt.datetime.fromisoformat(r["olusturuldu"]).timestamp()
+        for h in hedefler:
+            p = _P(h).resolve()
+            if not p.is_relative_to(kok) or not p.is_file() or ".git" in p.parts:
+                return False
+            if p.stat().st_ctime < acilis:
+                return False
+        return True
+    except Exception:                  # noqa: BLE001 -- supheliyse SORULUR
+        return False
+
+
 def arac_sohbete_yaz(oturum: Oturum, args: dict) -> str:
     """Ajan TAKIM SOHBETINE kisa bir bildirim yazar (29.09.2026).
 
@@ -975,6 +1006,15 @@ def arac_izin_sor(oturum: Oturum, args: dict) -> str:
             gorev_id = ofis.tahta.gorev(oturum.gorev_no)["id"]
         except Exception:
             gorev_id = None
+
+    # AJANIN BU ISTE KENDI YARATTIGI DOSYAYI SILMESI sorulmaz, kayda gecer
+    # (01.10.2026, gercek set G11; kural `riskli.silme_hedefleri`).
+    if (bulgu.get("sinif") == "silme" and arac in riskli.KABUK_ARACLARI
+            and gorev_id and _kendi_yeni_dosyalari(ofis, gorev_id, girdi)):
+        ofis.db.olay_yaz(oturum.proje_id, "kendi_dosyasini_sildi",
+                         f"{arac} | {str(girdi.get('command') or '')[:200]}",
+                         ajan_ad=oturum.ajan_ad, gorev_id=gorev_id)
+        return izin()
 
     # SORULMAYAN ama KAYDA GECEN sinif.
     if not bulgu.get("sorulur"):

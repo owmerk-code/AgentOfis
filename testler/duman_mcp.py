@@ -905,6 +905,39 @@ with ofis.db.baglanti() as _cn:
     _n = _cn.execute("SELECT COUNT(*) FROM olay WHERE tur='ajan_sohbet' AND ajan_ad='cinar'").fetchone()[0]
 sina("sinirdan fazlasi deftere GIRMEDI (ekli bildirim dahil)", _n == 6, str(_n))
 
+print("\nAJANIN KENDI YENI DOSYASINI SILMESI SORULMAZ (01.10, gercek set G11)")
+import time as _tm  # noqa: E402
+_kk = Path(ofis.kok_klasoru())
+_kk.mkdir(parents=True, exist_ok=True)
+(_kk / "eski_dosya.txt").write_text("patronun", encoding="utf-8")
+_tm.sleep(1.2)                                   # ctime saniye cozunurlugu
+_gs = ofis.tahta.gorev_ac("Logo", neden="n", ana_hedef="h", kabul_olcutu="k", govde="g",
+                          yazma_alani=["logo/"], sahip="cinar")
+_tm.sleep(1.2)
+(_kk / "preview.html").write_text("ara dosya", encoding="utf-8")
+_so = _SahteOturum(ofis, "cinar", _gs["no"])
+_so.proje_id = ofis.proje_id
+
+
+def _izin(komut):
+    return json.loads(_ms.arac_izin_sor(_so, {"tool_name": "Bash", "input": {"command": komut}}))
+
+
+_iz1 = _izin(f"cd '{_kk.as_posix()}' && \\\nrm -f preview.html && \\\necho ok")
+sina("isten SONRA yaratilan kendi dosyasini silmek SORULMADI", _iz1.get("behavior") == "allow",
+     str(_iz1)[:200])
+sina("  ve dosya gercekten silinebilir durumda (kanca izin verdi, komut ajanda)",
+     (_kk / "preview.html").exists())
+with ofis.db.baglanti() as _c:
+    sina("  kayda gecti", bool(_c.execute(
+        "SELECT 1 FROM olay WHERE tur='kendi_dosyasini_sildi'").fetchone()))
+_iz2 = _izin("rm -f eski_dosya.txt")
+sina("isten ONCE var olan dosyayi silmek SORULDU", _iz2.get("behavior") == "deny", str(_iz2)[:200])
+_iz3 = _izin("rm -f preview.html eski_dosya.txt")
+sina("hedeflerden biri eskiyse hepsi SORULUR", _iz3.get("behavior") == "deny", str(_iz3)[:200])
+_iz4 = _izin("rm -rf logo")
+sina("ozyinelemeli silme SORULUR", _iz4.get("behavior") == "deny", str(_iz4)[:200])
+
 print(f"\n== sonuc: {GECEN} gecti, {KALAN} kaldi ==")
 print(f"klasor: {kok}")
 sys.exit(1 if KALAN else 0)
