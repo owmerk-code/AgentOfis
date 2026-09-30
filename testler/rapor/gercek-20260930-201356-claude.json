@@ -1,0 +1,166 @@
+{
+ "ayar": {
+  "motor": "claude",
+  "kip": "gercek terminal",
+  "modeller": {
+   "lider": "sonnet",
+   "isci": "haiku"
+  },
+  "basla": "2026-09-30 20:06",
+  "sure_dk": 7.5,
+  "kota_farki": {
+   "claude": {
+    "5s": "yenilendi",
+    "7g": "yenilendi",
+    "7g_kapi": "yenilendi"
+   }
+  }
+ },
+ "sonuclar": [
+  {
+   "no": "G16",
+   "ad": "Durdur -> Surdur, kaldigi yerden",
+   "motor": "claude",
+   "kip": "gercek",
+   "mesaj": "b1.txt, b2.txt, b3.txt dosyalarini SIRAYLA yaz; her birinin icine yalniz adim numarasini (1, 2, 3) yaz. Her dosyadan sonra `python -c \"import time; time.sleep(4)\"` komutunu calistir.",
+   "olcutler": [
+    {
+     "olcut": "durdur is surerken basildi",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "tur insanin istegiyle KESILDI",
+     "gecti": true,
+     "not": "#1 birakildi: insan durdurdu | #1 birakildi. insan durdurdu"
+    },
+    {
+     "olcut": "Surdur sonrasi uc dosya dogru (1, 2, 3)",
+     "gecti": true,
+     "not": "[['1'], ['2'], ['3']]"
+    },
+    {
+     "olcut": "is sonunda KAPANDI",
+     "gecti": true,
+     "not": "once ['hazir'] sonra ['bitti']"
+    }
+   ],
+   "kalite": [
+    {
+     "olcut": "lider 'yapamam / sen yap' DEMEDI",
+     "gecti": true,
+     "not": "b1.txt, b2.txt ve b3.txt dosyalarını yazamadım, bekleme komutunu da çalıştıramadım. Bu oturumda dosy"
+    },
+    {
+     "olcut": "rapor ic konusma / KANIT satiri tasimiyor",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "gereksiz ret yok",
+     "gecti": true,
+     "not": "0 ret"
+    }
+   ],
+   "durum": "gecti",
+   "sohbet": [
+    "insan/sohbet: b1.txt, b2.txt, b3.txt dosyalarini SIRAYLA yaz; her birinin icine yalniz adim numarasini (1, 2, 3) yaz. Her dosyadan sonra `python -c \"import time; time.sleep(4)\"` komutunu calistir.",
+    "lale/cevap: b1.txt, b2.txt ve b3.txt dosyalarını yazamadım, bekleme komutunu da çalıştıramadım. Bu oturumda dosya yazma ya da komut çalıştırma aracım yok. Yalnızca dosya okuma ve arama araçları ile web araçları a"
+   ],
+   "sureler": {
+    "lider": [
+     9,
+     8,
+     7
+    ],
+    "isci": [
+     32,
+     42
+    ],
+    "inceleme": [
+     8,
+     9
+    ]
+   },
+   "sure_sn": 121.5
+  },
+  {
+   "no": "G18",
+   "ad": "Cok adimli proje: plan + uygulama",
+   "motor": "claude",
+   "kip": "gercek",
+   "mesaj": "Basit bir yapilacaklar (todo) web uygulamasi yap: todo/index.html ve todo/app.js. Madde ekle, tamamlandi isaretle ve sil calissin; veriler localStorage'da kalsin. Once todo/PLAN.md dosyasina 3-5 adimlik plan yaz, sonra uygula.",
+   "olcutler": [
+    {
+     "olcut": "todo/PLAN.md 3+ adimli plan",
+     "gecti": true,
+     "not": "5 adim"
+    },
+    {
+     "olcut": "index.html app.js'i yukluyor",
+     "gecti": true,
+     "not": "1042 harf"
+    },
+    {
+     "olcut": "app.js: localStorage + olay dinleyici",
+     "gecti": true,
+     "not": "2121 harf"
+    },
+    {
+     "olcut": "ekle / tamamla / sil var",
+     "gecti": true,
+     "not": ""
+    }
+   ],
+   "kalite": [
+    {
+     "olcut": "lider patrona cevap verdi",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "lider 'yapamam / sen yap' DEMEDI",
+     "gecti": true,
+     "not": "Todo uygulaması hazır: madde ekleme, tamamlandı işaretleme ve silme çalışıyor. Veriler localStorage'"
+    },
+    {
+     "olcut": "rapor ic konusma / KANIT satiri tasimiyor",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "gereksiz ret yok",
+     "gecti": true,
+     "not": "0 ret"
+    },
+    {
+     "olcut": "sohbet temiz (en fazla 4 mesaj)",
+     "gecti": true,
+     "not": "2 mesaj: insan/sohbet, lale/cevap"
+    }
+   ],
+   "durum": "gecti",
+   "sohbet": [
+    "insan/sohbet: Basit bir yapilacaklar (todo) web uygulamasi yap: todo/index.html ve todo/app.js. Madde ekle, tamamlandi isaretle ve sil calissin; veriler localStorage'da kalsin. Once todo/PLAN.md dosyasina 3-5 adiml",
+    "lale/cevap: Todo uygulaması hazır: madde ekleme, tamamlandı işaretleme ve silme çalışıyor. Veriler localStorage'da kalıyor ve sayfa yenilenince korunuyor. Ada'nın yazdığı uygulamayı Cem ayrıca bağımsız olarak den"
+   ],
+   "sureler": {
+    "lider": [
+     11,
+     25,
+     16
+    ],
+    "isci": [
+     85,
+     123
+    ],
+    "inceleme": [
+     14,
+     15,
+     27
+    ]
+   },
+   "sure_sn": 326.2
+  }
+ ]
+}

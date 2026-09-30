@@ -1,0 +1,163 @@
+{
+ "ayar": {
+  "motor": "claude",
+  "kip": "gercek terminal",
+  "modeller": {
+   "lider": "sonnet",
+   "isci": "haiku"
+  },
+  "basla": "2026-09-30 21:38",
+  "sure_dk": 12.1,
+  "kota_farki": {
+   "claude": {
+    "5s": 4.0,
+    "7g": 1.0,
+    "7g_kapi": 0.0
+   }
+  }
+ },
+ "sonuclar": [
+  {
+   "no": "G07",
+   "ad": "Tarayici oyunu",
+   "motor": "claude",
+   "kip": "gercek",
+   "mesaj": "oyun/index.html icinde tarayicida oynanan basit bir yilan oyunu yap (klavye oklariyla).",
+   "olcutler": [
+    {
+     "olcut": "oyun/index.html var",
+     "gecti": true,
+     "not": "7747 harf"
+    },
+    {
+     "olcut": "canvas ve klavye oklari kullaniliyor",
+     "gecti": true,
+     "not": ""
+    }
+   ],
+   "kalite": [
+    {
+     "olcut": "lider patrona cevap verdi",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "lider 'yapamam / sen yap' DEMEDI",
+     "gecti": true,
+     "not": "Yılan oyunu `oyun/index.html` olarak yazılmış ve ajanların raporlarında çalışıyor görünüyor. Ben bug"
+    },
+    {
+     "olcut": "rapor ic konusma / KANIT satiri tasimiyor",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "gereksiz ret yok",
+     "gecti": false,
+     "not": "2 ret"
+    },
+    {
+     "olcut": "sohbet temiz (en fazla 4 mesaj)",
+     "gecti": true,
+     "not": "2 mesaj: insan/sohbet, lale/cevap"
+    }
+   ],
+   "durum": "kaldi",
+   "sohbet": [
+    "insan/sohbet: oyun/index.html icinde tarayicida oynanan basit bir yilan oyunu yap (klavye oklariyla).",
+    "lale/cevap: Yılan oyunu `oyun/index.html` olarak yazılmış ve ajanların raporlarında çalışıyor görünüyor. Ben bugün terminalde hiçbir test koşturamadım, çünkü bu oturumda komut çalıştırma aracı kapalıydı. Testleri"
+   ],
+   "sureler": {
+    "lider": [
+     14,
+     29,
+     21
+    ],
+    "isci": [
+     141,
+     99,
+     108,
+     48
+    ],
+    "inceleme": [
+     14,
+     20,
+     40,
+     6,
+     29
+    ]
+   },
+   "sure_sn": 586.6
+  },
+  {
+   "no": "G17",
+   "ad": "Word belgesi olustur, gonder",
+   "motor": "claude",
+   "kip": "gercek",
+   "mesaj": "toplanti.docx adinda bir Word belgesi olustur: baslik 'Haftalik Toplanti', altinda uc madde: Butce, Takvim, Ekip. Dosyayi bana gonder.",
+   "olcutler": [
+    {
+     "olcut": "gecerli bir .docx var",
+     "gecti": true,
+     "not": "['toplanti.docx']"
+    },
+    {
+     "olcut": "baslik ve uc madde icinde",
+     "gecti": true,
+     "not": " \n        haftalik toplanti         butce         takvim         ekip           "
+    },
+    {
+     "olcut": "Word dosyasi sohbete gonderildi",
+     "gecti": true,
+     "not": "['ekler/toplanti.docx']"
+    }
+   ],
+   "kalite": [
+    {
+     "olcut": "lider patrona cevap verdi",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "lider 'yapamam / sen yap' DEMEDI",
+     "gecti": true,
+     "not": "toplanti.docx belgesini hazırladım. Başlığı \"Haftalik Toplanti\", altında Butce, Takvim ve Ekip madde"
+    },
+    {
+     "olcut": "rapor ic konusma / KANIT satiri tasimiyor",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "gereksiz ret yok",
+     "gecti": true,
+     "not": "0 ret"
+    },
+    {
+     "olcut": "sohbet temiz (en fazla 4 mesaj)",
+     "gecti": true,
+     "not": "3 mesaj: insan/sohbet, cem/bildirim, lale/cevap"
+    }
+   ],
+   "durum": "gecti",
+   "sohbet": [
+    "insan/sohbet: toplanti.docx adinda bir Word belgesi olustur: baslik 'Haftalik Toplanti', altinda uc madde: Butce, Takvim, Ekip. Dosyayi bana gonder.",
+    "cem/bildirim: toplanti.docx belgesi oluşturuldu ve doğrulandı. Başlık \"Haftalik Toplanti\", altında Butce, Takvim, Ekip maddeleri bulunuyor. Dosya ekli.",
+    "lale/cevap: toplanti.docx belgesini hazırladım. Başlığı \"Haftalik Toplanti\", altında Butce, Takvim ve Ekip maddeleri var. Dosya ekte.\n\nNot: Ben yalnızca dosyaların diskte olduğunu gördüm. `toplanti.docx` ile `ekl"
+   ],
+   "sureler": {
+    "lider": [
+     11,
+     12
+    ],
+    "isci": [
+     102
+    ],
+    "inceleme": [
+     8
+    ]
+   },
+   "sure_sn": 139.2
+  }
+ ]
+}

@@ -1,0 +1,319 @@
+{
+ "ayar": {
+  "motor": "claude",
+  "kip": "gercek terminal",
+  "modeller": {
+   "lider": "sonnet",
+   "isci": "haiku"
+  },
+  "basla": "2026-09-30 19:51",
+  "sure_dk": 12.3,
+  "kota_farki": {
+   "claude": {
+    "5s": 4.0,
+    "7g": 1.0,
+    "7g_kapi": 0.0
+   }
+  }
+ },
+ "sonuclar": [
+  {
+   "no": "G15",
+   "ad": "Is surerken patron notu",
+   "motor": "claude",
+   "kip": "gercek",
+   "mesaj": "a1.txt, a2.txt, a3.txt dosyalarini SIRAYLA yaz; her birinin icine yalniz adim numarasini (1, 2, 3) yaz. Her dosyadan sonra `python -c \"import time; time.sleep(4)\"` komutunu calistir.",
+   "olcutler": [
+    {
+     "olcut": "not is surerken birakildi",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "a1=1, a2=2",
+     "gecti": true,
+     "not": "['1'] ['2']"
+    },
+    {
+     "olcut": "not UYGULANDI: a3 = 3 + ZUMRUT-4471",
+     "gecti": true,
+     "not": "['3', 'ZUMRUT-4471']"
+    }
+   ],
+   "kalite": [
+    {
+     "olcut": "lider patrona cevap verdi",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "lider 'yapamam / sen yap' DEMEDI",
+     "gecti": true,
+     "not": "a1.txt ve a2.txt doğru, ama iş kapanmadı: a3.txt'de fazladan bir satır var ve ben bunu düzeltemedim."
+    },
+    {
+     "olcut": "rapor ic konusma / KANIT satiri tasimiyor",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "gereksiz ret yok",
+     "gecti": true,
+     "not": "0 ret"
+    },
+    {
+     "olcut": "sohbet temiz (en fazla 4 mesaj)",
+     "gecti": true,
+     "not": "3 mesaj: insan/sohbet, insan/not, lale/cevap"
+    }
+   ],
+   "durum": "gecti",
+   "sohbet": [
+    "insan/sohbet: a1.txt, a2.txt, a3.txt dosyalarini SIRAYLA yaz; her birinin icine yalniz adim numarasini (1, 2, 3) yaz. Her dosyadan sonra `python -c \"import time; time.sleep(4)\"` komutunu calistir.",
+    "insan/not: Ek istek: a3.txt'ye 3'un ALTINA ikinci satir olarak ZUMRUT-4471 yaz. Diger dosyalar ayni kalsin.",
+    "lale/cevap: a1.txt ve a2.txt doğru, ama iş kapanmadı: a3.txt'de fazladan bir satır var ve ben bunu düzeltemedim. Bu oturumda dosya yazma ve komut çalıştırma aracım yok. Elimde sadece Glob, Grep, Read, WebFetch ve"
+   ],
+   "sureler": {
+    "lider": [
+     11,
+     14,
+     16
+    ],
+    "isci": [
+     56
+    ],
+    "inceleme": [
+     8
+    ]
+   },
+   "sure_sn": 109.5
+  },
+  {
+   "no": "G16",
+   "ad": "Durdur -> Surdur, kaldigi yerden",
+   "motor": "claude",
+   "kip": "gercek",
+   "mesaj": "b1.txt, b2.txt, b3.txt dosyalarini SIRAYLA yaz; her birinin icine yalniz adim numarasini (1, 2, 3) yaz. Her dosyadan sonra `python -c \"import time; time.sleep(4)\"` komutunu calistir.",
+   "olcutler": [
+    {
+     "olcut": "durdur is surerken basildi",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "tur insanin istegiyle KESILDI",
+     "gecti": true,
+     "not": "#1 birakildi: insan durdurdu | #1 birakildi. insan durdurdu"
+    },
+    {
+     "olcut": "Surdur sonrasi uc dosya dogru (1, 2, 3)",
+     "gecti": true,
+     "not": "[['1'], ['2'], ['3']]"
+    },
+    {
+     "olcut": "is sonunda KAPANDI",
+     "gecti": false,
+     "not": "once ['hazir'] sonra ['inceleme']"
+    }
+   ],
+   "kalite": [
+    {
+     "olcut": "lider 'yapamam / sen yap' DEMEDI",
+     "gecti": true,
+     "not": "İş yapılamadı: b1.txt, b2.txt ve b3.txt yazılmadı, bekleme komutları da çalıştırılmadı.\n\n- **İstenen"
+    },
+    {
+     "olcut": "rapor ic konusma / KANIT satiri tasimiyor",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "gereksiz ret yok",
+     "gecti": true,
+     "not": "0 ret"
+    }
+   ],
+   "durum": "kaldi",
+   "sohbet": [
+    "insan/sohbet: b1.txt, b2.txt, b3.txt dosyalarini SIRAYLA yaz; her birinin icine yalniz adim numarasini (1, 2, 3) yaz. Her dosyadan sonra `python -c \"import time; time.sleep(4)\"` komutunu calistir.",
+    "lale/cevap: İş yapılamadı: b1.txt, b2.txt ve b3.txt yazılmadı, bekleme komutları da çalıştırılmadı.\n\n- **İstenen:** Üç dosyayı sırayla yazmak (içlerine yalnızca 1, 2, 3), her dosyadan sonra `python -c \"import tim"
+   ],
+   "sureler": {
+    "lider": [
+     13,
+     12,
+     8
+    ],
+    "isci": [
+     39,
+     25,
+     28,
+     38
+    ],
+    "danisma": [
+     14,
+     14
+    ],
+    "inceleme": [
+     8
+    ]
+   },
+   "sure_sn": 208.9,
+   "saklandi": "C:\\Users\\pc\\AppData\\Local\\Temp\\ofis-gercek-G16-c8s8au42"
+  },
+  {
+   "no": "G17",
+   "ad": "Word belgesi olustur, gonder",
+   "motor": "claude",
+   "kip": "gercek",
+   "mesaj": "toplanti.docx adinda bir Word belgesi olustur: baslik 'Haftalik Toplanti', altinda uc madde: Butce, Takvim, Ekip. Dosyayi bana gonder.",
+   "olcutler": [
+    {
+     "olcut": "gecerli bir .docx var",
+     "gecti": true,
+     "not": "['toplanti.docx']"
+    },
+    {
+     "olcut": "baslik ve uc madde icinde",
+     "gecti": true,
+     "not": " \n        haftalik toplanti         butce         takvim         ekip           "
+    },
+    {
+     "olcut": "Word dosyasi sohbete gonderildi",
+     "gecti": true,
+     "not": "['ekler/toplanti.docx']"
+    }
+   ],
+   "kalite": [
+    {
+     "olcut": "lider patrona cevap verdi",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "lider 'yapamam / sen yap' DEMEDI",
+     "gecti": true,
+     "not": "Haftalik Toplanti başlıklı Word belgesi hazır. Başlığın altında Butce, Takvim ve Ekip maddeleri sıra"
+    },
+    {
+     "olcut": "rapor ic konusma / KANIT satiri tasimiyor",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "gereksiz ret yok",
+     "gecti": true,
+     "not": "0 ret"
+    },
+    {
+     "olcut": "sohbet temiz (en fazla 4 mesaj)",
+     "gecti": true,
+     "not": "3 mesaj: insan/sohbet, cem/bildirim, lale/cevap"
+    }
+   ],
+   "durum": "gecti",
+   "sohbet": [
+    "insan/sohbet: toplanti.docx adinda bir Word belgesi olustur: baslik 'Haftalik Toplanti', altinda uc madde: Butce, Takvim, Ekip. Dosyayi bana gonder.",
+    "cem/bildirim: Haftalik Toplanti başlığı ve Butce, Takvim, Ekip maddelerini içeren toplanti.docx dosyası oluşturuldu ve doğrulandı.",
+    "lale/cevap: Haftalik Toplanti başlıklı Word belgesi hazır. Başlığın altında Butce, Takvim ve Ekip maddeleri sırayla yer alıyor. Dosya toplanti.docx adıyla ekte.\n\nKendi gördüklerim: `toplanti.docx` hem kök klasörd"
+   ],
+   "sureler": {
+    "lider": [
+     8,
+     14
+    ],
+    "isci": [
+     59
+    ],
+    "inceleme": [
+     10
+    ]
+   },
+   "sure_sn": 95.8
+  },
+  {
+   "no": "G18",
+   "ad": "Cok adimli proje: plan + uygulama",
+   "motor": "claude",
+   "kip": "gercek",
+   "mesaj": "Basit bir yapilacaklar (todo) web uygulamasi yap: todo/index.html ve todo/app.js. Madde ekle, tamamlandi isaretle ve sil calissin; veriler localStorage'da kalsin. Once todo/PLAN.md dosyasina 3-5 adimlik plan yaz, sonra uygula.",
+   "olcutler": [
+    {
+     "olcut": "todo/PLAN.md 3+ adimli plan",
+     "gecti": true,
+     "not": "5 adim"
+    },
+    {
+     "olcut": "index.html app.js'i yukluyor",
+     "gecti": true,
+     "not": "741 harf"
+    },
+    {
+     "olcut": "app.js: localStorage + olay dinleyici",
+     "gecti": true,
+     "not": "1583 harf"
+    },
+    {
+     "olcut": "ekle / tamamla / sil var",
+     "gecti": true,
+     "not": ""
+    }
+   ],
+   "kalite": [
+    {
+     "olcut": "lider patrona cevap verdi",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "lider 'yapamam / sen yap' DEMEDI",
+     "gecti": true,
+     "not": "Todo uygulaması yazıldı ve tarayıcıda denendi, ama bağımsız inceleme henüz yapılmadı.\n\n**İstenen:** "
+    },
+    {
+     "olcut": "rapor ic konusma / KANIT satiri tasimiyor",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "gereksiz ret yok",
+     "gecti": false,
+     "not": "1 ret"
+    },
+    {
+     "olcut": "sohbet temiz (en fazla 4 mesaj)",
+     "gecti": true,
+     "not": "4 mesaj: insan/sohbet, ada/bildirim, ada/bildirim, lale/cevap"
+    }
+   ],
+   "durum": "kaldi",
+   "sohbet": [
+    "insan/sohbet: Basit bir yapilacaklar (todo) web uygulamasi yap: todo/index.html ve todo/app.js. Madde ekle, tamamlandi isaretle ve sil calissin; veriler localStorage'da kalsin. Once todo/PLAN.md dosyasina 3-5 adiml",
+    "ada/bildirim: Engel: tarayıcı aracı file:// adreslerini engelliyor, bu yüzden ekler/todo.png ekran görüntüsünü alamadım. Uygulama yazıldı, mantığı Node'da sınadım. Görüntü için file: izni ya da yerel sunucu onayı g",
+    "ada/bildirim: Todo uygulaması ekran görüntüsü (yenileme sonrası, tamamlanan ve silinen akış sonrası).",
+    "lale/cevap: Todo uygulaması yazıldı ve tarayıcıda denendi, ama bağımsız inceleme henüz yapılmadı.\n\n**İstenen:** `todo/index.html` ve `todo/app.js` ile madde ekleme, tamamlandı işaretleme ve silme. Veriler localSt"
+   ],
+   "sureler": {
+    "lider": [
+     14,
+     20,
+     15
+    ],
+    "isci": [
+     174,
+     13,
+     36
+    ],
+    "inceleme": [
+     14,
+     16
+    ],
+    "danisma": [
+     12
+    ]
+   },
+   "sure_sn": 324.3,
+   "saklandi": "C:\\Users\\pc\\AppData\\Local\\Temp\\ofis-gercek-G18-gs2tytcl"
+  }
+ ]
+}

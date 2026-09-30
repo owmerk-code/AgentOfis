@@ -13088,3 +13088,17 @@ Bulgular ve düzeltmeler:
   yazi_bas.py, georgia.ttf, çekirdek 5 değil 6" okudu. → PATRONA bloğu
   `Not:` / `İnceleme notu:` satırında biter; kural 7 notu KARAR'ın üstüne
   yazdırır. duman_lider 48. İki sınama da düzeltme geri alınınca düşüyor.
+
+## 01.10.2026 gece — Claude 3. tam koşu: 17/18
+
+Düzeltmelerden (karalama/, araç suskunluğu, PATRONA notu) sonra tam set,
+claude, gerçek terminal: **17/18**. G07 (oyun, 273 sn) ve G17 (Word, 98 sn)
+bu kez ilk seferde geçti. Kalan tek iş G15 (patron notu): iş DOĞRU yapıldı
+(not tur sürerken ulaştı, a3 = 3 + ZUMRUT-4471), ama lider bir kez geri
+gönderdi: "her dosyadan sonra 4 sn bekleme adımının koştuğuna dair kanıt
+yok". Bekleme komutu çıktı vermediği için ilk kanıtta yoktu; ajan zaman
+ölçümünü ekledi, iş kapandı. Ret SAVUNULABİLİR (patronun istediği bir adım
+kanıtsızdı); kalite ölçütü "hiç ret yok" her reddi gereksiz sayıyor. Ürün
+sınamayı geçsin diye gevşetilmedi. Önceki koşularda G15 0 retle geçmişti.
+Süreler: basit işler 60–95 sn, bilgi sorusu 8 sn, web araştırması 16 sn,
+paralel iki iş 245 sn, çok adımlı proje 226 sn.
