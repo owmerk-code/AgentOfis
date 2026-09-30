@@ -489,6 +489,11 @@ class Brifing:
                 "",
                 "Ornek: `DURUM: cikti/bir.txt yazildi | sirada cikti/iki.txt`",
                 "",
+                # 01.10 olculdu (gercek set G08, codex): ajan DURUM satirini
+                # sehirler.md'nin ICINE yazdi; lider haklı olarak geri gonderdi.
+                "DURUM satiri SANA verilen cevap metnine yazilir -- ASLA "
+                "urettigin DOSYANIN icine yazma.",
+                "",
                 "Sebep: tur senin elinde olmayan bir sebeple (kullanim "
                 "limiti) kesilebilir ve isi BASKA bir model surdurur -- o "
                 "model senin konusmani goremez, yalniz bu satiri gorur. "
