@@ -51,6 +51,20 @@ from .tahta import TahtaHatasi, yol_normalle, yollar_cakisir
 KARAR_DESENI = re.compile(r"^\s*KARAR\s*:\s*(kapat|geri)\b[ \t:-]*(.*)$",
                           re.IGNORECASE | re.MULTILINE)
 
+#: `PATRONA:` blogu: satirdan baslar, bir sonraki hukum satirina ya da
+#: kod citine kadar surer.
+_PATRONA = re.compile(r"^[ \t]*PATRONA:[ \t]*(.*?)(?=^[ \t]*(?:KARAR|DERS|BILGI):|^```|\Z)",
+                      re.M | re.S)
+
+
+def patrona_ayikla(hukum: str) -> str:
+    """Incelemenin `PATRONA:` metni (yoksa bos). Bicim satirlari ayiklanir."""
+    m = _PATRONA.search(hukum or "")
+    if not m:
+        return ""
+    metin = m.group(1).strip()
+    return metin[:1500]
+
 #: Lider isterse ajana kalici bir ders yazdirir. HER redde otomatik ders
 #: yazilmaz: tek seferlik bir eksik, sicili doldurur ve tekrar sayacini
 #: anlamsizlastirir. Sayacin degeri, yalnizca GERCEK deseni saymasindadir.
@@ -447,7 +461,11 @@ class Lider:
             "Kapatiyorsan:",
             "```",
             "KARAR: kapat",
+            "PATRONA: <patrona gidecek 1-4 cumle: ne yapildi, SONUC ne",
+            "(istenen sayi/fiyat/cevap burada), dosya varsa adi>",
             "```",
+            "`PATRONA:` metni patrona DOGRUDAN gider: baslik, KANIT/DURUM satiri,",
+            "ic konusma YAZMA; ilk cumle sonuc olsun. Is numarasi anlatma.",
             "Geri gonderiyorsan (gerekce zorunlu -- ajan neyi duzeltecegini bilmeli):",
             "```",
             "KARAR: geri -- <ne eksik, somut olarak>",
@@ -715,6 +733,15 @@ class Lider:
             # Kanit kapisi tahtada; lider onu atlatamaz, yalnizca tetikler.
             self.ofis.tahta.kapat(guncel["no"], guncel["revizyon"],
                                   kapatan=lider_ad)
+            # PATRONA TASLAGI (30.09.2026). Olculdu (gercek set, codex G01,
+            # 120 sn): isin kendisi 25 sn, liderin ayri RAPOR turu 21 sn.
+            # Kapatan inceleme sonucu zaten okumustur; patrona gidecek
+            # metni ayni turda yazar, tek isli planda ayri rapor turu atlanir
+            # (`sohbet._rapor`). Taslak yoksa eski yol aynen isler.
+            taslak = patrona_ayikla(hukum)
+            if taslak:
+                self.db.olay_yaz(self.proje_id, "rapor_taslak", taslak,
+                                 ajan_ad=lider_ad, gorev_id=guncel["id"])
             self.ofis.bellek.karar_yaz(
                 f"#{no} kapatildi.",
                 gerekce or "Kanitlar kabul olcutunu karsiliyor.",

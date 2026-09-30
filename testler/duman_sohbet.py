@@ -745,6 +745,48 @@ with ofis.db.baglanti() as _c:
     _lh = [r[0] for r in _c.execute("SELECT govde FROM olay WHERE tur='hata' AND govde LIKE 'Lider turu:%'")]
 sina("lider turu hatasi NEDENIYLE deftere yazildi", any("guven sorusu" in x for x in _lh), str(_lh[-1:]))
 
+print("\nTEK ISLI PLANDA RAPOR = INCELEMENIN PATRONA TASLAGI (30.09, hiz)")
+# Olculdu: codex G01 120 sn'nin 21 sn'si ayri rapor turuydu. Kapatan
+# inceleme PATRONA: yazar; tek isli planda ayri rapor turu KOSMAZ.
+_pk = Path(tempfile.mkdtemp(prefix="ofis-patrona-"))
+_pdb = Veritabani(_pk / "o.sqlite3")
+_po = Ofis.proje_ac(_pdb, "Patrona", amac="a", basari_olcutu="b", kok_klasor=str(_pk))
+_pkn = _po.kanat_ac("A", "A")
+_po.kadro.ise_al("lale", "lider", lider_mi=True, kanat_id=_pkn, motor="sahte", klasor=str(_pk))
+_po.kadro.ise_al("cem", "backend", kanat_id=_pkn, motor="sahte", klasor=str(_pk))
+_tur_say = {"rapor": 0}
+
+
+class _AkisMotor(SahteMotor):
+    def tur_kos(self, metin, **ayar):
+        if "# PATRONUN MESAJI" in metin:
+            self.cevap = triyaj("dagit", "is", hedef="a.txt dosyasina merhaba yaz")
+        elif '"kollar"' in metin:
+            self.cevap = "```json\n" + json.dumps({"bol": False, "gerekce": "tek", "kollar": [
+                {"baslik": "a.txt yaz", "sahip": "cem", "neden": "patron istedi",
+                 "kabul_olcutu": "a.txt icinde merhaba", "govde": "a.txt'ye merhaba yaz",
+                 "yazma_alani": ["a.txt"]}]}) + "\n```"
+        elif "KARAR: kapat" in metin:
+            self.cevap = ("Kanit yeterli.\nKARAR: kapat\n"
+                          "PATRONA: a.txt yazildi, icinde 'merhaba' var.\nBILGI: yok -> yok")
+        elif "# PATRONUN ISTEGI" in metin:
+            _tur_say["rapor"] += 1
+            self.cevap = "AYRI RAPOR TURU"
+        else:
+            (Path(ayar.get("klasor") or _pk) / "a.txt").write_text("merhaba", encoding="utf-8")
+            self.cevap = "Yazdim.\nKANIT dosya: a.txt -> merhaba yazildi"
+        return super().tur_kos(metin, **ayar)
+
+
+_pol = list(Sohbet(_po, motor_fabrikasi=lambda ad, **a: _AkisMotor(cevap="")).konus(
+    "a.txt'ye merhaba yaz", azami_tik=6))
+_prap = [o["govde"] for o in _pol if o["tur"] == "rapor"]
+sina("is kapandi", [g["durum"] for g in _po.tahta.liste()] == ["bitti"],
+     str([g["durum"] for g in _po.tahta.liste()]))
+sina("rapor incelemenin PATRONA taslagi", _prap and _prap[0].startswith("a.txt yazildi"),
+     str(_prap))
+sina("ayri rapor turu KOSMADI", _tur_say["rapor"] == 0, str(_tur_say))
+
 print("\nDEFTER SATIRLARI PATRONA GITMEZ (30.09, gercek set G01)")
 _tm = Sohbet(ofis)._ekleri_hazirla(
     "Istenen goruntu sohbete eklendi.\n\n\nKANIT terminal: `Get-Item x` -> ok\n"

@@ -782,6 +782,10 @@ class Sohbet:
         yapilan isin INCELENMESI degildir -- inceleme zaten kanit kapisinda
         yapildi; bu yalnizca anlatmadir.
         """
+        kisa = self._taslaktan_rapor(plan)
+        if kisa:
+            return kisa + self._gercek_durum(plan)
+
         satirlar = ["# PATRONUN ISTEGI", "", mesaj, "", "# SONUC", ""]
         for g0 in plan["gorevler"]:
             g = self.ofis.tahta.gorev(g0["no"])
@@ -835,6 +839,42 @@ class Sohbet:
                                   akis=getattr(self, "_akis", None))
         metin = (ham or "").strip()[:CEVAP_SINIRI] or "(Lider rapor yazmadi.)"
         return self._ekleri_hazirla(metin, lider["ad"]) + self._gercek_durum(plan)
+
+    def _taslaktan_rapor(self, plan: dict) -> str:
+        """Tek isli planda, isi KAPATAN incelemenin `PATRONA:` taslagi rapor
+        olur -- ayri rapor turu kosmaz (bkz. `lider._hukmu_uygula`).
+
+        Kosullar dar: tek is, bitti, taslak var, patronu bekleyen bir sey
+        yok. Aksi halde bos doner ve eski yol (liderin rapor turu) isler.
+        Sohbete gitmemis kanit dosyasi (`ekler.gonderilmemisler`) OFISCE
+        eklenir: lider turu yok, onu ekleyecek kimse yok.
+        """
+        gorevler = plan.get("gorevler") or []
+        if len(gorevler) != 1:
+            return ""
+        try:
+            g = self.ofis.tahta.gorev(gorevler[0]["no"])
+        except Exception:                        # noqa: BLE001
+            return ""
+        if g["durum"] != "bitti":
+            return ""
+        if self.ofis.postane.insan_bekleyenler() or self.ofis.postane.bekleyen_onaylar():
+            return ""
+        with self.ofis.db.baglanti() as c:
+            r = c.execute("SELECT govde, ajan_ad FROM olay WHERE proje_id = ? AND gorev_id = ? "
+                          "AND tur = 'rapor_taslak' ORDER BY rowid DESC LIMIT 1",
+                          (self.ofis.proje_id, g["id"])).fetchone()
+        if not r or not (r["govde"] or "").strip():
+            return ""
+        metin = r["govde"].strip()
+        from .ekler import gonderilmemisler, satirlar as ek_satirlari
+        try:
+            gitmemis = gonderilmemisler(self.ofis, [g["id"]])
+        except Exception:                        # noqa: BLE001
+            gitmemis = []
+        if gitmemis:
+            metin += "\n\n" + ek_satirlari(gitmemis)
+        return self._ekleri_hazirla(metin[:CEVAP_SINIRI], r["ajan_ad"] or "")
 
     def _ekleri_hazirla(self, metin: str, lider_ad: str) -> str:
         """Liderin `[ek] <yol>` satirlari -> sohbette gorunen ek (kural
