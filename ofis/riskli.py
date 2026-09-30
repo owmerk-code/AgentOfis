@@ -594,8 +594,12 @@ KAPI_DISI_ONEKLER = ("mcp__ofis", "mcp__tarayici")
 #: kendisi degil.
 YERLESIK_SERBEST = frozenset("""
 Read Glob Grep LS Write Edit MultiEdit NotebookEdit WebFetch WebSearch
-TodoWrite ToolSearch webrun
+TodoWrite ToolSearch webrun image_genimagegen
 """.split())
+# `image_genimagegen`: codex'in yerlesik GORSEL URETICISI -- ChatGPT abonelik
+# kotasiyla calisir, fatura yok, disari bir sey gondermez (gorsel.py: "Codex
+# abonelik kotasi"). OLCULDU (30.09, gercek set G11): TANINMAYAN ARAC sayilip
+# patrona onay karti dustu, logo uretilmedi.
 # `webrun`: codex'in yerlesik WEB ARAMASI (salt okunur). OLCULDU (30.09.2026,
 # gercek set G08): kanca onu TANINMAYAN ARAC sayip patrona onay karti dusurdu,
 # is ("5 buyuk sehri yaz") duruverdi. Claude'daki karsiligi WebSearch zaten

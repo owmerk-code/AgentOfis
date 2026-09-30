@@ -275,8 +275,11 @@ def g11_dogrula(kok, ofis, bag):
 def g12_dogrula(kok, ofis, bag):
     cev = _son_lider(ofis)
     n = _norm(cev)
-    return [("Ankara'nin nufusu soylendi (milyon)", "milyon" in n and bool(re.search(r"\d", cev)),
-             cev[:160]),
+    # Sayi "5.910.320" ya da "5,9 milyon" bicimde gelebilir (30.09 olculdu:
+    # dogru cevap "milyon" kelimesi olmadan geldi, olcut yanlis KALDI dedi).
+    sayi = (bool(re.search(r"\b[4-7][.,\s]?\d{3}[.,\s]?\d{3}\b", cev))
+            or bool(re.search(r"[4-7](?:[.,]\d+)?\s*milyon", n)))
+    return [("Ankara'nin nufusu soylendi (4-7 milyon arasi sayi)", sayi, cev[:160]),
             ("kaynak verildi (adres ya da kurum adi)",
              bool(re.search(r"https?://|tuik|www\.|wikipedia|kaynak", n)), "")]
 

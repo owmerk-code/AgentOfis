@@ -1,0 +1,217 @@
+{
+ "ayar": {
+  "motor": "claude",
+  "kip": "gercek terminal",
+  "modeller": {
+   "lider": "sonnet",
+   "isci": "haiku"
+  },
+  "basla": "2026-09-30 05:39",
+  "sure_dk": 7.9,
+  "kota_farki": {
+   "claude": {
+    "5s": 1.0,
+    "7g": 0.0,
+    "7g_kapi": 0.0
+   }
+  }
+ },
+ "sonuclar": [
+  {
+   "no": "G02",
+   "ad": "Bilgi sorusu (is acmadan cevap)",
+   "motor": "claude",
+   "kip": "gercek",
+   "mesaj": "Python'da liste ile demet (tuple) arasindaki fark ne? Iki cumleyle anlat.",
+   "olcutler": [
+    {
+     "olcut": "is ACILMADI (bilgi sorusu dogrudan cevaplandi)",
+     "gecti": true,
+     "not": "0 gorev"
+    },
+    {
+     "olcut": "cevap farki anlatiyor (degistirilebilir/degismez)",
+     "gecti": true,
+     "not": "liste (list) degistirilebilir (mutable) bir yapidir: olusturulduktan sonra eleman ekleyebilir, silebilir ya da degistire"
+    }
+   ],
+   "kalite": [
+    {
+     "olcut": "lider patrona cevap verdi",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "lider 'yapamam / sen yap' DEMEDI",
+     "gecti": true,
+     "not": "Liste (list) değiştirilebilir (mutable) bir yapıdır: oluşturulduktan sonra eleman ekleyebilir, sileb"
+    },
+    {
+     "olcut": "rapor ic konusma / KANIT satiri tasimiyor",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "gereksiz ret yok",
+     "gecti": true,
+     "not": "0 ret"
+    },
+    {
+     "olcut": "sohbet temiz (en fazla 4 mesaj)",
+     "gecti": true,
+     "not": "2 mesaj: insan/sohbet, lale/cevap"
+    },
+    {
+     "olcut": "hizli (<= 120 sn)",
+     "gecti": true,
+     "not": "19 sn"
+    }
+   ],
+   "durum": "gecti",
+   "sohbet": [
+    "insan/sohbet: Python'da liste ile demet (tuple) arasindaki fark ne? Iki cumleyle anlat.",
+    "lale/cevap: Liste (list) değiştirilebilir (mutable) bir yapıdır: oluşturulduktan sonra eleman ekleyebilir, silebilir ya da değiştirebilirsin, köşeli parantezle yazılır, örneğin [1, 2, 3]. Demet (tuple) ise değişt"
+   ],
+   "sureler": {
+    "lider": [
+     18
+    ]
+   },
+   "sure_sn": 20.0
+  },
+  {
+   "no": "G09",
+   "ad": "Sayfadan bilgi oku, soyle",
+   "motor": "claude",
+   "kip": "gercek",
+   "mesaj": "http://127.0.0.1:59688/urun sayfasindaki urunun fiyati ne?",
+   "olcutler": [
+    {
+     "olcut": "lider fiyati dogru soyledi (1.249,90)",
+     "gecti": true,
+     "not": "Ürün \"Kavrulmus Kahve 1 kg\", fiyatı sayfada yazdığı gibi 1.249,90 TL. İndirim yok, tek fiyat; sayfada üstü çizili normal fiyat görünmüyor. Sayfanın ekran görünt"
+    }
+   ],
+   "kalite": [
+    {
+     "olcut": "lider patrona cevap verdi",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "lider 'yapamam / sen yap' DEMEDI",
+     "gecti": true,
+     "not": "Ürün \"Kavrulmus Kahve 1 kg\", fiyatı sayfada yazdığı gibi 1.249,90 TL. İndirim yok, tek fiyat; sayfad"
+    },
+    {
+     "olcut": "rapor ic konusma / KANIT satiri tasimiyor",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "gereksiz ret yok",
+     "gecti": true,
+     "not": "0 ret"
+    },
+    {
+     "olcut": "sohbet temiz (en fazla 4 mesaj)",
+     "gecti": true,
+     "not": "3 mesaj: insan/sohbet, ada/bildirim, lale/cevap"
+    }
+   ],
+   "durum": "gecti",
+   "sohbet": [
+    "insan/sohbet: http://127.0.0.1:59688/urun sayfasindaki urunun fiyati ne?",
+    "ada/bildirim: **Ürün Adı:** Kavrulmus Kahve 1 kg  \n**Fiyat:** 1.249,90 TL  \n**İndirim:** Yok, tek fiyat",
+    "lale/cevap: Ürün \"Kavrulmus Kahve 1 kg\", fiyatı sayfada yazdığı gibi 1.249,90 TL. İndirim yok, tek fiyat; sayfada üstü çizili normal fiyat görünmüyor. Sayfanın ekran görüntüsü ekler/urun-fiyat.png dosyasıyla ekte"
+   ],
+   "sureler": {
+    "lider": [
+     21,
+     26
+    ],
+    "isci": [
+     31
+    ],
+    "inceleme": [
+     19
+    ]
+   },
+   "sure_sn": 103.9
+  },
+  {
+   "no": "G08",
+   "ad": "Iki bagimsiz is -- paralel ajanlar",
+   "motor": "claude",
+   "kip": "gercek",
+   "mesaj": "Birbirinden bagimsiz iki is var, ikisini ayri ajanlara paralel yaptir: sehirler.md dosyasina Turkiye'nin en kalabalik 5 sehrini, renkler.md dosyasina 5 renk adini madde madde yaz.",
+   "olcutler": [
+    {
+     "olcut": "sehirler.md 5 madde",
+     "gecti": true,
+     "not": "5"
+    },
+    {
+     "olcut": "renkler.md 5 madde",
+     "gecti": true,
+     "not": "5"
+    },
+    {
+     "olcut": "is BOLUNDU (en az 2 gorev, 2 ajan)",
+     "gecti": true,
+     "not": "3 gorev, sahipler ['ada', 'cem', 'su']"
+    }
+   ],
+   "kalite": [
+    {
+     "olcut": "lider patrona cevap verdi",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "lider 'yapamam / sen yap' DEMEDI",
+     "gecti": true,
+     "not": "İki iş de tamamlandı ve iki dosya da çalışma kökünde duruyor. Açık kalan iş yok.\n\n**İstenen:** sehir"
+    },
+    {
+     "olcut": "rapor ic konusma / KANIT satiri tasimiyor",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "gereksiz ret yok",
+     "gecti": true,
+     "not": "0 ret"
+    },
+    {
+     "olcut": "sohbet temiz (en fazla 4 mesaj)",
+     "gecti": true,
+     "not": "2 mesaj: insan/sohbet, lale/cevap"
+    }
+   ],
+   "durum": "gecti",
+   "sohbet": [
+    "insan/sohbet: Birbirinden bagimsiz iki is var, ikisini ayri ajanlara paralel yaptir: sehirler.md dosyasina Turkiye'nin en kalabalik 5 sehrini, renkler.md dosyasina 5 renk adini madde madde yaz.",
+    "lale/cevap: İki iş de tamamlandı ve iki dosya da çalışma kökünde duruyor. Açık kalan iş yok.\n\n**İstenen:** sehirler.md dosyasına Türkiye'nin en kalabalık 5 şehri, renkler.md dosyasına 5 renk adı yazılacaktı. İki "
+   ],
+   "sureler": {
+    "lider": [
+     21,
+     36,
+     21
+    ],
+    "isci": [
+     37,
+     116,
+     86
+    ],
+    "inceleme": [
+     16,
+     23,
+     29
+    ]
+   },
+   "sure_sn": 345.9
+  }
+ ]
+}
