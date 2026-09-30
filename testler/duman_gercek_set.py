@@ -53,6 +53,8 @@ sina("'Önce dosyaya bakıyorum' ic konusma yakalanir",
      bool(GS._IC_KONUSMA.search("Önce dosyanın gerçekten var olup olmadığına bakıyorum.\n\nPatron...")))
 sina("'KANIT dosya:' satiri yakalanir",
      bool(GS._IC_KONUSMA.search("Istenen yapildi.\n\nKANIT dosya: a.png -> dogrulandi")))
+sina("sade 'Kanıt:' cumlesi ic konusma SAYILMAZ",
+     not GS._IC_KONUSMA.search("Yapildi.\nKanıt: ekran görüntüsü sohbette."))
 sina("temiz rapor ic konusma SAYILMAZ",
      not GS._IC_KONUSMA.search("Toplam ciro 11.185 TL, en cok satan Cay. Rapor rapor.md'de."))
 

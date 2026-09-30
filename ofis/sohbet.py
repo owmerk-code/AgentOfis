@@ -50,6 +50,7 @@ Kararlar ve sebepleri:
 
 from __future__ import annotations
 
+import re
 import threading
 import time
 
@@ -822,6 +823,14 @@ class Sohbet:
         `ekler.metni_hazirla`da). Lider salt okunurdur, dosyayi kendisi
         `ekler/`e tasiyamaz; ofis tasir."""
         from .ekler import metni_hazirla
+        # DEFTER SATIRLARI PATRONA GITMEZ (30.09.2026). Olculdu (gercek set
+        # G01, iki motor): rapor "KANIT terminal: `Get-ChildItem ...` -> ..."
+        # satiriyla geldi -- motorun sistem eki her tura "KANIT satiri yaz"
+        # der, aracsiz lider turu da onu alir. Bu satirlar ajanin DEFTER
+        # kaydidir (kanit kapisi okur); sohbette gurultudur. Kesin bicim
+        # silinir, sade "Kanit: ..." cumlesine dokunulmaz.
+        metin = re.sub(r"(?m)^[ \t]*(?:KANIT[ \t]+\S+[ \t]*:|DURUM:).*(?:\r?\n|$)", "", metin)
+        metin = re.sub(r"\n{3,}", "\n\n", metin).strip()
         try:
             metin, hatalar = metni_hazirla(self.ofis, metin, ajan_ad=lider_ad)
         except Exception as exc:          # noqa: BLE001 -- cevap kaybolmasin

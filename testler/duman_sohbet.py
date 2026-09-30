@@ -727,6 +727,15 @@ _ol = akit(Sohbet(ofis, motor_fabrikasi=lambda ad, **a: _CevapSonraArac(cevap=""
 _cv = [o["govde"] for o in _ol if o["tur"] == "cevap"]
 sina("cevaptan SONRA arac cagrilsa da cevap korunur", _cv and "Tamam patron" in _cv[0], str(_cv))
 
+print("\nDEFTER SATIRLARI PATRONA GITMEZ (30.09, gercek set G01)")
+_tm = Sohbet(ofis)._ekleri_hazirla(
+    "Istenen goruntu sohbete eklendi.\n\n\nKANIT terminal: `Get-Item x` -> ok\n"
+    "DURUM: bitti | sirada yok\nKanıt: goruntu sohbette.", "demir")
+sina("'KANIT terminal:' ve 'DURUM:' satirlari silindi",
+     "KANIT terminal" not in _tm and "DURUM:" not in _tm, repr(_tm))
+sina("sade 'Kanıt:' cumlesi ve asil metin KALDI",
+     "Kanıt: goruntu sohbette." in _tm and _tm.startswith("Istenen goruntu"), repr(_tm))
+
 print(f"\n== sonuc: {GECEN} gecti, {KALAN} kaldi ==")
 print(f"klasor: {kok}")
 sys.exit(1 if KALAN else 0)

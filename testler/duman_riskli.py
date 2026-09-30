@@ -932,6 +932,24 @@ for komut in ("Get-Process chrome", "Start-Process notepad", "curl https://youtu
               "npm start", "echo screenshot", "Start-Process python -ArgumentList app.py"):
     sina(f"  olagan komut serbest: {komut}",
          R.arac_degerlendir("Bash", {"command": komut}) is None)
+print("\n-- CODEX DOSYA YAMASI ve Env: (30.09, gercek set G07 / G03) --")
+# Olculdu: kanca `apply_patch`i taninmayan arac sandi, oyun kodundaki
+# "message" kelimesi yuzunden dosya yazmayi DISARIYA GONDERIM diye durdurdu.
+sina("apply_patch ile dosya YAZMA serbest (icerikte 'message/delete/post' olsa da)",
+     R.arac_degerlendir("apply_patch", {"command": "*** Begin Patch\n*** Add File: o/i.html\n"
+                                                    "+postMessage('message'); delete x; post()\n"
+                                                    "*** End Patch"}) is None)
+_ys = R.arac_degerlendir("apply_patch", {"command": "*** Begin Patch\n*** Delete File: onemli.txt\n"
+                                                    "*** End Patch"})
+sina("apply_patch ile DOSYA SILME sorulur", bool(_ys) and _ys["sinif"] == "silme"
+     and _ys["sorulur"] and "onemli.txt" in _ys["hedef"], str(_ys))
+sina("Remove-Item Env:X (ortam degiskeni) serbest",
+     R.arac_degerlendir("Bash", {"command": "$env:X='1'; pytest -q; Remove-Item Env:X"}) is None)
+for komut in ("Remove-Item sil.txt", "Remove-Item -Recurse -Force build",
+              r"Remove-Item -LiteralPath 'C:\x\a.txt'"):
+    _b = R.arac_degerlendir("Bash", {"command": komut})
+    sina(f"  dosya silme HALA sorulur: {komut}", bool(_b) and _b["sinif"] == "silme")
+
 from ofis import izin as _iz  # noqa: E402
 sina("masaustu IZINLE ACILAMAZ (patron sozu de kalici izin de)",
      "masaustu" in _iz.HER_ZAMAN_SORULUR and "masaustu" not in _iz.IZIN_VERILEBILIR)

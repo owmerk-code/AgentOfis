@@ -591,6 +591,37 @@ TodoWrite ToolSearch
 
 KABUK_ARACLARI = frozenset({"Bash", "PowerShell"})
 
+#: DOSYA YAMASI araclari (codex `apply_patch`). Yerlesik dosya aracidir --
+#: Write/Edit'in karsiligi.
+#:
+#: OLCULDU (30.09.2026, gercek set G07, codex gercek terminal): kanca
+#: `apply_patch`i TANINMAYAN bir baglayici araci sandi, yamanin ICERIGINI
+#: (bir yilan oyununun kodu) taradi, koddaki "message" kelimesini DISARIYA
+#: GONDERIM saydi ve dosya yazmayi patrona onay karti olarak dusurdu.
+#: Yani gercek terminalde codex'in dosya yazmasi, icerikte "message",
+#: "post", "delete" gecince duruyordu. Yazma serbest (yazma kilidi ve disk
+#: olcumu denetler); yamadaki DOSYA SILME (`*** Delete File:`) sorulur.
+YAMA_ARACLARI = frozenset({"apply_patch"})
+_YAMA_SILME = re.compile(r"^\s*\*\*\*\s*delete file:\s*(.+)$", re.I | re.M)
+
+
+def yama_degerlendir(arac: str, girdi: dict = None) -> dict | None:
+    """Dosya yamasi: yazma/degistirme serbest, DOSYA SILME sorulur."""
+    g = girdi or {}
+    metin = str(g.get("command") or g.get("input") or g.get("patch") or "")
+    m = _YAMA_SILME.search(metin)
+    if not m:
+        return None
+    ad, risk = SINIFLAR["silme"]
+    hedef = m.group(1).strip()[:200]
+    return {
+        "sinif": "silme", "ad": ad, "risk": risk, "esles": "*** Delete File",
+        "arac": arac, "hedef": hedef, "element": hedef, "url": "",
+        "sorulur": True, "eylem": f"{ad}: {hedef[:120]}",
+        "sebep": (f"`{arac}` yamasi bir dosyayi SILIYOR ({hedef!r}). Yama "
+                  "uygulanmadan once patrona soruluyor."),
+    }
+
 #: Komut basi: satir basi ya da bir kabuk ayraci. `rm` gibi kisa adlar
 #: baska kelimenin icinde (`format` icindeki `rm`) yakalanmasin diye.
 #:
@@ -606,7 +637,11 @@ _B = r"(?:^|[\s;&|(`'\"{])"
 KABUK_KURALLARI = (
     ("silme", _kur((
         _B + r"rm\s", _B + r"rmdir\b", _B + r"(?:del|erase|rd|ri)\s",
-        r"\bremove-item\b", _B + r"unlink\b", _B + r"shred\b",
+        # `Remove-Item Env:X` ortam DEGISKENI kaldirir, dosya degil (30.09
+        # olculdu: codex `pytest` komutunu boyle sarip onaya dusurdu).
+        r"\bremove-item\b(?!\s+(?:-(?:literal)?path\s+)?['\"]?"
+        r"(?:env|variable|function|alias):)",
+        _B + r"unlink\b", _B + r"shred\b",
         r"\bgit\s+clean\b", r"\bgit\s+reset\s+--hard\b",
         r"\bgit\s+checkout\s+--\s", r"\bgit\s+branch\s+-d\b",
         r"\bgit\s+stash\s+(?:drop|clear)\b",
@@ -706,6 +741,8 @@ def arac_degerlendir(arac: str, girdi: dict = None) -> dict | None:
         return None
     if ad in KABUK_ARACLARI:
         return kabuk_degerlendir(ad, girdi)
+    if ad in YAMA_ARACLARI:
+        return yama_degerlendir(ad, girdi)
 
     parcalar = _arac_parcalari(ad)
     if not parcalar:

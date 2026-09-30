@@ -83,8 +83,11 @@ SOHBET_EK_PAYI = 2
 _YAPAMAM = re.compile(r"yapam[ai]|alam[iı]yorum|a[cç]am[iı]yorum|eri[sş]emiyorum"
                       r"|sen (?:at|yap|ekle|gonder|gönder)", re.I)
 #: Raporda patrona gitmemesi gereken ic kalip.
-_IC_KONUSMA = re.compile(r"^\s*(?:Önce|Once|Şimdi|Simdi)\b.*(?:bak[iı]yorum|"
-                         r"kontrol ediyorum|okuyorum)|^KANIT\b|^DURUM:", re.I | re.M)
+#: KANIT satiri: makine bicimi ("KANIT dosya: a.png -> ...") -- ajanin defter
+#: satiri. Sade "Kanıt: goruntu sohbette" cumlesi patrona uygun, sayilmaz.
+_IC_KONUSMA = re.compile(r"(?im:^\s*(?:Önce|Once|Şimdi|Simdi)\b.*(?:bak[iı]yorum|"
+                         r"kontrol ediyorum|okuyorum))|(?m:^\s*KANIT\s+\S+\s*:)"
+                         r"|(?m:^\s*DURUM:)")
 
 
 # ---------------------------------------------------------------- yardimci

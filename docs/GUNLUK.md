@@ -12830,3 +12830,15 @@ sayılmaz.** Sahte duman sınamaları kalıyor (kod bozuldu mu, saniyede).
 - Koddaki codex kademe varsayılanı eskimişti (temiz ofis gpt-5.6-luna
   aldı) → gpt-6-luna / gpt-6.1-sol / gpt-6.1-sol.
 - Panelden "sahte" motor rozeti kaldırıldı.
+- **Kapı yanlış alarmları (gerçek setin bulduğu):** codex'in dosya yazma
+  aracı `apply_patch` kapının serbest listesinde yoktu; kanca onu
+  tanınmayan araç sayıp İÇERİĞİ taradı, oyun kodundaki "message" yüzünden
+  dosya yazmayı "DIŞARIYA GÖNDERİM" diye patrona onaya düşürdü (G07,
+  dosya hiç yazılmadı). → `YAMA_ARACLARI`: yazma serbest, yamada `*** Delete
+  File:` varsa silme sorulur. `Remove-Item Env:X` (ortam değişkeni) silme
+  sayılıyordu → `Env:/Variable:/Function:/Alias:` hariç. `duman_riskli` 220.
+- Rapordaki `KANIT <tür>:` / `DURUM:` makine satırları patrona giden
+  metinden ofisçe silinir (sistem eki her tura "KANIT satırı yaz" diyor,
+  araçsız lider turu da alıyor); sade "Kanıt: …" cümlesi kalır.
+- İkinci koşuda G01 iki motorda: görüntü sohbette, ret YOK, sohbet temiz;
+  yalnız KANIT satırı kalmıştı (yukarıdaki düzeltmeyle kapandı).
