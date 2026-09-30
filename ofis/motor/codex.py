@@ -1692,6 +1692,8 @@ class CodexMotoru(Motor):
             "ilk_on_ek": (self._istek_metni("", mcp_yapilandirma).strip()
                           + f"\n\n(tur isareti: {isaret} -- yok say)\n\n"),
             "guven": ("\r",), "guven_isareti": "trust",
+            # Giris satiri var ve "loading" bitti (olculdu, 01.10).
+            "hazir_mi": lambda e: "\u203a" in e[-450:] and "loading" not in e[-450:].lower(),
             "durdur": "\x1b", "ev": str(ev),
         }
 

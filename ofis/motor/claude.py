@@ -919,6 +919,8 @@ class ClaudeMotoru(Motor):
             # bakilarak secilir (tui._guven_sec).
             "guven_evet": "Yes, I trust",
             "guven_isareti": "trust",
+            # Giris kutusu cizildi: cizgi + imlec (olculdu, 01.10).
+            "hazir_mi": lambda e: "\u276f" in e[-500:] and "\u2500" * 10 in e[-900:],
             "durdur": "\x1b",
         }
 

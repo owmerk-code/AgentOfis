@@ -651,7 +651,8 @@ class Lider:
             # okunur. Tavan gereken tur (fable hakemi) ARKADA kalir.
             motor = kipe_gore(self.db, self.proje_id,
                               self.motor_fabrikasi(b["motor"]),
-                              ajan_ad=lider["ad"], butce_usd=butce_usd)
+                              ajan_ad=lider["ad"], butce_usd=butce_usd,
+                              lider=True)
             parcalar, ek = [], {}
             fren = tavan.KacakFreni()
             for olay in motor.tur_kos(

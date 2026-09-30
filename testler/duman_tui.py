@@ -223,6 +223,15 @@ _o2 = list(tui.kipe_gore(db, ofis.proje_id, SahteTui(), ajan_ad="lale").tur_kos(
 _acik = [x["oturum_id"] for x in tui.acik_oturumlar() if x["ajan"] == "lale"]
 sina("lider her turda TEMIZ terminal, eskisi kapandi (tek terminal kalir)",
      _o1 != _o2 and _acik == [_o2], f"{_o1} {_o2} {_acik}")
+# 01.10: liderin turlari AYRI ayar (varsayilan arka; olculdu, is basina ~20 sn).
+sina("lider turu varsayilan olarak ARKADA (isci gercek terminalde olsa da)",
+     not isinstance(tui.kipe_gore(db, ofis.proje_id, SahteTui(), ajan_ad="lale", lider=True),
+                    tui.TuiMotoru))
+db.ayar_yaz(ofis.proje_id, tui.LIDER_KIP_AYARI, "gercek")
+sina("lider ayari 'gercek' ise lider de gercek terminalde",
+     isinstance(tui.kipe_gore(db, ofis.proje_id, SahteTui(), ajan_ad="lale", lider=True),
+                tui.TuiMotoru))
+db.ayar_yaz(ofis.proje_id, tui.LIDER_KIP_AYARI, "arka")
 db.ayar_yaz(ofis.proje_id, "terminal_kipi", "arka")
 
 print("\n-- 14. codex salt okunur: --add-dir YOK --")

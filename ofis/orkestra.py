@@ -783,7 +783,8 @@ class Orkestra:
             # terminal (oturum yok), panoda liderin son terminali gorunur.
             motor = kipe_gore(self.db, self.proje_id,
                               self.motor_fabrikasi(b["motor"]),
-                              ajan_ad=lider["ad"], butce_usd=butce_usd)
+                              ajan_ad=lider["ad"], butce_usd=butce_usd,
+                              lider=True)
             parcalar, ek, yedek = [], {}, []
             # Butce, DESTEKLEYEN motora verilir. Desteklemeyen motor (codex)
             # butce gelince turu hic baslatmadan reddeder -- para kontrolleri

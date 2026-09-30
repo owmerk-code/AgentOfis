@@ -133,11 +133,17 @@ def _gonderildi_mi(t, dokum_bul, onceki: int, deneme: int = 4) -> bool:
     gonderiyor. Ekrana degil dosyaya bakilir: dosya buyumediyse Enter
     tekrarlanir (bos Enter iki motorda da zararsiz).
     """
+    # SIK YOKLAMA (01.10.2026): once her denemede SABIT 2,5 sn uyunuyordu;
+    # olculdu, claude'da mesaj ~0,5 sn'de dosyaya dusuyor -- her tur ~2 sn
+    # bosuna bekliyordu. Simdi 0,25 sn'de bir bakilir; 2,5 sn icinde
+    # buyumezse Enter tekrarlanir (davranis ayni, yalniz bekleme kisa).
     for _ in range(deneme):
-        time.sleep(2.5)
-        d = dokum_bul()
-        if d is not None and d.exists() and d.stat().st_size > onceki:
-            return True
+        bitis = time.monotonic() + 2.5
+        while time.monotonic() < bitis:
+            time.sleep(0.25)
+            d = dokum_bul()
+            if d is not None and d.exists() and d.stat().st_size > onceki:
+                return True
         try:
             t.yaz("\r")
         except Exception:                        # noqa: BLE001
@@ -200,8 +206,18 @@ def kapat(oturum_id: str) -> str:
 KIP_AYARI = "terminal_kipi"
 
 
+#: Liderin turlari (triyaj, plan, inceleme, rapor) icin AYRI ayar:
+#: 'arka' (varsayilan) | 'gercek'. OLCULDU (01.10.2026, ayni kucuk tur):
+#: arka kip claude 3 sn / codex 4-6 sn, gercek terminal claude ~10 sn /
+#: codex ~9 sn (hazir-isareti yamasindan SONRA bile; farkin cogu CLI'in
+#: kendi acilisi). Lider bir iste 3-4 tur kosar -> is basina ~20 sn.
+#: Liderin turlari kisa ve sonucu patron sohbette gorur; isci terminali
+#: gorunur kalir. Isteyen lideri de gercek terminale alir (tek ayar).
+LIDER_KIP_AYARI = "lider_terminal_kipi"
+
+
 def kipe_gore(db, proje_id: str, motor, *, ajan_ad: str = "",
-              butce_usd=None):
+              butce_usd=None, lider: bool = False):
     """TEK KURAL, uc cagiran (isci turu, liderin planlama/triyaj/rapor
     turu, liderin incelemesi): ayar 'gercek' ve motor destekliyorsa
     gercek terminal; degilse motorun kendisi.
@@ -212,6 +228,8 @@ def kipe_gore(db, proje_id: str, motor, *, ajan_ad: str = "",
     da arkada kalir ve bu GORUNUR bir uyari olur.
     """
     if db.ayar_oku(proje_id, KIP_AYARI, "arka") != "gercek":
+        return motor
+    if lider and db.ayar_oku(proje_id, LIDER_KIP_AYARI, "arka") != "gercek":
         return motor
     if butce_usd:
         return motor
@@ -351,6 +369,14 @@ class TuiMotoru(Motor):
                             time.sleep(0.5)
                     kayit["guvenildi"] = True
                     son_boy, durgun = -1, 0.0
+                # HAZIR ISARETI (01.10.2026): CLI giris kutusunu cizdiyse
+                # beklemeye gerek yok. Olculdu: onayli klasorde claude ve
+                # codex ~4. sn'de hazir; "2 sn durgun + en az 4 sn" kurali
+                # her tura ~2-3 sn ekliyordu. Isaret yoksa eski kural.
+                hazir = plan.get("hazir_mi")
+                if hazir is not None and hazir(ekran) and "trust" not in ekran[-900:].lower():
+                    time.sleep(0.4)
+                    break
                 if len(ekran) == son_boy:
                     durgun += 0.5
                     if durgun >= 2.0 and time.monotonic() - bas > 4:
