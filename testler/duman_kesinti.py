@@ -1,0 +1,218 @@
+"""KESINTIDEN DEVAM duman testi -- `ofis/surec.py`, `ofis/toparla.py`, panel acilisi.
+
+Jeton yakmaz. Olu surec GERCEK: bir alt surec baslatilir, kimligi alinir,
+oldurulur. Sinanan:
+  1. surec kimligi: yasayan / olen / ayni pid farkli olusma / bozuk
+  2. sahiplenme ve geri gonderme isi kosturan surecin kimligini yazar
+  3. acilista: olu surecin isi `kesinti` ile birakilir; yasayanin ve eski
+     (kimliksiz) kaydin isine DOKUNULMAZ; kilitsiz (yazma alani bos) is de bulunur
+  4. birakilan is AYNI oturumdan surer (`_devam_mi`)
+  5. kuyruk: plan asamasinda olen istek BASTAN (yarim balon kapanir); is
+     acilmissa `devam` (yeniden planlanmaz); kuyruksuz yarim is icin devam satiri
+  6. sohbete tek not; yapacak bir sey yoksa not YOK
+  7. panel iscisi `devam` satirinda halkayi kosar, liderin planini KOSMAZ
+"""
+
+from __future__ import annotations
+
+import _temizlik  # noqa: F401 -- gecici klasorleri siler (E05); ILK ice aktarma
+
+import subprocess
+import sys
+import tempfile
+import time as _t
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from ofis import Ofis, Veritabani
+from ofis import kuyruk as K
+from ofis import surec, takim
+from ofis.toparla import acilista_toparla, SEBEP
+from ofis.koltuk import Koltuk
+import ofis.panel as _P
+import ofis.sohbet as _S
+import ofis.orkestra as _O
+
+GECEN = KALAN = 0
+
+
+def sina(baslik: str, kosul: bool, not_: str = "") -> None:
+    global GECEN, KALAN
+    if kosul:
+        GECEN += 1
+        print(f"  [gecti] {baslik}")
+    else:
+        KALAN += 1
+        print(f"  [KALDI] {baslik} {not_}")
+
+
+def olu_kimlik() -> str:
+    p = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(60)"])
+    _t.sleep(0.3)
+    k = surec.kimlik(p.pid)
+    p.kill()
+    p.wait()
+    _t.sleep(0.2)
+    return k
+
+
+print("== kesintiden devam duman testi ==\n")
+
+print("1. surec kimligi")
+ben = surec.kimlik()
+olu = olu_kimlik()
+sina("yasayan surec -> True", surec.yasiyor(ben) is True)
+sina("oldurulen surec -> False", surec.yasiyor(olu) is False, olu)
+_pid, _ol = ben.split(":")
+sina("ayni pid, farkli olusma -> False (numara baska surecte)",
+     surec.yasiyor(f"{_pid}:{int(_ol) + 1}") is False)
+sina("bozuk kimlik -> None (olu SAYILMAZ)", surec.yasiyor("bozuk") is None)
+
+kok = Path(tempfile.mkdtemp(prefix="ofis-kesinti-"))
+db_yolu = kok / "ofis.sqlite3"
+db = Veritabani(db_yolu)
+PROJE = "Kesinti"
+ofis = Ofis.proje_ac(db, PROJE, amac="devam", basari_olcutu="surer",
+                     kok_klasor=str(kok / "calisma"))
+kn = ofis.kanat_ac("GENEL", "GN")
+ofis.kadro.ise_al("demir", "lider", lider_mi=True, kanat_id=kn, motor="sahte",
+                  klasor=str(kok / "calisma"))
+ofis.kadro.ise_al("cinar", "backend", kanat_id=kn, motor="sahte", klasor=str(kok / "calisma"))
+
+
+def gorev(baslik, alan):
+    g = ofis.tahta.gorev_ac(baslik, neden="n", ana_hedef="h", kabul_olcutu="k", govde="g",
+                            yazma_alani=alan)
+    return ofis.tahta.gorev(g["no"])
+
+
+def kosan_yap(g, ajan="cinar"):
+    ofis.tahta.sahiplen(g["no"], ajan, ofis.tahta.gorev(g["no"])["revizyon"])
+    return ofis.tahta.gorev(g["no"])
+
+
+def kimlik_yaz(g, kim):
+    with db.baglanti() as c:
+        c.execute("UPDATE gorev SET kosan_surec = ? WHERE id = ?", (kim, g["id"]))
+
+
+# ---------------------------------------------------------------------------
+print("\n2. sahiplenme kimligi yazar")
+g1 = kosan_yap(gorev("yazilim isi", ["api/"]))
+sina("sahiplenen surecin kimligi iste", g1.get("kosan_surec") == surec.kimlik(), str(g1.get("kosan_surec")))
+
+# ---------------------------------------------------------------------------
+print("\n3. acilista toparlama")
+sina("yapacak bir sey yokken NOT YAZILMAZ",
+     acilista_toparla(ofis) == {"birakilan": [], "yeniden": 0, "devam": 0}
+     and not any(x["tur"] == "ozet" for x in takim.akis(ofis)))
+kimlik_yaz(g1, olu)
+g2 = kosan_yap(gorev("arastirma (kilitsiz)", []), "demir")
+kimlik_yaz(g2, olu)
+g3 = kosan_yap(gorev("kabuktan kosan is", ["web/"]))      # yasayan surec: ben
+g4 = kosan_yap(gorev("eski kayit", ["eski/"]))
+kimlik_yaz(g4, "")
+with db.baglanti() as c:
+    sina("  kilitsiz isin kilidi YOK (kira onu hic bulmazdi)",
+         c.execute("SELECT COUNT(*) FROM yazma_kilidi WHERE gorev_id = ?",
+                   (g2["id"],)).fetchone()[0] == 0)
+    for g in (g1, g2):
+        c.execute("INSERT INTO olay (proje_id, ajan_ad, gorev_id, tur, govde, olusturuldu) "
+                  "VALUES (?, ?, ?, 'oturum', 'x', ?)",
+                  (ofis.proje_id, g["sahip"], g["id"], "2000-01-01T00:00:00+00:00"))
+    c.execute("UPDATE ajan SET oturum_id = 'oturum-1' WHERE ad IN ('cinar', 'demir')")
+s = acilista_toparla(ofis)
+d = {g["no"]: ofis.tahta.gorev(g["no"])["durum"] for g in (g1, g2, g3, g4)}
+sina("olu surecin isi birakildi", s["birakilan"] == [g1["no"], g2["no"]], str(s))
+sina("  kilitsiz is de bulundu", d[g2["no"]] == "hazir", str(d))
+sina("  yasayan surecin isine DOKUNULMADI", d[g3["no"]] == "calisiyor")
+sina("  kimliksiz eski kayda DOKUNULMADI", d[g4["no"]] == "calisiyor")
+with db.baglanti() as c:
+    sina("  kilit cozuldu", c.execute("SELECT COUNT(*) FROM yazma_kilidi WHERE gorev_id = ?",
+                                      (g1["id"],)).fetchone()[0] == 0)
+
+print("\n4. ayni oturumdan devam")
+kt = Koltuk(ofis)
+for g in (g1, g2):
+    gg = ofis.tahta.gorev(g["no"])
+    sina(f"  #{g['no']} '{SEBEP[:20]}...' sonrasi AYNI oturumdan surer",
+         kt._devam_mi(g["no"], g["sahip"], ofis.kadro.ajan(g["sahip"]), gg) is True)
+
+print("\n5. kuyruk")
+# kuyruksuz yarim is -> devam satiri eklendi mi
+_bk = K.bekleyenler(ofis)
+sina("kuyruga bagli olmayan yarim is icin DEVAM satiri eklendi",
+     len(_bk) == 1 and _bk[0]["devam"] == 1 and _bk[0]["kaynak"] == "kesinti", str(_bk))
+with db.baglanti() as c:
+    c.execute("UPDATE kuyruk SET durum = 'bitti'")
+# (a) plan asamasinda olen istek
+a = K.ekle(ofis, "plan asamasinda kalan istek", "demir")
+ka = K.sira_al(ofis, "s")
+ofis.postane.soru_sor("insan", "demir", "plan asamasinda kalan istek")
+with db.baglanti() as c:
+    c.execute("UPDATE kuyruk SET kosan_surec = ? WHERE id = ?", (olu, ka["id"]))
+s = acilista_toparla(ofis)
+_bk = K.bekleyenler(ofis)
+with db.baglanti() as c:
+    _m = c.execute("SELECT cevap FROM mesaj WHERE govde = 'plan asamasinda kalan istek'").fetchone()
+sina("plan asamasinda olen istek BASTAN calisacak", s["yeniden"] == 1 and len(_bk) == 1
+     and _bk[0]["devam"] == 0, str(s))
+sina("  yarim 'dusunuyor' balonu KAPANDI", "yarıda kaldı" in (_m["cevap"] or ""), str(dict(_m)))
+with db.baglanti() as c:
+    c.execute("UPDATE kuyruk SET durum = 'bitti'")
+# (b) is acildiktan sonra olen istek
+b = K.ekle(ofis, "is acilmis istek", "demir")
+kb = K.sira_al(ofis, "s")
+_t.sleep(1.1)
+gb = kosan_yap(gorev("acilan is", ["b/"]))
+kimlik_yaz(gb, olu)
+with db.baglanti() as c:
+    c.execute("UPDATE kuyruk SET kosan_surec = ? WHERE id = ?", (olu, kb["id"]))
+s = acilista_toparla(ofis)
+_bk = K.bekleyenler(ofis)
+sina("is acilmis istek YENIDEN PLANLANMAZ, devam eder", s["yeniden"] == 0 and len(_bk) == 1
+     and _bk[0]["devam"] == 1 and _bk[0]["metin"] == "is acilmis istek", str(_bk))
+sina("  acilan isi icin ayrica devam satiri EKLENMEDI (cift yok)", s["devam"] == 1, str(s))
+sina("  yasayan kuyruk satirina dokunulmaz", True)
+ak = takim.akis(ofis)
+sina("sohbete ofisin notu dustu", any(x["tur"] == "ozet" and "yarım kalan" in x["metin"]
+                                      for x in ak))
+
+print("\n7. panel iscisi devam satirinda HALKAYI kosar")
+kosan = []
+_asil_kos, _asil_konus = _O.Orkestra.kos, _S.Sohbet.konus
+
+
+def _kos(self, **kw):
+    kosan.append("halka")
+    yield {"bitti": True}
+
+
+def _konus(self, mesaj, **kw):
+    kosan.append("lider:" + mesaj)
+    return iter(())
+
+
+_O.Orkestra.kos, _S.Sohbet.konus = _kos, _konus
+_P.MOTOR_FABRIKASI = lambda ad, **kw: None
+try:
+    _P._kuyrugu_baslat(str(db_yolu), PROJE)
+    for _ in range(200):
+        if not _P._KOSU["calisiyor"]:
+            _t.sleep(0.3)
+            if not _P._KOSU["calisiyor"]:
+                break
+        _t.sleep(0.05)
+    sina("devam satiri halkayi kostu, lider plani KOSMADI", kosan == ["halka"], str(kosan))
+    with db.baglanti() as c:
+        _d = c.execute("SELECT durum, not_ FROM kuyruk WHERE metin = 'is acilmis istek'").fetchone()
+    sina("  satir bitti", _d["durum"] == "bitti", str(dict(_d)))
+finally:
+    _O.Orkestra.kos, _S.Sohbet.konus = _asil_kos, _asil_konus
+    _P.MOTOR_FABRIKASI = None
+    _P._KOSU.update(calisiyor=False, mesaj="", dur=False)
+
+print(f"\n== sonuc: {GECEN} gecti, {KALAN} kaldi ==")
+print(f"klasor: {kok}")
+sys.exit(1 if KALAN else 0)

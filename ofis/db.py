@@ -574,6 +574,9 @@ CREATE TABLE IF NOT EXISTS kuyruk (
     kaynak          TEXT NOT NULL DEFAULT 'insan',
     durum           TEXT NOT NULL DEFAULT 'bekliyor',
     seri            TEXT NOT NULL DEFAULT '',
+    kosan_surec     TEXT NOT NULL DEFAULT '',
+    devam           INTEGER NOT NULL DEFAULT 0,
+    gorev_sinir     INTEGER NOT NULL DEFAULT 0,
     not_            TEXT NOT NULL DEFAULT '',
     olusturuldu     TEXT NOT NULL,
     basladi         TEXT,
@@ -733,6 +736,16 @@ class Veritabani:
         # dolar yok; API'de gercek para kesilir ve sinirsiz API hesabi
         # zincire GIRMEZ. Bos (NULL) = tanimsiz.
         ("hesap", "aylik_sinir_usd", "REAL"),
+        # KESINTIDEN DEVAM (01.10.2026): isi kosturan surecin kimligi
+        # (`surec.kimlik`, pid:olusma). Acilista surec olmusse is ofisce
+        # birakilir ve AYNI oturumdan surer. Bos = eski kayit, bilinmiyor.
+        ("gorev", "kosan_surec", "TEXT NOT NULL DEFAULT ''"),
+        ("kuyruk", "kosan_surec", "TEXT NOT NULL DEFAULT ''"),
+        ("kuyruk", "devam", "INTEGER NOT NULL DEFAULT 0"),
+        # Is ALINIRKEN gorev tablosunun son rowid'i: bu istekle acilan
+        # isler ondan buyuktur. Zaman (saniye) yetmedi: onceki istegin isi
+        # ayni saniyede acildiysa yanlis istege baglaniyordu (olculdu).
+        ("kuyruk", "gorev_sinir", "INTEGER NOT NULL DEFAULT 0"),
     )
 
     def _veri_goc(self, conn) -> None:

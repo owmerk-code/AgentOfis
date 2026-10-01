@@ -328,6 +328,18 @@ def _kuyrugu_kostur(db_yolu, proje_ad: str) -> None:
                     except Exception:    # noqa: BLE001 -- kabinsiz kosar, blok soyler
                         kabin_cdp = ""
                 try:
+                    if k.get("devam"):
+                        # KESINTIDEN DEVAM: mesaj yeniden PLANLANMAZ (isler
+                        # kopyalanirdi); acik isleri halka surdurur.
+                        from .orkestra import Orkestra
+                        ork = (o.orkestra if MOTOR_FABRIKASI is None
+                               else Orkestra(o, motor_fabrikasi=MOTOR_FABRIKASI))
+                        for adim in ork.kos(azami_tik=12, butce_usd=PANEL_TUR_TAVANI_USD,
+                                            paralel=3):
+                            if adim.get("bitti") or _durdurulduysa(o, "Halka"):
+                                break
+                        _kuyruk.bitir(o, k["id"], "bitti", "kesintiden sonra surduruldu")
+                        continue
                     if MOTOR_FABRIKASI is None:
                         sohbet = o.sohbet
                     else:
@@ -350,6 +362,30 @@ def _kuyrugu_kostur(db_yolu, proje_ad: str) -> None:
         finally:
             _kuyruk.raporu_yaz(o, seri)
     _arkada_calistir(db_yolu, proje_ad, isi, "sira")
+
+
+def acilista_toparla(db_yolu, proje_ad: str = None) -> dict:
+    """Panel ACILIRKEN: kesintide yarim kalani toparla, sirayi baslat.
+
+    Hata paneli acilmaktan alikoymaz ama YUTULMAZ: deftere `hata` yazilir.
+    """
+    try:
+        _db = Veritabani(db_yolu)
+        pid = _proje_id_bul(_db, proje_ad)
+        if pid is None:
+            return {}
+        from .toparla import acilista_toparla as _toparla
+        sonuc = _toparla(Ofis(_db, pid))
+    except Exception as exc:          # noqa: BLE001 -- panel yine acilir
+        import traceback
+        traceback.print_exc()
+        try:
+            _db.olay_yaz(pid, "hata", f"Acilista toparlama dustu: {exc}")
+        except Exception:             # noqa: BLE001
+            pass
+        return {}
+    _kuyrugu_baslat(db_yolu, proje_ad)
+    return sonuc
 
 
 def _halkayi_kostur(db_yolu, proje_ad: str) -> None:
@@ -2644,6 +2680,7 @@ def kos(adres: str = "127.0.0.1", kapi: int = 8900, db_yolu=None,
     if adres not in GUVENLI_ADRESLER and not adres.startswith("100."):
         print(f"UYARI: {adres} yerel ya da Tailscale adresi degil.")
     uygulama = olustur(db_yolu, proje_ad)
+    acilista_toparla(db_yolu or VARSAYILAN_YOL, proje_ad)
     _gunluk_yedek_arkada(db_yolu)
     _limit_tazele_arkada(db_yolu, proje_ad)
     _guncelleme_arkada(db_yolu, proje_ad)

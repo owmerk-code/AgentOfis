@@ -1632,8 +1632,10 @@ class Koltuk:
 
     #: Turun KAYNAK tukenmesinden kesildigini soyleyen birakilma sebepleri.
     #: Bunlar HATA degildir: is dogru gidiyordu, kaynak bitti.
+    # "kesinti" (01.10.2026): panel/bilgisayar is ortasinda kapandi. Is
+    # dogru gidiyordu; acilista ofis birakir, ajan AYNI oturumdan surer.
     KAYNAK_SEBEPLERI = ("kullanim limiti", "zaman asimi", "butce",
-                        "insan durdurdu")
+                        "insan durdurdu", "kesinti")
 
     #: Patron notu ve durdurma istegi defterden ne siklikla okunur. Motor
     #: sessizken bile saniyede bir `nabiz` akar, yani gecikme ~1 sn +

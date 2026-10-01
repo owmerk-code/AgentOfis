@@ -13186,3 +13186,30 @@ REDDEDİLİYORDU ("bitmesini bekle").
   ÜSTÜNE düştü → aynı saniyedekilerin sonuna (sınama + mutasyon).
 - Sınama paneli kendi başlatıcısıyla: kopya defter, yedek/güncelleme/limit
   döngüleri KAPALI (kopya defter gerçek yedeği ve ayarı değiştirmesin).
+
+## 01.10.2026 — F5/2: kesintiden devam
+
+Ölçülmüş boşluklar (panel iş ortasında kapanınca):
+- `calisiyor` iş asılı kalır. Yazma alanlı işin kilidi 180 sn sonra düşer
+  ama `birak` SAHİBİ SİLER → iş sıfırdan koşar (oturum boşa). Yazma alanı
+  BOŞ işin (araştırma) hiç kilidi yok → kira onu hiç bulmaz, iş sonsuza
+  kadar "çalışıyor".
+- Kuyruk satırı `kosuyor` kalır; açılışta hiçbir şey sürdürmez.
+
+Çözüm:
+- `ofis/surec.py`: süreç kimliği `pid:oluşma` (ctypes, bağımlılık yok).
+  Yalnız pid yetmez (Windows numarayı yeniden dağıtır). Ölçülemeyen = None,
+  ölü SAYILMAZ. Ölçüldü: yaşayan/öldürülen/aynı pid farklı oluşma doğru.
+- `gorev.kosan_surec` (sahiplenme + geri gönderme yazar), `kuyruk.kosan_surec`.
+- `ofis/toparla.py` (panel açılışı): ölü sürecin işi `kesinti` sebebiyle
+  bırakılır — `KAYNAK_SEBEPLERI`ne eklendi → AYNI ajan AYNI oturumdan
+  sürer. Yaşayanın ve kimliksiz eski kaydın işine dokunulmaz (kullanıcının
+  gerçek ofisindeki eski işler güvende). Kuyruk: plan aşamasında ölen
+  istek baştan (yarım "düşünüyor" balonu kapatılır), iş açılmışsa `devam`
+  (yeniden planlanmaz → iş kopyalanmaz; işçi halkayı koşar). Kuyruksuz
+  yarım iş için `devam` satırı. Sohbete tek not.
+- Bulgu (sınama yakaladı): "bu istekte açılan işler" saniyelik zamanla
+  bulunuyordu; önceki isteğin işi aynı saniyede açılınca yanlış isteğe
+  bağlandı → `kuyruk.gorev_sinir` (alınırken gorev MAX(rowid)), tek yer
+  `kuyruk.acilan_gorevler` (rapor + toparlama).
+- duman_kesinti 23 (gerçek öldürülen alt süreç). Mutasyon 4/4 ateşliyor.

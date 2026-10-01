@@ -48,6 +48,8 @@ DURUMLAR = (BEKLIYOR, HAZIR, CALISIYOR, INCELEME, BITTI, IPTAL)
 #: Nabiz bu sureyi asarsa kilit dusmus sayilir ve is yeniden sahiplenilebilir.
 KILIT_KIRA_SANIYE = 180
 
+from . import surec as _surec  # noqa: E402 -- kesintiden devam (01.10)
+
 MAKS_GOREV = 512
 
 
@@ -739,8 +741,8 @@ class Tahta:
             self._revizyon_dogrula(conn, gorev["id"], beklenen_revizyon)
             conn.execute(
                 "UPDATE gorev SET sahip = ?, durum = ?, revizyon = revizyon + 1, "
-                "guncellendi = ? WHERE id = ?",
-                (ajan_ad, CALISIYOR, an, gorev["id"]),
+                "guncellendi = ?, kosan_surec = ? WHERE id = ?",
+                (ajan_ad, CALISIYOR, an, _surec.kimlik(), gorev["id"]),
             )
             for yol in gorev["yazma_alani"]:
                 conn.execute(
@@ -992,9 +994,9 @@ class Tahta:
         with self.db.baglanti() as conn:
             self._revizyon_dogrula(conn, gorev["id"], beklenen_revizyon)
             conn.execute(
-                "UPDATE gorev SET durum = ?, revizyon = revizyon + 1, guncellendi = ? "
-                "WHERE id = ?",
-                (CALISIYOR, simdi(), gorev["id"]),
+                "UPDATE gorev SET durum = ?, revizyon = revizyon + 1, guncellendi = ?, "
+                "kosan_surec = ? WHERE id = ?",
+                (CALISIYOR, simdi(), _surec.kimlik(), gorev["id"]),
             )
         self.db.olay_yaz(self.proje_id, "ret", f"#{no} geri gonderildi: {gerekce}",
                          ajan_ad=gonderen, gorev_id=gorev["id"])

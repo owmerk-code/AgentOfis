@@ -26,6 +26,7 @@ from __future__ import annotations
 import json
 import uuid
 
+from . import surec as _surec
 from .db import simdi
 
 
@@ -88,9 +89,10 @@ def sira_al(ofis, seri: str):
                           "ORDER BY olusturuldu, rowid LIMIT 1", (ofis.proje_id,)).fetchone()
             if not r:
                 return None
-            n = c.execute("UPDATE kuyruk SET durum = 'kosuyor', seri = ?, basladi = ? "
-                          "WHERE id = ? AND durum = 'bekliyor'",
-                          (seri, simdi(), r["id"])).rowcount
+            sinir = c.execute("SELECT COALESCE(MAX(rowid), 0) FROM gorev").fetchone()[0]
+            n = c.execute("UPDATE kuyruk SET durum = 'kosuyor', seri = ?, basladi = ?, "
+                          "kosan_surec = ?, gorev_sinir = ? WHERE id = ? AND durum = 'bekliyor'",
+                          (seri, simdi(), _surec.kimlik(), sinir, r["id"])).rowcount
             if n:
                 return _sozluk(c.execute("SELECT * FROM kuyruk WHERE id = ?",
                                          (r["id"],)).fetchone())
@@ -132,6 +134,18 @@ def seri_ogeleri(ofis, seri: str) -> list:
     return [_sozluk(r) for r in rows]
 
 
+def acilan_gorevler(c, proje_id: str, k: dict) -> list:
+    """Bu istek SIRASINDA acilan isler: rowid, alinirken kaydedilen sinirdan
+    buyuk VE sonraki istek alinmadan once. Tek yer: rapor ve toparlama."""
+    ust = c.execute("SELECT MIN(gorev_sinir) FROM kuyruk WHERE proje_id = ? "
+                    "AND gorev_sinir > ? AND id != ? AND basladi IS NOT NULL",
+                    (proje_id, int(k.get("gorev_sinir") or 0), k["id"])).fetchone()[0]
+    sorgu = ("SELECT no, baslik, durum FROM gorev WHERE proje_id = ? AND rowid > ?"
+             + (" AND rowid <= ?" if ust else "") + " ORDER BY no")
+    arg = (proje_id, int(k.get("gorev_sinir") or 0)) + ((ust,) if ust else ())
+    return [dict(r) for r in c.execute(sorgu, arg)]
+
+
 DURUM_ADI = {"bitti": "bitti", "hata": "HATA", "iptal": "iptal", "kosuyor": "yarida",
              "bekliyor": "sirada"}
 GOREV_ADI = {"bitti": "bitti", "iptal": "iptal", "inceleme": "incelemede",
@@ -162,9 +176,7 @@ def donus_raporu(ofis, seri: str) -> str:
                 metin, yollar = _ek.ayikla(m["cevap"])
                 satir.append(f"   cevap: {_kisa(metin, 220)}"
                              + (f" ({len(yollar)} dosya ekli)" if yollar else ""))
-            gorevler = c.execute("SELECT no, baslik, durum FROM gorev WHERE proje_id = ? "
-                                 "AND olusturuldu >= ? AND olusturuldu <= ? ORDER BY no",
-                                 (ofis.proje_id, bas, son)).fetchall()
+            gorevler = acilan_gorevler(c, ofis.proje_id, k)
             for g in gorevler:
                 satir.append(f"   #{g['no']} {_kisa(g['baslik'], 60)} — "
                              f"{GOREV_ADI.get(g['durum'], g['durum'])}")
