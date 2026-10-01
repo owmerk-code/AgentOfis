@@ -50,8 +50,11 @@ ISLER = [
 ]
 
 
-def kopya_kur() -> tuple:
-    ana = Path(tempfile.mkdtemp(prefix="ofis-kopya-"))
+def kopya_kur(yer: str = "") -> tuple:
+    # `yer` (01.10.2026): kopya Claude'un HIC gormedigi bir klasorde kurulur ki
+    # guven sorusu GERCEKTEN ciksin. Gecici klasor Claude'un zaten guvendigi
+    # altta oldugu icin soru cikmiyordu (tasimadan sonra canli yakalanan hata).
+    ana = Path(tempfile.mkdtemp(prefix="ofis-kopya-", dir=yer or None))
     db_yol = ana / "ofis.sqlite3"
     kaynak = sqlite3.connect(f"file:{KOK / 'veri' / 'ofis.sqlite3'}?mode=ro", uri=True)
     hedef = sqlite3.connect(db_yol)
@@ -96,8 +99,9 @@ def kopya_kur() -> tuple:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--is", dest="isler", type=int, action="append", default=[])
+    ap.add_argument("--yer", default="", help="kopyanin kurulacagi ust klasor (guvenilmemis)")
     a = ap.parse_args()
-    ana, db_yol, calisma = kopya_kur()
+    ana, db_yol, calisma = kopya_kur(a.yer)
     db = Veritabani(db_yol)
     ofis = Ofis.proje_ac(db, PROJE)
     assert Path(ofis.kok_klasoru()).resolve() == calisma.resolve(), ofis.kok_klasoru()

@@ -13460,3 +13460,8 @@ altta açılıyordu, soru çıkmıyordu (ölçmek istediği sınıra ulaşmıyor
   yerleşik tarayıcı eylemleri ofisin kapısından (app-server onayı) geçiyor
   mu; geçmiyorsa açılmaz. `--chrome` kullanıcı kararı (kendi Chrome kuralı).
 - Kullanıcı kuralı: iş bitip uçtan uca sınanmadan "dene" denmez.
+- UÇTAN UCA (kullanıcıya "dene" demeden önce): ofis kopyası Claude'un HİÇ
+  görmediği `C:\Users\pc\ofis-uctan-uca` altında (`ofis_kopyasi.py --yer`),
+  araştırma işi: bilge GERÇEK TERMİNALDE, güven sorusu ÇIKTI ve KABUL
+  edildi (~/.claude.json'da o klasör `hasTrustDialogAccepted: true`), hata
+  yok, 147 sn, rapor iş adlı klasörde, ek `.ofis/ekler`. Kopya silindi.
