@@ -13541,3 +13541,35 @@ Düzeltmeler:
   öldüğünü ölçüyor (eski kodda KALDI, yenide geçti). Yakalanma yolu: tam takım
   döngüsü yalnız özet satırını okuyordu, çıkış kodu 3'ü (ARTIK) görmedi →
   takım ÇIKIŞ KODUYLA koşulur.
+
+## 01.10.2026 akşam — patronun ekranından bulunan hatalar (#38/#39)
+
+Patron "bul bakalım hataları" dedi; ekran + defterle ölçülenler:
+1. **Yanlış ek:** Demir'in "#39 bitti" cevabına Bilge'nin resmi eklendi. #39'un
+   kanıtı stil örneği olarak `C:\...\Ofisim\calisma\ekler\bilge-gorsel.png`yi
+   andı; `gonderilmemisler` yalnız o işin gönderdiklerine bakıyordu. Düzeltme:
+   projede herhangi bir işte gitmiş (ad ya da içerik özü aynı) ya da işten ÖNCE
+   diskte duran dosya "gitmemiş" sayılmaz. Gerçek Ofisim'e karşı ölçüldü: eski
+   kod `['calisma/ekler/bilge-gorsel.png']`, yeni kod `[]`. (Kopya ofiste hata
+   ÜRETİLEMEDİ: kanıttaki mutlak yol kopyanın kökü dışında kalıyor — kopya bu
+   sınıf için ölçü aracı değil.)
+2. **Olmayan rapor:** lider 4 sohbet boyunca "#37 raporu hazır bekliyor" dedi;
+   #37 dört kez iptal edildi, rapor dosyası yok. Kaynak: lider 30.09'da "#37
+   kapandı" demişti, sohbet geçmişinden kendi sözünü okuyordu; özet yalnız açık
+   işleri gösteriyordu. Düzeltme: özette son 8 kapanan/iptal iş, iptal için
+   "sonucu YOK, hazır diye sunma", "sohbet geçmişiyle çelişirse DEFTER doğru".
+3. **`calisma/` klasörü:** lider Ofisim'de `calisma/ekler/` açtırdı (eski kök
+   adı; iki eski olgudan taklit). "Ajan adıyla klasör AÇMA" yalnız ricaydı.
+   Düzeltme: plan kapısı ajan adlı ve `calisma/` ilk klasörü reddeder (patron
+   klasörü kendisi andıysa geçer). Üç eski olgu düzeltildi (defter yedeği
+   alındı). Gerçek liderle kopyada plan ölçüldü: ekler doğrudan `.ofis/ekler`.
+4. **`clocksleep` onayı:** codex'in bekleme aracı TANINMAYAN ARAÇ sayıldı;
+   patron 12 sn'de onayladı ama codex reddi çoktan almıştı. Serbest listesine.
+5. **Elle codex:** lider görseli `gorsel_uret` yerine CLI ile ürettirdi (~800
+   bin jeton, 4 dk, ilk deneme `--skip-git-repo-check` yüzünden düştü). Medya
+   bloğuna kural; yanıltan olgu düzeltildi.
+6. **Panel:** "41335.3k jeton" → tek biçim `jetonYaz` (41.34M); "Lider
+   çalışıyor…" iş bitince de kalıyordu → koşu bitince özgün ipucu geri gelir.
+- Sınama `duman_ekran_hatalari.py` 21/21; 10 mutasyonun 10'u yakalandı (ilk
+  turda 2'si KAÇTI: içerik kuralı öteki iki kuralı örtüyordu → her kural tek
+  başına sahne). Tam takım 3704/3704, çıkış koduyla.

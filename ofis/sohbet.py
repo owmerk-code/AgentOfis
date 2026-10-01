@@ -369,6 +369,24 @@ class Sohbet:
                                 f"— {g['sahip'] or 'atanmadi'} — {kanit} kanit")
         else:
             satirlar.append("### Acik is yok.")
+        # KAPANAN / IPTAL EDILEN ISLER (01.10.2026 OLCULDU): lider 30.09'da
+        # "#37 kapandi" dedi; is sonra dort kez IPTAL edildi, rapor dosyasi
+        # hic yazilmadi. Lider sohbet gecmisinden kendi eski sozunu okuyup
+        # "#37 raporu hazir bekliyor" demeyi 4 sohbet boyunca surdurdu.
+        # Ozet yalniz ACIK isleri gosteriyordu; DEFTERIN hukmu lidere hic
+        # ulasmiyordu.
+        _son = [g for g in self.ofis.tahta.liste() if g["durum"] in ("bitti", "iptal")]
+        _son.sort(key=lambda g: g.get("guncellendi") or "", reverse=True)
+        if _son:
+            satirlar += ["", "### Son kapanan / iptal edilen isler (DEFTER -- sohbet "
+                         "gecmisinde baska bir sey yaziyorsa DEFTER dogrudur)"]
+            for g in _son[:8]:
+                if g["durum"] == "iptal":
+                    satirlar.append(f"- #{g['no']} IPTAL EDILDI -- sonucu YOK, "
+                                    f"patrona 'hazir' diye sunma: {g['baslik']}")
+                else:
+                    kanit = len(self.ofis.tahta.kanitlar(g["no"]))
+                    satirlar.append(f"- #{g['no']} bitti ({kanit} kanit): {g['baslik']}")
 
         bekleyen = (self.ofis.postane.insan_bekleyenler()
                     + self.ofis.postane.bekleyen_onaylar())

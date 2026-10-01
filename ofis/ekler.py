@@ -215,12 +215,38 @@ def gonderilmemisler(ofis, gorev_idleri) -> list:
                             adaylar.append(y)
                 except (OSError, ValueError):
                     pass
+        # YANLIS EK (01.10.2026 OLCULDU): #39'un kaniti stil ornegi olarak
+        # `bilge-gorsel.png`yi andi; o dosya #38'de patrona ZATEN gitmisti
+        # ama yalniz #39'un gonderdikleri sayildigi icin "gitmemis" sanildi
+        # ve Demir'in raporuna Bilge'nin resmi eklendi. Iki kural:
+        # (1) projede patrona HERHANGI bir iste gitmis dosya gitmistir
+        # (ad ya da ICERIK ayni); (2) isten ONCE diskte duran dosya o isin
+        # urunu degildir (girdi/ornek), patrona yeniden gonderilmez.
+        for r in c.execute("SELECT govde FROM olay WHERE proje_id = ? AND tur = 'ajan_sohbet'",
+                           (ofis.proje_id,)):
+            gidenler.update(ayikla(r["govde"] or "")[1])
+        en_eski = c.execute(f"SELECT MIN(olusturuldu) FROM gorev WHERE id IN ({soru})",
+                            idler).fetchone()[0] or ""
     adlar = {Path(g).name for g in gidenler}
+    giden_ozler = _klasor_ozleri(kok / KLASOR)
+    try:
+        from datetime import datetime as _dt
+        is_basi = _dt.fromisoformat(en_eski).timestamp() if en_eski else 0.0
+    except ValueError:
+        is_basi = 0.0
 
     def gitti(y: str) -> bool:
         # Kokten paylasilan dosya `ekler/`e ZAMAN DAMGALI adla kopyalanir.
         ad = Path(y).name
-        return y in gidenler or ad in adlar or any(a.endswith("-" + ad) for a in adlar)
+        if y in gidenler or ad in adlar or any(a.endswith("-" + ad) for a in adlar):
+            return True
+        p = kok / y
+        try:
+            if is_basi and p.stat().st_mtime < is_basi - 1:
+                return True                      # isten once vardi: girdi
+        except OSError:
+            return False
+        return not y.startswith(KLASOR + "/") and _oz(p) in giden_ozler
 
     # KARALAMA (01.10.2026, patronun ofis kopyasi, is 3): ajan arka plan
     # gorselini `karalama/`da uretip kanitta andi; ofis onu "gitmemis" sayip
@@ -228,6 +254,22 @@ def gonderilmemisler(ofis, gorev_idleri) -> list:
     # hic gitmez.
     return [y for y in adaylar if not gitti(y) and (kok / y).is_file()
             and not y.startswith(_KARALAMA + "/")]
+
+
+def _oz(yol: Path) -> str:
+    import hashlib
+    try:
+        return hashlib.sha256(yol.read_bytes()).hexdigest()
+    except OSError:
+        return ""
+
+
+def _klasor_ozleri(klasor_: Path) -> set:
+    """Patrona gitmis eklerin icerik ozleri (ad degisse de ayni dosya)."""
+    try:
+        return {_oz(p) for p in klasor_.iterdir() if p.is_file()} - {""}
+    except OSError:
+        return set()
 
 
 def satirlar(yollar) -> str:

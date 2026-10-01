@@ -639,8 +639,12 @@ KAPI_DISI_ONEKLER = ("mcp__ofis", "mcp__tarayici")
 #: kendisi degil.
 YERLESIK_SERBEST = frozenset("""
 Read Glob Grep LS Write Edit MultiEdit NotebookEdit WebFetch WebSearch
-TodoWrite ToolSearch webrun image_genimagegen
+TodoWrite ToolSearch webrun image_genimagegen clocksleep
 """.split())
+# `clocksleep`: codex'in yerlesik BEKLEME araci (`sleep`, girdi yalniz
+# `duration_ms`). OLCULDU (01.10.2026, #39): TANINMAYAN ARAC sayildi,
+# patrona onay karti dustu; patron 12 sn'de onayladi ama codex reddi
+# coktan almisti. Beklemek hicbir sey degistirmez.
 # `image_genimagegen`: codex'in yerlesik GORSEL URETICISI -- ChatGPT abonelik
 # kotasiyla calisir, fatura yok, disari bir sey gondermez (gorsel.py: "Codex
 # abonelik kotasi"). OLCULDU (30.09, gercek set G11): TANINMAYAN ARAC sayilip

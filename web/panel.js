@@ -296,8 +296,8 @@ function cizSerit() {
   yeni.onclick = takimEkleAc;
   k.append(yeni);
 
-  const jeton = o.olcum.jeton >= 1000
-    ? (o.olcum.jeton / 1000).toFixed(1) + "k" : String(o.olcum.jeton);
+  // TEK BICIM (01.10.2026): kendi bicimi "41335.3k jeton" yaziyordu.
+  const jeton = jetonYaz(o.olcum.jeton);
   const oge = (deger, etiket, sinif) => {
     const d = el("div", "ray-oge" + (sinif ? " " + sinif : ""));
     d.append(el("b", null, String(deger)), el("span", null, etiket));
@@ -3265,6 +3265,7 @@ async function cizSohbet(kap) {
       "@ad ile bir ajana sorarsın (elinde iş varsa not olur), " +
       "@ad iş: … ile işi o ajana verirsin."));
   const kosuyor = (r.kosu && r.kosu.calisiyor) || (r.danisma && r.danisma.calisiyor);
+  if (!kosuyor) gecicIpuclariniGeriAl();
   for (const x of ogeler) {
     kap.append(takimBalonu(x, adlar));
     // SANA SORULAN SORU (01.10.2026 canli): kime "insan" ise sira PATRONDA;
@@ -3290,6 +3291,13 @@ async function cizSohbet(kap) {
   }
   kap.scrollTop = kap.scrollHeight;
   if (kosuyor) sohbetAkisIzle();
+}
+
+function gecicIpuclariniGeriAl() {
+  for (const g of document.querySelectorAll("[data-gecici='1']")) {
+    g.placeholder = g.dataset.varsayilan || "";
+    delete g.dataset.gecici;
+  }
 }
 
 /* CEVAP YAZILIRKEN AKAR (29.09.2026). Lider kosarken yalniz AKAN metin
@@ -5144,6 +5152,11 @@ async function komutGonder(girdi, oneriYeri) {
     }
     takimOneriGoster(null);
     if (ekVar) { D.ekler = []; ekCiplari(); }
+    // GECICI IPUCU (01.10.2026, patronun ekrani): "Lider calisiyor..."
+    // is bittikten sonra da kaliyordu. Ozgun ipucu saklanir; kosu bitince
+    // `cizSohbet` onu geri koyar.
+    if (!girdi.dataset.varsayilan) girdi.dataset.varsayilan = girdi.placeholder;
+    girdi.dataset.gecici = "1";
     girdi.placeholder = r && r.yol === "not" ? `not ${r.alici}'a iletilecek`
       : r && r.yol === "soru" ? `${r.alici} düşünüyor…`
       : r && r.sirada ? `sıraya alındı (${r.sira}.) — önceki iş bitince başlar`

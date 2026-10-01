@@ -132,6 +132,11 @@ def _kabin_ucnoktasi() -> str:
     return _tar.cdp_adresi() if _kab.acik_mi() else ""
 
 
+#: Tasimadan (01.10.2026) once ofisin proje kokunun adi. Plan bu adla
+#: klasor acamaz (bkz. `_plani_dogrula`).
+ESKI_KOK_ADLARI = ("calisma",)
+
+
 class Orkestra:
     def __init__(self, ofis, *, motor_fabrikasi=motor_ac, zincir=None) -> None:
         self.ofis = ofis
@@ -603,6 +608,24 @@ class Orkestra:
                 self.ofis.tahta._alanlari_dogrula(alan, ek_klasorler)
             except TahtaHatasi as exc:
                 return str(exc)
+            # KLASOR ADI KURALI YAPIDIR (01.10.2026 OLCULDU): planlama
+            # metnindeki "ajan adiyla klasor ACMA" ricasina ragmen lider
+            # patronun Ofisim klasorunde `calisma/ekler/` acti (tasimadan
+            # once kokun adi `calisma`ydi; eski bilgilerden taklit etti).
+            yasak = {ad.lower() for ad in adlar} | {ad.lower() for ad in ESKI_KOK_ADLARI}
+            for y in alan:
+                y2 = y.replace("\\", "/")
+                if y2.startswith("./"):
+                    y2 = y2[2:]
+                ilk = y2.split("/", 1)[0].lower()
+                if ":" in y2 or y2.startswith("/") or ilk not in yasak:
+                    continue
+                if ilk in (patron_sozu or "").lower():
+                    continue                     # patron bu klasoru kendisi andi
+                return (f"`yazma_alani` {y!r}: '{ilk}/' bir AJAN ADI ya da ofisin ESKI "
+                        "kok adi. Bu klasor patronun projesidir; ajan adli ya da "
+                        "`calisma/` klasoru ACILMAZ. Tek seferlik isi ISIN ADIYLA "
+                        "bir klasore koy (orn. `demir-gorseli/`).")
         return ""
 
     def hedef_ver(self, hedef: str, *, lider_ad: str = "", kanat_id: str = None,
