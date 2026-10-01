@@ -268,8 +268,8 @@ SISTEM_EKI_ORTAK = (
     # okunur (`\ufffdr\ufffdn`). Excel basligi iki kez bozuk uretildi.
     "TURKCE HARF (c g i o s u) iceren metni PowerShell'den baska programa "
     "BORU (|) ya da `python -c` ile VERME: harfler `?` olur. Betigi once "
-    "`[IO.File]::WriteAllText('karalama/x.py', metin)` ile UTF-8 dosyaya yaz, "
-    "sonra `python karalama/x.py` calistir. Dogrularken terminal goruntusune "
+    "`[IO.File]::WriteAllText('.ofis/karalama/x.py', metin)` ile UTF-8 dosyaya yaz, "
+    "sonra `python .ofis/karalama/x.py` calistir. Dogrularken terminal goruntusune "
     "guvenme: `print(ascii(deger))` ile kod noktasini yazdir."
 )
 

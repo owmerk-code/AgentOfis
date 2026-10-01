@@ -791,7 +791,7 @@ _pg = _po.tahta.liste()[0]
 _pb = _po.brifing.uret(_pg["no"], "cem", diske_yaz=False)["metin"]
 sina("patronun sozu brifingde AYNEN ve 'onay_iste cagirma' kuraliyla",
      "a.txt'ye merhaba yaz" in _pb and "onay_iste` CAGIRMA" in _pb, _pb[-400:])
-sina("ekler/ klasoru is basinda HAZIR", (_pk / "ekler").is_dir())
+sina(".ofis/ekler/ klasoru is basinda HAZIR", (_pk / ".ofis" / "ekler").is_dir())
 
 print("\n'BAKAMIYORUM' CEVABI PATRONA GITMEZ, IS AJANA VERILIR (30.09, G09)")
 _bo = Ofis.proje_ac(Veritabani(_pk / "b.sqlite3"), "Bakamam", amac="a", basari_olcutu="b",

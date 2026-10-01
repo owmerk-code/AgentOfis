@@ -1892,7 +1892,7 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
 
     @uygulama.post("/api/ek")
     def api_ek(govde: EkGovdesi):
-        """Sohbete dosya/gorsel: proje kokunun `ekler/` klasorune yazilir
+        """Sohbete dosya/gorsel: proje kokunun gizli `.ofis/ekler/` klasorune yazilir
         (kural `ofis/ekler.py`de; panel yalniz ulasan kapi)."""
         import base64
         import binascii

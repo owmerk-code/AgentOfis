@@ -510,6 +510,12 @@ Ne beğenilmediği o turda somut olarak yazılır.
 
 **Çıkış ölçütü:** senin işaretlediğin eksik listesi boş.
 
+### F8½ — Son denetim (kullanıcı kararı, 01.10.2026)
+
+Masaüstü uygulamasına (F9) GEÇMEDEN önce: bütün kod satır satır analiz; açıklar ve ileride sorun
+çıkaracak kısımlar kapatılır; uçtan uca her şey gerçek motorla denenir. Uygulama ancak bundan sonra.
+Görünüş (F8) seçeneklerinden biri: "ofis" çok odalı BİNA — takımlar kapılı odalarda, hepsi tek binada.
+
 ### F9 — Masaüstü uygulaması (12–16 sa)
 
 **Görevler:** Tauri kabuğu · Python arka ucu birlikte başlatma ve kapatma · gerçek terminal (A7) · sistem tepsisi · Windows başlangıcında açılma · çökme ve yeniden başlatma kurtarması · tek kopya kilidi · açılış zaman sınırı (E72) · günlük dosyaları · kurulum paketi (E56) · başka bilgisayara yedekten kurulum provası (E83).

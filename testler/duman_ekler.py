@@ -70,7 +70,8 @@ sina("bos ad -> 'ek'", ekler.ad_temizle("") == "ek")
 
 print("\n-- 2. kaydet --")
 r = ekler.kaydet(ofis, "rapor.pdf", b"%PDF-1 deneme")
-sina("kokun ekler/ klasorune yazildi", (_KOK / r["yol"]).is_file() and r["yol"].startswith("ekler/"))
+sina("kokun GIZLI .ofis/ekler/ klasorune yazildi (01.10 ayrim)",
+     (_KOK / r["yol"]).is_file() and r["yol"].startswith(".ofis/ekler/"), r["yol"])
 r2 = ekler.kaydet(ofis, "rapor.pdf", b"ikinci")
 sina("ayni ad ustune YAZMAZ (benzersiz)", r2["yol"] != r["yol"] and
      (_KOK / r["yol"]).read_bytes() == b"%PDF-1 deneme")
@@ -78,7 +79,8 @@ sina("gorsel bayragi", ekler.kaydet(ofis, "a.PNG", b"x")["gorsel"] is True)
 sina("bos dosya reddedilir", "Bos" in hata(ekler.kaydet, ofis, "b.txt", b""))
 sina("sinirdan buyuk reddedilir",
      "buyuk" in hata(ekler.kaydet, ofis, "c.bin", b"0" * (ekler.AZAMI_BAYT + 1)))
-sina(".part artigi yok", not list((_KOK / "ekler").glob("*.part")))
+sina(".part artigi yok", not list((_KOK / ".ofis" / "ekler").glob("*.part")))
+sina("kokte ofise ait gorunur ekler/ klasoru YOK", not (_KOK / "ekler").exists())
 with db.baglanti() as c:
     sina("ek_eklendi olayi", c.execute("SELECT COUNT(*) FROM olay WHERE tur='ek_eklendi'").fetchone()[0] == 3)
 
@@ -94,6 +96,8 @@ m, y = ekler.ayikla("buna bak\n[ek] ekler/a.png\n[ek] ekler/b.pdf")
 sina("satirlar cikti", m == "buna bak" and y == ["ekler/a.png", "ekler/b.pdf"], f"{m!r} {y}")
 sina("sahte ek satiri (yol kacisi) taninmaz",
      ekler.ayikla("[ek] ekler/../gizli.txt")[1] == [])
+_m3, _y3 = ekler.ayikla("yeni\n[ek] .ofis/ekler/a.png")
+sina("yeni bicim satiri (.ofis/ekler) da ayiklanir", _m3 == "yeni" and _y3 == [".ofis/ekler/a.png"], str(_y3))
 
 print("\n-- 5. panel --")
 try:
@@ -146,11 +150,13 @@ print("\n-- 9. ajan/lider dosya gonderir (paylas, 30.09) --")
 (_KOK / "rapor").mkdir(exist_ok=True)
 (_KOK / "rapor" / "sonuc.pdf").write_bytes(b"%PDF sonuc")
 y1 = ekler.paylas(ofis, "rapor/sonuc.pdf", ajan_ad="cinar")
-sina("kokteki dosya ekler/'e KOPYALANDI, asli yerinde",
-     y1.startswith("ekler/") and (_KOK / y1).read_bytes() == b"%PDF sonuc"
+sina("kokteki dosya .ofis/ekler/'e KOPYALANDI, asli yerinde",
+     y1.startswith(".ofis/ekler/") and (_KOK / y1).read_bytes() == b"%PDF sonuc"
      and (_KOK / "rapor" / "sonuc.pdf").is_file(), y1)
-sina("mutlak yol (kok icinde) da kabul", ekler.paylas(ofis, str(_KOK / "rapor" / "sonuc.pdf")).startswith("ekler/"))
-sina("zaten ekler/'deki dosya KOPYALANMAZ", ekler.paylas(ofis, y1) == y1)
+sina("mutlak yol (kok icinde) da kabul", ekler.paylas(ofis, str(_KOK / "rapor" / "sonuc.pdf")).startswith(".ofis/ekler/"))
+sina("zaten .ofis/ekler/'deki dosya KOPYALANMAZ (gizli ama ofisin eki)", ekler.paylas(ofis, y1) == y1)
+(_KOK / ".ofis" / "sir.txt").write_text("x", encoding="utf-8")
+sina("  .ofis/ altindaki BASKA gizli dosya reddedilir", "gizli" in hata(ekler.paylas, ofis, ".ofis/sir.txt"))
 sina("kok disi reddedilir", "disinda" in hata(ekler.paylas, ofis, "../gizli.txt"))
 (_KOK / ".env").write_text("SIR=1", encoding="utf-8")
 sina("gizli dosya (.env) reddedilir", "gizli" in hata(ekler.paylas, ofis, ".env"))
@@ -215,14 +221,15 @@ sina("inceleme patronun KENDI sozunu ve 'istemedigi bicim ret sebebi degil' kura
 print("\n-- 9c. kanitta gecen ama sohbete GITMEMIS ek olculur (30.09, G01) --")
 _gg = ofis.tahta.gorev_ac("Goruntu", neden="n", ana_hedef="h", kabul_olcutu="k",
                           govde="g", yazma_alani=["x/"], kanat_id=kn, sahip="cinar")
-(_KOK / "ekler" / "menu.png").write_bytes(b"\x89PNG" + b"0" * 2000)
+(_KOK / ".ofis" / "ekler" / "menu.png").write_bytes(b"\x89PNG" + b"0" * 2000)
+# Kanit ESKI yazimla ("ekler/menu.png") -- ajan aliskanligi; ofis onu .ofis/ekler'e esler.
 ofis.tahta.kanit_ekle(_gg["no"], "gorsel", "menu goruntusu", "ekler/menu.png kaydedildi",
                       ekleyen="cinar")
 ofis.tahta.kanit_ekle(_gg["no"], "dosya", "olmayan", "ekler/yok.png", ekleyen="cinar")
 sina("gitmemis ek bulundu (diskte olmayan sayilmadi)",
-     ekler.gonderilmemisler(ofis, [_gg["id"]]) == ["ekler/menu.png"],
+     ekler.gonderilmemisler(ofis, [_gg["id"]]) == [".ofis/ekler/menu.png"],
      str(ekler.gonderilmemisler(ofis, [_gg["id"]])))
-ofis.db.olay_yaz(ofis.proje_id, "ajan_sohbet", "ekte\n[ek] ekler/menu.png", ajan_ad="cinar",
+ofis.db.olay_yaz(ofis.proje_id, "ajan_sohbet", "ekte\n[ek] .ofis/ekler/menu.png", ajan_ad="cinar",
                  gorev_id=_gg["id"])
 sina("sohbete gidince listeden cikti", ekler.gonderilmemisler(ofis, [_gg["id"]]) == [])
 # gorsel_uret dosyayi YAZMA ALANINA koyar (ekler/ degil): kanit icerigi yoldur.
@@ -247,9 +254,9 @@ ofis.db.olay_yaz(ofis.proje_id, "ajan_sohbet", "belge\n[ek] " + ekler.paylas(ofi
 sina("zaman damgali kopyasi gidince listeden cikti",
      ekler.gonderilmemisler(ofis, [_gg["id"]]) == [], str(ekler.gonderilmemisler(ofis, [_gg["id"]])))
 # 01.10 (patronun ofis kopyasi): karalama/ ara urunu patrona gitmez.
-(_KOK / "karalama").mkdir(exist_ok=True)
-(_KOK / "karalama" / "arka-plan.png").write_bytes(b"\x89PNG" + b"0" * 500)
-ofis.tahta.kanit_ekle(_gg["no"], "dosya", "ara", "arka plan karalama/arka-plan.png uretildi",
+(_KOK / ".ofis" / "karalama").mkdir(parents=True, exist_ok=True)
+(_KOK / ".ofis" / "karalama" / "arka-plan.png").write_bytes(b"\x89PNG" + b"0" * 500)
+ofis.tahta.kanit_ekle(_gg["no"], "dosya", "ara", "arka plan .ofis/karalama/arka-plan.png uretildi",
                       ekleyen="cinar")
 sina("karalama/ ara urunu gitmemis SAYILMAZ (patrona eklenmez)",
      ekler.gonderilmemisler(ofis, [_gg["id"]]) == [], str(ekler.gonderilmemisler(ofis, [_gg["id"]])))
@@ -265,7 +272,9 @@ sina("hatali ofis araci (vekil) reddi RET",
 
 print("\n-- 8. olcum ve yedek disi --")
 from ofis import degisim  # noqa: E402
-sina("disk olcumu ekler/ klasorunu saymaz", "ekler" in degisim.ATLANAN_KLASOR)
+sina("disk olcumu .ofis/ klasorunu saymaz; 'ekler' ADI artik atlanmaz (patronun klasoru olabilir)",
+     ".ofis" in degisim.ATLANAN_KLASOR and "ekler" not in degisim.ATLANAN_KLASOR
+     and "karalama" not in degisim.ATLANAN_KLASOR)
 kok = Path(__file__).resolve().parent.parent
 r = subprocess.run(["git", "check-ignore", "-q", "calisma/ekler/x.png"], cwd=kok)
 sina(".gitignore calisma/ekler/'i GitHub'dan dislar", r.returncode == 0)

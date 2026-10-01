@@ -286,9 +286,9 @@ class Orkestra:
             "dogru kodu 5 kez geri gonderdi); kod isinde kanit kodun "
             "kendisi ve calistigini gosteren cikti.",
             "",
-            "`ekler/` klasoru HER ISTE SERBESTTIR (yazma alani gerekmez): patrona gosterilecek dosya oraya kaydedilir -- sayfa goruntusu icin `browser_take_screenshot` araci `filename: \"ekler/<ad>.png\"` ile -- ve `sohbete_yaz(ekler=[...])` ile gonderilir. Oradaki dosyayi SILME. Patrona dosya/goruntu gidecek iste 'dosya "
-            "yazma' deme; `ekler/` yazma alanina girmez. "
-            "`karalama/` klasoru de SERBESTTIR: isi yaparken gereken YARDIMCI betik (belgeyi ureten, dosyayi dogrulayan gecici kod) oraya yazilir; ofis orayi olcmez. Yardimci betigi koke ya da yazma alani disina BIRAKMA. Olcute 'yazma alani disina dosya yazilmaz' gibi madde KOYMA; beyan disi yazmayi ofis zaten olcer.",
+            "`.ofis/ekler/` klasoru HER ISTE SERBESTTIR (yazma alani gerekmez): patrona gosterilecek dosya oraya kaydedilir -- sayfa goruntusu icin `browser_take_screenshot` araci `filename: \".ofis/ekler/<ad>.png\"` ile -- ve `sohbete_yaz(ekler=[...])` ile gonderilir. Oradaki dosyayi SILME. Patrona dosya/goruntu gidecek iste 'dosya "
+            "yazma' deme; `.ofis/ekler/` yazma alanina girmez. "
+            "`.ofis/karalama/` klasoru de SERBESTTIR: isi yaparken gereken YARDIMCI betik (belgeyi ureten, dosyayi dogrulayan gecici kod) oraya yazilir; ofis orayi olcmez. Yardimci betigi koke ya da yazma alani disina BIRAKMA. Olcute 'yazma alani disina dosya yazilmaz' gibi madde KOYMA; beyan disi yazmayi ofis zaten olcer.",
             "",
             "`tarayici_alani` alanini NORMALDE YAZMA. Yalniz bir isi BILEREK "
             "birkac siteyle SINIRLAMAK istersen doldur; doldurursan ajan "

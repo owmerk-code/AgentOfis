@@ -196,8 +196,12 @@ reddetmeli("klasorsuz ajan reddediliyor",
            lambda: koltuk.kos(g7["no"], "ayaz"), KoltukHatasi)
 sina("ajan klasoru olusturuldu", (kok / "cinar").is_dir())
 _ok = Path(ofis.kok_klasoru())
-sina("ekler/ ve karalama/ is basinda HAZIR (codex betigi oraya yazar, 01.10)",
-     (_ok / "ekler").is_dir() and (_ok / "karalama").is_dir(), str(_ok))
+sina(".ofis/ekler ve .ofis/karalama is basinda HAZIR (codex betigi oraya yazar, 01.10)",
+     (_ok / ".ofis" / "ekler").is_dir() and (_ok / ".ofis" / "karalama").is_dir(), str(_ok))
+sina("  kokte ofise ait GORUNUR klasor yok (ekler/, karalama/)",
+     not (_ok / "ekler").exists() and not (_ok / "karalama").exists())
+sina("  .ofis/ patronun git deposuna girmez (.gitignore '*')",
+     (_ok / ".ofis" / ".gitignore").read_text(encoding="utf-8").strip() == "*")
 from ofis.brifing import brifing_yolu as _by  # noqa: E402
 sina("brifing kopyasi AJANA OZEL yerde (ofis evi)", _by(ofis.proje_id, "cinar").is_file())
 sina("ortak koke / ajan klasorune BRIFING.md YAZILMADI (30.09)",

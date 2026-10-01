@@ -63,15 +63,12 @@ ATLANAN_KLASOR = frozenset({
     # Olculunce "beyan disi yazma" gorunuyor ve ajan onu SILMEK icin
     # patrona onay soruyordu (D09, D18) -- gurultu, onay yorgunlugu.
     ".playwright-mcp",
-    # 29.09: patronun sohbete ekledigi dosyalar (`ofis/ekler.py`). Ofis
-    # yonetir; tur surerken eklenen dosya ajanin "beyan disi yazmasi"
-    # sayilmasin.
-    "ekler",
-    # 01.10 (gercek set G17, claude): ajan belgeyi uretmek ve dogrulamak
-    # icin kokte iki yardimci betik yazdi; olcum "beyan disi" dedi, lider
-    # 4 kez geri gonderdi. Yardimci betiklerin yeri `karalama/`dir; ofis
-    # onu olcmez, yazma alani gerekmez.
-    "karalama",
+    # OFISIN PROJE ICI IZI `.ofis/` (01.10.2026, ayrim): sohbet ekleri
+    # (29.09) ve yardimci betikler (G17) orada; ofis yonetir, ajanin
+    # "beyan disi yazmasi" sayilmaz. Onceden "ekler"/"karalama" ADLARI her
+    # derinlikte atlaniyordu -- patronun projesinde o adda GERCEK bir
+    # klasor olsaydi ofis icini hic gormezdi.
+    ".ofis",
 })
 ATLANAN_UZANTI = frozenset({".pyc", ".pyo", ".pyd", ".so", ".dll", ".exe"})
 

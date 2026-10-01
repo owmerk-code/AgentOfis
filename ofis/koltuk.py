@@ -199,7 +199,13 @@ class Koltuk:
                 # `karalama/` da hazir: codex sistem eki yardimci betigi
                 # `[IO.File]::WriteAllText('karalama/x.py')` ile yazdirir;
                 # klasor yoksa o cagri hata verir (01.10.2026).
-                (_ek_klasor(self.ofis).parent / "karalama").mkdir(exist_ok=True)
+                from .yollar import KARALAMA as _KARALAMA
+                (Path(self.ofis.kok_klasoru()) / _KARALAMA).mkdir(parents=True, exist_ok=True)
+                # Patronun projesi KENDI git deposunu kullaniyorsa `.ofis/`
+                # oraya girmesin (ofisin izi projeye karismaz).
+                _gi = Path(self.ofis.kok_klasoru()) / ".ofis" / ".gitignore"
+                if not _gi.exists():
+                    _gi.write_text("*\n", encoding="utf-8")
         except (OSError, Exception):             # noqa: BLE001 -- is durmasin
             pass
         ajan = self.ofis.kadro.ajan(ajan_ad)

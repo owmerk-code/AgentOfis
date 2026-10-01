@@ -451,9 +451,9 @@ class Lider:
                 _metin, _yollar = _ayikla(_m)
                 satirlar.append(f"- \"{_metin[:160]}\""
                                 + (f" · ekler: {', '.join(_yollar)}" if _yollar else ""))
-        satirlar += ["", "_Not: `ekler/` klasoru her iste serbesttir; patrona "
+        satirlar += ["", "_Not: `.ofis/ekler/` klasoru her iste serbesttir; patrona "
                          "gosterilecek dosyanin oraya yazilmasi ihlal DEGILDIR. "
-                         "`karalama/` (yardimci betikler) da serbesttir, olculmez._"]
+                         "`.ofis/karalama/` (yardimci betikler) da serbesttir, olculmez._"]
         # Olcum YOKSA sessiz kalinir -- "hicbir sey degismedi" DEMEZ.
         # Kod yazmayan bir is (arastirma, inceleme) zaten dosya
         # degistirmez; ona "degisiklik yok" demek, olcmedigimiz bir seye
@@ -499,7 +499,7 @@ class Lider:
             # 30.09 olculdu (G01, claude): goruntu ekler/'de hazirdi, ajan
             # sohbete gondermeyi unuttu, lider isi geri gonderdi. Raporda
             # ofis gitmemis dosyayi listeler, lider `[ek]` ile ekler.
-            "8. Patrona gidecek dosya `ekler/` altinda HAZIRSA, sirf ajan",
+            "8. Patrona gidecek dosya `.ofis/ekler/` altinda HAZIRSA, sirf ajan",
             "   `sohbete_yaz` cagirmadi diye GERI GONDERME: kapat; ofis",
             "   raporda gitmemis dosyayi sana gosterir, sen eklersin.",
             # 01.10 olculdu (G06, claude): "dosyanin kendisi olcutu

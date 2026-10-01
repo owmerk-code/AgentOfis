@@ -47,6 +47,14 @@ YENI_EV = Path((os.environ.get("OFIS_YENI_EV") or "").strip()
 ESKI_EV = Path.home() / ".agentofis"
 
 
+#: PROJE ICINDEKI OFIS IZI (01.10.2026, ayrim asama 2): patronun projesinde
+#: ofise ait TEK sey gizli `.ofis/` klasorudur (`.git` gibi). Sohbet ekleri
+#: ve ajanlarin yardimci betikleri orada; ofisin olcumu onu atlar.
+PROJE_GIZLI = ".ofis"
+EK_KLASORU = PROJE_GIZLI + "/ekler"
+KARALAMA = PROJE_GIZLI + "/karalama"
+
+
 def varsayilan_ev() -> Path:
     """Yeni ev VARSA o; yoksa eski ev varsa o; ikisi de yoksa yeni ev."""
     if YENI_EV.is_dir():

@@ -5,7 +5,7 @@ Kullanici: *"dosya ya da gorsel yukleyemiyorum."* Rakipte gorev kartina
 gorsel eklenebiliyor (surukle / Ctrl+V).
 
 Nasil:
-* Dosya PROJE KOKUNUN `ekler/` klasorune yazilir -- ajanlar kokte calisir,
+* Dosya PROJE KOKUNUN gizli `.ofis/ekler/` klasorune yazilir (01.10 ayrim) -- ajanlar kokte calisir,
   yani dosyayi okuyabilir (Claude `Read` ile gorsele bakar, Codex da).
 * Mesaja `[ek] ekler/<ad>` satiri eklenir. Ek kaydi AYRI bir tabloda
   tutulmaz: mesajin kendisi tasir, akis satirdan cikarir (iki yerde
@@ -13,7 +13,7 @@ Nasil:
 * Ad TEMIZLENIR (yalniz harf/rakam/._-), zaman damgasiyla benzersiz;
   klasor disina yazilamaz, okunamaz (yol degil AD alinir).
 * Boyut siniri `AZAMI_BAYT`. Yazma ATOMIK (`.part` -> ad).
-* `ekler/` GitHub yedegine GIRMEZ (.gitignore): ekran goruntusu ve belge
+* `.ofis/ekler/` GitHub yedegine GIRMEZ (.gitignore): ekran goruntusu ve belge
   ozel bilgi tasiyabilir; ZIP yedeginde (bilgisayar + Drive) durur.
 
 ## Ajan ve lider de dosya gonderir (30.09.2026)
@@ -23,7 +23,7 @@ gonderebilsin."* Olculdu: ajan ekran goruntusunu aldi ama `sohbete_yaz`
 yalniz metin tasiyordu, is "bilmiyorum" diye insana yukseldi.
 
 Kural TEK YERDE (`paylas`): proje kokundeki bir dosya sohbete gosterilecekse
-`ekler/`e KOPYALANIR (ajanin dosyasi yerinde kalir, balon onun o anki
+`.ofis/ekler/`e KOPYALANIR (ajanin dosyasi yerinde kalir, balon onun o anki
 halini gosterir). Kok disi, gizli (`.env`, `.git/...`) ve sinirdan buyuk
 dosya REDDEDILIR. Ajan `sohbete_yaz(ekler=[...])` ile, lider cevabina
 `[ek] <yol>` satiri yazarak gonderir; ikisi de buradan gecer.
@@ -37,10 +37,12 @@ import unicodedata
 from pathlib import Path
 
 AZAMI_BAYT = 20 * 1024 * 1024
-KLASOR = "ekler"
+# Fiziksel yer `.ofis/ekler` (01.10.2026, ayrim). Eski mesajlardaki
+# `[ek] ekler/<ad>` satirlari da TANINIR (gecmis sohbet bozulmasin).
+from .yollar import EK_KLASORU as KLASOR, KARALAMA as _KARALAMA  # noqa: E402
 SATIR_ONEKI = "[ek] "
 GORSEL = (".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp")
-_SATIR = re.compile(r"^\[ek\] (ekler/[A-Za-z0-9._-]+)\s*$", re.M)
+_SATIR = re.compile(r"^\[ek\] ((?:\.ofis/)?ekler/[A-Za-z0-9._-]+)\s*$", re.M)
 
 
 class EkHatasi(ValueError):
@@ -113,7 +115,10 @@ def paylas(ofis, yol: str, *, ajan_ad: str = "") -> str:
     except (OSError, ValueError):
         raise EkHatasi(f"'{ham}' proje kokunun disinda; yalniz kok icindeki "
                        "dosya gonderilir.")
-    if any(parca.startswith(".") for parca in goreli.parts):
+    # `.ofis/ekler` gizli ama OFISIN eki: oradan paylasmak serbest. Baska
+    # gizli yer (`.env`, `.git/...`) REDDEDILIR.
+    ek_mi = p.parent == klasor(ofis)
+    if not ek_mi and any(parca.startswith(".") for parca in goreli.parts):
         raise EkHatasi(f"'{ham}' gizli dosya/klasor; sohbete gonderilmez.")
     if not p.is_file():
         raise EkHatasi(f"'{ham}' bulunamadi.")
@@ -121,7 +126,7 @@ def paylas(ofis, yol: str, *, ajan_ad: str = "") -> str:
     if boyut > AZAMI_BAYT:
         raise EkHatasi(f"'{ham}' cok buyuk ({boyut // 1024 // 1024} MB); "
                        f"sinir {AZAMI_BAYT // 1024 // 1024} MB.")
-    if p.parent == klasor(ofis) and _SATIR.fullmatch(f"[ek] {KLASOR}/{p.name}"):
+    if ek_mi and _SATIR.fullmatch(f"[ek] {KLASOR}/{p.name}"):
         return f"{KLASOR}/{p.name}"
     return kaydet(ofis, p.name, p.read_bytes(), ajan_ad=ajan_ad or "ajan")["yol"]
 
@@ -148,7 +153,7 @@ def metni_hazirla(ofis, metin: str, *, ajan_ad: str = "") -> tuple:
     return _HAM_SATIR.sub(cevir, metin or ""), hatalar
 
 
-_KANITTA_EK = re.compile(r"ekler/[A-Za-z0-9._-]+")
+_KANITTA_EK = re.compile(r"(?:\.ofis/)?ekler/[A-Za-z0-9._-]+")
 _KANITTA_BELGE = re.compile(
     r"[\w./\\:-]+\.(?:png|jpe?g|gif|webp|pdf|docx|xlsx|pptx|mp4|webm|mov|mp3|wav)\b", re.I)
 
@@ -177,6 +182,8 @@ def gonderilmemisler(ofis, gorev_idleri) -> list:
                            "ORDER BY rowid", idler):
             for y in _KANITTA_EK.findall(f"{r['baslik'] or ''} {r['icerik'] or ''}"):
                 y = y.rstrip(".")
+                if not y.startswith(KLASOR + "/"):
+                    y = f"{KLASOR}/{Path(y).name}"      # eski `ekler/<ad>` yazimi
                 if y not in adaylar:
                     adaylar.append(y)
             # BELGE/MEDYA YOLU (01.10.2026, gercek set G17): kokte uretilen
@@ -220,7 +227,7 @@ def gonderilmemisler(ofis, gorev_idleri) -> list:
     # patrona ekledi -- asil gorsel zaten gitmisti. Yardimci dosya patrona
     # hic gitmez.
     return [y for y in adaylar if not gitti(y) and (kok / y).is_file()
-            and Path(y).parts[:1] != ("karalama",)]
+            and not y.startswith(_KARALAMA + "/")]
 
 
 def satirlar(yollar) -> str:

@@ -13356,3 +13356,17 @@ Aşama 1:
 - Sınama araçları gerçek evi tek kuraldan alır (`varsayilan_ev`); bekçi
   sınaması iki durumu da sınar (eski ev / yeni ev), yeni ev SAHTE yolda.
 - Tam takım 3572/3572.
+
+Aşama 2 (proje içi `.ofis/`):
+- `yollar`: PROJE_GIZLI=".ofis", EK_KLASORU=".ofis/ekler", KARALAMA=".ofis/karalama"
+  (tek tanım). Ekler, karalama, koltuk (iş başında hazır + `.ofis/.gitignore`
+  "*": patronun kendi git deposuna girmez), MCP silme serbestliği, brifing/plan/
+  inceleme/codex metinleri yeni yolda.
+- Geriye uyum: eski `[ek] ekler/<ad>` satırları ve kanıttaki eski yazım
+  tanınır (geçmiş sohbet bozulmaz).
+- Ölçüm yalnız `.ofis`'i atlar; önce "ekler"/"karalama" ADLARI her derinlikte
+  atlanıyordu → patronun projesinde o adlı GERÇEK klasör görünmezdi (sınandı).
+- `.ofis/` altındaki BAŞKA gizli dosya sohbete gönderilemez (sınandı).
+- Tam takım 3578/3578.
+- Kullanıcı ekledi: "ofis" çok odalı BİNA görünümü olabilir (görünüş en son);
+  masaüstü uygulamasından ÖNCE satır satır tam denetim → PLAN F8½.

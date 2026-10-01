@@ -287,7 +287,8 @@ def _kendi_yeni_dosyalari(ofis, gorev_id: str, girdi: dict) -> bool:
         if not r:
             return False
         acilis = _dt.datetime.fromisoformat(r["olusturuldu"]).timestamp()
-        karalama = _P(kok) / "karalama"
+        from ofis.yollar import KARALAMA as _KARALAMA
+        karalama = (_P(kok) / _KARALAMA).resolve()
         for h in hedefler:
             p = _P(h).resolve()
             # KARALAMA (01.10.2026, G17 codex): ayni komut `karalama/`da
@@ -1232,7 +1233,7 @@ ARACLAR = [
                 "ekler": {"type": "array", "items": {"type": "string"},
                           "description": "Sohbete eklenecek dosyalar (proje "
                                          "kokune gore yol, en fazla 5). "
-                                         "Orn. [\"ekler/ekran.png\", \"rapor.pdf\"]"},
+                                         "Orn. [\".ofis/ekler/ekran.png\", \"rapor.pdf\"]"},
             },
             "required": ["metin"],
         },
