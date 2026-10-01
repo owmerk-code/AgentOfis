@@ -56,7 +56,16 @@ const el = (etiket, sinif, metin) => {
   if (metin !== undefined) d.textContent = metin;
   return d;
 };
-const saat = (iso) => (iso || "").slice(11, 16);
+/* SAAT YEREL GOSTERILIR (01.10.2026, canli: patron 11:41'de "08:41" gordu).
+   Defter UTC tutar (`db.simdi`); dilim bilgisi olan ISO ani tarayici yerel
+   saate cevirir. Dilimsiz eski kayit oldugu gibi kesilir (uydurulmaz). */
+const saat = (iso) => {
+  const s = iso || "";
+  if (!/[+-]\d\d:\d\d$|Z$/.test(s)) return s.slice(11, 16);
+  const t = new Date(s);
+  return isNaN(t) ? s.slice(11, 16)
+    : t.toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" });
+};
 const kes  = (m, n) => ((m || "").length > n ? m.slice(0, n) + "…" : (m || ""));
 
 /* Odalar: anahtar, baslik, NE ANLAMA GELDIGI, haritadaki KISA ad.

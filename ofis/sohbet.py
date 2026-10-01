@@ -83,6 +83,40 @@ YAPAMAM_CEVABI = re.compile(
     # 01.10 (G08, codex): "yazma izni yok ... gorevi yeniden baslatin"
     r"|(?:yazma |dosya |arac )?izn?[iı] yok|yetkim yok|yeniden ba[sş]lat[iı]n", re.I)
 
+def _zaman_blogu(ofis) -> str:
+    from datetime import datetime
+    from . import zamanlayici as _z
+    an = datetime.now().astimezone()
+    satir = [f"# ZAMAN\n\nSimdi (patronun yerel saati): {an:%Y-%m-%d %H:%M}, "
+             f"{_z.GUNLER[an.weekday()]}."]
+    blok = _z.triyaj_blogu(ofis)
+    if blok:
+        satir += ["", blok]
+    return "\n".join(satir)
+
+
+def _zamanla(ofis, karar: dict, lider_ad: str, mesaj: str) -> str:
+    """`karar=zamanla` -> kaydet ya da iptal et; cevabi OFIS kurar.
+
+    Lider zamani YAPI olarak verir, ofis dogrular. Cevap metni de ofisten:
+    "her gun 09:00, ilki yarin 09:00" defterdeki gercek kayittir -- liderin
+    serbest cumlesi kayitla celisebilirdi (soyledigi saat ile kaydedilen).
+    """
+    from . import zamanlayici as _z
+    zaman = karar.get("zaman") or {}
+    try:
+        if isinstance(zaman, dict) and zaman.get("tur") == "iptal":
+            r = _z.iptal(ofis, zaman.get("no"))
+            return f"Tamam, Z{r['no']} iptal edildi: «{r['metin'][:100]}». Artık çalışmayacak."
+        z = _z.ekle(ofis, (karar.get("hedef") or mesaj).strip(), lider_ad, zaman)
+    except _z.ZamanHatasi as exc:
+        return (f"Zamanı kaydedemedim: {exc} Ne zaman yapılsın? Örnek: 'her gün 09:00'da', "
+                "'pazartesi ve perşembe 14:00'te', 'yarın 10:30'da bir kez', 'her 30 dakikada'.")
+    return (f"Tamam, zamanladım (Z{z['no']}): {_z.insan_metni(z['kural'])} — «{z['metin'][:120]}». "
+            f"İlk çalışma: {_z.an_metni(z['sonraki'])}. Vakti gelince sıraya girer, sonucu buraya "
+            "yazarım. İptal için 'Z" + str(z['no']) + "'yi iptal et' demen yeter.")
+
+
 #: Lider de sohbete dosya gonderir (30.09): satiri ofis `ekler/`e tasir.
 EK_KURALI = ("Patrona bir DOSYA gostermek istersen (gorsel, pdf, video; "
              "orn. bir ajanin urettigi), cevabina AYRI SATIRDA `[ek] <proje "
@@ -142,7 +176,8 @@ def _bellege_yaz(proje_id: str, mesaj_id: str, metin) -> None:
 _KARAR_ETIKET = {"kendi": "Bu işi ben yapıyorum",
                  "dagit": "Bu işi ekibe dağıtıyorum",
                  "kadro": "Bu iş için kadroya yeni bir ajan öneriyorum",
-                 "cevap": "Cevaplıyorum"}
+                 "cevap": "Cevaplıyorum",
+                 "zamanla": "Bunu zamanlıyorum"}
 
 
 def _kismi_alan(metin: str, alan: str):
@@ -390,6 +425,10 @@ class Sohbet:
             "",
             self.ofis_ozeti(),
             "",
+            # ZAMAN (01.10.2026, F5/4): "yarin 10:30" demek icin lider
+            # bugunun tarihini ve gununu GORMELI -- yoksa uydurur.
+            _zaman_blogu(self.ofis),
+            "",
             # BAGLAYICI ENVANTERI TRIYAJDA DA GEREKIYOR.
             #
             # Kullanici sordu: *"ajan farkedebilecek mi bagli mi degil
@@ -498,6 +537,13 @@ class Sohbet:
             "**dagit** — Gercekten bolunen ya da uzmanlik isteyen is.",
             "  Kadroya dagitirsin, sonunda TEK CIKTI ile patrona donersin.",
             "",
+            "**zamanla** — Patron isin ILERIDE ya da TEKRAR TEKRAR yapilmasini",
+            "  istiyor ('her sabah 9'da', 'pazartesi 14:00'te', 'yarin 10:30'da',",
+            "  'her 30 dakikada'), ya da kayitli bir zamanli isi iptal ettiriyor.",
+            "  Isi SIMDI yapma; ofis kaydeder, vakti gelince sana getirir.",
+            "  `zaman` alanini YAPI olarak ver (asagida). Saati uydurma: patron",
+            "  saat soylemediyse `cevap` ile sor.",
+            "",
             "**kadro** — Is icin gereken ROL kadroda YOK. Once kadro",
             "  onerirsin; patron onaylayinca is baslar. Var olan bir ajana",
             "  yapamayacagi isi vermek, isi yarim birakmanin en sessiz",
@@ -519,6 +565,14 @@ class Sohbet:
             '  "hedef": "karar=kendi, dagit ya da kadro ise isin tek cumlelik hedefi"',
             "}",
             "```",
+            "",
+            "karar=zamanla ise `hedef` = vakti gelince yapilacak is (patronun",
+            "sozuyle, zaman ifadesi CIKARILMIS), ve `zaman` su bicimlerden biri:",
+            '`{"tur": "gunluk", "saat": "09:00"}` · '
+            '`{"tur": "haftalik", "saat": "14:00", "gunler": [0, 3]}` (0=pazartesi .. 6=pazar) · '
+            '`{"tur": "bir_kez", "tarih": "2026-10-02", "saat": "10:30"}` · '
+            '`{"tur": "aralik", "dakika": 30}` (en az 15). '
+            'Iptal icin: `{"tur": "iptal", "no": 2}` (ZAMANLANMIS ISLER listesindeki Z numarasi).',
             "",
             "Kurallar:",
             "- `gerekce` bos olamaz. Ajan kosturmamak da bir karardir.",
@@ -693,6 +747,13 @@ class Sohbet:
             yield {"tur": "bitti", "govde": "", "ek": {"yol": "cevap"}}
             return
 
+        if karar["karar"] == "zamanla":
+            cevap = _zamanla(self.ofis, karar, lider["ad"], mesaj)
+            self.ofis.postane.cevapla(kayit["id"], cevap, cevaplayan=lider["ad"])
+            yield {"tur": "cevap", "govde": cevap, "ek": {}}
+            yield {"tur": "bitti", "govde": "", "ek": {"yol": "zamanla"}}
+            return
+
         hedef = (karar.get("hedef") or mesaj).strip()
         # EKLER ise TASINIR: lider hedefi yeniden yazarken dosya satirlarini
         # dusurebilir; isi yapacak ajan dosyanin yerini bilmeli.
@@ -792,7 +853,7 @@ class Sohbet:
                                   akis=getattr(self, "_akis", None))
         karar = _json_ayikla(ham)
         if not isinstance(karar, dict) or karar.get("karar") not in (
-                "cevap", "kendi", "dagit", "kadro"):
+                "cevap", "kendi", "dagit", "kadro", "zamanla"):
             # Bicim tutmadiysa UYDURMA: en guvenli yol, isi ajanlara
             # vermek degil PATRONA DONMEKTIR. Yanlis yorumlanmis bir
             # mesajla is acmak, olmayan bir isi baslatir.

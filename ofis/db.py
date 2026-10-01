@@ -584,6 +584,22 @@ CREATE TABLE IF NOT EXISTS kuyruk (
 );
 
 CREATE INDEX IF NOT EXISTS ix_kuyruk_durum ON kuyruk (proje_id, durum);
+
+-- ZAMANLI IS (01.10.2026, F5/4): `zamanlayici.py`. Kural JSON (gunluk,
+-- haftalik, bir_kez, aralik), yerel saatle konusulur; `sonraki` UTC.
+CREATE TABLE IF NOT EXISTS zamanli (
+    id              TEXT PRIMARY KEY,
+    proje_id        TEXT NOT NULL,
+    no              INTEGER NOT NULL,
+    metin           TEXT NOT NULL,
+    lider_ad        TEXT NOT NULL,
+    kural           TEXT NOT NULL,
+    sonraki         TEXT,
+    etkin           INTEGER NOT NULL DEFAULT 1,
+    son_calisma     TEXT,
+    kaynak          TEXT NOT NULL DEFAULT 'insan',
+    olusturuldu     TEXT NOT NULL
+);
 """
 
 

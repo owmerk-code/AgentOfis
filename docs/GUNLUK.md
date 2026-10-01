@@ -13264,3 +13264,31 @@ kalmış olabilir)" diyordu — arıza gibi; "senin cevabını bekliyor" oldu.
   "gÃ¶rÃ¼yorsan") — UTF-16 yolunun gerekçesi ölçüldü. Bildirim başlığı
   "Windows PowerShell" görünüyor; "AgentOfis" için uygulama kimliği kaydı
   gerekir → F9 (Tauri) ile.
+
+## 01.10.2026 — F5/4: zamanlayıcı (konuşarak kurulur)
+
+- `ofis/zamanlayici.py` + `zamanli` tablosu: kural YAPI (gunluk ·
+  haftalik gunler · bir_kez tarih · aralik ≥15 dk), yerel saatle konuşulur,
+  `sonraki` UTC. Vakti gelen iş KUYRUĞA girer ("[Zamanlanmış iş Z1 · …]"),
+  ayrı koşturucu yok — kuyruk/bildirim/dönüş raporu aynen.
+- Kaçırılan vakitler BİRİKMEZ (3 gün kapalı → bir kez), "geç kaldı"
+  söylenir. Koşullu güncelleme: iki süreç aynı anda bakarsa tek kez.
+- Triyaja `karar=zamanla` (+ `zaman` yapısı, iptal `{"tur":"iptal","no":N}`);
+  lider bugünün tarihini/gününü ve kayıtlı zamanlı işleri GÖRÜR. Saati
+  OFİS doğrular ve CEVABI OFİS kurar (liderin söylediği saat kayıtla
+  çelişemez). Yanlış zaman kayıt açmaz, patrona sorulur.
+- Panel: 20 sn'lik tur (`zamanlayiciyi_baslat`, yalnız `calistir`), uçlar
+  `/api/zamanli`, iptal. Bildirim: "Zamanlanmış iş başladı".
+- Sınama: duman_zaman 38. MUTASYON 4/4. Yine bir yarış sınaması ölçmüyordu
+  (art arda çağrı yarışı oluşturmaz) → 4 iplik + bariyer + ayrı bağlantı,
+  15 deneme: korumasız 7 denemede çift kayıt, korumalı 0.
+- CANLI (8911): patron "saat 11:45'te bana bugünün tarihini ve
+  'zamanlayıcı çalıştı' yaz" yazdı → lider zamanla, ofis cevabı "Z1: 1 Ekim
+  11:45 (bir kez) … İlk çalışma: bugün 11:45". 11:45:01 iş sıraya girdi,
+  11:45:11 lider cevapladı ("Bugün 1 Ekim 2026, perşembe. Zamanlayıcı
+  çalıştı.").
+- Canlıda görülen: sohbet saatleri UTC görünüyordu (11:41'de "08:41") →
+  panel saatleri yerel saate çevirir (dilimsiz eski kayıt olduğu gibi).
+- Kullanıcı ekranında doğruladı: 11:41 "demir cevapladı (zamanladım Z1)",
+  11:45 "Zamanlanmış iş başladı", 11:45 "demir cevapladı (Bugün 1 Ekim…)" —
+  zamanlayıcı + kuyruk + bildirim uçtan uca, gerçek motorla.

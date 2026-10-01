@@ -365,6 +365,49 @@ def _kuyrugu_kostur(db_yolu, proje_ad: str) -> None:
     _arkada_calistir(db_yolu, proje_ad, isi, "sira")
 
 
+#: Zamanlayici ne siklikla bakar. Vakit dakikalik konusulur; 20 sn
+#: gecikme fark edilmez, defteri de yormaz.
+ZAMAN_ARALIGI_S = 20.0
+
+
+def zamanlayici_tik(db_yolu, proje_ad: str) -> int:
+    """Vakti gelen zamanli isleri siraya koyar ve sirayi baslatir."""
+    from . import zamanlayici as _z
+    _db = Veritabani(db_yolu)
+    pid = _proje_id_bul(_db, proje_ad)
+    if pid is None:
+        return 0
+    giren = _z.vadesi_gelenleri_sirala(Ofis(_db, pid))
+    if giren:
+        _kuyrugu_baslat(db_yolu, proje_ad)
+    return len(giren)
+
+
+def zamanlayiciyi_baslat(db_yolu, proje_ad: str) -> None:
+    """F5/4: panel acikken zamanli isler. Ilk tur ACILISTA: PC kapaliyken
+    kacirilan is bir kez kosar. Dusus sessiz yutulmaz (bir kez yazilir)."""
+    import time
+
+    def dongu():
+        soylendi = False
+        while True:
+            try:
+                zamanlayici_tik(db_yolu, proje_ad)
+            except Exception as exc:   # noqa: BLE001 -- dongu durmaz, SOYLER
+                if not soylendi:
+                    soylendi = True
+                    import traceback
+                    traceback.print_exc()
+                    try:
+                        _db = Veritabani(db_yolu)
+                        _db.olay_yaz(_proje_id_bul(_db, proje_ad), "hata",
+                                     f"Zamanlayici dustu: {exc}")
+                    except Exception:  # noqa: BLE001
+                        pass
+            time.sleep(ZAMAN_ARALIGI_S)
+    threading.Thread(target=dongu, name="zamanlayici", daemon=True).start()
+
+
 def bildirimleri_baslat(db_yolu, proje_ad: str, adres: str) -> None:
     """Masaustu bildirimi (F5/3): yalniz GERCEK panel acar; sinamalar
     `olustur` kullanir ve ekrana bildirim dusmez."""
@@ -2524,6 +2567,20 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
                 "kosuyor": True, "tarayici": web, "kabin": bool(kabin_cdp),
                 "sirada": not basladi, "sira": k["sira"], "kuyruk_id": k["id"]}
 
+    @uygulama.get("/api/zamanli")
+    def api_zamanli():
+        from . import zamanlayici as _z
+        return {"ogeler": _z.liste(ofis_ac())}
+
+    @uygulama.post("/api/zamanli/{no}/iptal")
+    def api_zamanli_iptal(no: str):
+        from . import zamanlayici as _z
+        try:
+            r = _z.iptal(ofis_ac(), no)
+        except _z.ZamanHatasi as exc:
+            raise HTTPException(400, str(exc))
+        return {"iptal": True, "no": r["no"]}
+
     @uygulama.get("/api/bildirim")
     def api_bildirim_durum():
         from . import bildirim as _b
@@ -2711,6 +2768,7 @@ def kos(adres: str = "127.0.0.1", kapi: int = 8900, db_yolu=None,
     acilista_toparla(db_yolu or VARSAYILAN_YOL, proje_ad)
     bildirimleri_baslat(db_yolu or VARSAYILAN_YOL, proje_ad,
                         f"http://{adres}:{kapi}/")
+    zamanlayiciyi_baslat(db_yolu or VARSAYILAN_YOL, proje_ad)
     _gunluk_yedek_arkada(db_yolu)
     _limit_tazele_arkada(db_yolu, proje_ad)
     _guncelleme_arkada(db_yolu, proje_ad)

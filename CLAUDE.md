@@ -151,6 +151,7 @@ matrisin ölçümüyle karşılaştırır.
 | `ofis/kuyruk.py` | İş kuyruğu (F5/1): lidere giden her panel mesajı sıraya girer (`kuyruk` tablosu, kalıcı); panel işçisi sırayı boşaltır, düşen iş sırayı durdurmaz; seri bitince MODELSİZ dönüş raporu. |
 | `ofis/surec.py` · `toparla.py` | Kesintiden devam (F5/2): iş, koşturan sürecin kimliğini (`pid:oluşma`) taşır; panel açılışında ölü sürecin işi `kesinti` ile bırakılır ve AYNI oturumdan sürer; yaşayan/kimliksiz kayda ve PATRONU BEKLEYEN işe dokunulmaz; sürdürülen isteğin yarım mesajı ofisin modelsiz cevabıyla kapanır. Canlı iki çökmede ölçüldü. |
 | `ofis/bildirim.py` | Masaüstü bildirimi (F5/3): panel defteri izler; onay, patrona soru, lider cevabı, dönüş raporu, kesinti, sıra düşüşü → Windows bildirimi (PowerShell+WinRT, `-EncodedCommand`); yalnız gerçek panel açar, ayar `bildirim`. |
+| `ofis/zamanlayici.py` | Zamanlayıcı (F5/4): sohbetten kurulur (triyaj `karar=zamanla`, saati ofis doğrular ve cevabı ofis kurar); gunluk/haftalik/bir_kez/aralik; vakti gelen iş kuyruğa; kaçırılan birikmez, bir kez koşar. |
 | `ofis/postane.py` | Soru/onay, patronun notu (`NOT_KURALI`), imza/kapsam ile onay eşleştirme. |
 | `ofis/danisma.py` | Ajana sorulan soruyu teslim eder (araçsız, salt okunur); cevaplanamazsa insana yükseltir. |
 | `ofis/mcp_sunucu.py` | Ofis MCP: durum · kanit_ekle · karar_yaz · sohbete_yaz · soru_sor · onay_iste · bilgi_yaz · gorev_ac · gorsel_uret/iste · video_uret/durum/iste · izin_sor (kanca) · giris_iste. Kimlik ORTAMDAN gelir. |
@@ -219,9 +220,10 @@ matrisin ölçümüyle karşılaştırır.
 - **Aşama 1 (gerçek iş kalitesi) sürüyor:** `testler/gercek_set.py` patron gibi
   sohbetten 12 iş verir; gece 03:30 iki motor (`gece_kos.py`). 30.09: codex
   14 işin 14'ü iki motorda geçti (01.10; G13 Excel, G14 form+patron izni dahil); tek koşuda claude 13/14, codex 12/14 (kalanlar düzeltildi, yeniden geçti). Set 18 işe çıktı (not, durdur/sürdür, Word, proje); 01.10 tek koşuda claude **17/18** (kalan G15 tek savunulabilir ret), codex **14/18** (4 kök sebep düzeltildi, dördü yeniden geçti) → 18 işin 18'i iki motorda. Codex haftalık eşiği dolunca `gercek_set.py --kota-esigi 0.95` (yalnız geçici ofiste). Patronun GERÇEK ofisinin kopyasında (`testler/ofis_kopyasi.py`, lider demir/Opus) 4/4 iş bitti. Liderin turları varsayılan ARKA kipte (`lider_terminal_kipi`), işçi gerçek terminalde; basit iş ~70–80 sn. Gece görevi DEVRE DIŞI (PC gece kapalı), set gündüz koşulur. Kural: gerçek motorla geçmeyen "bitti" değil.
+- **F5 "ben yokken" altyapısı (01.10):** kuyruk + dönüş raporu, kesintiden devam, masaüstü bildirimi, zamanlayıcı — dördü canlı (8911, gerçek motor) ölçüldü. Kalan F5: telefon, onay yorgunluğu (E80), bağlam göstergesi, ses (en son).
 - **Güncelleme hemen:** 30 dakikada bir ölçer, uyguladıktan sonra yeniden
   ölçer (`olc_ve_ilerle`). CLI güncellemesinin deneme turu, ofis gerçek terminal kipindeyse terminalde de koşar (30.09).
-- **Sınamalar:** 44 duman dosyası, **3519/3519** (01.10; 48 dosya) + gerçek set (`gercek_set.py`, her gece 03:30). Deneme seti 15/15
+- **Sınamalar:** 44 duman dosyası, **3557/3557** (01.10; 49 dosya) + gerçek set (`gercek_set.py`, her gece 03:30). Deneme seti 15/15
   (Claude ve Codex, işçi+lider).
 - **Kullanıcının belirttiği eksikler (29.09):** her panoda her zaman açık
   yazma yeri; sesli orkestratör;
