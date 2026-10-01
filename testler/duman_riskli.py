@@ -964,6 +964,20 @@ for _u in ("http://127.0.0.1:8765/oyun/index.html", "https://magaza.com/"):
     sina(f"  sunucudaki sayfada test kodu HALA sorulur: {_u}", bool(_b) and _b["sinif"] == "kod")
 sina("brifing kendi HTML'ini file:// ile acmayi soyluyor", "file:///" in R.brifing_blogu())
 
+print("\n-- bash veri blogu (01.10, ofis kopyasi: rapor metnindeki 'deploy') --")
+_NL = chr(10)
+for _kd, _bek, _ne in [
+    ("cd x && python3 - <<'EOF'" + _NL + "s='ajanlar deploy edildi, git push ile yayin'" + _NL
+     + "open('r.md','w').write(s)" + _NL + "EOF", None, "python veri blogundaki 'deploy' metni"),
+    ("cat > notlar.md <<'EOF'" + _NL + "deploy adimlari: git push" + _NL + "EOF", None, "dosyaya yazilan metin"),
+    ("python3 - <<'EOF'" + _NL + "import subprocess; subprocess.run(['vercel','deploy'])" + _NL + "EOF",
+     "yayin", "blokta subprocess -> TARANIR"),
+    ("bash <<'EOF'" + _NL + "git push origin main" + _NL + "EOF", "gonderim", "KABUGA verilen blok -> TARANIR"),
+    ("cat > a.md <<'EOF'" + _NL + "x" + _NL + "EOF" + _NL + "git push", "gonderim", "bloktan SONRAKI komut -> TARANIR"),
+]:
+    _b = R.kabuk_degerlendir("Bash", {"command": _kd})
+    sina(f"  {_ne} -> {_bek or 'serbest'}", (_b and _b["sinif"]) == _bek, str(_b and _b["sinif"]))
+
 print("\n-- ayni siteden okuma (01.10, onay yorgunlugu E80) --")
 _u = "https://veriportali.tuik.gov.tr/tr/press/57883"
 for _kd, _bek, _ne in [

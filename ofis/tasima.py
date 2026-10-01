@@ -61,6 +61,26 @@ def _boyut(kok: Path) -> int:
     return t
 
 
+def _sil(yol: Path) -> None:
+    """Yarim kalmis gecici kopyayi siler. Git nesneleri SALT OKUNUR:
+    Windows onlari normal silmez (01.10.2026 olculdu: ikinci denemede
+    `ev.tasiniyor/golge/*.git/objects` silinemedi)."""
+    import stat
+
+    def _yazilabilir(islev, yol, _hata):
+        os.chmod(yol, stat.S_IWRITE | stat.S_IREAD)
+        islev(yol)
+    shutil.rmtree(yol, onexc=_yazilabilir)
+
+
+def _dosya_sayisi(kok: Path) -> int:
+    n = 0
+    for d, alt, adlar in os.walk(kok):
+        alt[:] = [x for x in alt if x not in ATLANAN]
+        n += len(adlar)
+    return n
+
+
 def panel_acik_mi(kapi: int = 8900) -> bool:
     try:
         with socket.create_connection(("127.0.0.1", kapi), timeout=0.5):
@@ -180,10 +200,13 @@ def uygula(pl: dict, *, simdi: str = None) -> dict:
     if ev["gerekli"]:
         gecici = ev_yeni.with_name(ev_yeni.name + ".tasiniyor")
         if gecici.exists():
-            shutil.rmtree(gecici)
-        shutil.copytree(ev["kaynak"], gecici, ignore=shutil.ignore_patterns("__pycache__"))
-        sayi_k = sum(len(f) for _, _, f in os.walk(ev["kaynak"]))
-        sayi_h = sum(len(f) for _, _, f in os.walk(gecici))
+            _sil(gecici)
+        shutil.copytree(ev["kaynak"], gecici, ignore=shutil.ignore_patterns(*ATLANAN))
+        # Sayim KOPYAYLA AYNI kurala uyar (01.10.2026 olculdu: kopya
+        # `__pycache__`i atliyor, sayim atlamiyordu -> 3 onbellek dosyasi
+        # "eksik" gorundu, tasima durdu).
+        sayi_k = _dosya_sayisi(Path(ev["kaynak"]))
+        sayi_h = _dosya_sayisi(gecici)
         if sayi_k != sayi_h:
             raise TasimaHatasi(f"Ev kopyasi eksik: {sayi_h}/{sayi_k} dosya; eski ev yerinde.")
         os.replace(gecici, ev_yeni)
@@ -199,7 +222,7 @@ def uygula(pl: dict, *, simdi: str = None) -> dict:
         eski, hedef_kok = Path(p["eski"]), Path(p["hedef"])
         gecici = hedef_kok.with_name(hedef_kok.name + ".tasiniyor")
         if gecici.exists():
-            shutil.rmtree(gecici)
+            _sil(gecici)
         for g, yeni in p["dosyalar"]:
             _kopyala_dogrula(eski / g, gecici / yeni)
         (gecici / Y.EK_KLASORU).mkdir(parents=True, exist_ok=True)

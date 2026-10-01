@@ -55,6 +55,9 @@ for d in (KOD / "veri", ESKI_EV / "codex", MASA):
     d.mkdir(parents=True)
 (ESKI_EV / "codex" / "auth.json").write_text("{\"oturum\": 1}", encoding="utf-8")
 (ESKI_EV / "kota.json").write_text("{}", encoding="utf-8")
+# Evde onbellek (01.10 olculdu: kopya atliyor, sayim atlamiyordu -> tasima durdu).
+(ESKI_EV / "codex" / "eklenti" / "__pycache__").mkdir(parents=True)
+(ESKI_EV / "codex" / "eklenti" / "__pycache__" / "x.pyc").write_bytes(b"pyc")
 eski_kok = KOD / "calisma"
 for yol, icerik in {"rapor/rapor.md": "rapor", "ekler/a.png": "png", "karalama/x.py": "x",
                     "bilge/BRIFING.md": "eski brifing", "bilge/model-fiyat.md": "fiyat",
@@ -118,6 +121,8 @@ yeni = MASA / "Ofisim"
 sina("defter yedegi alindi", Path(r["db_yedek"]).is_file())
 sina("ev KOPYALANDI, eski ev YERINDE", (YENI_EV / "codex" / "auth.json").read_text(encoding="utf-8")
      == "{\"oturum\": 1}" and (ESKI_EV / "codex" / "auth.json").is_file())
+sina("  evdeki __pycache__ tasimayi DURDURMADI (atlanir, sayilmaz)",
+     not (YENI_EV / "codex" / "eklenti" / "__pycache__").exists())
 sina("  gecici ad kalmadi", not (KOD / "ev.tasiniyor").exists() and not (MASA / "Ofisim.tasiniyor").exists())
 sina("proje dosyasi yerinde ve AYNI", (yeni / "rapor" / "rapor.md").read_text(encoding="utf-8") == "rapor")
 sina("  ekler .ofis/ekler'de", (yeni / ".ofis" / "ekler" / "a.png").read_text(encoding="utf-8") == "png")
@@ -136,6 +141,14 @@ sina("defter: ajan klasorleri cevrildi", all(a["klasor"] == str(yeni) for a in o
 sina("eski kok SILINMEDI, evin arsivinde", not eski_kok.exists()
      and (YENI_EV / "arsiv" / "eski-kok-Ofisim-T1" / "rapor" / "rapor.md").is_file())
 
+print("\n3b. yarim kalmis gecici kopya (salt okunur git nesnesi) silinir")
+import os as _os, stat as _st  # noqa: E402
+_g = A / "kalinti.tasiniyor" / "golge" / "x.git" / "objects"
+_g.mkdir(parents=True)
+(_g / "ab").write_bytes(b"nesne")
+_os.chmod(_g / "ab", _st.S_IREAD)
+T._sil(A / "kalinti.tasiniyor")
+sina("salt okunur dosyali yarim kopya silindi", not (A / "kalinti.tasiniyor").exists())
 print("\n4. ikinci kez")
 pl4 = plan()
 sina("tasinacak bir sey kalmadi", not pl4["ev"]["gerekli"] and pl4["projeler"] == [], str(pl4["projeler"]))

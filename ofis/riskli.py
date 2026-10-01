@@ -844,6 +844,33 @@ def silme_hedefleri(komut: str, kok: str):
 
 
 
+#: BASH VERI BLOGU (01.10.2026, patronun ofis kopyasi): ajan raporu duzeltmek
+#: icin `python3 - <<'EOF' ... EOF` kosturdu; rapor METNINDEKI "deploy"
+#: kelimesi "YAYIN / CANLIYA ALMA" sayildi, is onayda kaldi. Bir yorumlayiciya
+#: verilen blogun ICINDEKI duz yazi komut degildir. Govdede kod calistiran /
+#: disari giden / silen bir cagri varsa blok eskisi gibi TARANIR; kabuga
+#: (bash/sh/zsh/pwsh) verilen blok HER ZAMAN taranir.
+_HEREDOC = re.compile(r"<<-?\s*(['\"]?)([A-Za-z_][A-Za-z0-9_]*)\1[^\n]*\n(.*?)\n\s*\2\s*(?:\n|$)", re.S)
+_HEREDOC_TEHLIKE = re.compile(
+    r"(?i)\b(?:subprocess|os\.system|os\.popen|popen|os\.exec\w*|pty\.spawn|"
+    r"requests\.(?:post|put|patch|delete)|urllib|http\.client|httpx|aiohttp|socket|smtplib|"
+    r"ftplib|paramiko|webbrowser|shutil\.rmtree|os\.remove|os\.unlink|\.unlink\s*\(|"
+    r"os\.rmdir|removedirs|rmtree|send2trash|eval|exec)\b")
+_KABUK_YORUMLAYICI = re.compile(r"(?i)(?:^|[\s|;&(])(?:bash|sh|zsh|dash|ksh|pwsh|powershell|cmd)(?:\.exe)?\s*(?:-s\s*)?<<")
+
+
+def _veri_bloklarini_ayikla(komut: str) -> str:
+    """Yorumlayiciya verilen ZARARSIZ heredoc govdelerini taramadan cikarir."""
+    if "<<" not in komut or _KABUK_YORUMLAYICI.search(komut):
+        return komut
+    def _degistir(m):
+        govde = m.group(3)
+        if _HEREDOC_TEHLIKE.search(govde):
+            return m.group(0)              # supheli: TARANIR
+        return "<<VERI\n"
+    return _HEREDOC.sub(_degistir, komut)
+
+
 def kabuk_degerlendir(arac: str, girdi: dict = None) -> dict | None:
     """Bir kabuk komutu insan onayi ister mi. `None` = serbest.
 
@@ -854,7 +881,7 @@ def kabuk_degerlendir(arac: str, girdi: dict = None) -> dict | None:
     komut = str((girdi or {}).get("command") or "").strip()
     if not komut:
         return None
-    alt = komut.lower()
+    alt = _veri_bloklarini_ayikla(komut).lower()
     for sinif, kaliplar in KABUK_KURALLARI:
         bulunan = _esles(alt, kaliplar)
         if bulunan:

@@ -39,7 +39,8 @@ motor matrisinden geçmeden deftere girmez.
 | **Python + FastAPI + SQLite** | Kullanıcının yığını; CLI'ları alt süreçle koşturmak Python'da yerli. |
 | **Fan-out kararı liderde, gerekçe zorunlu** | Bölmek de bölmemek de karar günlüğüne yazılır. |
 | **Bellek SQLite'ta, kendimiz yazıyoruz** | Dış hafıza servisine bağlanılmaz. |
-| **Klasör** `C:\Users\pc\Desktop\AgentOfis` | Proje kökü (ajanların ortak çalışma kökü) `calisma/`. |
+| **Ofisin TEK evi** `Masaüstü\AgentOfis` (kod) + `AgentOfis\ev` (hafıza, kasa, oturumlar, gölge, yedekler) | 01.10 kullanıcı kararı + ölçüm: kök ofisin içindeyken Claude ajanı ofisin CLAUDE.md'sini okuyordu. Ev GitHub'a ve ZIP'e girmez. |
+| **Projeler masaüstünde** `Masaüstü\<proje>` (Ofisim = genel işler, iş adlı alt klasörler) | Kök ofisin içinde AÇILAMAZ (`yollar.ofis_icinde_mi`). Projede ofisin tek izi gizli `.ofis/` (ekler, karalama). |
 | **Ofis kendini geliştirir, kendini KURMAZ** | Ajan kendi kaynağına (`ofis/`) yazamaz; teslim eder, insan inceler ve kurar. |
 | **Ajanlar ortak kökte** (yazma alanı gerçek yoldur) | Yazma kilidi ancak çakışma fiziksel olarak mümkünse anlamlı. |
 | **Ürünü (Muratify) almıyoruz** | Rakip olarak izleniyor; bkz. günlük "RAKİP" bölümleri. |
@@ -77,7 +78,7 @@ motor matrisinden geçmeden deftere girmez.
 - Gerçek testler serbest ama **boş geçici klasörde, ucuz modelle, tavanla**;
   asla proje kökünde (CLAUDE.md bağlama yüklenir, bir "merhaba" $2,29 tuttu).
 - Sınamalar gerçek kataloğa, kasaya, kabin profiline, gerçek deftere ve
-  `~/.agentofis`'e dokunmaz; para harcamaz (`testler/_temizlik.py` kökü
+  ofisin gerçek evine (`AgentOfis\ev`; eski `~/.agentofis`) dokunmaz; para harcamaz (`testler/_temizlik.py` kökü
   geçiciye çevirir, bekçi gerçek hafızayı izler).
 - `~/.codex` salt okunur. Kimlik/oturum işlemleri geri alınamaz: önce
   kopyada ölçülür; **`--device-auth` önerilmez** (codex2 böyle kaybedildi).
@@ -137,7 +138,8 @@ matrisin ölçümüyle karşılaştırır.
 | Dosya | Ne yapar |
 |---|---|
 | `ofis/db.py` | Şema + sütun göçleri (`GOCLER`) + veri göçleri (`user_version`). Yol mutlaklaştırılır. Parametreler anahtar maskelemesinden geçer. |
-| `ofis/yollar.py` | TEK kök `OFIS_EV` (yoksa `~/.agentofis`): kasa, kota, motor sağlığı, codex evi, kabin profili, yedek, gölge depo. |
+| `ofis/yollar.py` | TEK kök `OFIS_EV` (yoksa `AgentOfis\ev`, o da yoksa eski `~/.agentofis`): kasa, kota, motor sağlığı, codex evi, kabin profili, yedek, gölge depo. Proje içi `.ofis/` adları, `ofis_icinde_mi`, masaüstü varsayılanı. |
+| `ofis/tasima.py` | Ayrım taşıması (`kabuk tasi`, varsayılan DENEME): ev kopyası, proje eşlemeli doğrulamalı kopya, defter en son, eskiler silinmez. 01.10'da gerçek ofiste uygulandı. |
 | `ofis/kadro.py` | İşe alma, motor/model/efor/klasör, faz, `ders` sicili. |
 | `ofis/roller.py` | 19 rol / 5 kategori; rol = sözleşme (tür · izin · MCP · kanıt türü · ölçüt şablonu · kademe · bütçe). Kademe/efor haritaları. |
 | `ofis/tahta.py` | Görev, DAG, yazma kilidi (kira+nabız), kanıt kapısı, CAS, `iptal_et`, `medya_hedefi`, kök-göreli alan doğrulama. |
@@ -220,6 +222,7 @@ matrisin ölçümüyle karşılaştırır.
 - **Aşama 1 (gerçek iş kalitesi) sürüyor:** `testler/gercek_set.py` patron gibi
   sohbetten 12 iş verir; gece 03:30 iki motor (`gece_kos.py`). 30.09: codex
   14 işin 14'ü iki motorda geçti (01.10; G13 Excel, G14 form+patron izni dahil); tek koşuda claude 13/14, codex 12/14 (kalanlar düzeltildi, yeniden geçti). Set 18 işe çıktı (not, durdur/sürdür, Word, proje); 01.10 tek koşuda claude **17/18** (kalan G15 tek savunulabilir ret), codex **14/18** (4 kök sebep düzeltildi, dördü yeniden geçti) → 18 işin 18'i iki motorda. Codex haftalık eşiği dolunca `gercek_set.py --kota-esigi 0.95` (yalnız geçici ofiste). Patronun GERÇEK ofisinin kopyasında (`testler/ofis_kopyasi.py`, lider demir/Opus) 4/4 iş bitti. Liderin turları varsayılan ARKA kipte (`lider_terminal_kipi`), işçi gerçek terminalde; basit iş ~70–80 sn. Gece görevi DEVRE DIŞI (PC gece kapalı), set gündüz koşulur. Kural: gerçek motorla geçmeyen "bitti" değil.
+- **AYRIM (01.10, uygulandı):** ofisin evi `AgentOfis\ev`, Ofisim `Masaüstü\Ofisim`. Ölçüldü: ajan artık ofisin anayasasını GÖRMÜYOR (önce ilk satırını okuyordu). Açık: `.playwright-mcp/` proje kökünde (ölçmeden taşınmadı); kapı satır içi Python silmesini görmüyor.
 - **F5 "ben yokken" altyapısı (01.10):** kuyruk + dönüş raporu, kesintiden devam, masaüstü bildirimi, zamanlayıcı — dördü canlı (8911, gerçek motor) ölçüldü. Kalan F5: telefon, onay yorgunluğu (E80), bağlam göstergesi, ses (en son).
 - **Güncelleme hemen:** 30 dakikada bir ölçer, uyguladıktan sonra yeniden
   ölçer (`olc_ve_ilerle`). CLI güncellemesinin deneme turu, ofis gerçek terminal kipindeyse terminalde de koşar (30.09).
@@ -308,5 +311,5 @@ python testler/deneme.py --hizli                   # gerçek motor (kota!)
 python testler/matris.py --kuru                    # motor matrisi, $0
 ```
 
-Tam takımdan sonra `%TEMP%`'te `ofis-*` artığı kalmamalı; gerçek
-`~/.agentofis` değişmemeli (bekçi çıkış kodu 3 verir).
+Tam takımdan sonra `%TEMP%`'te `ofis-*` artığı kalmamalı; ofisin gerçek
+evi değişmemeli (bekçi çıkış kodu 3 verir).

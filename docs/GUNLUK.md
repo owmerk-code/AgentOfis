@@ -13410,3 +13410,27 @@ Aşama 5 (taşıma aracı, `ofis/tasima.py`, `kabuk tasi`):
   klasörü çevrilecek; engel yok.
 - duman_tasima 24 (gerçek kopyalı sahne). `ofis_kopyasi.py` kökü
   defterden okur. Tam takım 3632/3632.
+
+Aşama 6 (GERÇEK TAŞIMA, 01.10 ~14:40, kullanıcı "taşı"):
+- Önce tam ZIP (60,6 MB, Drive'a da). 1. deneme DURDU: ev kopyası
+  "3218/3221" — kopya `__pycache__` atlıyor, SAYIM atlamıyordu (3 codex
+  eklenti önbelleği). Güvenlik kontrolü doğru çalıştı; sayım düzeltildi
+  (sınama eski kodla aynı hatayı veriyor). 2. deneme DURDU: yarım kopyayı
+  silerken git nesneleri SALT OKUNUR (Windows) → salt okunuru da silen
+  `_sil`. Her iki duruşta gerçek ofis DEĞİŞMEDİ. 3. deneme: TAŞINDI.
+- Sonuç: etkin ev AgentOfis\ev; Ofisim kökü Masaüstü\Ofisim (41 dosya,
+  ekler .ofis/ekler'de); 6 ajan klasörü çevrildi; eski calisma evin
+  arşivinde; eski ~/.agentofis yerinde (yedek). Codex/Claude girişleri yeni
+  evden BAĞLI, kota okunuyor.
+- ÖLÇÜM: Masaüstü\Ofisim'den haiku'ya aynı soru → "YOK" (önce anayasanın
+  ilk satırını okuyordu).
+- Gerçek iş (ofis kopyası, demir/Opus): klasör özeti doğru (22 sn);
+  araştırma raporu İŞ ADLI klasöre (`ajan-sistemleri-2026/`) yazıldı, ek
+  `.ofis/ekler/rapor.md`. AMA iş onayda kaldı: bilge `python3 - <<'EOF'`
+  ile raporu düzeltirken rapor METNİNDEKİ "deploy" kelimesi "YAYIN" sayıldı
+  → bash veri bloğu kuralı: yorumlayıcıya verilen bloğun içindeki düz yazı
+  taranmaz; gövdede kod çalıştıran/dışarı giden/silen çağrı varsa ya da
+  blok KABUĞA veriliyorsa taranır; bloktan sonraki komut taranır.
+  duman_riskli 249, mutasyon 3/3.
+- Kalan iz: `.playwright-mcp/` proje kökünde — `--output-dir` var ama
+  ekran görüntüsü göreli yolları ona göre çözülebilir; ölçmeden taşınmadı.

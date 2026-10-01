@@ -1,1 +1,0 @@
-codex uctan uca calisti.
