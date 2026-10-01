@@ -330,6 +330,38 @@ sina("evet bulunamazsa Enter BASILMAZ (yanlis secenek onaylanmaz)",
      tui._guven_sec(_st, "Yes, I trust", deneme=2) is False and "\r" not in _st.yazilan,
      str(_st.yazilan))
 
+print("\n-- 16b. CEVAPLANAMAYAN guven sorusu: brifing YAPISTIRILMAZ, tur acik sebeple duser (01.10) --")
+_inatci = _KOK / "inatci_guven.py"
+_inatci.write_text(
+    "import sys, time\n"
+    "sys.stdout.write('Quick safety check: do you trust this folder?\\n\\u276fNo, exit\\n  Yes, I trust this folder\\n')\n"
+    "sys.stdout.flush()\n"
+    "time.sleep(120)\n", encoding="utf-8")
+
+
+class _Inatci(SahteTui):
+    """Guven sorusu gosterir, imlec HIC 'evet'e gelmez (tus dinlemez)."""
+
+    def tui_plani(self, **k):
+        p = super().tui_plani(**k)
+        p.update(argv=[sys.executable, str(_inatci)], guven_isareti="trust",
+                 guven_evet="Yes, I trust", hazir_mi=None)
+        return p
+
+
+_t0 = time.monotonic()
+_ol = list(tui.TuiMotoru(_Inatci(), ajan_ad="inatci").tur_kos(
+    "yapistirilmamasi gereken brifing", klasor=str(_KOK), zaman_asimi=300))
+_son = _ol[-1] if _ol else None
+sina("guven sorusu cevaplanamayinca tur DUSTU (sebep 'guven')",
+     _son is not None and _son.tur == "bitti" and not _son.ek.get("basarili")
+     and _son.ek.get("sebep") == "guven", str(_son and _son.ek))
+sina("  hata ACIK: 'guven sorusu CEVAPLANAMADI', ekran ekte",
+     any(o.tur == "hata" and "CEVAPLANAMADI" in o.govde and "trust" in o.govde for o in _ol))
+sina("  'gonderilmedi' diye YANILTICI sebep yok", not any(o.tur == "hata" and "GONDERILMEDI" in o.govde for o in _ol))
+sina("  zaman asimini beklemedi (< 60 sn)", time.monotonic() - _t0 < 60, f"{time.monotonic() - _t0:.0f} sn")
+sina("  terminali acik KALMADI", not [x for x in tui.acik_oturumlar() if x["ajan"] == "inatci"])
+
 print("\n-- 17. yapistirmanin ardina SAHIP satiri ELLE yazilir (30.09) --")
 _st = _SahteT()
 tui._yapistir(_st, "plan istemi")

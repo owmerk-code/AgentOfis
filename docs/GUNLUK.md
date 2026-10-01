@@ -13465,3 +13465,16 @@ altta açılıyordu, soru çıkmıyordu (ölçmek istediği sınıra ulaşmıyor
   araştırma işi: bilge GERÇEK TERMİNALDE, güven sorusu ÇIKTI ve KABUL
   edildi (~/.claude.json'da o klasör `hasTrustDialogAccepted: true`), hata
   yok, 147 sn, rapor iş adlı klasörde, ek `.ofis/ekler`. Kopya silindi.
+- Panel (15:47, düzeltmeden SONRA açıldı) claude 2.1.286 güncellemesini
+  denedi, deneme turu yine "GÖNDERİLMEDİ" ile düştü ve 2.1.285'e GERİ
+  döndü (güvenlik doğru çalıştı). 2.1.286 ayrı klasöre kurulup ölçüldü:
+  güven ekranı bu kez NUMARASIZ ve imleç varsayılan "No, exit"te; ofisin
+  işlevi aşağı inip Yes'i seçiyor. Güncellemenin KENDİ deneme işlevi
+  (`_terminal_denemesi`) şimdiki kodla 2.1.285 ve 2.1.286'da, yükte ve
+  panel ortamında (CLAUDE* değişkenleri silinmiş) 7/7 GEÇTİ. Paneldeki
+  düşüşün sebebi ÜRETİLEMEDİ (kayıt 300 harfte kesilmişti).
+- Yapı: güven sorusu cevaplanamazsa artık brifing YAPIŞTIRILMAZ; iki kez
+  daha denenir, olmazsa tur "güven sorusu CEVAPLANAMADI" + 1500 harf
+  ekranla düşer (önce sonraki "gönderilmedi" hatası asıl sebebi
+  saklıyordu). Güncelleme deneme sebebi 2000 harfe kadar korunur.
+  duman_tui 61 (eski kod tam o yanıltıcı "gonderilemedi"yi üretiyor).

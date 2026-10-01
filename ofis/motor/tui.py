@@ -369,7 +369,18 @@ class TuiMotoru(Motor):
                 if plan.get("guven_isareti") and plan["guven_isareti"] in ekran.lower() \
                         and not kayit.get("guvenildi"):
                     if plan.get("guven_evet"):
-                        _guven_sec(t, plan["guven_evet"])
+                        # CEVAPLANAMAYAN GUVEN SORUSU (01.10.2026): once secilemese
+                        # de "guvenildi" sayilip brifing sorunun USTUNE
+                        # yapistiriliyordu; sonraki "gonderilmedi" hatasi asil
+                        # sebebi sakliyordu. Iki kez daha denenir; olmazsa tur
+                        # ACIK sebeple ve ekranin tamamiyla duser.
+                        if not _guven_sec(t, plan["guven_evet"]):
+                            kayit["guven_deneme"] = kayit.get("guven_deneme", 0) + 1
+                            if kayit["guven_deneme"] < 3:
+                                time.sleep(0.5)
+                                continue
+                            kayit["guven_cevapsiz"] = duz_metin(t.gecmis())[-1500:]
+                            break
                     else:
                         for tus in plan.get("guven") or ():
                             t.yaz(tus)
@@ -393,6 +404,17 @@ class TuiMotoru(Motor):
                 time.sleep(0.5)
         t = kayit["terminal"]
         plan = kayit["plan"]
+        if kayit.pop("guven_cevapsiz", None) is not None:
+            ekran = duz_metin(t.gecmis())[-1500:]
+            yield MotorOlayi("hata", "Klasor guven sorusu CEVAPLANAMADI (evet secenegi ekranda "
+                             "bulunamadi); brifing yapistirilmadi. Ekran: " + ekran,
+                             {"sebep": "guven"})
+            with _KILIT:
+                _ACIK.pop(oturum_id, None)
+            kapat(oturum_id)
+            yield MotorOlayi("bitti", "", {"basarili": False, "sebep": "guven",
+                                           "oturum_id": oturum_id})
+            return
         kayit["kosuyor"] = True
         if not t.canli():
             with _KILIT:

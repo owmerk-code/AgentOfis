@@ -598,7 +598,9 @@ def _terminal_denemesi(motor, model: str, ek_ortam=None) -> dict:
     yazi = "".join(metin).strip()
     if basarili and "OK" not in yazi.upper():
         basarili, sebep = False, f"beklenen cevap gelmedi: {yazi[:120]!r}"
-    return {"basarili": basarili, "sebep": (sebep or "")[:300]}
+    # Sebep KESILMEZ (01.10.2026): 300 harfte kesilen ekran, panelde dusen
+    # denemenin asil sebebini gormeyi engelledi.
+    return {"basarili": basarili, "sebep": (sebep or "")[:2000]}
 
 
 def _denemeyi_olc(db, pid: str, motor: str, deneme: dict) -> None:
