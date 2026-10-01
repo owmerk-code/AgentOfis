@@ -13535,3 +13535,9 @@ Düzeltmeler:
   sonsuza dek taze sayıyordu → yalnız son 12 saat sayılır.
 - Gerçek defterde şu an açık iş yok (salt okunur sorgu): kural bugün hiçbir
   işi bekletmiyor.
+- Ek bulgu (aynı gün): güven sorusu cevaplanamayınca tur terminali kayıttan
+  ÖNCE siliyordu; `kapat` onu bulamayıp "yok" dedi ve CLI süreci ARKADA AÇIK
+  kaldı (sınama yalnız kayda bakıyordu). Düzeltildi; `duman_tui` artık sürecin
+  öldüğünü ölçüyor (eski kodda KALDI, yenide geçti). Yakalanma yolu: tam takım
+  döngüsü yalnız özet satırını okuyordu, çıkış kodu 3'ü (ARTIK) görmedi →
+  takım ÇIKIŞ KODUYLA koşulur.

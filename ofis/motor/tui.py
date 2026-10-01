@@ -421,8 +421,9 @@ class TuiMotoru(Motor):
             yield MotorOlayi("hata", "Klasor guven sorusu CEVAPLANAMADI (evet secenegi ekranda "
                              "bulunamadi); brifing yapistirilmadi. Ekran: " + ekran,
                              {"sebep": "guven"})
-            with _KILIT:
-                _ACIK.pop(oturum_id, None)
+            # Kayittan ONCE silinmez: `kapat` terminali kayittan bulur.
+            # (01.10.2026 olculdu: once silinince `kapat` "yok" deyip
+            # hicbir seyi kapatmadi, CLI sureci arkada acik kaldi.)
             kapat(oturum_id)
             yield MotorOlayi("bitti", "", {"basarili": False, "sebep": "guven",
                                            "oturum_id": oturum_id})

@@ -341,7 +341,8 @@ sina("evet bulunamazsa Enter BASILMAZ (yanlis secenek onaylanmaz)",
 print("\n-- 16b. CEVAPLANAMAYAN guven sorusu: brifing YAPISTIRILMAZ, tur acik sebeple duser (01.10) --")
 _inatci = _KOK / "inatci_guven.py"
 _inatci.write_text(
-    "import sys, time\n"
+    "import os, sys, time\n"
+    f"open(r'{_KOK / 'inatci.pid'}', 'w').write(str(os.getpid()))\n"
     "sys.stdout.write('Quick safety check: do you trust this folder?\\n\\u276fNo, exit\\n  Yes, I trust this folder\\n')\n"
     "sys.stdout.flush()\n"
     "time.sleep(120)\n", encoding="utf-8")
@@ -369,6 +370,11 @@ sina("  hata ACIK: 'guven sorusu CEVAPLANAMADI', ekran ekte",
 sina("  'gonderilmedi' diye YANILTICI sebep yok", not any(o.tur == "hata" and "GONDERILMEDI" in o.govde for o in _ol))
 sina("  zaman asimini beklemedi (< 60 sn)", time.monotonic() - _t0 < 60, f"{time.monotonic() - _t0:.0f} sn")
 sina("  terminali acik KALMADI", not [x for x in tui.acik_oturumlar() if x["ajan"] == "inatci"])
+# Kayittan dusmek yetmez: CLI SURECI de olmeli (01.10: kayit silindi, surec yasadi).
+from ofis import surec as _surec
+_ipid = int((_KOK / "inatci.pid").read_text())
+sina("  CLI SURECI de kapatildi (arkada acik kalmadi)",
+     _surec._olusma(_ipid)[1] is False, str(_surec._olusma(_ipid)))
 
 print("\n-- 17. yapistirmanin ardina SAHIP satiri ELLE yazilir (30.09) --")
 _st = _SahteT()
