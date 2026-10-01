@@ -13615,3 +13615,30 @@ işler) ile ölçülen ve düzeltilen:
   oturumlarını aktarırken CLAUDE.md'yi "Claude"→"Codex" çevirerek kopyaladı.
   Kullanıcı kararı (30.09) gereği silindi ve `.gitignore`'a eklendi. Ofisin
   codex ajanları onu zaten okumaz (`project_doc_max_bytes=0`).
+
+## 01.10.2026 gece — kapı: kodla silme ve betik dosyası
+
+Ölçüldü (önce): kapı `rm`/`Remove-Item`/`git clean`i soruyordu ama aynı
+silmenin başka yazımlarını SORMADAN geçiriyordu: `python -c os.remove /
+shutil.rmtree / Path.unlink()`, heredoc'taki Python, node `fs.rmSync /
+unlinkSync / promises.rm`, PowerShell `[IO.File]::Delete`, `find -delete`,
+codex kod kipindeki `tools.exec_command("python -c ...")`; `python temizle.py`
+gibi betik çalıştırmak İÇİNE hiç bakılmadan geçiyordu.
+- `riskli._KOD_SILME_KALIPLARI` (tek küme) kabuk silme kuralına eklendi.
+- `riskli.betik_degerlendir`: komut bir betik dosyası (py/js/ts/rb/pl/sh/ps1)
+  çalıştırıyorsa dosya okunur: kodla silme + masaüstü sürme + gönderim
+  (`requests.post`, smtplib…) her zaman; betik kabuk komutu çalıştırıyorsa
+  (`subprocess`, `os.system`…) ya da kendisi .sh/.ps1 ise kabuk kurallarının
+  tamamı. Yorumdaki `rm`, metindeki "deploy" soru düşürmez. Bulunamayan
+  betik sorulmaz; kök alınamasa da `ls` reddedilmez.
+- Sınama `duman_kapi_kod.py` 38/38 (gerçek MCP kapısı uçtan uca dahil);
+  9 mutasyonun 9'u yakalandı. Zararsız komutlar (okuma, `list.remove`,
+  `find -name`, pytest, rapor metni) serbest kaldı.
+- Onay yorgunluğu ölçümü (gerçek motor, geçici ofis): G11+G17 claude 2/2;
+  codex G17 geçti, G11 KALDI — sebep kapı DEĞİL: bugünkü "görseli
+  `uretici: codex` gibi ürettir" örneği lider tarafından KABUL ÖLÇÜTÜNE
+  kopyalandı ("codex ile üretildi"), ajan codex'in yerleşik aracını kullandı,
+  ölçüt kanıtlanamadı, iş boşuna geri döndü. Kural: üretici patron
+  istemedikçe ölçüte yazılmaz. Yeniden: G11 codex GEÇTİ (186 sn), claude
+  GEÇTİ (138 sn).
+- Tam takım 3783/3783, çıkış koduyla.

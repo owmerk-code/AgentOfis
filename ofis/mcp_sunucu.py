@@ -991,6 +991,16 @@ def arac_izin_sor(oturum: Oturum, args: dict) -> str:
 
     try:
         bulgu = riskli.arac_degerlendir(arac, girdi)
+        if bulgu is None and arac in riskli.KABUK_ARACLARI:
+            # BETIK DOSYASI (01.10.2026): komut serbest gorunse de
+            # calistirdigi betigin ICI taranir.
+            # Kok alinamazsa (defter yok) betik yolu surecin klasorunden
+            # cozulur -- `ls` gibi serbest bir komut bu yuzden REDDEDILMEZ.
+            try:
+                _kok = oturum.ofis.kok_klasoru()
+            except Exception:            # noqa: BLE001
+                _kok = ""
+            bulgu = riskli.betik_degerlendir(arac, girdi, _kok)
     except Exception as exc:
         # Kapi patlarsa KAPALI kalir. Acik kalsaydi kapinin bozulmasi
         # her seyi sessizce serbest birakirdi -- para ve yayin

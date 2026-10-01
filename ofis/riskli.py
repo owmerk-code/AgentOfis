@@ -699,6 +699,23 @@ def yama_degerlendir(arac: str, girdi: dict = None) -> dict | None:
 #: yakaliyor. `{` PowerShell betik blogu (`-Command "& { del x }"`).
 _B = r"(?:^|[\s;&|(`'\"{])"
 
+#: KODLA SILME (01.10.2026 OLCULDU): kapi `rm`'i soruyordu ama
+#: `python -c "os.remove(...)"`, `shutil.rmtree`, `Path.unlink()`, node
+#: `fs.rmSync`, PowerShell `[IO.File]::Delete` ve `find -delete` SORMADAN
+#: gecti -- ayni silme, baska yazim. Codex'in kod kipi
+#: (`tools.exec_command({cmd:"python -c ..."})`) de bu yoldan gecer.
+#: TEK KUME: komut metni de betik dosyasi da bununla taranir.
+_KOD_SILME_KALIPLARI = (
+    r"\bos\.(?:remove|unlink|rmdir|removedirs)\s*\(", r"\bshutil\.rmtree\b",
+    r"\.(?:unlink|rmdir)\s*\(", r"\bsend2trash\b",
+    r"\b(?:unlinksync|rmsync|rmdirsync)\b",
+    r"\bfs(?:\.promises)?\.(?:rm|unlink|rmdir)\s*\(", r"\.promises\.(?:rm|unlink|rmdir)\s*\(",
+    r"\brimraf\b",
+    r"\[(?:system\.)?io\.(?:file|directory)\]::delete\b",
+    r"\bfind\b[^|;&]*\s-delete\b",
+)
+KOD_SILME = _kur(_KOD_SILME_KALIPLARI)
+
 KABUK_KURALLARI = (
     ("silme", _kur((
         _B + r"rm\s", _B + r"rmdir\b", _B + r"(?:del|erase|rd|ri)\s",
@@ -712,7 +729,7 @@ KABUK_KURALLARI = (
         r"\bgit\s+stash\s+(?:drop|clear)\b",
         r"\bdrop\s+(?:table|database|schema)\b", r"\btruncate\s+table\b",
         r"\bmkfs", r"\bformat\s+[a-z]:", r"\bclear-content\b",
-    ))),
+    ) + _KOD_SILME_KALIPLARI)),
     ("gonderim", _kur((
         r"\bgit\s+push\b",
         r"\b(?:curl|wget)\b[^|;&]*\s(?:-x|--request)\s*(?:post|put|patch|delete)\b",
@@ -873,6 +890,79 @@ def _veri_bloklarini_ayikla(komut: str) -> str:
             return m.group(0)              # supheli: TARANIR
         return "<<VERI\n"
     return _HEREDOC.sub(_degistir, komut)
+
+
+#: Betik calistiran komut: yorumlayici + dosya. (`python -c`/`node -e`
+#: satir ici koddur, komut metni zaten taranir.)
+_BETIK_KOMUTU = re.compile(
+    r"(?i)(?:^|[\s;&|(`'\"{])(?:python3?|py|node|deno|bun|ruby|perl|bash|sh|"
+    r"pwsh|powershell)(?:\.exe)?\s+(?:-(?:u|b|x|file|noprofile|executionpolicy\s+\S+)\s+)*"
+    r"['\"]?([^\s'\"|;&<>]+\.(?:py|js|mjs|cjs|ts|rb|pl|sh|ps1))\b")
+
+#: Betigin ICINDE kabuk komutu calistiran cagri: varsa betik kabuk
+#: kurallarinin TAMAMIYLA taranir (`subprocess.run("git push")`).
+_KOD_KABUK_CAGRISI = re.compile(
+    r"(?i)\b(?:subprocess|os\.system|os\.popen|child_process|execsync|spawnsync|"
+    r"invoke-expression|start-process)\b")
+
+#: Betikte disari GONDEREN kod (kabuk kurali bunlari komut olarak tanimaz).
+_KOD_GONDERIM = re.compile(
+    r"(?i)\b(?:requests|httpx|session)\.(?:post|put|patch|delete)\s*\(|\bsmtplib\b|"
+    r"\bftplib\b|\bparamiko\b|\bfetch\s*\([^)]*method\s*:\s*['\"](?:post|put|patch|delete)")
+
+
+def betik_degerlendir(arac: str, girdi: dict, kok: str) -> dict | None:
+    """Komut bir BETIK DOSYASI calistiriyorsa dosyanin ICINI tarar.
+
+    OLCULDU (01.10.2026): `python temizle.py` SORULMADAN kosuyordu -- kapi
+    yalniz komut metnine bakiyordu; ajan silmeyi bir betige yazip
+    calistirabiliyordu (patronun ekraninda #39: ajan `demir-uret.py` yazip
+    kosturdu). Bulunamayan betik SORULMAZ (komut da bir sey yapamaz);
+    okunamayana kapi bir sey UYDURMAZ.
+    """
+    import os
+    komut = str((girdi or {}).get("command") or "")
+    cwd = str((girdi or {}).get("workdir") or (girdi or {}).get("cwd") or kok or "")
+    for m in _BETIK_KOMUTU.finditer(komut):
+        yol = _yol_coz(m.group(1), cwd)
+        try:
+            if not os.path.isfile(yol) or os.path.getsize(yol) > 512_000:
+                continue
+            with open(yol, encoding="utf-8", errors="replace") as f:
+                alt = f.read().lower()
+        except OSError:
+            continue
+        # KODLA silme ve masaustu surme her zaman; kabuk kurallarinin
+        # tamami yalniz betik kabuk komutu calistiriyorsa ya da kendisi bir
+        # kabuk betigiyse (yoksa yorumdaki `rm`, metindeki "deploy" soru
+        # dusururdu).
+        kurallar = [("silme", KOD_SILME), ("masaustu", dict(KABUK_KURALLARI)["masaustu"])]
+        if _KOD_KABUK_CAGRISI.search(alt) or yol.lower().endswith((".sh", ".ps1")):
+            kurallar = list(KABUK_KURALLARI)
+        bulunan, sinif = "", ""
+        for s_, kaliplar in kurallar:
+            bulunan = _esles(alt, kaliplar)
+            if bulunan:
+                sinif = s_
+                break
+        if not bulunan:
+            g = _KOD_GONDERIM.search(alt)
+            if g:
+                bulunan, sinif = g.group(0), "gonderim"
+        if bulunan:
+            ad, risk = SINIFLAR[sinif]
+            kisa = os.path.basename(yol)
+            return {
+                "sinif": sinif, "ad": ad, "risk": risk, "esles": bulunan.strip(),
+                "arac": arac, "hedef": komut[:200], "element": komut[:200],
+                "url": "", "sorulur": True,
+                "eylem": f"{ad}: {komut[:80]} (betik {kisa})",
+                "sebep": (f"`{kisa}` betiginin ICINDE {ad} isareti var "
+                          f"({bulunan.strip()!r}). Betik KOSMADAN once patrona "
+                          "soruluyor; onaylanirsa ayni komut tekrar "
+                          "kosturuldugunda gecer."),
+            }
+    return None
 
 
 def kabuk_degerlendir(arac: str, girdi: dict = None) -> dict | None:
