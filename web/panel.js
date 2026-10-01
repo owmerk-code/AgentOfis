@@ -3258,6 +3258,15 @@ async function cizSohbet(kap) {
   const kosuyor = (r.kosu && r.kosu.calisiyor) || (r.danisma && r.danisma.calisiyor);
   for (const x of ogeler) {
     kap.append(takimBalonu(x, adlar));
+    // SANA SORULAN SORU (01.10.2026 canli): kime "insan" ise sira PATRONDA;
+    // "cevap gelmedi (tur yarida kalmis olabilir)" yer tutucusu yanlisti --
+    // ariza gibi gorunuyordu. Cevap yeri sagdaki "Senden bekleniyor"da.
+    if (x.bekliyor && x.tur !== "not" && x.kime === "insan") {
+      const l = el("div", "sohbet-balon lider bekliyor");
+      l.append(el("span", "sohbet-yazi", "senin cevabını bekliyor — sağdaki “Senden bekleniyor” kutusundan cevapla"));
+      kap.append(l);
+      continue;
+    }
     if (x.bekliyor && x.tur !== "not") {
       // Cevap henuz yok: yer tutucu. Liderin yazilmakta olan cevabi akar.
       const l = el("div", "sohbet-balon lider " + (x.akis ? "akiyor" : "bekliyor"));
