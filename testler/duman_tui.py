@@ -305,6 +305,12 @@ sina("imlec evette (son kare)", tui._imlec_evette_mi(_s, "Yes, I trust"))
 sina("imlec hayirda iken evet DENMEZ",
      not tui._imlec_evette_mi(_s + "\n❯No, exit Yes, I trust", "Yes, I trust"))
 sina("imlec yoksa evet denmez", not tui._imlec_evette_mi("Yes, I trust", "Yes, I trust"))
+# 01.10 OLCULEN ekran (claude 2.1.285, yeni klasor): secenekler NUMARALI.
+_olc = ("Quicksafetycheck:Isthisaprojectyoucreatedoroneyoutrust?\n\nSecurityguide\n\n"
+        "\u276f1.Yes,Itrustthisfolder\n2.No,exit\n\nEntertoconfirm\u00b7Esctocancel\n>0q")
+sina("NUMARALI secenek: imlec 1.Yes uzerinde -> evet", tui._imlec_evette_mi(_olc, "Yes, I trust"))
+sina("  NUMARALI: imlec 2.No uzerinde -> evet DEGIL",
+     not tui._imlec_evette_mi(_olc.replace("\u276f1.Yes", "1.Yes").replace("2.No", "\u276f2.No"), "Yes, I trust"))
 sina("asagi tusu Esc sayilan '\\x1b[B' DEGIL", "\x1b[B" not in tui._ASAGI)
 
 

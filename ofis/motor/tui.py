@@ -40,6 +40,7 @@ import subprocess
 import sys
 import tempfile
 import threading
+import re
 import time
 from pathlib import Path
 from typing import Iterator
@@ -96,7 +97,13 @@ def _imlec_evette_mi(ekran: str, evet: str) -> bool:
     i = ekran.rfind(IMLEC)
     if i < 0:
         return False
-    sonrasi = "".join(ekran[i + 1:i + 1 + 3 * len(evet)].split())
+    sonrasi = "".join(ekran[i + 1:i + 1 + 3 * len(evet) + 6].split())
+    # SECENEK NUMARASI (01.10.2026, gercek ofis tasimadan sonra OLCULDU):
+    # claude 2.1.285 ekrani `\u276f1.Yes,Itrustthisfolder` ciziyor; numara
+    # imlecle secenek arasinda. Eslesmedi, Enter basilmadi, brifing guven
+    # sorusunun ustune yapistirildi ve tur dustu (yeni klasor Masaustu\\Ofisim;
+    # gercek set guvenilmis gecici klasorde kostugu icin soru hic cikmiyordu).
+    sonrasi = re.sub(r"^\d+[.)]", "", sonrasi)
     return sonrasi.lower().startswith("".join(evet.split()).lower())
 
 

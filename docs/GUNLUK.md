@@ -13434,3 +13434,29 @@ Aşama 6 (GERÇEK TAŞIMA, 01.10 ~14:40, kullanıcı "taşı"):
   duman_riskli 249, mutasyon 3/3.
 - Kalan iz: `.playwright-mcp/` proje kökünde — `--output-dir` var ama
   ekran görüntüsü göreli yolları ona göre çözülebilir; ölçmeden taşınmadı.
+
+## 01.10.2026 — Taşımadan sonra canlı: claude güven sorusu (NUMARALI seçenek)
+
+Kullanıcı paneli yeni düzende açtı; bilge #37 "Brifing yapıştırıldı ama
+GÖNDERİLMEDİ" ile düştü. Ekran: claude 2.1.285 yeni klasör Masaüstü\Ofisim
+için güven sorusu soruyor ve seçenekleri NUMARALI çiziyor
+(`❯1.Yes,Itrustthisfolder`). `_imlec_evette_mi` imleçten hemen sonra "Yes"
+bekliyordu → eşleşmedi, Enter basılmadı, brifing sorunun üstüne yapıştı.
+Gerçek set bunu HİÇ görmedi: geçici klasörler Claude'un zaten güvendiği
+altta açılıyordu, soru çıkmıyordu (ölçmek istediği sınıra ulaşmıyordu).
+- Düzeltme: imleçten sonraki seçenek numarası (`1.`/`1)`) yok sayılır.
+  duman_tui 56 (ölçülen ekranın aynısıyla; mutasyonda düşüyor).
+- Uçtan uca: gerçek set G03 güvenilmemiş klasörde geçti ama güven kaydı
+  bulunamadı → kanıt SAYILMADI. Doğrudan ölçüm: C:\Users\pc altında yeni
+  klasör, gerçek claude → (1) soru çıktı (2) `_guven_sec` evet+Enter
+  (3) soru kalktı, claude canlı, ana ekranda.
+- #37 kaybolmadı: başarısız turdan sonra `hazir`; panel yeniden açılınca
+  sürer.
+- Kullanıcı sordu: ajanlar Playwright yerine Codex/Claude'un kendi tarayıcı
+  yeteneğini kullanamaz mı? Ölçüldü (`--help`, `codex features list`):
+  codex 0.159.3'te `browser_use`, `in_app_browser`, `computer_use`,
+  `browser_use_external`, `browser_use_full_cdp_access` AÇIK; claude'da
+  `--chrome` (kullanıcının KENDİ Chrome'u, eklentiyle). Ölçülecek: Codex'in
+  yerleşik tarayıcı eylemleri ofisin kapısından (app-server onayı) geçiyor
+  mu; geçmiyorsa açılmaz. `--chrome` kullanıcı kararı (kendi Chrome kuralı).
+- Kullanıcı kuralı: iş bitip uçtan uca sınanmadan "dene" denmez.
