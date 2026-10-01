@@ -53,7 +53,8 @@ _IS = re.compile(r"^\s*(?:is|iş|IS|İŞ|Is|İş)\s*[:\-]\s*(.*)$", re.S)
 #: mesaji, liderin cevabi/raporu, patrona sorulan soru ve onay, ajanin
 #: patrona gonderdigi dosya/engel (`sohbete_yaz`). Ajanlar arasi soru da
 #: sohbete girmez (patron o konusmanin tarafi degil).
-AKIS_OLAYLARI = ("onay_istendi", "ajan_sohbet")
+# `donus_raporu` (01.10.2026): kuyruk serisi bitince ofisin modelsiz ozeti.
+AKIS_OLAYLARI = ("onay_istendi", "ajan_sohbet", "donus_raporu")
 #: Akista metin KESILMEZ (4000 = cevap siniri, yalniz bellek korumasi).
 #: OLCULDU (29.09.2026): ilk surum her ogeyi 600 harfte kesiyordu ve
 #: liderin uzun cevabi panelde "**3..." diye yarida kaldi -- eski sohbet
@@ -285,13 +286,16 @@ def akis(ofis, *, kanat_id=None, adet: int = 80) -> list:
                            "bekliyor": False, "ulasti": None})
     tur_adi = {"rapor": "rapor", "gorev_acildi": "is", "kapandi": "kapandi",
                "ret": "ret", "onay_istendi": "onay",
-               "ajan_sohbet": "bildirim"}
+               "ajan_sohbet": "bildirim", "donus_raporu": "ozet"}
     for o in olaylar:
         o = dict(o)
         ajan = o["ajan_ad"] or ""
         if not takimda(ajan):
             continue
-        ogeler.append({"an": o["olusturuldu"], "sira": (0, o["sira"]),
+        # DONUS RAPORU ayni saniyedeki her seyin SONUNDA (01.10.2026, canli
+        # deneme: son isin cevabiyla ayni saniyede yazildi ve onun ustune dustu).
+        _bas = (1 << 29) if o["tur"] == "donus_raporu" else 0
+        ogeler.append({"an": o["olusturuldu"], "sira": (_bas, o["sira"]),
                        "kimden": ajan or "ofis", "kime": "", "tur": tur_adi[o["tur"]],
                        "metin": _kes(o["govde"]), "gorev_no": o["gorev_no"],
                        "id": "", "bekliyor": False, "ulasti": None})
@@ -299,6 +303,19 @@ def akis(ofis, *, kanat_id=None, adet: int = 80) -> list:
     # sirayla kalir (karar tablosunda odenen beraberlik tuzagi).
     ogeler.sort(key=lambda x: (x["an"] or "", x["sira"]))
     ogeler = ogeler[-adet:]
+    # SIRADAKI ISLER (01.10.2026): kuyrukta bekleyen patron mesaji EN ALTTA
+    # balon olarak gorunur (zamana gore dizilseydi kosan isin ustune duserdi).
+    # Is baslayinca `Sohbet.konus` mesaji kendisi yazar ve bu balon kalkar --
+    # ayni cumle iki kez gorunmez.
+    from . import kuyruk as _kuyruk
+    for _i, k in enumerate(_kuyruk.bekleyenler(ofis), 1):
+        if not takimda(k["lider_ad"]):
+            continue
+        ogeler.append({"an": k["olusturuldu"], "sira": (1 << 30, _i),
+                       "kimden": "insan", "kime": k["lider_ad"], "tur": "sirada",
+                       "metin": _kes(k["metin"]), "gorev_no": None,
+                       "id": k["id"], "bekliyor": False, "ulasti": None,
+                       "sira_no": _i})
     # Kimin konustugu (meslegi) ve isin SU ANKI durumu: rakipteki gibi
     # "Kamil Amca · frontend" ve bir durum etiketi. Durum defterden
     # okunur, ogeye yazilmis eski hal degil -- "basliyor" diyen bir

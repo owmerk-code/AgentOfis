@@ -13148,3 +13148,41 @@ Kalan dört iş ve kökleri:
 
 Yeniden koşu: **G08, G13, G14, G17 4/4 GEÇTİ.** Böylece 18 işin 18'i iki
 motorda da geçti (tek koşuda claude 17/18, codex 14/18).
+
+## 01.10.2026 sabah — F5/1: iş kuyruğu ve dönüş raporu
+
+Kullanıcı: gece PC'yi açık bırakamayabilir; "ben yokken" çalışan ofisin
+altyapısı hazır olsun, sınama GÜNDÜZ, canlı izlenerek (hafıza: gündüz canlı
+test). Codex kullanıcının sıfırlama hakkıyla yenilendi (7g %0).
+
+Ölçülmüş boşluk: lider koşarken gelen ikinci mesaj panelde 409 ile
+REDDEDİLİYORDU ("bitmesini bekle").
+
+- `ofis/kuyruk.py` + `kuyruk` tablosu: lidere giden HER panel mesajı sıraya
+  girer (boşken de — tek yol). `sira_al` koşullu güncelleme: iki süreç aynı
+  işi alamaz. Yalnız bekleyen iptal edilir; koşan Durdur ile.
+- Panel işçisi `_kuyrugu_kostur`: sırayı boşaltır; düşen iş `hata` olur,
+  sıra SÜRER; Durdur'da koşan biter, bekleyenler korunur, kendiliğinden
+  sürmez; `_arkada_calistir` her iş bitince sırayı yoklar (halka koşarken
+  giren iş asılı kalmaz). Tek uçuş korunur (`_KUYRUK_KILIDI`).
+- DÖNÜŞ RAPORU (2+ iş): MODELSİZ, defterden — her iş: istek, durum, liderin
+  cevabı (ek sayısı), açılan işler, hata sebebi; "Sana düşen" onay/soru;
+  sırada kalan. Sohbette ofisin "dönüş raporu" balonu.
+- Sohbet: sıradaki iş en altta soluk "sırada" balonu (sıra no + İptal);
+  iş başlayınca kalkar (aynı cümle iki kez görünmez). `GET /api/kuyruk`,
+  `POST /api/kuyruk/{id}/iptal`.
+- Sınama: duman_kuyruk 35, duman_panel 394 ("ikinci tur reddedilir" →
+  "sıraya girer, birincisi bitince başlar, rapor yazılır").
+- MUTASYON: sıra yoklaması, iş başına hata yakalama, Durdur ve rapor sırası
+  bozulunca sınama düşüyor. "İki iplik aynı işi alamaz" sınaması koruma
+  kaldırılınca da GEÇİYORDU — aynı `Veritabani` nesnesi iplikleri kendi
+  RLock'uyla sıraya dizdiği için yarış hiç oluşmuyordu (ölçtüğünü sandığı
+  şeyi ölçmüyordu). Her iplik kendi bağlantısıyla → korumasız 23–31 alım,
+  sınama düşüyor.
+- CANLI (8911, patronun ofis kopyası, demir/Opus): kullanıcı üç isteği TEK
+  mesajda gönderdi; lider üçünü tek işte doğru yaptı (#38). Sonra üç ayrı
+  mesaj: 1. hemen, 2.–3. sırada; 09:30 → 09:32 → 09:34 sırayla, dönüş
+  raporu doğru. Kusur: rapor son cevapla aynı saniyede yazıldı ve onun
+  ÜSTÜNE düştü → aynı saniyedekilerin sonuna (sınama + mutasyon).
+- Sınama paneli kendi başlatıcısıyla: kopya defter, yedek/güncelleme/limit
+  döngüleri KAPALI (kopya defter gerçek yedeği ve ayarı değiştirmesin).

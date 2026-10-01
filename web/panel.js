@@ -3141,7 +3141,8 @@ function yetenekYaz(kap, v, an) {
 const TAKIM_KATLA_HARF = 700;
 const TAKIM_TUR = { sohbet: "", soru: "soru", not: "not", cevap: "", rapor: "rapor",
                     is: "iş açıldı", kapandi: "kapandı", ret: "geri gönderildi",
-                    onay: "onay istiyor", bildirim: "takıma yazdı" };
+                    onay: "onay istiyor", bildirim: "takıma yazdı",
+                    sirada: "sırada", ozet: "dönüş raporu" };
 const GOREV_DURUM = { bekliyor: "bekliyor", hazir: "sırada", calisiyor: "çalışıyor",
                       inceleme: "incelemede", bitti: "bitti", iptal: "iptal" };
 
@@ -3207,6 +3208,20 @@ function takimBalonu(x, D_ajanlar) {
   }
   if (x.tur === "not") altlar.push(el("span", "sohbet-cip " + (x.ulasti ? "durum-bitti" : ""),
                                       x.ulasti ? "ulaştı" : "iletilecek"));
+  // SIRADAKI IS (01.10.2026): kac kisi onde ve iptal. Kosan is iptal
+  // edilmez (Durdur) -- sunucu da reddeder; dugme yalniz bekleyende.
+  if (x.tur === "sirada") {
+    altlar.push(el("span", "sohbet-cip", `${x.sira_no}. sırada`));
+    const ip = el("button", "sohbet-cip", "İptal");
+    ip.title = "bu işi sıradan çıkar";
+    ip.onclick = async () => {
+      try { await yolla("/api/kuyruk/" + encodeURIComponent(x.id) + "/iptal", {});
+            bildir("iş sıradan çıkarıldı", "iyi"); }
+      catch (e) { bildir(String(e.message || e).slice(0, 160), "uyari"); }
+      yenile();
+    };
+    altlar.push(ip);
+  }
   if ((x.metin || "").length > TAKIM_KATLA_HARF) {
     b.classList.add("katli");
     const t = el("button", "sohbet-cip", "Tamamını oku");
@@ -5113,6 +5128,7 @@ async function komutGonder(girdi, oneriYeri) {
     if (ekVar) { D.ekler = []; ekCiplari(); }
     girdi.placeholder = r && r.yol === "not" ? `not ${r.alici}'a iletilecek`
       : r && r.yol === "soru" ? `${r.alici} düşünüyor…`
+      : r && r.sirada ? `sıraya alındı (${r.sira}.) — önceki iş bitince başlar`
       : r && r.yol === "is" ? `iş ${r.atanan}'a veriliyor (planı ${r.alici} yazar)…`
       : "Lider çalışıyor…";
     // Cevap SOHBET panosuna duser; insan nereye bakacagini aramasin.

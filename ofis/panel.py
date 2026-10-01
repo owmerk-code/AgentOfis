@@ -79,6 +79,16 @@ _KOSU = {"calisiyor": False, "mesaj": "", "dur": False}
 #: tek soru: cift tiklama iki tur yakardi.
 _DANISMA = {"calisiyor": False, "ajan": ""}
 
+#: KUYRUK (01.10.2026): sirayi isleyen ipligi YALNIZ BIRI baslatir.
+#: `_KOSU` kontrolu ile isaretlenmesi arasinda iki istek birden girerse iki
+#: isci ayni sirayi isler (kayit `sira_al` ile yine tek alinir ama iki
+#: lider ayni anda kosar -- tek ucus kurali delinir).
+_KUYRUK_KILIDI = threading.Lock()
+
+#: Panel kurulunca baglanir: kabin aciksa CDP adresi, degilse "". Kuyruk
+#: isi SONRA kosar; kabinin o anki hali o zaman sorulur.
+_KABIN_CDP = {"islev": None}
+
 
 def _onaylar_giris_ile(onaylar: list) -> list:
     """Giris isteklerine ayristirilmis `giris` alanini ekler (kart onu cizer)."""
@@ -264,6 +274,84 @@ def _lideri_kostur(db_yolu, proje_ad: str, mesaj: str,
     _arkada_calistir(db_yolu, proje_ad, isi, "lider turu")
 
 
+def _kuyrugu_baslat(db_yolu, proje_ad: str) -> bool:
+    """Siradaki isleri isleyen ipligi baslatir -- ofis bossa. Doner: basladi mi.
+
+    Ofis mesgulse bir sey yapmaz: kosan is (lider turu ya da halka) bitince
+    `_arkada_calistir` sirayi yeniden yoklar. Yani bekleyen is ASILI KALMAZ.
+    """
+    with _KUYRUK_KILIDI:
+        if _KOSU["calisiyor"]:
+            return False
+        try:
+            _db = Veritabani(db_yolu)
+            pid = _proje_id_bul(_db, proje_ad)
+            if pid is None:
+                return False
+            from . import kuyruk as _kuyruk
+            o = Ofis(_db, pid)
+            if not _kuyruk.bekleyenler(o):
+                return False
+            durdurma_temizle(o.db, o.proje_id)
+        except Exception:                # noqa: BLE001 -- basaramazsa baslatmaz
+            return False
+        _KOSU.update(dur=False, calisiyor=True, mesaj="sira isleniyor")
+    threading.Thread(target=_kuyrugu_kostur, args=(db_yolu, proje_ad),
+                     daemon=True).start()
+    return True
+
+
+def _kuyrugu_kostur(db_yolu, proje_ad: str) -> None:
+    """Sirayi BOSALANA kadar isler; seri bitince donus raporu yazar.
+
+    Bir isin dusmesi sirayi DURDURMAZ: o is `hata` olur, sebebi deftere
+    yazilir, siradakine gecilir (patron yokken tek hata butun kuyrugu
+    bekletmesin). Insan Durdur'a basarsa kosan is bitince sira durur;
+    bekleyenler SILINMEZ, rapor bunu soyler.
+    """
+    def isi(o):
+        import uuid as _uuid
+        from . import kuyruk as _kuyruk
+        seri = _uuid.uuid4().hex
+        try:
+            while True:
+                if _durdurulduysa(o, "Sira"):
+                    break
+                k = _kuyruk.sira_al(o, seri)
+                if k is None:
+                    break
+                _KOSU["mesaj"] = k["metin"][:80]
+                kabin_cdp = ""
+                if k.get("kabin") and _KABIN_CDP["islev"]:
+                    try:
+                        kabin_cdp = _KABIN_CDP["islev"]() or ""
+                    except Exception:    # noqa: BLE001 -- kabinsiz kosar, blok soyler
+                        kabin_cdp = ""
+                try:
+                    if MOTOR_FABRIKASI is None:
+                        sohbet = o.sohbet
+                    else:
+                        from .sohbet import Sohbet
+                        sohbet = Sohbet(o, motor_fabrikasi=MOTOR_FABRIKASI)
+                    for _olay in sohbet.konus(k["metin"], lider_ad=k["lider_ad"],
+                                              butce_usd=PANEL_TUR_TAVANI_USD,
+                                              tarayici_alani=k["tarayici_alani"] or None,
+                                              tarayici_kabini=kabin_cdp,
+                                              atanan=k["atanan"]):
+                        if _durdurulduysa(o, "Lider turu"):
+                            break
+                    _kuyruk.bitir(o, k["id"], "bitti")
+                except Exception as exc:   # noqa: BLE001 -- hata YUTULMAZ, sira surer
+                    import traceback
+                    traceback.print_exc()
+                    _kuyruk.bitir(o, k["id"], "hata", f"{exc}")
+                    o.db.olay_yaz(o.proje_id, "hata",
+                                  f"Siradaki is dustu ({k['metin'][:60]}): {exc}")
+        finally:
+            _kuyruk.raporu_yaz(o, seri)
+    _arkada_calistir(db_yolu, proje_ad, isi, "sira")
+
+
 def _halkayi_kostur(db_yolu, proje_ad: str) -> None:
     """`kabuk devam`in panel karsiligi: halkayi YENI HEDEF VERMEDEN dondurur.
 
@@ -355,7 +443,13 @@ def _arkada_calistir(db_yolu, proje_ad: str, isi, adi: str) -> None:
             pass
         traceback.print_exc()
     finally:
+        durduruldu = bool(_KOSU.get("dur"))
         _KOSU.update(calisiyor=False, mesaj="", dur=False)
+        # SIRA YOKLAMASI (01.10.2026): halka kosarken siraya giren is ya da
+        # isci cikarken gelen is burada baslar -- yoksa ASILI kalirdi.
+        # Insan durdurduysa sira kendiliginden SURMEZ.
+        if not durduruldu:
+            _kuyrugu_baslat(db_yolu, proje_ad)
 
 
 class CevapGovdesi(BaseModel):
@@ -854,6 +948,13 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
     # birakilir. Istenmedikce ACILMAZ -- CDP yerel bir arka
     # kapidir ve varsayilan dar olmali.
     _kabin = kabin.Kabin()
+
+    def _kabin_cdp_ver() -> str:
+        if not _kabin.durum().get("acik"):
+            return ""
+        from . import tarayici as _t
+        return _t.cdp_adresi(_kabin.kapi)
+    _KABIN_CDP["islev"] = _kabin_cdp_ver
 
     # ONBELLEK: `no-cache` = "kullanmadan once SOR". Basliksiz dosyada
     # tarayici kendi tahminiyle tazelik uydurur (son degisimden bu yana
@@ -2336,11 +2437,9 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
             # yazilmaz, lider kosmaz.
             return {"yol": "oneri", "kosuyor": False,
                     "oneriler": _takim.takim_oner(ofis, yon["metin"])}
-        if _KOSU["calisiyor"]:
-            raise HTTPException(
-                409, "Lider su an zaten kosuyor: " + (_KOSU["mesaj"] or "?")
-                + " -- bitmesini bekle. Ayni anda iki lider turu, jetonu "
-                  "ikiye katlar ve iki ayri karar uretir.")
+        # KUYRUK (01.10.2026): lider mesgulken gelen mesaj artik REDDEDILMEZ
+        # (ilk surum 409 "bitmesini bekle" diyordu); siraya girer. Tek ucus
+        # korunur: ayni anda yine tek lider turu kosar.
         # MESAJI BURADA YAZMIYORUZ. `Sohbet.konus` onu zaten `mesaj`
         # tablosuna yaziyor; ikisi birden yazinca insanin tek cumlesi
         # deftere IKI KEZ dusuyordu (olculdu). Liderin baglami "son 6
@@ -2365,14 +2464,32 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
                     kabin_cdp = _t.cdp_adresi(_kabin.kapi)
             metin = (metin + "\n\n"
                      + kabin.oge_metni(oge, kabin_paylasildi=bool(kabin_cdp)))
-        durdurma_temizle(ofis.db, ofis.proje_id)
-        _KOSU.update(dur=False, calisiyor=True, mesaj=govde.metin[:80])
-        threading.Thread(target=_lideri_kostur,
-                         args=(db.yol, proje_ad, metin, lider["ad"],
-                               web, kabin_cdp, atanan),
-                         daemon=True).start()
+        from . import kuyruk as _kuyruk
+        try:
+            k = _kuyruk.ekle(ofis, metin, lider["ad"], atanan=atanan,
+                             tarayici_alani=web, kabin=bool(kabin_cdp))
+        except _kuyruk.KuyrukHatasi as exc:
+            raise HTTPException(400, str(exc))
+        basladi = _kuyrugu_baslat(db.yol, proje_ad)
         return {"yol": yon["yol"], "alici": lider["ad"], "atanan": atanan,
-                "kosuyor": True, "tarayici": web, "kabin": bool(kabin_cdp)}
+                "kosuyor": True, "tarayici": web, "kabin": bool(kabin_cdp),
+                "sirada": not basladi, "sira": k["sira"], "kuyruk_id": k["id"]}
+
+    @uygulama.get("/api/kuyruk")
+    def api_kuyruk():
+        """Siradaki isler (eklenme sirasiyla) ve ofisin su anki isi."""
+        from . import kuyruk as _kuyruk
+        return {"bekleyenler": _kuyruk.bekleyenler(ofis_ac()), "kosu": dict(_KOSU)}
+
+    @uygulama.post("/api/kuyruk/{kayit_id}/iptal")
+    def api_kuyruk_iptal(kayit_id: str):
+        """Siradaki isi iptal eder. Kosan is iptal edilmez -- Durdur."""
+        from . import kuyruk as _kuyruk
+        try:
+            k = _kuyruk.iptal(ofis_ac(), kayit_id)
+        except _kuyruk.KuyrukHatasi as exc:
+            raise HTTPException(400, str(exc))
+        return {"iptal": True, "metin": k["metin"]}
 
     @uygulama.post("/api/ajana-sor")
     def api_ajana_sor(govde: AjanaSorGovdesi):

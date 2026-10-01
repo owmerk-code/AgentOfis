@@ -554,6 +554,33 @@ CREATE TABLE IF NOT EXISTS canli_degisim (
     damga           INTEGER NOT NULL DEFAULT 0,
     UNIQUE (gorev_id, yol)
 );
+
+-- ---------------------------------------------------------------------------
+-- KUYRUK (01.10.2026): patronun lidere verdigi isler SIRAYA girer. Lider
+-- mesgulken gelen mesaj reddedilmez (ilk surum 409 "bitmesini bekle"
+-- diyordu); sira bosalinca ofis kendisi baslatir. DEFTERDE durur: panel
+-- kapanip acilsa da kaybolmaz. `seri`: ara vermeden islenen isler --
+-- seri bitince donus raporu yazilir (modelsiz, defterden).
+-- durum: bekliyor | kosuyor | bitti | hata | iptal
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS kuyruk (
+    id              TEXT PRIMARY KEY,
+    proje_id        TEXT NOT NULL,
+    metin           TEXT NOT NULL,
+    lider_ad        TEXT NOT NULL,
+    atanan          TEXT NOT NULL DEFAULT '',
+    tarayici_alani  TEXT NOT NULL DEFAULT '[]',
+    kabin           INTEGER NOT NULL DEFAULT 0,
+    kaynak          TEXT NOT NULL DEFAULT 'insan',
+    durum           TEXT NOT NULL DEFAULT 'bekliyor',
+    seri            TEXT NOT NULL DEFAULT '',
+    not_            TEXT NOT NULL DEFAULT '',
+    olusturuldu     TEXT NOT NULL,
+    basladi         TEXT,
+    bitti           TEXT
+);
+
+CREATE INDEX IF NOT EXISTS ix_kuyruk_durum ON kuyruk (proje_id, durum);
 """
 
 

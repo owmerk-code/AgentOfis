@@ -294,12 +294,19 @@ try:
     sina("panel turlarinda DOLAR tavani yok", "tavan_usd" not in y.json()
          and _P.PANEL_TUR_TAVANI_USD is None)
 
-    # TEK UCUS: ikinci istek REDDEDILIR. Cift tiklama jetonu ikiye
-    # katlar ve iki lider ayni ise ayri kararlar verir.
+    # TEK UCUS + KUYRUK (01.10.2026): ikinci istek artik REDDEDILMEZ, SIRAYA
+    # girer (ilk surum 409 "bitmesini bekle" diyordu). Ayni anda yine tek
+    # lider turu kosar: ikinci is birincisi bitince baslar.
     y2 = istemci.post("/api/lidere",
                       json={"metin": "Bir daha", "kanat": kanat})
-    sina("ikinci lider turu REDDEDILIYOR (tek ucus)", y2.status_code == 409,
-         str(y2.status_code))
+    j2 = y2.json() if y2.status_code == 200 else {}
+    sina("ikinci mesaj REDDEDILMEDI, SIRAYA girdi", y2.status_code == 200
+         # sira 1 ya da 2: ilk is isci tarafindan henuz alinmadiysa o da
+         # bekleyendir (zamanlama; olculdu, ikisi de dogru).
+         and j2.get("sirada") is True and j2.get("sira") in (1, 2), y2.text[:160])
+    from ofis import takim as _tk  # noqa: E402
+    sina("  sohbette 'sirada' balonu olarak gorunuyor",
+         any(x["tur"] == "sirada" and x["metin"] == "Bir daha" for x in _tk.akis(ofis)))
 
     # Gercekten kostu mu: lider turu bir `tur_ozeti` birakmali.
     #
@@ -334,6 +341,22 @@ try:
     sina("kosu bitince nobetci SERBEST kaliyor",
          istemci.get("/api/lider-durum").json()["calisiyor"] is False,
          "-- kilit takili kaldi, panel bir daha is alamaz")
+    with ofis.db.baglanti() as c:
+        _k2 = c.execute("SELECT COUNT(*) n FROM mesaj WHERE gonderen='insan' "
+                        "AND govde = 'Bir daha'").fetchone()["n"]
+        _ks = [dict(r) for r in c.execute("SELECT durum, seri, basladi, bitti FROM kuyruk "
+                                          "ORDER BY olusturuldu")]
+        _rap = c.execute("SELECT govde FROM olay WHERE tur='donus_raporu'").fetchall()
+    sina("siradaki is de KOSTU (mesaji bir kez yazildi)", _k2 == 1, f"{_k2} kez")
+    sina("  iki is ayni seride, ikisi de bitti", len(_ks) == 2
+         and all(k["durum"] == "bitti" for k in _ks) and _ks[0]["seri"] == _ks[1]["seri"], str(_ks))
+    sina("  TEK UCUS: ikinci is birincisi BITTIKTEN sonra basladi",
+         len(_ks) == 2 and (_ks[1]["basladi"] or "") >= (_ks[0]["bitti"] or "~"), str(_ks))
+    sina("  seri bitince DONUS RAPORU yazildi (2 is)", len(_rap) == 1
+         and "2 iş" in _rap[0]["govde"] and "Bir daha" in _rap[0]["govde"],
+         _rap[0]["govde"][:200] if _rap else "rapor yok")
+    sina("  sirada balonu kalkti (cumle iki kez gorunmuyor)",
+         not any(x["tur"] == "sirada" for x in _tk.akis(ofis)))
 finally:
     _P.MOTOR_FABRIKASI = _yalniz_sahte
 

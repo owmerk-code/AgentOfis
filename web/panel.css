@@ -1000,6 +1000,9 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .sohbet-balon.tur-rapor, .sohbet-balon.tur-kapandi { border-color: color-mix(in srgb, var(--iyi) 45%, var(--cizgi)); }
 .sohbet-balon.tur-ret { border-color: color-mix(in srgb, var(--kotu) 45%, var(--cizgi)); }
 .sohbet-balon.tur-soru, .sohbet-balon.tur-onay { border-color: color-mix(in srgb, var(--bekleyen) 45%, var(--cizgi)); }
+/* SIRADAKI IS (01.10.2026): henuz baslamadi -- soluk ve kesik cizgili. */
+.sohbet-balon.tur-sirada { opacity: .72; border-style: dashed; }
+.sohbet-balon.tur-ozet { border-color: color-mix(in srgb, var(--iyi) 45%, var(--cizgi)); }
 .sohbet-altlar { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 7px; }
 .sohbet-cip { font: inherit; font-size: var(--yz-mikro); padding: 2px 8px; border-radius: 99px;
   border: 1px solid var(--cizgi); background: transparent; color: var(--metin-2); cursor: pointer; }
