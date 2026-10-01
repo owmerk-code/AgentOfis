@@ -253,6 +253,47 @@ KOD_ETKISI = _kur((
     r"settimeout\s*\(\s*[\"'`]",
 ))
 
+#: AYNI SITEDEN OKUMA (01.10.2026, onay yorgunlugu E80). Patronun gercek
+#: ofisinde en sik sorulan onay "SAYFAYI DEGISTIREN KOD"du ve hepsi
+#: onaylanmisti; canli denemede ajan TUIK'in KENDI arama ucunu okumak icin
+#: `fetch('/api/...')` istedi, iki kez soruldu. `fetch` kurali sayfadaki
+#: veriyi DISARI tasimaya karsi var; ayni sitenin kendi adresinden GET
+#: okumak, sayfadaki bir baglantiyi acmakla aynidir.
+#: Gecer: her `fetch` cagrisinin adresi DUZ METIN ve ayni site (goreli yol
+#: ya da sayfanin kendi kokeni), kodda govde (`body`) ve degistiren yontem
+#: yok. Adresi degiskenle kurulan, baska siteye giden ya da veri gonderen
+#: istek SORULMAYA devam eder.
+_FETCH = re.compile(r"\bfetch\s*\(\s*(?:(['\"])(.*?)\1|`([^`]*)`|())", re.S)
+
+
+def _koken(url: str) -> str:
+    m = re.match(r"^(https?://[^/?#]+)", (url or "").strip(), re.I)
+    return m.group(1).lower() if m else ""
+
+
+def ayni_siteden_okuma(kod: str, url: str) -> bool:
+    """Koddaki BUTUN fetch cagrilari ayni siteden GET mi (yukaridaki kural)."""
+    if not kod or not re.search(r"\bfetch\s*\(", kod):
+        return False
+    if re.search(r"\bbody\s*:", kod, re.I) or re.search(
+            r"method\s*:\s*[\"'](?:post|put|patch|delete)[\"']", kod, re.I):
+        return False
+    koken = _koken(url)
+    cagrilar = list(_FETCH.finditer(kod))
+    if len(cagrilar) != len(re.findall(r"\bfetch\s*\(", kod)):
+        return False
+    for m in cagrilar:
+        adres = m.group(2) if m.group(2) is not None else m.group(3)
+        if adres is None:
+            return False                # degiskenle kurulan adres
+        on = adres.split("${")[0]
+        goreli = (on.startswith(("/", "./", "../", "?")) and not on.startswith("//"))
+        kendi = bool(koken) and on.lower().startswith(koken + "/")
+        if not (goreli or kendi):
+            return False
+    return True
+
+
 #: Sinif -> (insan adi, risk seviyesi). `postane.onay_iste` risk bekler.
 SINIFLAR = {
     "para":     ("PARA", "yuksek"),
@@ -428,6 +469,10 @@ def degerlendir(arac: str, argumanlar: dict, *, url: str = "",
     # veritabanina yazabilir, o sorulmaya devam eder.
     if kod and sadelestir(url).startswith("file:"):
         kod = ""
+    if kod and ayni_siteden_okuma(kod, url):
+        # Ayni siteden okuma serbest; koddaki OTEKI etkiler (tiklama, form)
+        # yine taranir -- yalniz fetch cagrilari dusurulur.
+        kod = re.sub(r"\bfetch\s*\(", "oku(", kod)
     if kod:
         sade_kod = sadelestir(kod)
         bulunan = (_esles(sade_kod, KOD_ETKISI)

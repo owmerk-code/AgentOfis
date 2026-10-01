@@ -616,6 +616,15 @@ sina("dosya alanina `/` EKLENMIYOR", "`fiyatlar.csv/`" not in _k4, _k4[-400:])
 sina("yeni dosya DOSYA diye soyleniyor",
      "`fiyatlar.csv` (DOSYA" in _k4 and "klasor ACMA" in _k4)
 sina("var olan dosya DOSYA diye soyleniyor", "`mevcut.txt` (DOSYA" in _k4)
+# 01.10 (G19 codex): ust klasoru olmayan DOSYA alani -> 'ust klasoru AC' denir;
+# ust klasoru VAR olan dosya icin bu satir YOK (uydurulmaz).
+_gb2 = _o2.tahta.gorev_ac("ust", neden="n", ana_hedef="h", kabul_olcutu="k",
+                          yazma_alani=["notlar/alisveris.md"])
+_k4b = _o2.brifing.k4_gorev(_gb2["no"])
+sina("ust klasoru olmayan dosya: ust klasoru ACMAK izinli diye soyleniyor",
+     "ust klasoru `notlar/` henuz yok -- onu AC" in _k4b, _k4b[-300:])
+sina("  kok duzeyindeki dosyada ust klasor satiri YOK", "ust klasoru" not in
+     [x for x in _k4.splitlines() if "fiyatlar.csv" in x][0])
 sina("var olan klasor klasor diye soyleniyor", "`kaynak/` (klasor" in _k4)
 # Tahta alani kaydederken sondaki `/`i siler (kilit karsilastirmasi tek
 # bicim ister, `api/` ile `api` ayni alan). Niyet kaybolur -- brifing de

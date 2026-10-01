@@ -1,0 +1,165 @@
+{
+ "ayar": {
+  "motor": "claude",
+  "kip": "gercek terminal",
+  "modeller": {
+   "lider": "sonnet",
+   "isci": "haiku"
+  },
+  "basla": "2026-10-01 11:59",
+  "sure_dk": 5.2,
+  "kota_farki": {
+   "claude": {
+    "5s": 1.0,
+    "7g": 0.0,
+    "7g_kapi": 0.0
+   }
+  }
+ },
+ "sonuclar": [
+  {
+   "no": "G19",
+   "ad": "Takip istekleri: 'onu da ekle', 'sirala'",
+   "motor": "claude",
+   "kip": "gercek",
+   "mesaj": "notlar/alisveris.md dosyasina madde madde sut, ekmek ve yumurta yaz.",
+   "olcutler": [
+    {
+     "olcut": "takip: 5 madde de dosyada (ilk 3 + 'de ekle' 2)",
+     "gecti": true,
+     "not": "['ekmek', 'peynir', 'sut', 'yumurta', 'zeytin']"
+    },
+    {
+     "olcut": "takip: 'alfabetik sirala' uygulandi",
+     "gecti": true,
+     "not": "['ekmek', 'peynir', 'sut', 'yumurta', 'zeytin']"
+    },
+    {
+     "olcut": "takip: ayni dosya, yeni dosya acilmadi",
+     "gecti": true,
+     "not": "['alisveris.md']"
+    }
+   ],
+   "kalite": [
+    {
+     "olcut": "lider patrona cevap verdi",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "lider 'yapamam / sen yap' DEMEDI",
+     "gecti": true,
+     "not": "Alışveriş listesi alfabetik sıralandı: ekmek, peynir, sut, yumurta, zeytin. Beş madde de ayrı satırd"
+    },
+    {
+     "olcut": "rapor ic konusma / KANIT satiri tasimiyor",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "gereksiz ret yok",
+     "gecti": true,
+     "not": "0 ret"
+    }
+   ],
+   "durum": "gecti",
+   "sohbet": [
+    "insan/sohbet: notlar/alisveris.md dosyasina madde madde sut, ekmek ve yumurta yaz.",
+    "lale/cevap: Alışveriş listesi `notlar/alisveris.md` dosyasına madde madde yazıldı: \"- sut\", \"- ekmek\" ve \"- yumurta\", her biri ayrı satırda. Dosya daha önce yoktu, yani ezilen bir içerik de yok. Değişiklik yalnız",
+    "insan/sohbet: peynir ve zeytini de ekle",
+    "lale/cevap: Alışveriş listesine peynir ve zeytin eklendi. Liste artık şöyle: süt, ekmek, yumurta, peynir, zeytin. Her madde ayrı satırda ve eski üç madde yerinde duruyor.\n\nGerekçe (patrona gitmez): Dosyayı kendim",
+    "insan/sohbet: simdi listeyi alfabetik sirala",
+    "lale/cevap: Alışveriş listesi alfabetik sıralandı: ekmek, peynir, sut, yumurta, zeytin. Beş madde de ayrı satırda ve `- ` ile başlıyor, hiçbiri eklenmedi ya da silinmedi. Dosya satır sonuyla bitiyor. Dosyada madd"
+   ],
+   "sureler": {
+    "lider": [
+     14,
+     13,
+     12,
+     10,
+     12,
+     14
+    ],
+    "isci": [
+     30,
+     33,
+     53,
+     48
+    ],
+    "inceleme": [
+     6,
+     8,
+     7,
+     8,
+     10
+    ],
+    "danisma": [
+     13
+    ]
+   },
+   "sure_sn": 304.3
+  },
+  {
+   "no": "G20",
+   "ad": "Sohbetten zamanlama (yarin 09:30)",
+   "motor": "claude",
+   "kip": "gercek",
+   "mesaj": "yarin sabah 09:30'da bana gunaydin de ve o gunun tarihini soyle.",
+   "olcutler": [
+    {
+     "olcut": "tek zamanli is kaydedildi",
+     "gecti": true,
+     "not": "[{'id': '1ff9d14548a74e518c23533035a70f57', 'proje_id': 'fef7a83b8d534181b2c0f9301155affe', 'no': 1, 'metin': 'Patrona gunaydin de ve o gunun tarihini soyle.', 'lider_ad': 'lale', 'kural': {'tur': 'bir_kez', 'tarih': '2026-10-02', 'saat': '09:30'}, 'sonraki': '2026-10-02T06:30:00+00:00', 'etkin': 1, 'son_calisma': None, 'kaynak': 'insan', 'olusturuldu': '2026-10-01T09:04:50+00:00', 'ne_zaman': '2 Ekim 09:30 (bir kez)', 'sonraki_metin': 'yarın 09:30'}]"
+    },
+    {
+     "olcut": "vakit dogru: yarin 09:30, bir kez",
+     "gecti": true,
+     "not": "{'tur': 'bir_kez', 'tarih': '2026-10-02', 'saat': '09:30'}"
+    },
+    {
+     "olcut": "is SIMDI acilmadi",
+     "gecti": true,
+     "not": "0"
+    }
+   ],
+   "kalite": [
+    {
+     "olcut": "lider patrona cevap verdi",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "lider 'yapamam / sen yap' DEMEDI",
+     "gecti": true,
+     "not": "Tamam, zamanladım (Z1): 2 Ekim 09:30 (bir kez) — «Patrona gunaydin de ve o gunun tarihini soyle.». İ"
+    },
+    {
+     "olcut": "rapor ic konusma / KANIT satiri tasimiyor",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "gereksiz ret yok",
+     "gecti": true,
+     "not": "0 ret"
+    },
+    {
+     "olcut": "sohbet temiz (en fazla 4 mesaj)",
+     "gecti": true,
+     "not": "2 mesaj: insan/sohbet, lale/cevap"
+    }
+   ],
+   "durum": "gecti",
+   "sohbet": [
+    "insan/sohbet: yarin sabah 09:30'da bana gunaydin de ve o gunun tarihini soyle.",
+    "lale/cevap: Tamam, zamanladım (Z1): 2 Ekim 09:30 (bir kez) — «Patrona gunaydin de ve o gunun tarihini soyle.». İlk çalışma: yarın 09:30. Vakti gelince sıraya girer, sonucu buraya yazarım. İptal için 'Z1'yi iptal "
+   ],
+   "sureler": {
+    "lider": [
+     8
+    ]
+   },
+   "sure_sn": 8.9
+  }
+ ]
+}

@@ -314,14 +314,28 @@ class Brifing:
             if tam.is_dir():
                 return f"  - `{ad}/` (klasor -- icine yazabilirsin)"
             if tam.is_file():
-                return f"  - `{ad}` (DOSYA -- bu dosyayi yaz, klasor ACMA)"
+                return f"  - `{ad}` (DOSYA -- bu dosyayi yaz; bu ADLA klasor ACMA)"
         except OSError:
             pass
         if ham.endswith(("/", "\\")):
             return f"  - `{ad}/` (klasor -- henuz yok, acabilirsin)"
         if Path(ad).suffix:
-            return (f"  - `{ad}` (DOSYA -- henuz yok; bu ADLA bir dosya yaz, "
-                    "klasor ACMA)")
+            # UST KLASOR (01.10.2026, gercek set G19, codex): "klasor ACMA"
+            # ust klasoru acmayi da yasaklar gibi okundu; `notlar/` yoktu,
+            # ajan dosyayi HIC yazmadi, uc mesaj boyunca "beklemede" kaldi.
+            # Kuralin amaci yalniz `fiyatlar.csv/` gibi DOSYA ADLI klasoru
+            # onlemek (26.09, D05). Ust klasor yoksa ofis olcer ve SOYLER.
+            ust = Path(ad).parent
+            ust_yok = False
+            if str(ust) not in ("", "."):
+                try:
+                    ust_yok = not ((Path(kok) / ust) if kok and not ust.is_absolute() else ust).is_dir()
+                except OSError:
+                    ust_yok = False
+            return (f"  - `{ad}` (DOSYA -- henuz yok; bu ADLA bir dosya yaz, bu adla "
+                    "klasor ACMA"
+                    + (f"; ust klasoru `{ust.as_posix()}/` henuz yok -- onu AC, "
+                       "izinlidir" if ust_yok else "") + ")")
         return (f"  - `{ad}` (henuz yok; dosya mi klasor mu adindan belli degil "
                 "-- isin tanimina bak)")
 

@@ -523,6 +523,55 @@ def g17_dogrula(kok, ofis, bag):
             ("Word dosyasi sohbete gonderildi", bool(gitti), str(gitti))]
 
 
+# ---- G19: takip istekleri ("onu da ekle") -- Claude Code'da en sik yapilan sey.
+G19_TAKIP = ("peynir ve zeytini de ekle", "simdi listeyi alfabetik sirala")
+
+
+def g19_sonra(kok, ofis, bag, zaman_asimi):
+    """Patron ayni konuda IKI takip mesaji daha yazar; dosya adi ANILMAZ."""
+    from ofis.sohbet import Sohbet
+    for m in G19_TAKIP:
+        for _ in Sohbet(ofis).konus(m, zaman_asimi=zaman_asimi, azami_tik=8, paralel=2):
+            pass
+
+
+def _g19_maddeler(kok):
+    p = kok / "notlar" / "alisveris.md"
+    if not p.exists():
+        return []
+    out = []
+    for s in p.read_text(encoding="utf-8-sig").splitlines():
+        s = re.sub(r"^[\s>*\-+\d.)\[\]x]+", "", s).strip().strip("*_`").strip()
+        if s and not s.startswith("#") and len(s) < 40:
+            out.append(_norm(s))
+    return out
+
+
+def g19_dogrula(kok, ofis, bag):
+    m = _g19_maddeler(kok)
+    hedef = ["ekmek", "peynir", "sut", "yumurta", "zeytin"]
+    bulunan = [h for h in hedef if any(h in x for x in m)]
+    sira = [next(i for i, x in enumerate(m) if h in x) for h in bulunan]
+    return [("takip: 5 madde de dosyada (ilk 3 + 'de ekle' 2)", len(bulunan) == 5, str(m)),
+            ("takip: 'alfabetik sirala' uygulandi", len(bulunan) == 5 and sira == sorted(sira), str(m)),
+            ("takip: ayni dosya, yeni dosya acilmadi",
+             len([x for x in (kok / "notlar").glob("*")]) == 1 if (kok / "notlar").exists() else False,
+             str([x.name for x in (kok / "notlar").glob("*")]) if (kok / "notlar").exists() else "")]
+
+
+# ---- G20: sohbetten zamanlama -- is SIMDI yapilmaz, dogru vakitle kaydedilir.
+def g20_dogrula(kok, ofis, bag):
+    from datetime import date, timedelta
+    from ofis import zamanlayici as Z
+    zl = Z.liste(ofis)
+    yarin = (date.today() + timedelta(days=1)).isoformat()
+    k = zl[0]["kural"] if zl else {}
+    return [("tek zamanli is kaydedildi", len(zl) == 1, str(zl)),
+            ("vakit dogru: yarin 09:30, bir kez",
+             k.get("tur") == "bir_kez" and k.get("tarih") == yarin and k.get("saat") == "09:30", str(k)),
+            ("is SIMDI acilmadi", ofis.tahta.liste() == [], str(len(ofis.tahta.liste())))]
+
+
 def g18_dogrula(kok, ofis, bag):
     d = kok / "todo"
     plan = (d / "PLAN.md").read_text(encoding="utf-8", errors="replace") if (d / "PLAN.md").exists() else ""
@@ -574,6 +623,21 @@ ISLER.update({
                                                            " localStorage.setItem('x','1');"
                                                            " document.addEventListener('x',()=>{});")),
             "kotu": lambda k, o, b: _yaz(k, "todo/index.html", "<html>todo</html>")},
+    "G19": {"ad": "Takip istekleri: 'onu da ekle', 'sirala'",
+            "mesaj": lambda b: "notlar/alisveris.md dosyasina madde madde sut, ekmek ve yumurta yaz.",
+            "fikstur": lambda k, b: None, "dogrula": g19_dogrula, "sonra": g19_sonra,
+            "sohbet_serbest": True,
+            "iyi": lambda k, o, b: _yaz(k, "notlar/alisveris.md",
+                                         "- ekmek\n- peynir\n- süt\n- yumurta\n- zeytin\n"),
+            "kotu": lambda k, o, b: _yaz(k, "notlar/alisveris.md", "- süt\n- ekmek\n- yumurta\n")},
+    "G20": {"ad": "Sohbetten zamanlama (yarin 09:30)",
+            "mesaj": lambda b: ("yarin sabah 09:30'da bana gunaydin de ve o gunun tarihini soyle."),
+            "fikstur": lambda k, b: None, "dogrula": g20_dogrula,
+            "iyi": lambda k, o, b: __import__("ofis.zamanlayici", fromlist=["x"]).ekle(
+                o, "gunaydin de", "lale", {"tur": "bir_kez", "saat": "09:30", "tarih":
+                    (__import__("datetime").date.today() + __import__("datetime").timedelta(days=1)).isoformat()}),
+            "kotu": lambda k, o, b: o.tahta.gorev_ac("gunaydin", neden="x", ana_hedef="x",
+                                                    kabul_olcutu="x", govde="x")},
 })
 
 

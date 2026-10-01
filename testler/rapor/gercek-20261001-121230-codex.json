@@ -1,0 +1,96 @@
+{
+ "ayar": {
+  "motor": "codex",
+  "kip": "gercek terminal",
+  "modeller": {
+   "lider": "gpt-6-luna",
+   "isci": "gpt-6-luna"
+  },
+  "basla": "2026-10-01 12:09",
+  "sure_dk": 3.5,
+  "kota_farki": {
+   "codex": {
+    "5s": 0.0,
+    "7g": 0.0
+   }
+  }
+ },
+ "sonuclar": [
+  {
+   "no": "G19",
+   "ad": "Takip istekleri: 'onu da ekle', 'sirala'",
+   "motor": "codex",
+   "kip": "gercek",
+   "mesaj": "notlar/alisveris.md dosyasina madde madde sut, ekmek ve yumurta yaz.",
+   "olcutler": [
+    {
+     "olcut": "takip: 5 madde de dosyada (ilk 3 + 'de ekle' 2)",
+     "gecti": true,
+     "not": "['ekmek', 'peynir', 'sut', 'yumurta', 'zeytin']"
+    },
+    {
+     "olcut": "takip: 'alfabetik sirala' uygulandi",
+     "gecti": true,
+     "not": "['ekmek', 'peynir', 'sut', 'yumurta', 'zeytin']"
+    },
+    {
+     "olcut": "takip: ayni dosya, yeni dosya acilmadi",
+     "gecti": true,
+     "not": "['alisveris.md']"
+    }
+   ],
+   "kalite": [
+    {
+     "olcut": "lider patrona cevap verdi",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "lider 'yapamam / sen yap' DEMEDI",
+     "gecti": true,
+     "not": "Alışveriş listesi alfabetik sıraya kondu ve doğrulandı. Maddeler: ekmek, peynir, süt, yumurta, zeyti"
+    },
+    {
+     "olcut": "rapor ic konusma / KANIT satiri tasimiyor",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "gereksiz ret yok",
+     "gecti": true,
+     "not": "0 ret"
+    }
+   ],
+   "durum": "gecti",
+   "sohbet": [
+    "insan/sohbet: notlar/alisveris.md dosyasina madde madde sut, ekmek ve yumurta yaz.",
+    "lale/cevap: İstenen alışveriş listesi notlar/alisveris.md dosyasına madde madde eklendi: süt, ekmek ve yumurta.",
+    "insan/sohbet: peynir ve zeytini de ekle",
+    "lale/cevap: Peynir ve zeytin alışveriş listesine ayrı maddeler olarak eklendi. [notlar/alisveris.md](C:\\Users\\pc\\AppData\\Local\\Temp\\ofis-gercek-G19-nr1cuwyx\\calisma\\notlar\\alisveris.md)",
+    "insan/sohbet: simdi listeyi alfabetik sirala",
+    "lale/cevap: Alışveriş listesi alfabetik sıraya kondu ve doğrulandı. Maddeler: ekmek, peynir, süt, yumurta, zeytin. [notlar/alisveris.md](C:/Users/pc/AppData/Local/Temp/ofis-gercek-G19-nr1cuwyx/calisma/notlar/alis"
+   ],
+   "sureler": {
+    "lider": [
+     10,
+     8,
+     9,
+     14,
+     7,
+     12
+    ],
+    "isci": [
+     23,
+     40,
+     32
+    ],
+    "inceleme": [
+     20,
+     10,
+     10
+    ]
+   },
+   "sure_sn": 206.8
+  }
+ ]
+}

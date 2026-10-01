@@ -13292,3 +13292,42 @@ kalmış olabilir)" diyordu — arıza gibi; "senin cevabını bekliyor" oldu.
 - Kullanıcı ekranında doğruladı: 11:41 "demir cevapladı (zamanladım Z1)",
   11:45 "Zamanlanmış iş başladı", 11:45 "demir cevapladı (Bugün 1 Ekim…)" —
   zamanlayıcı + kuyruk + bildirim uçtan uca, gerçek motorla.
+
+## 01.10.2026 — Anlama ölçümü (G19/G20) ve onay yorgunluğu (E80, ilk adım)
+
+- Gerçek sete G19 (takip: "peynir ve zeytini de ekle", "şimdi listeyi
+  alfabetik sırala" — dosya adı anılmaz) ve G20 (sohbetten zamanlama:
+  "yarın sabah 09:30'da bana günaydın de…" → tek bir_kez kayıt, iş şimdi
+  açılmaz). Kuru: ikisinin doğrulayıcısı sağlam; duman_gercek_set 29.
+- E80: patronun gerçek ofisinde 6 onay vardı; en sıkı "SAYFAYI DEĞİŞTİREN
+  KOD" (3/3 onaylanmış) + canlıda 2 kez TÜİK'in kendi ucuna `fetch` GET.
+  `fetch` kuralı veriyi DIŞARI taşımaya karşı; aynı sitenin kendi adresinden
+  okumak bağlantı açmakla aynı → `riskli.ayni_siteden_okuma`: her fetch
+  adresi DÜZ METİN ve aynı site (göreli/kendi kökeni), `body` ve değiştiren
+  yöntem yok → fetch düşer, kodun öteki etkileri (tıklama) yine taranır.
+  Başka site, POST/gövde, değişkenli adres, `//`, okuma+tıklama SORULUR.
+  duman_riskli 244; mutasyon 3 sınamayı düşürüyor.
+- GERÇEK: G19/G20 claude 2/2 (G19 304 sn, G20 9 sn); codex G20 geçti
+  (8 sn), G19 KALDI: ajan (ada) "brifingde açıkça klasör açma denmiş,
+  `notlar/` yok" deyip dosyayı HİÇ yazmadı; lider üç mesaj boyunca
+  "beklemede" dedi. Kök: brifingin DOSYA satırı "klasor ACMA" — amaç yalnız
+  `fiyatlar.csv/` gibi DOSYA ADLI klasörü önlemekti (26.09, D05); üst
+  klasörü açmayı da yasaklar gibi okundu. → "bu ADLA klasör açma"; üst
+  klasör yoksa ofis ölçer ve "üst klasörü `notlar/` henüz yok — onu AÇ,
+  izinlidir" der. duman_cekirdek 109. Sonra codex G19 GEÇTİ (207 sn) →
+  G19/G20 iki motorda geçti.
+
+## 01.10.2026 — ÖLÇÜLDÜ: Claude ajanları ofisin CLAUDE.md'sini okuyor
+
+Kullanıcı: ofisin dosyaları/kuralları ile ajanların işi karışıyor olabilir;
+ayrı bir kod editörü (Murat'ta var) ve ayrım öneriyor. Ölçüm: `calisma/`dan
+haiku'ya "bağlamında 'AgentOfis — proje anayasası' var mı" → ilk satırı
+aynen yazdı. Ajanların ortak kökü ofisin kod klasörünün İÇİNDE; Claude
+Code üst klasörlerdeki CLAUDE.md'yi kendiliğinden yükler (~40 bin harf her
+turda, geliştirme kuralları ajana). Codex'te AGENTS.md kapatılmıştı
+(`PROJE_BELGESI_KAPALI`); Claude açık kalmış. CLI'da `--setting-sources`
+ve `--bare` var, kullanılmıyor. Öneri kullanıcıya: (1) proje kökleri ofis
+klasörünün DIŞINA, (2) ajan Claude'u üst-klasör talimatları kapalı başlat
+(önce ölç), (3) panelde proje-kapsamlı kod editörü. Onay bekleniyor (gerçek
+ofisin kökü taşınacak). Ayrıca: repo kökünde 12:07'de boş `o.sqlite3`
+oluştu — bir yol göreli yazılıyor, aranacak.
