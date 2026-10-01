@@ -55,6 +55,44 @@ EK_KLASORU = PROJE_GIZLI + "/ekler"
 KARALAMA = PROJE_GIZLI + "/karalama"
 
 
+#: OFISIN KENDI KODU (repo koku). Proje koku bunun ICINDE olamaz.
+OFIS_KODU = Path(__file__).resolve().parent.parent
+#: Patronun projeleri masaustunde KENDI klasorlerinde (01.10.2026 karari).
+MASAUSTU = Path.home() / "Desktop"
+
+
+def proje_klasor_adi(ad: str) -> str:
+    """Proje adindan masaustu klasor adi: Windows'ta yasak isaretler atilir."""
+    import re as _re
+    temiz = _re.sub(r'[<>:"/\\|?*\x00-\x1f]+', "-", str(ad or "")).strip(" .-")
+    return temiz[:80] or "Proje"
+
+
+def varsayilan_proje_koku(ad: str) -> Path:
+    return MASAUSTU / proje_klasor_adi(ad)
+
+
+def ofis_icinde_mi(yol) -> bool:
+    """Yol ofisin KENDI yerinde mi (kodu, yeni ya da eski evi).
+
+    Proje koku orada olursa ajan ofisin kodunu, kurallarini (CLAUDE.md --
+    01.10.2026 OLCULDU: ajan anayasanin ilk satirini aynen okudu),
+    hafizasini gorur; isler karisir. Kural yapi: boyle kok ACILMAZ.
+    """
+    try:
+        p = Path(yol).expanduser().resolve()
+    except (OSError, ValueError):
+        return False
+    for ev in (OFIS_KODU, YENI_EV, ESKI_EV):
+        try:
+            e = Path(ev).expanduser().resolve()
+        except (OSError, ValueError):
+            continue
+        if p == e or e in p.parents:
+            return True
+    return False
+
+
 def varsayilan_ev() -> Path:
     """Yeni ev VARSA o; yoksa eski ev varsa o; ikisi de yoksa yeni ev."""
     if YENI_EV.is_dir():

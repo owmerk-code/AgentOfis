@@ -43,6 +43,17 @@ def _olu(kim: str) -> bool:
 def acilista_toparla(ofis) -> dict:
     """Doner: {'birakilan': [no...], 'yeniden': n, 'devam': n}. Bir sey
     yapildiysa sohbete tek not dusulur."""
+    # AYRIM (01.10.2026): kok ofisin kendi yerindeyse SESSIZ kalinmaz --
+    # ajanlar ofisin kodunu/kurallarini gorur. Tasima: `kabuk tasi`.
+    from .yollar import ofis_icinde_mi
+    try:
+        if ofis_icinde_mi(ofis.kok_klasoru()):
+            ofis.db.olay_yaz(ofis.proje_id, "uyari",
+                             f"Bu projenin klasoru ({ofis.kok_klasoru()}) ofisin KENDI yerinde: "
+                             "ajanlar ofisin kodunu ve kurallarini gorur. Masaustune tasi: "
+                             "python -m ofis.kabuk tasi")
+    except Exception:                 # noqa: BLE001 -- uyari toparlamayi durdurmaz
+        pass
     birakilan, yeniden, devam = [], 0, 0
     with ofis.db.baglanti() as c:
         gorevler = [dict(r) for r in c.execute(

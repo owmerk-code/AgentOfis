@@ -39,7 +39,10 @@ def kur(db_yolu: Path) -> None:
         if yan.exists():
             yan.unlink()
 
-    kok = db_yolu.parent / "ornek-calisma"
+    # Ornek ofisin koku de ofisin DISINDA (01.10.2026 ayrim kurali; proje
+    # koku ofisin kendi yerinde olamaz). Gecici klasor: demo.
+    import tempfile as _tf
+    kok = Path(_tf.gettempdir()) / "agentofis-ornek-calisma"
     kok.mkdir(parents=True, exist_ok=True)
 
     db = Veritabani(db_yolu)

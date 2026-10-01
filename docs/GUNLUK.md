@@ -13370,3 +13370,17 @@ Aşama 2 (proje içi `.ofis/`):
 - Tam takım 3578/3578.
 - Kullanıcı ekledi: "ofis" çok odalı BİNA görünümü olabilir (görünüş en son);
   masaüstü uygulamasından ÖNCE satır satır tam denetim → PLAN F8½.
+
+Aşama 3 (kök kapısı):
+- `yollar.ofis_icinde_mi`: ofisin kodu (repo), yeni ev, eski ev. `proje_ac`
+  böyle kökü REDDEDER (yapı). Gerçek defterde köksüz yeni proje
+  `Masaüstü\<ad>`; köksüz kalmış gerçek proje ofisin içine (veri/calisma)
+  düşmez. Örnek ofisin kökü de dışarıda (sistem geçici klasörü).
+- Açılışta kökü ofisin içinde kalmış proje için UYARI ("kabuk tasi").
+- Lider planı: ajan adlı klasör (bilge/, cinar/ — eski tasarımın brifing
+  klasörleri, lider taklit ediyordu) AÇMA; tek iş İŞİN ADIYLA alt klasöre;
+  yazılım projesinde onun düzenine uy.
+- duman_ayrim 19 (mutasyon: kapı kaldırılınca 3 ret düşüyor). 3597/3597.
+- Bulgu (aşama 4'e): ZIP yedeği "yedek klasörü kökün içinde olamaz" diyor;
+  yeni evde yedekler AgentOfis\ev\yedekler → taşımadan sonraki ilk yedek
+  düşerdi. GuvenKart-3D projesinin klasörü masaüstünde YOK.

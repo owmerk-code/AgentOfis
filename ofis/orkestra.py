@@ -315,6 +315,14 @@ class Orkestra:
                 "",
                 "Ajanlar bu klasorde calisir. `yazma_alani` alanina",
                 "BURADAKI GERCEK YOLLARI yaz -- uydurma, gordugunu yaz.",
+                # AYRIM (01.10.2026): eski tasarimin ajan adli klasorleri
+                # (bilge/, cinar/) lider tarafindan taklit ediliyordu.
+                "Bu klasor PATRONUN projesidir: ajan adiyla klasor (bilge/,",
+                "cinar/ ...) ACMA ve KULLANMA. Kok bir yazilim/uygulama",
+                "projesiyse onun duzenine uy; tek seferlik is (rapor,",
+                "gorsel, arastirma) ise isi ISININ ADIYLA bir alt klasore",
+                "koy (orn. `semuparfum-rapor/`). Patron bir dosya adi",
+                "soylediyse o yola yaz.",
                 "",
                 "```",
                 duzen,

@@ -44,6 +44,15 @@ __all__ = [
 ]
 
 
+def _gercek_defter_mi(db) -> bool:
+    """Patronun GERCEK defteri mi (sinama/ornek degil)."""
+    from .db import VARSAYILAN_YOL
+    try:
+        return Path(db.yol).resolve() == Path(VARSAYILAN_YOL).resolve()
+    except (OSError, ValueError):
+        return False
+
+
 class Ofis:
     """Bir projenin tum katmanlarini tek yerden acar."""
 
@@ -101,8 +110,18 @@ class Ofis:
         # Kok klasor de MUTLAK saklanir -- ayni goreli yol tuzagi
         # (bkz. db.py ve kadro.ise_al). Proje kaydi baska bir klasorden
         # okundugunda ayni yere isaret etmeli.
+        from .yollar import ofis_icinde_mi, varsayilan_proje_koku
         if kok_klasor:
             kok_klasor = str(Path(kok_klasor).expanduser().resolve())
+            # AYRIM (01.10.2026): proje koku ofisin kendi yerinde OLAMAZ.
+            if ofis_icinde_mi(kok_klasor):
+                raise ValueError(
+                    f"Proje klasoru ofisin kendi yerinde olamaz: {kok_klasor}. "
+                    "Ajanlar ofisin kodunu ve kurallarini gorur, isler karisir. "
+                    "Projeyi masaustunde kendi klasorunde ac.")
+        elif _gercek_defter_mi(db):
+            # Patronun gercek ofisinde yeni proje MASAUSTUNDE acilir.
+            kok_klasor = str(varsayilan_proje_koku(ad))
         proje_id = uuid.uuid4().hex
         an = simdi()
         with db.baglanti() as conn:
@@ -131,7 +150,15 @@ class Ofis:
             row = conn.execute("SELECT kok_klasor FROM proje WHERE id = ?",
                                (self.proje_id,)).fetchone()
         kok = ((row["kok_klasor"] if row else "") or "").strip()
-        return kok or str(Path(self.db.yol).parent / "calisma")
+        if kok:
+            return kok
+        # Gercek defterde koksuz proje ofisin icine (veri/calisma) DUSMEZ.
+        if _gercek_defter_mi(self.db):
+            from .yollar import varsayilan_proje_koku
+            with self.db.baglanti() as conn:
+                r = conn.execute("SELECT ad FROM proje WHERE id = ?", (self.proje_id,)).fetchone()
+            return str(varsayilan_proje_koku((r["ad"] if r else "") or "Proje"))
+        return str(Path(self.db.yol).parent / "calisma")
 
     def kanat_ac(self, ad: str, onek: str, renk: str = "#E0785A") -> str:
         kanat_id = uuid.uuid4().hex
