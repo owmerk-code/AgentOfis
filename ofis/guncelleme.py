@@ -566,6 +566,19 @@ def deneme_turu(motor_ad: str, model: str, *, fabrika=None, ek_ortam=None,
         basarili, sebep = False, f"beklenen cevap gelmedi: {yazi[:120]!r}"
     if basarili and gercek_terminal and getattr(motor, "tui_destegi", False):
         t = _terminal_denemesi(motor, model, ek_ortam)
+        # IKINCI DENEME (01.10.2026, kullanici: "guncelleme gelmisse otomatik
+        # guncellenecek, eski surum olmayacak"). Panelde 2.1.286 bir kez
+        # dustu, ayni surum ayni denemeyi elle ilk seferde gecti: tek dusus
+        # anlik olabilir. Temiz klasorde bir kez daha denenir; ikisi de
+        # duserse geri donulur (ajanlarin hic calisamamasi daha kotu) ve
+        # ILK dususun sebebi de soylenir.
+        if not t["basarili"]:
+            ilk = t["sebep"]
+            t = _terminal_denemesi(motor, model, ek_ortam)
+            if t["basarili"]:
+                sebep = "(ilk terminal denemesi dustu, ikincisi gecti: " + ilk[:300] + ")"
+            else:
+                t["sebep"] = (t["sebep"] + " | ilk deneme: " + ilk[:600])
         if not t["basarili"]:
             basarili, sebep = False, "GERCEK TERMINAL denemesi dustu: " + t["sebep"]
     return {"basarili": basarili, "sebep": sebep or "", "cevap": yazi[:120],

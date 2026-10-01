@@ -674,11 +674,22 @@ try:
     sina("terminal denemesi dusunce DENEME DUSER (sebep soylenir)",
          not _d1["basarili"] and "GERCEK TERMINAL" in _d1["sebep"], str(_d1))
     _d2 = G.deneme_turu("claude", "m2", fabrika=_tui_fab, gercek_terminal=False)
-    sina("arka kipteki ofiste terminal denemesi KOSMAZ", _d2["basarili"] and _cagri == ["m1"],
+    sina("  dusen terminal denemesi IKINCI kez denendi (01.10)", _cagri == ["m1", "m1"], str(_cagri))
+    sina("arka kipteki ofiste terminal denemesi KOSMAZ", _d2["basarili"] and _cagri == ["m1", "m1"],
          f"{_d2} {_cagri}")
     _d3 = G.deneme_turu("claude", "m3", fabrika=lambda ad, **k: SahteMotor(cevap="OK"),
                         gercek_terminal=True)
     sina("terminali desteklemeyen motorda terminal denemesi atlanir", _d3["basarili"])
+    # Ilk dusus anlik: ikinci deneme gecer -> guncelleme KURULUR.
+    _sonuc = [{"basarili": False, "sebep": "anlik aksaklik"}, {"basarili": True, "sebep": ""}]
+    G._terminal_denemesi = lambda motor, model, ek_ortam=None: _sonuc.pop(0)
+    _d4 = G.deneme_turu("claude", "m4", fabrika=_tui_fab, gercek_terminal=True)
+    sina("ilk terminal denemesi dusup ikincisi gecerse DENEME GECER (eski surumde kalinmaz)",
+         _d4["basarili"] and "ikincisi gecti" in _d4["sebep"], str(_d4))
+    _sonuc = [{"basarili": False, "sebep": "BIRINCI"}, {"basarili": False, "sebep": "IKINCI"}]
+    _d5 = G.deneme_turu("claude", "m5", fabrika=_tui_fab, gercek_terminal=True)
+    sina("ikisi de duserse deneme DUSER, IKI sebep de soylenir",
+         not _d5["basarili"] and "BIRINCI" in _d5["sebep"] and "IKINCI" in _d5["sebep"], str(_d5))
 finally:
     G._terminal_denemesi = _asil_t
 

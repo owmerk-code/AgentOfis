@@ -13478,3 +13478,12 @@ altta açılıyordu, soru çıkmıyordu (ölçmek istediği sınıra ulaşmıyor
   ekranla düşer (önce sonraki "gönderilmedi" hatası asıl sebebi
   saklıyordu). Güncelleme deneme sebebi 2000 harfe kadar korunur.
   duman_tui 61 (eski kod tam o yanıltıcı "gonderilemedi"yi üretiyor).
+- Kullanıcı: "güncelleme gelmişse otomatik güncellenecek, eski sürüm
+  olmayacak". Öneri #1 (claude 2.1.286) ofisin KENDİ akışıyla yeni kodla
+  uygulandı (`kabuk guncelle onayla 1`): kuruldu, deneme İLK seferde geçti
+  → kurulu 2.1.286. Paneldeki düşüş eski kodla (son düzeltmeden önce)
+  çalışan panelden.
+- Kural: terminal denemesi düşerse temiz klasörde BİR KEZ DAHA denenir;
+  ikinci geçerse kurulur (ilk sebep nota yazılır), ikisi de düşerse geri
+  dönülür ve İKİ sebep de söylenir. duman_guncelleme 115 (kural
+  kaldırılınca 4 düşüyor).
