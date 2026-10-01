@@ -136,6 +136,7 @@ KABIN_IZLEME_NOTU = (
     "Patronun kabinde actigi oturumlar burada gecerli. YENI SEKME ACMA: acik "
     "sekmede calis (panel yalniz onu gosterir). Sayfayi okumak icin "
     "`browser_find`/`browser_evaluate` tercih et; tam anlik goruntu pahali. "
+    "YAZMAK icin `browser_type`, TIKLAMAK icin `browser_click` (kodla degil). "
     "Riskli tiklama (yayin, silme, para, gonderim) yine patronun onayina "
     "duser; sifre ya da kod YAZMA -- giris gerekiyorsa `giris_iste`.")
 

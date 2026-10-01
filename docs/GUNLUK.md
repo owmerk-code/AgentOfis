@@ -13705,3 +13705,53 @@ her zaman kullanılabilir olmalı, otomatik olmalı". Ölçülen ve düzeltilen:
 - Not: Codex CLI 0.159.3→0.160.0 güncellemesini PATRONUN paneli yaptı
   (00:09, deneme geçti); sınama paneli o sırada kapalıydı.
 - Sınama `duman_kabin_kullanim.py` 38/38; 11 mutasyonun 11'i yakalandı.
+
+## 02.10.2026 — Claude/Codex'in KENDİ Chrome eklentileri: ölçüldü, ofiste KAPALI
+
+Soru: ajanlar Claude in Chrome / ChatGPT eklentisini kabinde kullanabilir mi?
+- Yerel köprüler kurulu (`com.anthropic.claude_code_browser_extension` →
+  `~/.local/bin/claude.exe --chrome-native-host` = ESKİ 2.1.220;
+  `com.openai.codexextension`). Patronun KİŞİSEL Chrome'unda (Default) iki
+  eklenti de kurulu.
+- Claude köprüsü Windows'ta kullanıcı başına tek boru adı kullanıyor
+  (`\.\pipe\claude-mcp-browser-bridge-<kullanıcı>`); ama yeni sürümde
+  `list_connected_browsers / select_browser / switch_browser` araçları var —
+  çoklu tarayıcı seçimi OLABİLİR, ölçülmedi (önceki "tek Chrome" sözüm eksikti).
+- **AÇIK BULUNDU:** patronun `~/.claude.json`'unda `claudeInChromeDefaultEnabled:
+  true`. Ölçüm (boş geçici klasör, haiku): `-p` kipinde Chrome aracı YOK; ama
+  ETKİLEŞİMLİ (ofisin gerçek terminal kipi, patronun panelinde seçili) Claude'a
+  `--strict-mcp-config` + `--tools` olsa bile **21 `claude-in-chrome` aracı**
+  geliyordu (navigate, computer, javascript_tool, read_page…) — patronun
+  KİŞİSEL Chrome'unu süren araçlar. Kapı navigate/computer/javascript'i
+  soruyordu ama `read_page` SERBESTTİ (kişisel sayfayı sormadan okuma). Defterde
+  kullanım kaydı YOK (0). Düzeltme: ofis Claude'u her yolda `--no-chrome` ile
+  başlatır; ölçüm: `--no-chrome` ile etkileşimli Claude "YOK" dedi.
+- Codex: ofisin codex evinde tarayıcı/bilgisayar eklentileri YOK (ölçüldü,
+  `codex plugin list`) → ofis codex ajanlarına gelmez.
+- Karar: ajanların tarayıcısı ofisin kabini + ofisin aracı (Murat'ın yolu da
+  bu: `agentdesk-browser`); motor eklentileri gerekli değil, açılmaz.
+
+## 02.10.2026 — iki motor aynı tarayıcı işinde (gömülü tarayıcı, gerçek koşul)
+
+İş (takım sohbetinden `@ajan iş:`): example.com'da "Learn more"e tıkla, açılan
+sayfanın başlığı; Google'da "Galata Kulesi" ara, ilk sonucun başlığı. Ölçüm
+paneli 8911, patronun ofis kopyası, ofisin gerçek codex girişi, AYRI kabin
+profili (`OFIS_KABIN_PROFIL`) ve kapı 9333.
+- 1. koşu: Claude (bilge/sonnet) 91 sn, doğru. Codex (cinar) TAKILDI: yazıyı
+  `el.value=`+`dispatchEvent(new Event('input'))` ile koydu → kapı "SAYFAYI
+  DEĞİŞTİREN KOD" sordu. Düzeltme: yalnız input/change/focus/blur olayı ve
+  değer atama "kodla yazma" sayılır (klavyeyle yazmanın eşi), şifre/kart alanı
+  `kimlik` olarak sorulur, tıklama/submit/Enter/ağ yine sorulur.
+- 2. koşu: Codex formu kodla gönderdi (`requestSubmit`) → kapı haklı olarak
+  sordu (kod hangi formu gönderdiğini söylemez). Düzeltme: ajan talimatı
+  (`riskli.TARAYICI_ARTIK`, kabin notu): yazmak `browser_type`, tıklamak
+  `browser_click`, `browser_evaluate` yalnız okumak için.
+- 3. koşu: Codex `browser_type` kullandı, 171 sn, doğru; ama lider "mesaj '2) G'
+  ile yarıda kesilmiş" deyip GERİ GÖNDERDİ — inceleme patrona giden mesajı 160
+  harfte SESSİZCE kesiyordu. Düzeltme: `lider.kisalt` (kanıt, not, patron sözü,
+  sohbet mesajı): kesilirse "OFİS KISALTTI" yazılır; mesaj 1500 harfe kadar tam.
+- **Son koşu (bütün düzeltmelerle): ikisi de TEMİZ** — Claude 139 sn (10 tarayıcı
+  adımı), Codex 179 sn; ikisinde de 0 geri gönderme, 0 onay, cevaplar doğru
+  ("Example Domains"; ilk organik sonuç Vikipedi). Google araması engellenmedi.
+- Not: Codex tarayıcı araçlarını kod kipinden (`tools.mcp__tarayici__…` Bash
+  sarmalında) çağırıyor; kapı yine her çağrıyı görüyor.

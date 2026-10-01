@@ -117,6 +117,18 @@ OZET_ARACI_KURALI = (
     "bakamiyorsan yalniz ozet yuzunden GERI GONDERME, suphe notu dus.")
 
 
+def kisalt(metin: str, sinir: int) -> str:
+    """Lidere giden metni kisaltir ve kisalttigini SOYLER.
+
+    02.10.2026 OLCULDU: inceleme patrona giden mesaji 160 harfte SESSIZCE
+    kesiyordu; lider "mesaj yarida kesilmis" deyip TAM mesaji geri
+    gonderdi. Sessiz kesme, kanitta ve notta da ayni yanilgiyi dogurur."""
+    metin = metin or ""
+    if len(metin) <= sinir:
+        return metin
+    return metin[:sinir] + f" [... OFIS KISALTTI: tamami {len(metin)} harf]"
+
+
 class Lider:
     def __init__(self, ofis, *, motor_fabrikasi=motor_ac) -> None:
         self.ofis = ofis
@@ -310,7 +322,7 @@ class Lider:
                              "tur = 'patron_sozu' ORDER BY rowid DESC LIMIT 1",
                              (self.proje_id, g["id"])).fetchone()
         if _ps and (_ps["govde"] or "").strip():
-            satirlar += ["", f"**Patronun KENDI sozu:** \"{_ps['govde'].strip()[:600]}\"",
+            satirlar += ["", f"**Patronun KENDI sozu:** \"{kisalt(_ps['govde'].strip(), 600)}\"",
                          "Olcutun, patronun ISTEMEDIGI bir kanit bicimini (orn. oyun "
                          "surerken ekran goruntusu, video) sart kosan kismi RET SEBEBI "
                          "DEGILDIR: is patronun istedigini yapiyorsa kapat, eksik "
@@ -341,7 +353,7 @@ class Lider:
             satirlar += ["", f"**Patronun bu ise notlari** ({NOT_KURALI}):"]
             for n in notlar:
                 satirlar.append(
-                    f"- {n['govde'][:400]}"
+                    f"- {kisalt(n['govde'], 400)}"
                     + ("" if n["okundu"] else
                        "  _(ajana ULASMADI -- is bu nota gore yapilmadiysa "
                        "GERI GONDER, not bir sonraki turda gider)_"))
@@ -373,7 +385,7 @@ class Lider:
             for k in kanitlar:
                 satirlar.append(f"- **[{k['tur']}]** {k['baslik']}")
                 if k["icerik"]:
-                    satirlar.append(f"  ```\n  {k['icerik'][:1500]}\n  ```")
+                    satirlar.append(f"  ```\n  {kisalt(k['icerik'], 1500)}\n  ```")
         else:
             satirlar.append("- (kanit yok)")
 
@@ -459,7 +471,10 @@ class Lider:
             satirlar += ["", "### Patronun sohbetine GONDERILENLER (ofisin kaydi)", ""]
             for _m in _giden[:6]:
                 _metin, _yollar = _ayikla(_m)
-                satirlar.append(f"- \"{_metin[:160]}\""
+                # KESME GORUNUR (02.10.2026 OLCULDU): mesaj 160 harfte sessizce
+                # kesiliyordu; lider "mesaj '2) G' ile yarida kesilmis" deyip
+                # TAM mesaji geri gonderdi. Ofis kisaltirsa bunu SOYLER.
+                satirlar.append(f"- \"{kisalt(_metin, 1500)}\""
                                 + (f" · ekler: {', '.join(_yollar)}" if _yollar else ""))
         satirlar += ["", "_Not: `.ofis/ekler/` klasoru her iste serbesttir; patrona "
                          "gosterilecek dosyanin oraya yazilmasi ihlal DEGILDIR. "

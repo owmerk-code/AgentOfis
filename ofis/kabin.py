@@ -95,7 +95,15 @@ def calistirilabilir_bul() -> str:
 
 
 def profil_yolu() -> str:
-    """Kabin profili -- proje kokunun DISINDA, kasayla ayni klasorde."""
+    """Kabin profili -- proje kokunun DISINDA, kasayla ayni klasorde.
+
+    `OFIS_KABIN_PROFIL` (02.10.2026): olcum paneli ofisin GERCEK evini
+    (codex girisi) kullanirken kabin profili patronun canli kabininin
+    profiliyle CAKISMASIN (ayni profil iki Chrome'da acilamaz)."""
+    if os.environ.get("OFIS_KABIN_PROFIL"):
+        p = Path(os.environ["OFIS_KABIN_PROFIL"])
+        p.mkdir(parents=True, exist_ok=True)
+        return str(p)
     p = Path(VARSAYILAN_DEPO).parent / tarayici.KABIN_PROFIL_ADI
     p.mkdir(parents=True, exist_ok=True)
     return str(p)

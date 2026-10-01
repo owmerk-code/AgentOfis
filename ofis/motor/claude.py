@@ -471,7 +471,7 @@ class ClaudeMotoru(Motor):
                 p = subprocess.Popen(
                     [self.calistirilabilir, "-p", "--input-format", "stream-json",
                      "--output-format", "stream-json", "--verbose",
-                     "--strict-mcp-config", "--tools", ""],
+                     "--strict-mcp-config", "--no-chrome", "--tools", ""],
                     cwd=dizin, env=ortam, stdin=subprocess.PIPE,
                     stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True,
                     encoding="utf-8", errors="replace", creationflags=_PENCERE_YOK)
@@ -1085,6 +1085,14 @@ class ClaudeMotoru(Motor):
             # gorevle birlikte gelir (`mcp_yapilandirma`), hesabin tamamiyla
             # degil.
             "--strict-mcp-config",
+            # KISISEL CHROME KAPALI (02.10.2026 OLCULDU): patronun Claude
+            # ayari "Claude in Chrome varsayilan acik"; etkilesimli (gercek
+            # terminal) kipte ajana 21 `claude-in-chrome` araci geliyordu --
+            # PATRONUN KISISEL Chrome'unu suren (navigate, computer,
+            # javascript_tool, read_page). `--strict-mcp-config` ve `--tools`
+            # bunlari ENGELLEMIYOR (olculdu); `--no-chrome` engelliyor.
+            # Ajanin tarayicisi ofisin kabinidir.
+            "--no-chrome",
             "--append-system-prompt",
             SISTEM_EKI_ORTAK + (KANIT_MCP if mcp_yapilandirma else KANIT_METIN),
         ]

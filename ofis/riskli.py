@@ -253,6 +253,12 @@ KOD_ETKISI = _kur((
     r"settimeout\s*\(\s*[\"'`]",
 ))
 
+#: Yalniz YAZI GIRME olaylari (bkz. tarayici kapisinda "KODLA YAZMAK").
+#: `keydown`/`keypress` ve `submit` BILEREK yok: Enter formu gonderir.
+_YAZMA_OLAYI = re.compile(
+    r"\.dispatchevent\s*\(\s*new\s+(?:input|ui|focus)?event\s*\(\s*[\"'`]"
+    r"(?:input|change|focus|focusin|blur|focusout)[\"'`][^()]*(?:\([^()]*\)[^()]*)*\)\s*\)")
+
 #: AYNI SITEDEN OKUMA (01.10.2026, onay yorgunlugu E80). Patronun gercek
 #: ofisinde en sik sorulan onay "SAYFAYI DEGISTIREN KOD"du ve hepsi
 #: onaylanmisti; canli denemede ajan TUIK'in KENDI arama ucunu okumak icin
@@ -473,6 +479,28 @@ def degerlendir(arac: str, argumanlar: dict, *, url: str = "",
         # Ayni siteden okuma serbest; koddaki OTEKI etkiler (tiklama, form)
         # yine taranir -- yalniz fetch cagrilari dusurulur.
         kod = re.sub(r"\bfetch\s*\(", "oku(", kod)
+    # KODLA YAZMAK = KLAVYEYLE YAZMAK (02.10.2026 OLCULDU, sinama paneli):
+    # ayni isi (Google'da arama) Claude ajani `browser_type` ile yapti,
+    # sorulmadi; Codex ajani arama kutusuna `el.value = ...` +
+    # `dispatchEvent(new Event('input'))` ile yazdi, kapi "SAYFAYI
+    # DEGISTIREN KOD" deyip patrona sordu ve is DURDU. `dispatchEvent`
+    # kurali kodla TIKLATMAYA karsi var; yalniz "yazi girildi/degisti/odak"
+    # olayi tiklama degildir. Bu olaylar taramadan cikarilir; tiklama,
+    # gonderme, Enter tusu ve ag istegi yine sorulur. SIFRE/KART alanina
+    # kodla yazmak `browser_type`daki gibi sorulur.
+    if kod:
+        _yazma = _YAZMA_OLAYI.sub("", sadelestir(kod))
+        if _yazma != sadelestir(kod) or re.search(r"\.value\s*=(?!=)", sadelestir(kod)):
+            _adlar = sadelestir(" | ".join(x for x in (
+                (argumanlar or {}).get("element") or "", sayfa_metni or "") if x))
+            _k = _esles(_adlar, KIMLIK_ALANI) or _esles(sadelestir(kod), KIMLIK_ALANI)
+            if _k and re.search(r"\.value\s*=(?!=)", sadelestir(kod)):
+                b = _bulgu("kimlik", _k, arac, _adlar or "(kodla yazilan alan)", url, kimlik)
+                b["sebep"] = ("Ajan bir SIFRE / KIMLIK alanina KODLA yazmak istedi. "
+                              "Sifre ajanin elinde olmamali: girisi patron kendisi "
+                              "yapar (`giris_iste`).")
+                return b
+        kod = _yazma
     if kod:
         sade_kod = sadelestir(kod)
         bulunan = (_esles(sade_kod, KOD_ETKISI)
@@ -1126,6 +1154,14 @@ def _arac_bulgu(sinif: str, bulunan: str, arac: str, girdi_metni: str) -> dict:
 #: E80: tarayicinin kendi ciktisi ajanin isi degildir; silmeye kalkmasi
 #: her turda patrona gereksiz bir "geri alinamaz silme" sorusu dusuruyordu.
 TARAYICI_ARTIK = (
+    # ARAC SECIMI (02.10.2026 OLCULDU, ayni is iki motorda): Claude
+    # ajani `browser_type` (Enter ile) kullandi, is 91 sn'de bitti; Codex
+    # ajani kodla yazip formu kodla gonderdi (`requestSubmit`), kapi
+    # kodun hangi formu gonderdigini bilemedigi icin sordu, is DURDU.
+    # Hazir arac kutunun ADINI tasir, kapi ona bakarak karar verir.
+    "Sayfada YAZMAK icin `browser_type` (Enter: `submit`), TIKLAMAK icin "
+    "`browser_click` kullan; `browser_evaluate` yalniz OKUMAK icindir -- "
+    "kodla tiklama / form gonderme patrona sorulur ve is bekler. "
     "`.playwright-mcp/` klasoru tarayicinin KENDI ciktisidir (anlik "
     "goruntu, konsol). Senin isin degil, ofis onu olcmez: SILME, "
     "temizlemeye calisma, kanita koyma.")
