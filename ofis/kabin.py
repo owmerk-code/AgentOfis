@@ -183,8 +183,37 @@ class Kabin:
         return {"cikis": self.surec.returncode,
                 "son_hata": _son_satirlar(gunluk_yolu())}
 
+    #: Chrome'un "profil baska bir Chrome'da acik" cikis kodu.
+    PROFIL_KILITLI = 21
+
     def ac(self, baslangic: str = "about:blank", bekle_sn: float = 20.0,
            *, gorunur: bool = False) -> dict:
+        """Kabini acar. PROFIL KILITLIYSE (02.10.2026 olculdu: yeni kapanan
+        tarayicinin kilidi birkac saniye kalir) 3 sn bekleyip BIR KEZ
+        yeniden dener. Kilidi tutan Chrome KAPATILMAZ: baska bir panelin
+        CANLI kabini olabilir (olculdu: sinama paneli patronun kabininin
+        profiline denk geldi). Olmazsa sebep duz soylenir."""
+        try:
+            return self._ac(baslangic, bekle_sn, gorunur=gorunur)
+        except KabinHatasi as exc:
+            if getattr(exc, "cikis", None) != self.PROFIL_KILITLI:
+                raise
+        time.sleep(3)
+        try:
+            return self._ac(baslangic, bekle_sn, gorunur=gorunur)
+        except KabinHatasi as exc:
+            if getattr(exc, "cikis", None) != self.PROFIL_KILITLI:
+                raise
+            yeni = KabinHatasi(
+                "Tarayici profili baska bir Chrome'da acik (baska bir panelin "
+                "tarayicisi ya da yeni kapanmis bir tarayici). O panelin "
+                "tarayicisini kapat ya da biraz sonra yeniden dene. Ayrinti: "
+                + str(exc)[:300])
+            yeni.cikis = self.PROFIL_KILITLI
+            raise yeni from exc
+
+    def _ac(self, baslangic: str = "about:blank", bekle_sn: float = 20.0,
+            *, gorunur: bool = False) -> dict:
         """Kabini acar. ZATEN ACIKSA yenisini baslatmaz.
 
         Ikinci bir Chrome ayni profille acilamaz (kilit) ve ayni kapiyi
@@ -217,10 +246,12 @@ class Kabin:
             # Surec olduyse beklemenin anlami yok -- ve sebebi soylenir.
             if self.surec.poll() is not None:
                 self._olum_bildirildi = True
-                raise KabinHatasi(
+                hata = KabinHatasi(
                     f"Kabin Chrome'u acilirken kapandi (cikis "
                     f"{self.surec.returncode}). Son satirlar ({gunluk}):\n"
                     + (_son_satirlar(gunluk) or "(cikti yok)"))
+                hata.cikis = self.surec.returncode
+                raise hata
             time.sleep(0.25)
         # Acilmadiysa SESSIZ kalmiyoruz: "actim" deyip bosluk gostermek,
         # panelin cevapladigi tek soruyu ("neye bakmaliyim") kirletir.

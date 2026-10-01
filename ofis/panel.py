@@ -1048,6 +1048,18 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
         return _t.cdp_adresi(_kabin.kapi)
     _KABIN_CDP["islev"] = _kabin_cdp_ver
 
+    def _kabin_ajan_icin_ac() -> str:
+        """Ajan tarayici gereken ise basliyor, kabin kapali: ofis ACAR
+        (02.10.2026, patron: "otomatik olmali"). Kayda gecer; panel
+        `yenile`de gorup gosterir."""
+        _kabin.ac("about:blank")
+        _kabin_kaydi("kabin_acildi", "Kabin acildi (ajan tarayici kullanacak)")
+        return _kabin_cdp_ver()
+    # Acici YALNIZ calisan sunucuda kaydedilir (`calistir`). Burada
+    # kaydedilseydi paneli kuran her SINAMA gercek Chrome acardi (02.10.2026
+    # olculdu: duman_panel kabini 9399'da acik birakti).
+    _KABIN_CDP["acici"] = _kabin_ajan_icin_ac
+
     # ONBELLEK: `no-cache` = "kullanmadan once SOR". Basliksiz dosyada
     # tarayici kendi tahminiyle tazelik uydurur (son degisimden bu yana
     # gecen surenin ~%10'u) ve panel guncellenince ESKI arayuzu
@@ -2767,6 +2779,10 @@ def kos(adres: str = "127.0.0.1", kapi: int = 8900, db_yolu=None,
     if adres not in GUVENLI_ADRESLER and not adres.startswith("100."):
         print(f"UYARI: {adres} yerel ya da Tailscale adresi degil.")
     uygulama = olustur(db_yolu, proje_ad)
+    # OTOMATIK TARAYICI (02.10.2026): ajan tarayici gereken ise basliyor,
+    # kabin kapali -> ofis acar. Yalniz gercekten calisan panelde.
+    from . import orkestra as _ork_mod
+    _ork_mod.KABIN_ACICI["islev"] = _KABIN_CDP.get("acici")
     acilista_toparla(db_yolu or VARSAYILAN_YOL, proje_ad)
     bildirimleri_baslat(db_yolu or VARSAYILAN_YOL, proje_ad,
                         f"http://{adres}:{kapi}/")

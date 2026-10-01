@@ -259,6 +259,11 @@ async function kosuDurumu() {
 
 async function yenile() {
   kosuDurumu();
+  // OTOMATIK TARAYICI (02.10.2026): ajan tarayici gereken ise baslayinca
+  // ofis kabini KENDISI acar; panel bunu burada gorur ve gosterir.
+  kabinDurum().then((d) => {
+    if (d && d.acik && !K.acik) { kabinGoster(d); kabinBagla(); }
+  }).catch(() => {});
   await devralAl();
   D.ofis  = await al("/api/ofis");
   D.tahta = await al("/api/tahta" + (D.kanat ? "?kanat=" + D.kanat : ""));
@@ -2458,8 +2463,9 @@ function kabinBagla() {
     } else if (v.tur === "adres") {
       // URL cubugu GERCEGI gosterir: yonlendirme olursa yazdigin
       // adres degil GIDILEN adres. Uydurmaz.
+      K.sonAdres = v.govde || "";
       if (document.activeElement !== $("#kabin-adres"))
-        $("#kabin-adres").value = v.govde || "";
+        $("#kabin-adres").value = K.sonAdres;
       // Sayfa degisti: cerceve artik baska bir yeri gosterirdi. Secilen
       // ogenin BILGISI kalir (cipte), cercevesi kalkar.
       ogeVurgu(null);
@@ -2541,12 +2547,34 @@ function ogeCipi() {
   c.hidden = false;
 }
 
+/* ADRES CUBUGU Chrome gibi (02.10.2026, patron: "youtube deyince
+   calismiyor"): adres gibi gorunen yazi acilir, oteki her sey ARANIR.
+   Sema yoksa https varsayilir, http'ye DUSULMEZ (`tarayici.kaynak_normalle`
+   ile ayni kural); yalniz yerel adres (localhost, 127.x, IP:port) http. */
+function adresCoz(u) {
+  u = (u || "").trim();
+  if (/^[a-z][a-z0-9+.-]*:\/\//i.test(u) || /^(about|data|file):/i.test(u)) return u;
+  const yerel = /^(localhost|127(?:\.\d+){3}|\[::1\]|(?:\d{1,3}\.){3}\d{1,3})(:\d+)?(\/.*)?$/i;
+  if (yerel.test(u)) return "http://" + u;
+  // Adres: bosluk yok, bir noktali ad ve gecerli bir uzanti (youtube.com,
+  // a.b.co/yol). "youtube", "hava durumu", "3.5 kg" ARANIR.
+  if (!/\s/.test(u) && /^[^/?#]+\.[a-z]{2,}(?::\d+)?(?:[/?#].*)?$/i.test(u))
+    return "https://" + u;
+  return "https://www.google.com/search?q=" + encodeURIComponent(u);
+}
+
 function kabinKur() {
   const img = $("#kabin-kare");
   const alan = $("#gorunum-kabin");
 
   img.onmousedown = (e) => {
     e.preventDefault();
+    // IKI YERE BIRDEN YAZMA (02.10.2026, patron): preventDefault odagi
+    // adres cubugunda BIRAKIYORDU; sayfaya tikladiktan sonra yazilanlar
+    // adres cubuguna dusuyordu. Odak acikca birakilir: tuslar YALNIZ
+    // sayfaya gider.
+    if (document.activeElement && document.activeElement !== document.body)
+      document.activeElement.blur();
     alan.classList.add("odakli");
     const p = kabinNokta(e);
     if (K.secKipi) {                 // SECIM: fare sayfaya GITMEZ
@@ -2603,15 +2631,24 @@ function kabinKur() {
     if (!alan.contains(e.target)) alan.classList.remove("odakli");
   });
 
+  // Adres cubuguna gecince sayfa tus ALMAZ (tek yer).
+  // Chrome gibi: adres cubuguna girince yazinin TAMAMI secilir; yeni yazi
+  // eskisinin onune eklenmez (02.10.2026 olculdu: "youtubeabout:blank").
+  // Yazip vazgecince (Enter'siz cikis) cubuk GERCEK adrese doner.
+  $("#kabin-adres").onblur = () => {
+    if (K.sonAdres !== undefined) $("#kabin-adres").value = K.sonAdres;
+  };
+  $("#kabin-adres").onfocus = () => {
+    alan.classList.remove("odakli");
+    setTimeout(() => $("#kabin-adres").select(), 0);
+  };
   $("#kabin-adres").onkeydown = (e) => {
     if (e.key !== "Enter") return;
     let u = $("#kabin-adres").value.trim();
     if (!u) return;
-    // Sema yoksa https varsayilir, http'ye DUSULMEZ -- sessizce
-    // sifrelenmemis baglantiya gecmek beklenmeyen bir gevsemedir
-    // (`tarayici.kaynak_normalle` ile ayni kural).
-    if (!/^[a-z]+:\/\//i.test(u)) u = "https://" + u;
-    kabinYolla({ tur: "git", url: u });
+    kabinYolla({ tur: "git", url: adresCoz(u) });
+    // Chrome gibi: Enter'dan sonra cubuk birakilir ve GIDILEN adresi gosterir.
+    $("#kabin-adres").blur();
   };
   $("#kabin-geri").onclick = () => kabinYolla({ tur: "geri" });
   $("#kabin-yenile").onclick = () => kabinYolla({ tur: "yenile" });
@@ -4469,7 +4506,8 @@ function gunlugeEkle(o) {
 
 // Panelin tazelenmesi gereken olaylar. Akan cikti (cikti/metin) buraya
 // GIRMEZ: her jetonda paneli yeniden cizmek, paneli kullanilmaz yapar.
-const TAZELE = new Set(["kapandi", "sahiplenildi", "incelemede", "birakildi",
+// "kabin": ofis tarayiciyi AJAN icin actiginda panel ANINDA gosterir (02.10.2026).
+const TAZELE = new Set(["kabin_acildi", "kabin_kapandi", "kapandi", "sahiplenildi", "incelemede", "birakildi",
   "ret", "soru", "cevap", "onay_istendi", "onay_cevabi", "gorev_acildi",
   "kanit", "karar", "tur_ozeti", "olgu", "olgu_guncellendi", "ise_alindi",
   // Kural her brifinge girer: eklenince/kaldirilinca Hafiza o an tazelenmeli.

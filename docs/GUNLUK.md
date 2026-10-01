@@ -13642,3 +13642,66 @@ gibi betik çalıştırmak İÇİNE hiç bakılmadan geçiyordu.
   istemedikçe ölçüte yazılmaz. Yeniden: G11 codex GEÇTİ (186 sn), claude
   GEÇTİ (138 sn).
 - Tam takım 3783/3783, çıkış koduyla.
+
+## RAKİP — son videolar (01.10.2026): tarayıcı / masaüstü nasıl?
+
+Kaynak: @MuratifyAI, Playwright ile altyazı + kare (`docs/rakip/jev_dokum.txt`,
+`docs/rakip/devday_k1.png`).
+- **"Jev AI oyunumu oynadı" (NGkEzF0MOKs):** masaüstü/ajan kontrolü DEĞİL.
+  Kendi oyunu, model ekranı görmüyor; oyun durumu JSON verir, model karar
+  ("W'ya bas, saldır") döner, köprü kod tuşa çevirir.
+- **"OpenAI DevDay" (pMcLiIGxNt4, 30.09 canlı, kare 11:43):** ajan "Kamil
+  Amca" (Claude Code terminali, `bypass permissions on`) **kendi MCP aracı
+  `agentdesk-browser`** ile AgentSpace'in **DAHİLİ tarayıcısını** sürüyor
+  (sol panel "Tarayıcı": ajan adlı sekme `kamil-amca · Nar Lo…`, adres
+  çubuğunda **DURDUR**, "Element Seç"). Codex ajanının bilgisinde
+  `agentspace_browser` aracı ve "bu ofiste bağlı tarayıcı yoksa…" kuralı.
+  Sesli asistanla (Agent X) "oyunu tekrar baştan oynat" deniyor, ajan
+  dahili tarayıcıda oynuyor. Claude in Chrome / Codex tarayıcı eklentisi /
+  masaüstü fare kontrolü GÖRÜLMEDİ. "Computer use" yalnız OpenAI'nin
+  demosunun çökmesi bağlamında geçiyor.
+- **"Sonnet 5.5" (BCiMfZ9mN-w):** "dahili tarayıcıda gezip… masaüstü ve
+  mobil boyutta gerçek tıklamalarla test edip ekran görüntüsü" — masaüstü
+  = ekran boyutu, bilgisayar kontrolü değil.
+- Sonuç: Murat'ın yolu bizim kabinle aynı (ofisin kendi tarayıcı aracı,
+  uygulamanın içindeki tarayıcı). Farklar: ajan başına SEKME (adıyla),
+  tarayıcı çubuğunda DURDUR, codex terminali kota sınırında ekranda kalmış.
+
+## 02.10.2026 — gömülü tarayıcı: patronun bildirdiği hatalar + otomatik kullanım
+
+Patron (ekran): "youtube deyince çalışmıyor, google.com yazınca çalışıyor;
+arama kutusuna yazarken üst kutuya da yazıyor; çarpı yanlış yerde; tarayıcı
+her zaman kullanılabilir olmalı, otomatik olmalı". Ölçülen ve düzeltilen:
+1. Adres çubuğu her yazıya `https://` ekliyordu → Chrome gibi: adres gibi
+   görünen açılır, gerisi Google'da ARANIR (`adresCoz`, node ile sınanır).
+2. **Başsız Chrome "HeadlessChrome" diye tanıtıyordu, Google aramayı "sorry"
+   sayfasıyla ENGELLEDİ** (ölçüldü: başsız ENGEL · başsız+normal kimlik AÇIK ·
+   pencereli ekran dışı AÇIK). Kabin artık gerçek sürümle normal Chrome
+   kimliği taşır (`tarayici.chrome_kimligi`).
+3. Sayfaya tıklayınca `preventDefault` odağı adres çubuğunda bırakıyordu →
+   odak bırakılır; adres çubuğuna girince sayfa tuş almaz, yazı seçilir,
+   Enter'dan sonra çubuk gidilen adresi gösterir. Gerçek arayüzde ölçüldü
+   ("kedi" yalnız Google kutusuna, adres değişmedi).
+4. "ajanlar" düğmesi 24px'e sıkışıyordu, çarpı üstüne biniyordu → `width:auto`.
+5. **Otomatik:** "ajanlar burada" varsayılan AÇIK (patronun defterinde zaten
+   açıktı — sorun kabinin kapalı olmasıydı). Ajan tarayıcı gereken işe
+   başlarken kabin kapalıysa ofis AÇAR (`orkestra.KABIN_ACICI`, yalnız
+   çalışan panelde `calistir`), olay `kabin_acildi`, panel ANINDA gösterir.
+   Uçtan uca iki kez ölçüldü (sınama paneli 8911, ofis kopyası, bilge/sonnet):
+   kabin kendiliğinden açıldı, ajan example.com/.org'u orada açtı, iş bitti.
+6. Profil kilidi (yeni kapanmış tarayıcı) → 3 sn bekleyip bir kez yeniden;
+   kilidi tutan Chrome KAPATILMAZ (ölçüldü: sınama paneli patronun canlı
+   kabininin profiline denk geldi — öldürmek onun tarayıcısını kapatırdı).
+7. **Sınama yalıtımı:** "ajanlar burada" açıkken geçici ofisler patronun açık
+   kabinine (9222) girebilirdi — ÖNCEDEN DE duman_panel 9222'de açık kabini
+   KULLANIYORDU. `OFIS_KABIN_KAPI` (sınamada 9399). İlk denemede açıcı
+   `olustur`da kayıtlıydı → duman_panel gerçek Chrome açıp açık bıraktı
+   (sızıntı, bulundu) → açıcı yalnız `calistir`da.
+8. Ek bulgu (canlı denemede): lider WebFetch özetiyle "example.org'da h1 var"
+   deyip ajanın tarayıcı+curl ölçümünü ("h1 yok", DOĞRU — ham HTML'de h1 yok)
+   çürüttü, işi boşuna geri gönderdi ve ajanın sorusuna da yanlış cevap
+   verdi. Kural (`lider.OZET_ARACI_KURALI`, inceleme + danışma): web özeti
+   ölçüm değildir; çelişkide ham içeriğe bak, yalnız özet yüzünden geri gönderme.
+- Not: Codex CLI 0.159.3→0.160.0 güncellemesini PATRONUN paneli yaptı
+  (00:09, deneme geçti); sınama paneli o sırada kapalıydı.
+- Sınama `duman_kabin_kullanim.py` 38/38; 11 mutasyonun 11'i yakalandı.

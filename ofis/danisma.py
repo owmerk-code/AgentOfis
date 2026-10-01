@@ -52,6 +52,7 @@ from . import kullanim, roller
 from .guncelleme import model_coz as _model_coz
 from .motor import motor_ac, MotorHatasi
 from .postane import NOT_KURALI, gorev_notlari
+from .lider import OZET_ARACI_KURALI
 from .tahta import TahtaHatasi
 
 #: Danisilanin cevabinin ustunde durulacak uzunluk. Danisma kisa bir
@@ -194,6 +195,7 @@ class Danisma:
             "  yapacak; sen ona ne yapmasi gerektigini soyleyeceksin.",
             "- **Is acamazsin, gorev veremezsin.** Sen akil verirsin.",
             "- **Baskasina soru soramazsin.** Bu turda arac kutun yok.",
+            "- " + OZET_ARACI_KURALI,
             "",
             f"**Bilmiyorsan tek basina `{BILMIYORUM}` yaz** ve sebebini",
             "ekle. Soru olmez, insana yukselir. UYDURMA: yanlis bir cevap,",

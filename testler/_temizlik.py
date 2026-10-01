@@ -51,6 +51,11 @@ if not os.environ.get("OFIS_GOLGE_KOK"):
 # klasore cevrilir. Olculdu: `duman_gorsel.py` her kosuda kullanicinin
 # gercek kota defterine "Gemini kotasi doldu" yaziyordu -- sabiti
 # yonlendirmeyi bir bolumde UNUTMUSTU. Tek kokle unutmak mumkun degil.
+# PATRONUN KABINI (9222) sinamaya KAPALI: "ajanlar kabinde" varsayilan
+# acik; sinama ofisi kendi (bos) kapisina bakar.
+if not os.environ.get("OFIS_KABIN_KAPI"):
+    os.environ["OFIS_KABIN_KAPI"] = "9399"
+
 if not os.environ.get("OFIS_EV"):
     os.environ["OFIS_EV"] = tempfile.mkdtemp(prefix="ofis-ev-sinama-")
 

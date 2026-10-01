@@ -406,7 +406,12 @@ def ozet(kaynaklar, *, profil: str = "", gorunur: bool = False,
 #:   * Kabin VARSAYILAN KAPALI ve AYRI profilde (kisisel Chrome degil).
 #:   * KORUNMAYAN: bu bilgisayarda zaten kosan yerel bir program. Ona
 #:     karsi koruma isletim sisteminin isi; yazili sinir.
-KABIN_KAPISI = 9222
+#: SINAMA AYRI KAPIDA (02.10.2026): "ajanlar kabinde" varsayilan ACIK
+#: olunca gecici ofislerdeki sinama/deneme ajanlari patronun ACIK kabinine
+#: (9222) girebilirdi. Sinama surecleri `OFIS_KABIN_KAPI` ile baska kapi
+#: kullanir (`testler/_temizlik.py`, `ofis_kopyasi.py`).
+import os as _os
+KABIN_KAPISI = int(_os.environ.get("OFIS_KABIN_KAPI") or 9222)
 
 #: Kabin profili proje kokunun DISINDA durur (kasayla ayni klasor):
 #: cerez ve oturum bir CALISMA DURUMUDUR, proje verisi degil -- ve
@@ -475,10 +480,35 @@ def kabin_komutu(calistirilabilir: str, *, profil: str,
         "--disable-features=Translate,OptimizationHints",
         # Pencere ACILMAZ; kabin yalnizca panelde yasar. `--headless=new`
         # eski bassiz kipten farkli: gercek Chrome motoru, ayni render.
-        *(() if gorunur else ("--headless=new",)),
+        # KIMLIK (02.10.2026 OLCULDU): bassiz Chrome kendini
+        # "HeadlessChrome" diye tanitiyordu ve Google aramayi "sorry"
+        # sayfasiyla ENGELLEDI (patron: "youtube deyince calismiyor").
+        # Ayni Chrome kendi gercek surumuyle tanitilinca arama acildi
+        # (pencereli kip de acti). Tarayici gercek Chrome; ad ona uyar.
+        *(() if gorunur else ("--headless=new",
+                              f"--user-agent={chrome_kimligi(calistirilabilir)}")),
         f"--window-size={int(en)},{int(boy)}",
         str(baslangic),
     ]
+
+
+def chrome_kimligi(calistirilabilir) -> str:
+    """Gercek Chrome'un tarayici kimligi (bassiz kip icin). Ana surum
+    kurulum klasorundeki surum adli klasorden okunur (`154.0.8037.58`);
+    Chrome'un kendisi de yalniz ana surumu soyler (`154.0.0.0`).
+    Bulunamazsa surumsuz kimlik -- uydurma bir numara YAZILMAZ."""
+    import re as _re
+    ana = ""
+    try:
+        for d in Path(str(calistirilabilir)).parent.iterdir():
+            m = _re.fullmatch(r"(\d+)\.\d+\.\d+\.\d+", d.name)
+            if d.is_dir() and m and int(m.group(1)) > int(ana or 0):
+                ana = m.group(1)
+    except OSError:
+        pass
+    surum = f"Chrome/{ana}.0.0.0" if ana else "Chrome"
+    return ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+            f"(KHTML, like Gecko) {surum} Safari/537.36")
 
 
 def cdp_adresi(kapi: int = KABIN_KAPISI) -> str:

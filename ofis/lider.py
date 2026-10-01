@@ -107,6 +107,16 @@ class LiderHatasi(RuntimeError):
     pass
 
 
+#: Web OZET araci (WebFetch, web aramasi) ham icerik degil OZET verir;
+#: dogrudan olcumu curutemez. Inceleme ve danisma ayni sozu kullanir.
+OZET_ARACI_KURALI = (
+    "WEB OZETI OLCUM DEGILDIR: WebFetch / web aramasi sayfayi kucuk bir "
+    "modelle OZETLER, yanilabilir ya da eski bilgi verebilir. Ajanin "
+    "tarayicida ya da `curl` ile DOGRUDAN olctugu sayfa icerigini bu ozetle "
+    "CURUTME. Celiski gorursen ham icerige kendin bak (`curl -s <adres>`); "
+    "bakamiyorsan yalniz ozet yuzunden GERI GONDERME, suphe notu dus.")
+
+
 class Lider:
     def __init__(self, ofis, *, motor_fabrikasi=motor_ac) -> None:
         self.ofis = ofis
@@ -490,6 +500,11 @@ class Lider:
             "   directory' hatasi) ajanin kanitiyla CELISKI DEGILDIR (madde 4",
             "   burada uygulanmaz); celiski ancak komut CALISIP FARKLI sonuc",
             "   verirse vardir.",
+            # 02.10.2026 OLCULDU (sinama paneli, example.org): ajan tarayicida
+            # ve curl ile "h1 yok" olctu (DOGRU); lider WebFetch ozetiyle "h1
+            # var" deyip isi GERI GONDERDI ve ajanin sorusuna da ayni yanlisla
+            # cevap verdi -- bir tur bosa gitti.
+            "6b. " + OZET_ARACI_KURALI,
             "7. ANLAMI DEGISTIRMEYEN fark ret sebebi DEGILDIR: Turkce harf",
             "   (Cay/Çay), buyuk-kucuk harf, siralama, uslup, telif yili,",
             "   kucuk yazim hatasi. Olcut karsilaniyorsa KAPAT; istersen",

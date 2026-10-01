@@ -106,9 +106,16 @@ def _json_ayikla(metin: str):
         return None
 
 
-#: "Ajanlar kabinde" anahtari (ayar). Varsayilan KAPALI: kabinde insanin
-#: oturumlari yasar; ajani oraya sokmak insanin bilerek verdigi bir yetki.
+#: "Ajanlar kabinde" anahtari (ayar). Varsayilan ACIK (02.10.2026,
+#: patron: "tarayici her zaman kullanilabilir olmali, otomatik olmali;
+#: ai modeller istedigi zaman kullanabilmeli"). Kapatmak insanin elinde.
+#: (Onceki varsayilan KAPALI idi: kabinde insanin oturumlari yasar --
+#: riskli tiklama yine onaya duser, tarayici_kapi.)
 KABIN_IZLE_ANAHTARI = "kabin_izle"
+
+#: Panel, kabini ACABILEN islevi buraya koyar (kabin panelin omrunu
+#: paylasir). Bos ise (kabuk, sinama) ofis kabin acmaz.
+KABIN_ACICI = {"islev": None}
 
 #: Izleme kabini hangi ise verilsin: tarayici kullanacagi en belli olana.
 #: Tahmin degil ONCELIK: eslesen yoksa kabin ilk ise verilir (kullanmazsa
@@ -118,7 +125,7 @@ _TARAYICI_IPUCU = ("http", "site", "sayfa", "tarayici", "tarayıcı", "web",
 
 
 def kabin_izle_acik_mi(db, proje_id) -> bool:
-    return (db.ayar_oku(proje_id, KABIN_IZLE_ANAHTARI, "kapali") or "") == "acik"
+    return (db.ayar_oku(proje_id, KABIN_IZLE_ANAHTARI, "acik") or "") == "acik"
 
 
 def _tarayici_puani(g: dict) -> int:
@@ -128,9 +135,19 @@ def _tarayici_puani(g: dict) -> int:
 
 
 def _kabin_ucnoktasi() -> str:
-    """Kabin aciksa CDP ucnoktasi, degilse bos. OLCER, varsaymaz."""
+    """Kabin aciksa CDP ucnoktasi. Kapaliysa ve panel bir acici verdiyse
+    kabini ACAR (ajan tarayici gereken ise basliyor); acilamazsa bos --
+    is kendi gorunmez tarayicisiyla surer. OLCER, varsaymaz."""
     from . import kabin as _kab, tarayici as _tar
-    return _tar.cdp_adresi() if _kab.acik_mi() else ""
+    if _kab.acik_mi():
+        return _tar.cdp_adresi()
+    acici = KABIN_ACICI.get("islev")
+    if acici:
+        try:
+            return acici() or ""
+        except Exception:                # noqa: BLE001 -- is gorunmez tarayiciyla surer
+            return ""
+    return ""
 
 
 #: Tasimadan (01.10.2026) once ofisin proje kokunun adi. Plan bu adla

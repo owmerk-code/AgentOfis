@@ -36,6 +36,9 @@ for _a in (sys.stdout, sys.stderr):
     except Exception:
         pass
 
+import os as _os                                  # noqa: E402
+# Kopya ofis patronun ACIK kabinine (9222) girmesin.
+_os.environ.setdefault("OFIS_KABIN_KAPI", "9399")
 from ofis import Ofis, Veritabani, takim          # noqa: E402
 
 PROJE = "Ofisim"

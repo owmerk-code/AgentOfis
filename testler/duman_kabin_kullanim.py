@@ -1,0 +1,216 @@
+# -*- coding: utf-8 -*-
+"""GOMULU TARAYICI KULLANIMI duman testi (02.10.2026, patronun ekrani).
+
+Jeton yakmaz. Patron: *"youtube deyince calismiyor, google.com yazinca
+calisiyor; arama kutusuna yazarken ust kutuya da yaziyor; carpi yanlis
+yerde; tarayici her zaman kullanilabilir olmali, otomatik olmali"*.
+Olculen ve duzeltilen:
+  1. adres cubugu "youtube"u `https://youtube` yapiyordu -> Chrome gibi ARAR
+  2. bassiz Chrome "HeadlessChrome" diye tanitiyordu, Google aramayi
+     "sorry" ile ENGELLEDI (olculdu) -> gercek surumle normal Chrome kimligi
+  3. sayfaya tiklayinca odak adres cubugunda kaliyordu -> odak birakilir
+  4. "ajanlar" dugmesi 24px'e sikisiyordu, carpi ustune biniyordu
+  5. ajan tarayici gereken ise basliyor, kabin kapali -> ofis ACAR (panel)
+     ve panel bunu yenilemeden gosterir; varsayilan "ajanlar burada" ACIK
+  6. profil kilidi (yeni kapanan tarayici) -> 3 sn bekleyip BIR KEZ yeniden;
+     kilidi tutan Chrome KAPATILMAZ (baska panelin canli kabini olabilir)
+  7. sinama surecleri patronun kabin kapisina (9222) bakmaz
+"""
+
+from __future__ import annotations
+
+import _temizlik  # noqa: F401 -- gecici klasorleri siler; ILK ice aktarma
+
+import os
+import subprocess
+import sys
+import tempfile
+from pathlib import Path
+
+KOK = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(KOK))
+
+from ofis import tarayici, kabin, orkestra  # noqa: E402
+
+GECEN = KALAN = 0
+
+
+def sina(baslik: str, kosul: bool, not_: str = "") -> None:
+    global GECEN, KALAN
+    if kosul:
+        GECEN += 1
+        print(f"  [gecti] {baslik}")
+    else:
+        KALAN += 1
+        print(f"  [KALDI] {baslik} {not_}")
+
+
+JS = (KOK / "web" / "panel.js").read_text(encoding="utf-8")
+CSS = (KOK / "web" / "panel.css").read_text(encoding="utf-8")
+HTML = (KOK / "web" / "index.html").read_text(encoding="utf-8")
+
+print("== gomulu tarayici kullanim testi ==\n")
+print("1. adres cubugu Chrome gibi (gercek islev node ile kosar)")
+_bas = JS.index("function adresCoz(u) {")
+_fn = JS[_bas:JS.index("\n}\n", _bas) + 3]
+BEKLENEN = {
+    "youtube": "https://www.google.com/search?q=youtube",
+    "hava durumu": "https://www.google.com/search?q=hava%20durumu",
+    "3.5 kg": "https://www.google.com/search?q=3.5%20kg",
+    "youtube.com": "https://youtube.com",
+    "www.sahibinden.com/ilan?x=1": "https://www.sahibinden.com/ilan?x=1",
+    "semuparfum.com.tr": "https://semuparfum.com.tr",
+    "localhost:3000": "http://localhost:3000",
+    "127.0.0.1:8911/x": "http://127.0.0.1:8911/x",
+    "https://a.b/c": "https://a.b/c",
+    "about:blank": "about:blank",
+}
+try:
+    import json
+    kod = _fn + "const g=" + json.dumps(list(BEKLENEN)) + ";console.log(JSON.stringify(g.map(adresCoz)));"
+    cikti = json.loads(subprocess.run(["node", "-e", kod], capture_output=True, text=True,
+                                      timeout=30).stdout)
+    for (girdi, bek), cik in zip(BEKLENEN.items(), cikti):
+        sina(f"{girdi!r} -> {bek}", cik == bek, cik)
+except FileNotFoundError:
+    sina("node yok -- adres cozumu OLCULEMEDI", False)
+sina("Enter adresCoz'dan gecer (eski 'https://' + yazi kurali YOK)",
+     "url: adresCoz(u)" in JS and '"https://" + u;\n    kabinYolla' not in JS)
+
+print("\n2. bassiz tarayicinin kimligi")
+_cal = Path(tempfile.mkdtemp(prefix="ofis-chrome-")) / "chrome.exe"
+(_cal.parent / "154.0.8037.58").mkdir()
+(_cal.parent / "153.0.1.2").mkdir()
+_k = tarayici.chrome_kimligi(_cal)
+sina("kimlik GERCEK ana surumu tasir (Chrome/154.0.0.0), 'Headless' YOK",
+     "Chrome/154.0.0.0" in _k and "Headless" not in _k, _k)
+sina("  surum klasoru yoksa numara UYDURULMAZ",
+     "Chrome/1" not in tarayici.chrome_kimligi(Path(tempfile.mkdtemp(prefix="ofis-chrome-")) / "c.exe"))
+_kom = tarayici.kabin_komutu(_cal, profil="p", kapi=1)
+sina("bassiz kabin komutu normal kimlikle acilir",
+     "--headless=new" in _kom and any(a.startswith("--user-agent=") and "Headless" not in a for a in _kom), str(_kom))
+_kg = tarayici.kabin_komutu(_cal, profil="p", kapi=1, gorunur=True)
+sina("  pencereli kipte kimlik EZILMEZ (gercek Chrome kendini zaten dogru tanitir)",
+     not any(a.startswith("--user-agent=") for a in _kg))
+
+print("\n3. odak: sayfaya tiklayinca adres cubugu birakilir")
+_md = JS[JS.index("img.onmousedown = (e) => {"):]
+_md = _md[:_md.index("};")]
+sina("sayfaya tiklama odagi BIRAKIR (blur)", ".blur()" in _md, _md[:300])
+sina("adres cubuguna gecince sayfa tus almaz", 'onfocus = () => {\n    alan.classList.remove("odakli");' in JS)
+sina("adres cubuguna girince yazi SECILIR (eski yazinin onune eklenmez)", '$("#kabin-adres").select()' in JS)
+sina("Enter'dan sonra cubuk birakilir, GIDILEN adres gorunur",
+     '$("#kabin-adres").blur();' in JS and "K.sonAdres" in JS)
+
+print("\n4. 'ajanlar' dugmesi sigar")
+sina("yazili dugme 24px'e sikistirilmaz", ".kabin-ray .kabin-izle { width: auto;" in CSS)
+sina("varsayilan etiket 'ajanlar: burada'", ">ajanlar: burada</button>" in HTML)
+
+print("\n5. ajan icin kabin KENDILIGINDEN acilir")
+from ofis import Ofis, Veritabani  # noqa: E402
+_d = Path(tempfile.mkdtemp(prefix="ofis-kabin-kul-"))
+_o = Ofis.proje_ac(Veritabani(_d / "o.sqlite3"), "K", amac="a", basari_olcutu="b", kok_klasor=str(_d))
+sina("ayar hic yazilmamis defterde 'ajanlar burada' ACIK",
+     orkestra.kabin_izle_acik_mi(_o.db, _o.proje_id) is True)
+_acildi = []
+orkestra.KABIN_ACICI["islev"] = lambda: (_acildi.append(1), "http://127.0.0.1:9399")[1]
+_eski_acik = kabin.acik_mi
+kabin.acik_mi = lambda *a, **k: False
+try:
+    sina("kabin kapali + panel acici verdi -> ofis ACAR ve ucnoktasi doner",
+         orkestra._kabin_ucnoktasi() == "http://127.0.0.1:9399" and _acildi == [1])
+    orkestra.KABIN_ACICI["islev"] = lambda: (_ for _ in ()).throw(RuntimeError("acilamadi"))
+    sina("  acilamazsa is DUSMEZ (bos ucnokta: kendi gorunmez tarayicisi)",
+         orkestra._kabin_ucnoktasi() == "")
+    orkestra.KABIN_ACICI["islev"] = None
+    sina("  acici yoksa (kabuk, sinama) kabin ACILMAZ", orkestra._kabin_ucnoktasi() == "")
+finally:
+    kabin.acik_mi = _eski_acik
+    orkestra.KABIN_ACICI["islev"] = None
+_pp = (KOK / "ofis" / "panel.py").read_text(encoding="utf-8")
+sina("panel aciciyi YALNIZ calisan sunucuda kaydeder ve 'kabin_acildi' yazar",
+     '_ork_mod.KABIN_ACICI["islev"] = _KABIN_CDP.get("acici")' in _pp
+     and '_KABIN_CDP["acici"] = _kabin_ajan_icin_ac' in _pp
+     and '_kabin_kaydi("kabin_acildi", "Kabin acildi (ajan tarayici kullanacak)")' in _pp)
+from ofis import panel as _panel  # noqa: E402
+_panel.olustur(str(_d / "o.sqlite3"), "K")
+sina("panel SINAMADA kurulunca gercek Chrome acici KAYDEDILMEZ (sizinti olculdu)",
+     orkestra.KABIN_ACICI["islev"] is None, str(orkestra.KABIN_ACICI["islev"]))
+sina("panel 'kabin_acildi' olayinda ANINDA yenilenir (60 sn beklemez)",
+     'new Set(["kabin_acildi", "kabin_kapandi",' in JS)
+sina("  yenile kabin acildiysa gosterir ve baglanir",
+     "if (d && d.acik && !K.acik) { kabinGoster(d); kabinBagla(); }" in JS)
+
+print("\n6. profil kilidi: bir kez yeniden dener, kimseyi KAPATMAZ")
+
+
+class _Kilitli(kabin.Kabin):
+    def __init__(self, kac_kez):
+        super().__init__(kapi=9398)
+        self.kac, self.cagri = kac_kez, 0
+
+    def _ac(self, *a, **k):
+        self.cagri += 1
+        if self.cagri <= self.kac:
+            h = kabin.KabinHatasi("Kabin Chrome'u acilirken kapandi (cikis 21).")
+            h.cikis = 21
+            raise h
+        return {"acik": True}
+
+
+import time as _t  # noqa: E402
+_uyku = _t.sleep
+kabin.time.sleep = lambda s: None
+try:
+    k1 = _Kilitli(1)
+    try:
+        _s1 = k1.ac()
+    except kabin.KabinHatasi as exc:
+        _s1 = repr(exc)
+    sina("kilit gecici -> ikinci denemede ACILDI", _s1 == {"acik": True} and k1.cagri == 2, str(_s1))
+    k2 = _Kilitli(5)
+    try:
+        k2.ac()
+        sina("kalici kilit -> ACIK hata", False)
+    except kabin.KabinHatasi as exc:
+        sina("kalici kilit -> sebep DUZ soylenir, yalniz 2 deneme",
+             "baska bir Chrome'da acik" in str(exc) and k2.cagri == 2, str(exc)[:120])
+    class _Baska(_Kilitli):
+        def _ac(self, *a, **k):
+            self.cagri += 1
+            raise kabin.KabinHatasi("baska hata")
+    k3 = _Baska(0)
+    try:
+        k3.ac()
+    except kabin.KabinHatasi:
+        pass
+    sina("  baska hatada yeniden DENENMEZ", k3.cagri == 1)
+finally:
+    kabin.time.sleep = _uyku
+_kb = (KOK / "ofis" / "kabin.py").read_text(encoding="utf-8")
+sina("kilidi tutan Chrome'u oldurmez (taskkill / kill YOK)", "taskkill" not in _kb)
+
+print("\n7. sinama patronun kabin kapisina bakmaz")
+sina("sinamada kabin kapisi 9222 DEGIL", tarayici.KABIN_KAPISI != 9222, str(tarayici.KABIN_KAPISI))
+sina("  kapi ortamdan ayarlanir", 'os.environ.get("OFIS_KABIN_KAPI")' in
+     (KOK / "ofis" / "tarayici.py").read_text(encoding="utf-8"))
+sina("  ofis_kopyasi da ayri kapi kullanir",
+     'setdefault("OFIS_KABIN_KAPI", "9399")' in (KOK / "testler" / "ofis_kopyasi.py").read_text(encoding="utf-8"))
+
+print("\n8. web OZETI dogrudan olcumu curutmez (lider inceleme + danisma)")
+from ofis.lider import Lider, OZET_ARACI_KURALI  # noqa: E402
+from ofis.danisma import Danisma  # noqa: E402
+_kn = _o.kanat_ac("ANA", "AN")
+_o.kadro.ise_al("demir", "lider", kanat_id=_kn, lider_mi=True, motor="sahte", klasor=str(_d))
+_o.kadro.ise_al("bilge", "arastirma", kanat_id=_kn, motor="sahte", klasor=str(_d))
+_g = _o.tahta.gorev_ac("baslik oku", neden="n", ana_hedef="h", kabul_olcutu="k", govde="g",
+                       kanat_id=_kn, sahip="bilge", yazma_alani=[])
+_o.tahta.kanit_ekle(_g["no"], "terminal", "curl", "h1 yok", ekleyen="bilge")
+sina("lider incelemesi web ozeti kuralini tasir", OZET_ARACI_KURALI in Lider(_o).inceleme_metni(_g["no"]))
+_m = _o.postane.soru_sor("bilge", "demir", "sayfada h1 var mi?", gorev_no=_g["no"], mod="bekleyen")
+with _o.db.baglanti() as _c:
+    _m = dict(_c.execute("SELECT * FROM mesaj WHERE id = ?", (_m["id"],)).fetchone())
+sina("danisma cevabi da ayni kurali tasir", OZET_ARACI_KURALI in Danisma(_o).soru_metni(_m))
+
+print(f"\n== sonuc: {GECEN} gecti, {KALAN} kaldi ==")
+sys.exit(1 if KALAN else 0)

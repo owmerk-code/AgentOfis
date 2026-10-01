@@ -102,8 +102,14 @@ def tik_koş():
     return {c["no"]: c for c in cagrilar}
 
 
+# VARSAYILAN ACIK (02.10.2026, patron: "tarayici her zaman kullanilabilir
+# olmali, otomatik olmali"). Ayar hic yazilmamisken bir is kabine gider.
 c = tik_koş()
-sina("anahtar KAPALI: hicbir is kabine gitmedi",
+sina("ayar yokken (varsayilan) TEK is kabinde",
+     len([x for x in c.values() if x["izleme"]]) == 1, str(c))
+db.ayar_yaz(ofis.proje_id, KABIN_IZLE_ANAHTARI, "kapali")
+c = tik_koş()
+sina("anahtar acikca KAPATILINCA hicbir is kabine gitmedi",
      c and not any(x["izleme"] or x["cdp"] for x in c.values()), str(c))
 db.ayar_yaz(ofis.proje_id, KABIN_IZLE_ANAHTARI, "acik")
 c = tik_koş()
