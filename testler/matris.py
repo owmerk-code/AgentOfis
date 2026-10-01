@@ -48,7 +48,11 @@ import os as _os
 from pathlib import Path as _Path
 
 # Gercek kosu gercek hesaplarla kosar (codex girisi ~/.agentofis/codex).
-_os.environ.setdefault("OFIS_EV", str(_Path.home() / ".agentofis"))
+# Gercek ev TEK kuraldan (01.10: `Masaustu\AgentOfis\ev`, yoksa eski).
+import sys as _sys  # noqa: E402
+_sys.path.insert(0, str(_Path(__file__).resolve().parent.parent))
+from ofis.yollar import varsayilan_ev as _varsayilan_ev  # noqa: E402
+_os.environ.setdefault("OFIS_EV", str(_varsayilan_ev()))
 
 import _temizlik  # noqa: F401,E402 -- gecici klasorleri siler (E05)
 

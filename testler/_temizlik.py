@@ -56,7 +56,15 @@ if not os.environ.get("OFIS_EV"):
 
 #: Gercek kokteki hafiza dosyalari: sinama bunlara DOKUNMAMALI. Surec
 #: basinda damgalari alinir, sonunda karsilastirilir (bekci).
-_GERCEK_EV = os.path.join(os.path.expanduser("~"), ".agentofis")
+# Gercek ev TEK kuraldan (01.10.2026: `Masaustu\AgentOfis\ev`, tasimadan
+# once eski `~/.agentofis`). OFIS_EV yukarida GECICIYE cevrildi; yollar
+# simdi ice aktarilir ve sabitleri geciciyi gorur.
+import sys as _sys  # noqa: E402
+_KOK = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _KOK not in _sys.path:
+    _sys.path.insert(0, _KOK)
+from ofis.yollar import varsayilan_ev as _varsayilan_ev  # noqa: E402
+_GERCEK_EV = str(_varsayilan_ev())
 _BEKCI_DOSYALAR = ("kota.json", "baglayici_sorun.json", "motor_saglik.json",
                    "codex_oturum.json", "ayar.json", "gizli.env")
 

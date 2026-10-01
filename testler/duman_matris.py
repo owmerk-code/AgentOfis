@@ -41,7 +41,8 @@ def sina(baslik: str, kosul: bool, not_: str = "") -> None:
 
 
 print("\n0. YALITIM")
-_gercek = (Path.home() / ".agentofis").resolve()
+from ofis.yollar import varsayilan_ev  # noqa: E402
+_gercek = varsayilan_ev().resolve()
 sina("son olcum dosyasi gecici kokte (gercek ~/.agentofis degil)",
      _gercek not in Path(M.SON_OLCUM).resolve().parents, str(M.SON_OLCUM))
 

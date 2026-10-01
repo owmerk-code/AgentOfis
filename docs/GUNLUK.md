@@ -13331,3 +13331,28 @@ klasörünün DIŞINA, (2) ajan Claude'u üst-klasör talimatları kapalı başl
 (önce ölç), (3) panelde proje-kapsamlı kod editörü. Onay bekleniyor (gerçek
 ofisin kökü taşınacak). Ayrıca: repo kökünde 12:07'de boş `o.sqlite3`
 oluştu — bir yol göreli yazılıyor, aranacak.
+- `o.sqlite3` artığı ofisin hatası DEĞİL: G19 incelemesinde `cd "$D" && …`
+  boş klasöre düştü, ardından gelen `sqlite3.connect('o.sqlite3')` repo
+  kökünde koştu; GitHub yedeğine de girdi → kaldırıldı. Ders: inceleme
+  komutları mutlak yolla.
+
+## 01.10.2026 — AYRIM (kullanıcı kararı) · Aşama 1: ofisin tek evi
+
+Kullanıcı: ofisin altyapısı/kodu/ajanları/hafızası TEK yerde, arka planda;
+projeler masaüstünde KENDİ klasörlerinde; tek seferlik işler
+`Masaüstü\Ofisim` altında işe göre klasörde. Seçimler: ev = Masaüstü\
+AgentOfis, her proje ayrı klasör, tek işler Ofisim alt klasörü.
+Aşamalar: (1) ev (2) proje içi `.ofis/` (3) kök kapısı + Masaüstü
+varsayılanı + iş klasörü (4) ZIP projeleri de alır (5) taşıma aracı
+(6) taşıma (panel kapalı) + ölçüm.
+
+Aşama 1:
+- `yollar`: YENI_EV = AgentOfis\ev; yoksa ESKI_EV (~/.agentofis); taşıma
+  yapılana kadar ofis eski evde (kod değişikliği hafızayı kaybettirmez).
+  `gercek_ev_mi` ikisini de tanır. `OFIS_YENI_EV` yalnız sınama için.
+- `/ev/` .gitignore'da (kasa, oturum, çerez, gölge GitHub'a gitmez).
+- ZIP: kok/ev ARŞİVE GİRMEZ (yedeklerin kendisi orada; girseydi her arşiv
+  bir öncekini içerip katlanırdı); aynı adlı ALT klasör (calisma/ev) girer.
+- Sınama araçları gerçek evi tek kuraldan alır (`varsayilan_ev`); bekçi
+  sınaması iki durumu da sınar (eski ev / yeni ev), yeni ev SAHTE yolda.
+- Tam takım 3572/3572.

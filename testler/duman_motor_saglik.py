@@ -118,7 +118,9 @@ sina("deneme seti GERCEK kokle kosar (kok _temizlik'ten ONCE sabitlenir)",
 print("\n2. BEKCI -- sinama gercek hafizaya yazarsa SESSIZ kalinmaz")
 sahte_ev = Path(tempfile.mkdtemp(prefix="ofis-sahtehome-"))
 ortam = {k: v for k, v in os.environ.items() if k not in ("OFIS_EV", "OFIS_GOLGE_KOK")}
-ortam.update(USERPROFILE=str(sahte_ev), HOME=str(sahte_ev), PYTHONIOENCODING="utf-8")
+ortam.update(USERPROFILE=str(sahte_ev), HOME=str(sahte_ev), PYTHONIOENCODING="utf-8",
+             # Yeni ev de SAHTE (01.10.2026): gercek `AgentOfis\ev` asla yazilmaz.
+             OFIS_YENI_EV=str(sahte_ev / "yeni-ev"))
 yol_t = str(KOK_DIZIN / "testler")
 
 
@@ -129,12 +131,19 @@ def alt(kod: str):
                           errors="replace", env=ortam, timeout=120)
 
 
+# (a) TASIMADAN ONCE: gercek ev eski yerde (`~/.agentofis`).
+(sahte_ev / ".agentofis").mkdir()
 r = alt("p = os.path.join(os.path.expanduser('~'), '.agentofis'); "
         "os.makedirs(p, exist_ok=True); open(os.path.join(p, 'kota.json'), 'w').write('{}')")
 sina("gercek hafizaya yazan sinama BASARISIZ sayilir (kod 3)", r.returncode == 3,
      f"rc={r.returncode} {r.stderr[-200:]}")
 sina("hangi dosya oldugu SOYLENIR", "[GERCEK HAFIZA]" in r.stderr and "kota.json" in r.stderr,
      r.stderr[-200:])
+# (b) TASIMADAN SONRA: gercek ev yeni yerde (`AgentOfis\ev`); bekci ONU izler.
+(sahte_ev / "yeni-ev").mkdir()
+r = alt("p = os.environ['OFIS_YENI_EV']; open(os.path.join(p, 'motor_saglik.json'), 'w').write('{}')")
+sina("tasimadan sonra YENI eve yazan sinama da yakalanir (kod 3)",
+     r.returncode == 3 and "motor_saglik.json" in r.stderr, f"rc={r.returncode} {r.stderr[-200:]}")
 r = alt("pass")
 sina("yazmayan sinama temiz gecer (her seye alarm vermez)", r.returncode == 0,
      f"rc={r.returncode} {r.stderr[-200:]}")

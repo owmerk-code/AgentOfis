@@ -61,6 +61,12 @@ def kur_proje() -> Path:
     (kok / "calisma").mkdir()
     (kok / "calisma" / "rapor.md").write_text("rapor\n", encoding="utf-8")
     (kok / "eski.tar.gz").write_bytes(b"eski")
+    # OFISIN EVI (01.10.2026): kok/ev arsive girmez; ama ayni adli ALT klasor
+    # (kullanicinin projesinde `ev/` olabilir) girer.
+    (kok / "ev" / "kabin").mkdir(parents=True)
+    (kok / "ev" / "kabin" / "Cookies").write_bytes(b"cerez")
+    (kok / "calisma" / "ev").mkdir()
+    (kok / "calisma" / "ev" / "plan.md").write_text("ev plani\n", encoding="utf-8")
     return kok
 
 
@@ -136,6 +142,9 @@ try:
          not any("__pycache__" in a or a.endswith(".tar.gz") for a in adlar))
     sina("kod ve ajan ciktisi girdi",
          {"ofis/a.py", "calisma/rapor.md"} <= adlar)
+    sina("ofisin EVI (kok/ev: cerez, oturum, yedekler) arsive GIRMEDI",
+         not any(a.startswith("ev/") for a in adlar), str(sorted(a for a in adlar if "ev/" in a)))
+    sina("  ayni adli ALT klasor (calisma/ev) girdi", "calisma/ev/plan.md" in adlar)
 
     # --------------------------------------------- 3. DOGRULAMA
     print("\n3. DOGRULAMA bozulmayi yakaliyor")

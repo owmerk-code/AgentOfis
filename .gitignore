@@ -6,6 +6,9 @@ __pycache__/
 .pytest_cache/
 .playwright-mcp/
 .claude/
+# OFISIN EVI (01.10.2026): kasa, oturumlar, cerezler, golge depolar. ASLA
+# GitHub'a gitmez.
+/ev/
 veri/*.sqlite3
 veri/*.sqlite3-*
 veri/*.sqlite3.yedek-*

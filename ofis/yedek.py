@@ -165,6 +165,11 @@ def dosyalari_topla(kok: Path) -> dict:
     dosyalar, sirlar = [], []
     for dizin, altlar, adlar in os.walk(kok):
         altlar[:] = sorted(a for a in altlar if a not in ATLANAN_KLASOR)
+        # OFISIN EVI (kok/ev) ARSIVE GIRMEZ (01.10.2026): kasa, oturumlar,
+        # tarayici cerezleri ve YEDEKLERIN KENDISI orada -- girseydi her
+        # arsiv bir oncekini icerir, katlanarak buyurdu.
+        if Path(dizin).resolve() == kok:
+            altlar[:] = [a for a in altlar if a != "ev"]
         for ad in sorted(adlar):
             tam = Path(dizin) / ad
             goreli = tam.relative_to(kok).as_posix()
