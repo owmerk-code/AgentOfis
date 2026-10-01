@@ -437,6 +437,20 @@ class Tahta:
             if adet >= MAKS_GOREV:
                 raise TahtaHatasi(f"Tahta doldu ({MAKS_GOREV}). Biten isleri arsivle.")
 
+            # TAKIMSIZ IS ACILMAZ (01.10.2026, cok takim): takimi bos is
+            # baska takimin halkasinda baska takimin ajanina gidiyordu. Sahibi
+            # varsa onun takimi; yoksa projede LIDERI olan tek takim.
+            if not kanat_id:
+                r = (conn.execute("SELECT kanat_id FROM ajan WHERE proje_id = ? AND ad = ?",
+                                  (self.proje_id, sahip)).fetchone() if sahip else None)
+                if r and r["kanat_id"]:
+                    kanat_id = r["kanat_id"]
+                else:
+                    liderli = conn.execute(
+                        "SELECT DISTINCT kanat_id FROM ajan WHERE proje_id = ? AND lider_mi = 1 "
+                        "AND kanat_id IS NOT NULL", (self.proje_id,)).fetchall()
+                    if len(liderli) == 1:
+                        kanat_id = liderli[0]["kanat_id"]
             son = conn.execute(
                 "SELECT COALESCE(MAX(no), 0) AS n FROM gorev WHERE proje_id = ?",
                 (self.proje_id,),

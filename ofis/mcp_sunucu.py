@@ -383,7 +383,9 @@ def arac_soru_sor(oturum: Oturum, args: dict) -> str:
     if alici == "lider":
         try:
             g = oturum.gorev() if oturum.gorev_no is not None else None
-            alici = oturum.ofis.kadro.lider(g["kanat_id"] if g else None)["ad"]
+            # Eski iste lider bulunamayinca soru SESSIZCE patrona gidiyordu
+            # (01.10.2026); kural artik tek yerde (`gorevin_lideri`).
+            alici = oturum.ofis.kadro.gorevin_lideri(g or {})["ad"]
         except Exception:
             alici = "insan"
     oturum.ofis.postane.soru_sor(oturum.ajan_ad, alici, soru,

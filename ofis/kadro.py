@@ -312,6 +312,29 @@ class Kadro:
             raise KadroHatasi("Bu kanadin lideri yok. Once lider ise al.")
         return dict(row)
 
+    def gorevin_lideri(self, gorev: dict) -> dict:
+        """Bir isin lideri -- TEK KURAL (inceleme, ajanin lidere sorusu).
+
+        OLCULDU (01.10.2026): `lider(gorev["kanat_id"])` takimi yazili
+        OLMAYAN eski iste `kanat_id IS NULL` olan bir lider ariyordu; patronun
+        ofisinde demir'in takimi ANA, yani o 9 eski isten biri incelemeye
+        gelse inceleme "lideri yok" hatasiyla butun halkayi dusururdu.
+        Sira: isin takimi -> sahibinin takimi -> ofiste TEK lider varsa o.
+        """
+        if gorev.get("kanat_id"):
+            return self.lider(gorev["kanat_id"])
+        if gorev.get("sahip"):
+            try:
+                return self.lider(self.ajan(gorev["sahip"])["kanat_id"])
+            except KadroHatasi:
+                pass
+        liderler = [a for a in self.liste() if a["lider_mi"]]
+        if len(liderler) == 1:
+            return liderler[0]
+        raise KadroHatasi(f"#{gorev.get('no')} isin takimi ve sahibi yok, ofiste "
+                          f"{len(liderler)} lider var: kimin inceleyecegi belirsiz. "
+                          "Isi bir takima ata.")
+
     # -- sicil (ders) ------------------------------------------------------
 
     def ders_yaz(self, ajan_ad: str, ders: str, gorev_id: str = None) -> dict:

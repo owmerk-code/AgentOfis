@@ -256,7 +256,8 @@ def akis(ofis, *, kanat_id=None, adet: int = 80) -> list:
             "AND m.mod != 'sessiz' ORDER BY m.rowid DESC LIMIT ?",
             (ofis.proje_id, adet)).fetchall()
         olaylar = conn.execute(
-            "SELECT o.rowid AS sira, o.*, g.no AS gorev_no FROM olay o "
+            "SELECT o.rowid AS sira, o.*, g.no AS gorev_no, g.kanat_id AS gorev_kanat, "
+            "g.sahip AS gorev_sahip FROM olay o "
             "LEFT JOIN gorev g ON g.id = o.gorev_id WHERE o.proje_id = ? "
             "AND o.tur IN (%s) ORDER BY o.rowid DESC LIMIT ?"
             % ",".join("?" * len(AKIS_OLAYLARI)),
@@ -293,7 +294,15 @@ def akis(ofis, *, kanat_id=None, adet: int = 80) -> list:
     for o in olaylar:
         o = dict(o)
         ajan = o["ajan_ad"] or ""
-        if not takimda(ajan):
+        # OFISIN KENDI OLAYI (takildi, kesinti, donus raporu: ajan "ofis")
+        # 01.10.2026: takim gorunumunde HIC gorunmuyordu -- "ofis" hicbir
+        # takimin ajani degil. Bir ise bagliysa o isin takiminda, degilse
+        # her takimda gorunur (ayni kural: Orkestra.takimin_isi).
+        if ajan in ("", "ofis") and kanat_id is not None:
+            if o["gorev_id"] and not ofis.orkestra.takimin_isi(
+                    {"kanat_id": o["gorev_kanat"], "sahip": o["gorev_sahip"]}, kanat_id):
+                continue
+        elif not takimda(ajan):
             continue
         # DONUS RAPORU ayni saniyedeki her seyin SONUNDA (01.10.2026, canli
         # deneme: son isin cevabiyla ayni saniyede yazildi ve onun ustune dustu).

@@ -72,6 +72,7 @@ from . import baglayici, izin as izin_mod, kullanim, roller, sartname, tarayici,
 from .klasor import klasorleri_dogrula, metinler
 from .koltuk import Koltuk, durdurma_istendi
 from .danisma import Danisma
+from .kadro import KadroHatasi
 from .lider import Lider, LiderHatasi
 from .motor import motor_ac, MotorHatasi
 from .zincir import LIDER_ZINCIRI, basamaklari_kur, limitte_devret, lider_devri, tur_butcesi, ZincirBitti
@@ -549,6 +550,10 @@ class Orkestra:
                     return (f"'{sahip}' diye bir ajan yok. Kadrodan bir ad sec.")
                 if ajan["lider_mi"]:
                     return (f"'{sahip}' lider. Lider inceler, isi isci yapar.")
+                if kanat_id and ajan["kanat_id"] != kanat_id:
+                    # COK TAKIM: lider yalniz KENDI takimina is verir.
+                    return (f"'{sahip}' senin takiminda degil. Isi kendi takimindan "
+                            "birine ver; baska takimin isi o takimin liderinindir.")
                 alan = [y for y in (kol.get("yazma_alani") or []) if str(y).strip()]
                 if ajan["tur"] == "kafa" and alan:
                     return (f"'{sahip}' YAZAMAZ ama ona dosya yazan bir is "
@@ -984,6 +989,32 @@ class Orkestra:
                              ajan_ad="ofis", gorev_id=gorev["id"])
         return True
 
+    def takimin_isi(self, gorev: dict, kanat_id) -> bool:
+        """Is bu takimin mi? TEK KURAL (halka, lider ozeti, sohbet ayni yeri
+        kullanir). Takimi yazili is o takimindir; yazili degilse (takimlar
+        gelmeden acilmis eski is) SAHIBININ takimindir; sahibi de yoksa
+        her takimda gorunur -- saklamak, onu hic kimseye gostermemek olurdu.
+
+        COK TAKIM (01.10.2026, patron: "ofis sadece tanim, birden fazla
+        takim olacak"): bir takimin sohbeti baska takimin isini
+        BASLATMAZ, lideri baska takimin isini kendi isi sanmaz.
+        """
+        if not kanat_id:
+            return True
+        isin = self.isin_takimi(gorev)
+        return isin is None or isin == kanat_id
+
+    def isin_takimi(self, gorev: dict):
+        """Isin takimi: yazili takim; yoksa SAHIBININ takimi; yoksa None."""
+        if gorev.get("kanat_id"):
+            return gorev["kanat_id"]
+        if gorev.get("sahip"):
+            try:
+                return self.ofis.kadro.ajan(gorev["sahip"])["kanat_id"]
+            except Exception:            # noqa: BLE001 -- silinmis ajan: takimi bilinmez
+                return None
+        return None
+
     #: BAYAT IS (01.10.2026 OLCULDU): #37 30.09'da acilmis, bir gun "hazir"
     #: bekledi; patron "naber" yazinca cevap yolunun halkasi onu KENDILIGINDEN
     #: baslatti -- patron "ben bir sey istemedim ki" dedi. Bu kadar suredir
@@ -1047,7 +1078,7 @@ class Orkestra:
         # ve baska bir ajan belki daha iyi sonuc verir.
         onceki = self._kaynak_yuzunden_birakan(gorev)
         if onceki and onceki not in rezerve and self._bosta_mi(onceki, gorev["no"]):
-            for a in self.ofis.kadro.liste(gorev["kanat_id"]):
+            for a in self.ofis.kadro.liste(self.isin_takimi(gorev)):
                 if a["ad"] != onceki:
                     continue
                 if a["lider_mi"] or a["faz"] == "basarisiz" or not a["klasor"]:
@@ -1056,7 +1087,9 @@ class Orkestra:
                     break
                 return onceki
 
-        for a in self.ofis.kadro.liste(gorev["kanat_id"]):
+        # Isin TAKIMINDAN secilir (01.10.2026: takimsiz eski is butun kadrodan
+        # secilip baska takimin ajanina gidiyordu).
+        for a in self.ofis.kadro.liste(self.isin_takimi(gorev)):
             if a["lider_mi"] or a["faz"] == "basarisiz" or not a["klasor"]:
                 continue
             if a["ad"] in rezerve:
@@ -1071,7 +1104,7 @@ class Orkestra:
             izinli_araclar: tuple = (), paralel: int = 3,
             tarayici_gorunur: bool = False,
             tarayici_profili: str = "",
-            tarayici_kabini: str = "") -> dict:
+            tarayici_kabini: str = "", kanat_id=None) -> dict:
         """Halkanin bir adimi. Ne yapildigini anlatan ozet doner.
 
         Sira onemli: ONCE inceleme (biten isi kapat, yeri ac), SONRA yeni
@@ -1098,13 +1131,16 @@ class Orkestra:
         # bitti, incelemeleri 21 + 22 sn ARKA ARKAYA kostu. Incelemeler
         # birbirinden bagimsizdir (her biri kendi isinin kanitina bakar,
         # kapatma CAS'li); isciler gibi paralel kosar, en fazla `paralel`.
-        incelenecek = self.ofis.tahta.liste(durum="inceleme")
+        incelenecek = [g for g in self.ofis.tahta.liste(durum="inceleme")
+                       if self.takimin_isi(g, kanat_id)]
 
         def _incele(g):
             try:
                 return g, self.lider.incele(
                     g["no"], butce_usd=butce_usd, zaman_asimi=zaman_asimi), None
-            except LiderHatasi as exc:
+            except (LiderHatasi, KadroHatasi) as exc:
+                # KadroHatasi da (01.10.2026): lideri bulunamayan TEK is
+                # butun halkayi dusuruyordu; artik o is 'engel' olur.
                 return g, None, exc
 
         if len(incelenecek) > 1 and paralel > 1:
@@ -1159,7 +1195,8 @@ class Orkestra:
         # is daha baslamadi.
         kosulacak = [g for g in (self.ofis.tahta.liste(durum="hazir")
                                  + self.ofis.tahta.liste(durum="calisiyor"))
-                     if not self._takildi_mi(g) and not self.bayat_mi(g)]
+                     if self.takimin_isi(g, kanat_id)
+                     and not self._takildi_mi(g) and not self.bayat_mi(g)]
         atamalar = []
         rezerve = set()
         # KABIN TEK YUZEYDIR -- ayni anda tek is kullanabilir.
@@ -1290,8 +1327,12 @@ class Orkestra:
     def kos(self, *, azami_tik: int = 12, butce_usd: float = None,
             zaman_asimi: float = None, izinli_araclar: tuple = (),
             paralel: int = 3, tarayici_gorunur: bool = False,
-            tarayici_profili: str = "", tarayici_kabini: str = ""):
+            tarayici_profili: str = "", tarayici_kabini: str = "",
+            kanat_id=None):
         """Halkayi ILERLEME DURANA kadar dondurur, her adimda ozet akitir.
+
+        `kanat_id` verilirse yalniz O TAKIMIN isleri ilerler (bir takimin
+        sohbeti baska takimin isini baslatmaz); verilmezse butun ofis.
 
         Ilerlemeyen bir donguyu dondurmeye devam etmek jeton yakar ve
         panelde "calisiyor" gorunur -- en pahali yanilgi. Durma sebebi
@@ -1308,7 +1349,7 @@ class Orkestra:
                             izinli_araclar=izinli_araclar, paralel=paralel,
                             tarayici_gorunur=tarayici_gorunur,
                             tarayici_profili=tarayici_profili,
-                            tarayici_kabini=tarayici_kabini)
+                            tarayici_kabini=tarayici_kabini, kanat_id=kanat_id)
             ozet["tik"] = sira + 1
             yield ozet
             if durdurma_istendi(self.db, self.proje_id):
@@ -1316,7 +1357,8 @@ class Orkestra:
                 return
 
             acik = [g for g in self.ofis.tahta.liste()
-                    if g["durum"] in ("hazir", "calisiyor", "inceleme")]
+                    if g["durum"] in ("hazir", "calisiyor", "inceleme")
+                    and self.takimin_isi(g, kanat_id)]
             if not acik:
                 yield {"bitti": True, "sebep": "Butun isler kapandi.",
                        "tik": sira + 1}

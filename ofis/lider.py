@@ -601,7 +601,7 @@ class Lider:
                 f"#{no} kanitsiz. Kanitsiz is incelenmez de kapanmaz da."
             )
 
-        lider = (self.ofis.kadro.lider(gorev["kanat_id"]) if not lider_ad
+        lider = (self.ofis.kadro.gorevin_lideri(gorev) if not lider_ad
                  else self.ofis.kadro.ajan(lider_ad))
         # YAPAN INCELEYEMEZ. Lider birlestirme isini kendi ustlenebilir --
         # ama o isi kendi inceleyemez: kanit kapisi kendi isini onaylamis

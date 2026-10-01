@@ -630,9 +630,42 @@ def _goc_codex_maliyet(conn) -> None:
                          (_json.dumps(d, ensure_ascii=False), rowid))
 
 
+def _goc_takimsiz_isler(conn) -> None:
+    """Takimlar gelmeden acilmis isler (kanat_id NULL) bir takim alir.
+
+    OLCULDU (01.10.2026, cok takim sinamasi): takimsiz eski is ANA'nin
+    halkasinda WEB'in ajanina verildi (uygun ajan butun kadrodan secildi)
+    ve incelemesi "bu kanadin lideri yok" diye halkayi dusurdu. Kural
+    `isin_takimi` ile ayni: SAHIBININ takimi; sahibi yoksa projede LIDERI
+    olan tek takim. Ikisi de yoksa dokunulmaz (tahmin yok).
+    """
+    # Sutunlari olmayan (cok eski / yarim) defterde goc ATLANIR: goc paneli
+    # acilamaz hale getirmemeli (duman_klasor eski sema sinamasi yakaladi).
+    def _sutunlar(tablo):
+        return {r[1] for r in conn.execute(f"PRAGMA table_info({tablo})").fetchall()}
+    if not ({"proje_id", "sahip", "kanat_id"} <= _sutunlar("gorev")
+            and {"proje_id", "ad", "kanat_id", "lider_mi"} <= _sutunlar("ajan")):
+        return
+    for g_id, proje_id, sahip in conn.execute(
+            "SELECT id, proje_id, sahip FROM gorev WHERE kanat_id IS NULL").fetchall():
+        kanat = None
+        if sahip:
+            r = conn.execute("SELECT kanat_id FROM ajan WHERE proje_id = ? AND ad = ?",
+                             (proje_id, sahip)).fetchone()
+            kanat = r[0] if r else None
+        if not kanat:
+            liderli = conn.execute("SELECT DISTINCT kanat_id FROM ajan WHERE proje_id = ? "
+                                   "AND lider_mi = 1 AND kanat_id IS NOT NULL",
+                                   (proje_id,)).fetchall()
+            kanat = liderli[0][0] if len(liderli) == 1 else None
+        if kanat:
+            conn.execute("UPDATE gorev SET kanat_id = ? WHERE id = ?", (kanat, g_id))
+
+
 #: (surum, islev) -- yalniz SONA eklenir, sira degismez.
 VERI_GOCLERI = (
     (1, _goc_codex_maliyet),
+    (2, _goc_takimsiz_isler),
 )
 
 

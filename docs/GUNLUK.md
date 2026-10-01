@@ -13573,3 +13573,39 @@ Patron "bul bakalım hataları" dedi; ekran + defterle ölçülenler:
 - Sınama `duman_ekran_hatalari.py` 21/21; 10 mutasyonun 10'u yakalandı (ilk
   turda 2'si KAÇTI: içerik kuralı öteki iki kuralı örtüyordu → her kural tek
   başına sahne). Tam takım 3704/3704, çıkış koduyla.
+
+## 01.10.2026 gece — çok takım denetimi (patron: "ofis sadece tanım, birden fazla takım olacak")
+
+`testler/duman_cok_takim.py` (iki takım ANA/WEB, iki lider, takımsız eski
+işler) ile ölçülen ve düzeltilen:
+1. **Bir takımın sohbeti öbür takımın işini başlatıyordu:** "naber" → cevap
+   yolu "açık iş var" diye bütün ofisin halkasını döndürüyordu. `kos/tik`
+   artık `kanat_id` alır; sohbetin cevap ve dağıt yolları liderin takımıyla
+   koşar. Panel Sürdür'ü süzgeçsiz (bütün ofis) kalır.
+2. **Liderin özeti bütün takımları gösteriyordu** (kadro, işler, onaylar).
+   Artık kendi takımı + "Öbür takımlar (SENİN DEĞİL)" tek satır.
+3. **Bayat iş hatırlatması** başka takımın işini sayıyordu → takım süzgeci.
+4. **Plan başka takımın ajanına iş verebiliyordu** → plan kapısı reddeder.
+5. **"İş takıldı" takım sohbetinde HİÇ görünmüyordu** (ajan "ofis", hiçbir
+   takımın değil) → işe bağlı ofis olayı o işin takımında görünür.
+6. **Takımsız eski iş BAŞKA takımın ajanına verildi** (sınamada: cinar'ın işi
+   WEB'in tuna'sına): `_uygun_ajan` `kadro.liste(None)` = bütün kadro.
+7. **İnceleme "bu kanadın lideri yok" diye halkayı DÜŞÜRÜYORDU:**
+   `kadro.lider(None)` `kanat_id IS NULL` lider arıyor — patronun ofisinde
+   demir'in takımı ANA, yani 9 takımsız eski işten biri incelemeye gelse BUGÜN
+   tek takımda bile düşerdi. Ajanın lidere sorusu aynı yolda sessizce PATRONA
+   gidiyordu. TEK KURAL `kadro.gorevin_lideri` (işin takımı → sahibinin takımı
+   → tek lider; değilse AÇIK hata); halka bu hatayı işin `engel`i yapar.
+8. **Kökten:** iş takımsız AÇILMAZ (sahibin takımı / liderli tek takım);
+   veri göçü 2 eski takımsız işleri aynı kuralla doldurur. Patronun defter
+   kopyasında ölçüldü: Ofisim'in 9 takımsız işi → ANA; lidersiz HACKTOOL
+   sayılmadı. Göç panel yeniden açılınca gerçek defterde koşar (SQLite
+   yedeği alındı: düz `cp` WAL'ı kaçırıyordu, yedek `backup` API'siyle).
+- Sınamanın kendi hataları (ölçüm aracının ölçümü): olay adı `sahiplendi`
+  yazılmıştı (doğrusu `sahiplenildi`) → "dokunmadı" ölçümleri BOŞA geçiyordu;
+  bir ölçüm "ya da iptal" yüzünden boştu. 18 mutasyonun 18'i yakalandı (ilk
+  turda 3'ü kaçtı → üç yeni sahne).
+- Tam takım ilk koşuda `duman_klasor` DÜŞTÜ: göç, sütunları eksik eski şemada
+  "no such column" ile veritabanını açılamaz yapıyordu → sütun yoksa atlar.
+  Tam takım 3745/3745, çıkış koduyla (9 artık = yönetici izinli eski deneme
+  önbellekleri).

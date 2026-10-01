@@ -329,7 +329,7 @@ class Sohbet:
 
     # -- liderin gordugu ---------------------------------------------------
 
-    def ofis_ozeti(self) -> str:
+    def ofis_ozeti(self, kanat_id=None) -> str:
         """Liderin SU ANKI ofis goruntusu -- her mesajda TAZE uretilir.
 
         Elle tutulan bir ozet bayatlar; bu sorgudur, bayatlayamaz.
@@ -342,7 +342,11 @@ class Sohbet:
         if kunye:
             satirlar += [kunye, ""]
         kadro = self.ofis.kadro.liste()
-        isciler = [a for a in kadro if not a["lider_mi"]]
+        # COK TAKIM (01.10.2026): lider KENDI takimini gorur; obur takimlar
+        # sonda tek satirla anilir (karismasin, ama varliklarini bilsin).
+        takim = (lambda g: self.orkestra.takimin_isi(g, kanat_id))
+        takimdaki = {a["ad"] for a in kadro if not kanat_id or a["kanat_id"] == kanat_id}
+        isciler = [a for a in kadro if not a["lider_mi"] and a["ad"] in takimdaki]
         if isciler:
             satirlar.append("### Kadron")
             for a in isciler:
@@ -359,7 +363,8 @@ class Sohbet:
                                 f"— {yetki} — {durum}")
 
         acik = [g for g in self.ofis.tahta.liste()
-                if g["durum"] in ("bekliyor", "hazir", "calisiyor", "inceleme")]
+                if g["durum"] in ("bekliyor", "hazir", "calisiyor", "inceleme")
+                and takim(g)]
         satirlar.append("")
         if acik:
             satirlar.append("### Acik isler")
@@ -375,7 +380,8 @@ class Sohbet:
         # "#37 raporu hazir bekliyor" demeyi 4 sohbet boyunca surdurdu.
         # Ozet yalniz ACIK isleri gosteriyordu; DEFTERIN hukmu lidere hic
         # ulasmiyordu.
-        _son = [g for g in self.ofis.tahta.liste() if g["durum"] in ("bitti", "iptal")]
+        _son = [g for g in self.ofis.tahta.liste() if g["durum"] in ("bitti", "iptal")
+                and takim(g)]
         _son.sort(key=lambda g: g.get("guncellendi") or "", reverse=True)
         if _son:
             satirlar += ["", "### Son kapanan / iptal edilen isler (DEFTER -- sohbet "
@@ -388,13 +394,13 @@ class Sohbet:
                     kanit = len(self.ofis.tahta.kanitlar(g["no"]))
                     satirlar.append(f"- #{g['no']} bitti ({kanit} kanit): {g['baslik']}")
 
-        bekleyen = (self.ofis.postane.insan_bekleyenler()
-                    + self.ofis.postane.bekleyen_onaylar())
-        if bekleyen:
+        sorular = [b for b in self.ofis.postane.insan_bekleyenler() if b["gonderen"] in takimdaki]
+        onaylar = [b for b in self.ofis.postane.bekleyen_onaylar() if b["isteyen"] in takimdaki]
+        if sorular or onaylar:
             satirlar += ["", "### INSANDAN BEKLENENLER (is ilerlemiyor)"]
-            for b in self.ofis.postane.insan_bekleyenler():
+            for b in sorular:
                 satirlar.append(f"- {b['gonderen']} soruyor: {b['govde'][:160]}")
-            for b in self.ofis.postane.bekleyen_onaylar():
+            for b in onaylar:
                 satirlar.append(f"- {b['isteyen']} onay istiyor: {b['eylem'][:160]}")
 
         olgular = self.ofis.bellek.gecerli_olgular()
@@ -410,6 +416,17 @@ class Sohbet:
             satirlar += ["", "### Son kararlar (BAGLAYICI)"]
             for k in kararlar:
                 satirlar.append(f"- {k['veren']}: {k['karar']}")
+        if kanat_id:
+            with self.ofis.db.baglanti() as c:
+                obur = c.execute("SELECT id, ad FROM kanat WHERE proje_id = ? AND id != ? "
+                                 "ORDER BY ad", (self.ofis.proje_id, kanat_id)).fetchall()
+            if obur:
+                satirlar += ["", "### Obur takimlar (SENIN DEGIL -- islerine karisma, "
+                             "isleri o takimin lideri yurutur)"]
+                for k in obur:
+                    n = sum(1 for g in self.ofis.tahta.liste(k["id"])
+                            if g["durum"] in ("bekliyor", "hazir", "calisiyor", "inceleme"))
+                    satirlar.append(f"- {k['ad']}: {n} acik is")
         return "\n".join(satirlar)
 
     def gecmis(self, adet: int = GECMIS_ADEDI) -> list:
@@ -426,7 +443,7 @@ class Sohbet:
             ).fetchall()
         return [dict(r) for r in rows][::-1]
 
-    def triyaj_metni(self, mesaj: str, *, ek_klasorler=()) -> str:
+    def triyaj_metni(self, mesaj: str, *, ek_klasorler=(), kanat_id=None) -> str:
         satirlar = [
             "# PATRONUN MESAJI",
             "",
@@ -441,7 +458,7 @@ class Sohbet:
             "",
             "# OFISIN SU ANKI HALI",
             "",
-            self.ofis_ozeti(),
+            self.ofis_ozeti(kanat_id),
             "",
             # ZAMAN (01.10.2026, F5/4): "yarin 10:30" demek icin lider
             # bugunun tarihini ve gununu GORMELI -- yoksa uydurur.
@@ -724,7 +741,7 @@ class Sohbet:
             if not cevap:
                 cevap = "(Lider cevap metni vermedi.)"
             cevap = self._ekleri_hazirla(cevap, lider["ad"])
-            cevap += self._bayat_hatirlatma()
+            cevap += self._bayat_hatirlatma(lider.get("kanat_id"))
             self.ofis.postane.cevapla(kayit["id"], cevap,
                                       cevaplayan=lider["ad"])
             yield {"tur": "cevap", "govde": cevap, "ek": {}}
@@ -741,7 +758,7 @@ class Sohbet:
             # Bu yuzden cevap yolundan sonra da ACIK IS varsa halka
             # doner. "Lider ofisi yonetir, takip eder" demek, acik isle
             # bosta duran bir ofis olmamasi demektir.
-            if self._acik_is_var():
+            if self._acik_is_var(lider.get("kanat_id")):
                 self._akis.not_yaz(cevap + "\n\n(açık iş var — ekip çalışıyor, "
                                    "bitince rapor buraya eklenecek)")
                 self._akis.yeni_bolum("duz", sabit=cevap)
@@ -751,12 +768,14 @@ class Sohbet:
                         azami_tik=azami_tik, butce_usd=butce_usd,
                         zaman_asimi=zaman_asimi, paralel=paralel,
                         izinli_araclar=izinli_araclar,
-                        tarayici_kabini=tarayici_kabini):
+                        tarayici_kabini=tarayici_kabini,
+                        kanat_id=lider.get("kanat_id")):
                     yield {"tur": "tik", "govde": adim.get("sebep", ""),
                            "ek": adim}
                     if adim.get("bitti"):
                         break
-                rapor = self._rapor(lider, mesaj, {"gorevler": self._acik_ve_yeni()},
+                rapor = self._rapor(lider, mesaj,
+                                    {"gorevler": self._acik_ve_yeni(lider.get("kanat_id"))},
                                     butce_usd, zaman_asimi)
                 self.ofis.postane.cevapla(kayit["id"],
                                           cevap + chr(10) * 2 + rapor,
@@ -843,7 +862,8 @@ class Sohbet:
         for adim in self.orkestra.kos(azami_tik=azami_tik, butce_usd=butce_usd,
                                       zaman_asimi=zaman_asimi, paralel=paralel,
                                       izinli_araclar=izinli_araclar,
-                                      tarayici_kabini=tarayici_kabini):
+                                      tarayici_kabini=tarayici_kabini,
+                                      kanat_id=lider.get("kanat_id")):
             yield {"tur": "tik", "govde": adim.get("sebep", ""), "ek": adim}
             if adim.get("bitti"):
                 son_adim = adim
@@ -854,21 +874,22 @@ class Sohbet:
         yield {"tur": "rapor", "govde": rapor, "ek": {}}
         yield {"tur": "bitti", "govde": "", "ek": {"yol": karar["karar"]}}
 
-    def _acik_is_var(self) -> bool:
+    def _acik_is_var(self, kanat_id=None) -> bool:
         """Kosulabilecek acik is var mi? (Bekleyen degil, ILERLEYEBILIR.)"""
-        return bool(self._acik_ve_yeni())
+        return bool(self._acik_ve_yeni(kanat_id))
 
-    def _acik_ve_yeni(self) -> list:
+    def _acik_ve_yeni(self, kanat_id=None) -> list:
         # Bayat is (bkz. Orkestra.BAYAT_SN) halkayi DONDURMEZ: patron sohbet
         # etti diye unutulmus is kendiliginden baslamaz.
         return [g for g in self.ofis.tahta.liste()
                 if g["durum"] in ("hazir", "calisiyor", "inceleme")
+                and self.orkestra.takimin_isi(g, kanat_id)
                 and not self.orkestra.bayat_mi(g)]
 
-    def _bayat_hatirlatma(self) -> str:
+    def _bayat_hatirlatma(self, kanat_id=None) -> str:
         """Bayat isleri patrona BIR KEZ soyler (her sohbette tekrar etmez)."""
         bayat = [g for g in self.ofis.tahta.liste(durum="hazir")
-                 if self.orkestra.bayat_mi(g)]
+                 if self.orkestra.takimin_isi(g, kanat_id) and self.orkestra.bayat_mi(g)]
         with self.ofis.db.baglanti() as c:
             soylenen = {r["gorev_id"] for r in c.execute(
                 "SELECT gorev_id FROM olay WHERE proje_id = ? AND tur = 'bayat_hatirlatildi'",
@@ -889,7 +910,8 @@ class Sohbet:
 
     def _triyaj(self, lider: dict, mesaj: str, butce_usd, zaman_asimi,
                 ek_klasorler=()) -> dict:
-        metin = self.triyaj_metni(mesaj, ek_klasorler=ek_klasorler)
+        metin = self.triyaj_metni(mesaj, ek_klasorler=ek_klasorler,
+                                  kanat_id=lider.get("kanat_id"))
         ham = self._lideri_kostur(lider, metin, butce_usd, zaman_asimi,
                                   ek_klasorler=ek_klasorler,
                                   akis=getattr(self, "_akis", None))
