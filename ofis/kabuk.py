@@ -1661,6 +1661,50 @@ def komut_onayla(a) -> None:
     yaz("  python -m ofis.kabuk devam")
 
 
+def komut_tasi(a) -> None:
+    """TASI (01.10.2026 ayrim): ofisin evi AgentOfis\\ev'e, projeler masaustune.
+
+    Varsayilan DENEME: hicbir seye dokunmaz, plani gosterir. `--uygula` ile
+    tasir (panel KAPALI olmali). Eski yerler silinmez.
+    """
+    from ofis import tasima as T
+    pl = T.plan(a.db)
+    ev = pl["ev"]
+    yaz("TASIMA PLANI" + ("" if a.uygula else " (DENEME -- hicbir seye dokunulmadi)"))
+    if ev["gerekli"]:
+        yaz(f"  ev: {ev['kaynak']} -> {ev['hedef']} ({ev['boyut'] / 1e9:.2f} GB, KOPYA; eski yerinde kalir)")
+    else:
+        yaz(f"  ev: tasima gerekmiyor ({ev['hedef']})")
+    for x in pl["projeler"]:
+        yaz(f"  proje {x['ad']}: {x['eski']} -> {x['hedef']} ({len(x['dosyalar'])} dosya, "
+            f"{x['boyut'] / 1e6:.1f} MB)")
+        if x["arsiv"]:
+            yaz("    eski brifingler evin arsivine: " + ", ".join(g for g, _ in x["arsiv"]))
+        if x["ajanlar"]:
+            yaz("    klasoru cevrilecek ajanlar: " + ", ".join(x["ajanlar"]))
+    if not pl["projeler"]:
+        yaz("  ofisin icinde koku olan proje yok.")
+    for e in pl["engeller"]:
+        yaz(f"  [ENGEL] {e}")
+    if not a.uygula:
+        yaz("Uygulamak icin: python -m ofis.kabuk tasi --uygula")
+        return
+    try:
+        r = T.uygula(pl)
+    except T.TasimaHatasi as exc:
+        raise SystemExit(f"Tasima: {exc}")
+    yaz("TASINDI.")
+    yaz(f"  defter yedegi: {r['db_yedek']}")
+    if r["ev"]:
+        yaz(f"  ev: {r['ev']}")
+    for x in r["projeler"]:
+        yaz(f"  {x}")
+    yaz("  geri donus:")
+    for g in r["geri_donus"]:
+        yaz(f"    - {g}")
+    yaz("Paneli yeniden ac: baslat.bat")
+
+
 def komut_yedek(a) -> None:
     """YEDEK: al, listele, dogrula, geri yukle, hedef yonet.
 
@@ -2264,6 +2308,10 @@ def ayristirici() -> argparse.ArgumentParser:
     o.add_argument("--not", dest="not_", default="",
                    help="ret icin ZORUNLU gerekce")
     o.set_defaults(islev=komut_onayla)
+
+    ts = alt.add_parser("tasi", help="TASI -- ofisin evi AgentOfis\\ev, projeler masaustu (varsayilan DENEME)")
+    ts.add_argument("--uygula", action="store_true", help="gercekten tasi (panel kapali olmali)")
+    ts.set_defaults(islev=komut_tasi)
 
     yd = alt.add_parser("yedek", help="YEDEK -- al / liste / dogrula / geri-yukle / hedef / github / metinden")
     yd.add_argument("eylem", choices=["al", "liste", "dogrula", "geri-yukle",

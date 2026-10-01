@@ -249,6 +249,40 @@ try:
     except Y.YedekHatasi:
         sina("zip yol kacisi reddedildi", not (ANA / "disari.txt").exists())
 
+    # ------------------------------------- 6b. PROJELER (01.10 ayrim)
+    print("\n6b. masaustundeki PROJELER arsive girer; ev ve karalama girmez")
+    pk = ANA / "Masaustu" / "Ofisim"
+    (pk / "semuparfum-rapor").mkdir(parents=True)
+    (pk / "semuparfum-rapor" / "rapor.md").write_text("r\n", encoding="utf-8")
+    (pk / ".ofis" / "ekler").mkdir(parents=True)
+    (pk / ".ofis" / "ekler" / "a.png").write_bytes(b"png")
+    (pk / ".ofis" / "karalama").mkdir(parents=True)
+    (pk / ".ofis" / "karalama" / "x.py").write_text("x", encoding="utf-8")
+    (pk / ".env").write_text("SIR=1", encoding="utf-8")
+    sp = Y.al("proje", kok=kok, ek_hedefler=[], projeler=[("Ofisim", pk), ("Kayip", ANA / "yok")])
+    with zipfile.ZipFile(sp["arsiv"]) as z:
+        pa = set(z.namelist())
+    sina("proje dosyasi arsivde (projeler/Ofisim/...)", "projeler/Ofisim/semuparfum-rapor/rapor.md" in pa)
+    sina("  sohbet ekleri (.ofis/ekler) arsivde", "projeler/Ofisim/.ofis/ekler/a.png" in pa)
+    sina("  yardimci betik (.ofis/karalama) arsivde YOK", not any("karalama" in a for a in pa))
+    sina("  projedeki sir (.env) YOK, atlandigi soylendi",
+         not any(a.endswith(".env") for a in pa) and any(s.endswith(".env") for s in sp["sirlar_atlandi"]))
+    sina("  klasoru bulunamayan proje SOYLENDI", any("Kayip" in b for b in sp["projeler_bulunamayan"]))
+    sina("  arsiv dogrulamadan gecti (manifest proje dosyalarini da tasiyor)", Y.dogrula(Path(sp["arsiv"]))["tamam"])
+    sina("sinama koku (gercek ofis degil) gercek projeleri OKUMADI",
+         not any(a.startswith("projeler/") for a in adlar))
+    # Yedek klasoru kok/ev icinde OLABILIR (ev arsive girmez); kokun baska yerinde olamaz.
+    try:
+        Y.al("ev", kok=kok, ek_hedefler=[], projeler=[], hedef_kok=kok / "ev" / "yedekler")
+        sina("yedek klasoru kok/ev icinde kabul", True)
+    except Y.YedekHatasi as exc:
+        sina("yedek klasoru kok/ev icinde kabul", False, str(exc))
+    try:
+        Y.al("ic", kok=kok, ek_hedefler=[], projeler=[], hedef_kok=kok / "calisma" / "yedek")
+        sina("  kokun baska yerinde REDDEDILIR", False)
+    except Y.YedekHatasi:
+        sina("  kokun baska yerinde REDDEDILIR", True)
+
     # ------------------------------------------ 7. GUNLUK KAPI
     print("\n7. GUNLUK KAPI -- 24 saat dolmadan tekrar almaz")
     sina("son yedek az once", Y.son_yedek_saat() < 1)
@@ -261,11 +295,23 @@ try:
     # Proje kokunu gecici koke cevir ki gercek proje arsivlenmesin.
     asil_kok = Y.PROJE_KOKU
     Y.PROJE_KOKU = kok
+    # Gercek proje listesi OKUNMAMALI: sonuca bakmak yetmez (gercek defterde
+    # klasoru olan proje yoksa fark gorunmez -- olculdu, mutasyon gecti).
+    _gp_cagri, _gp_asil = [], Y.gercek_projeler
+    Y.gercek_projeler = lambda: _gp_cagri.append(1) or []
     try:
         g = Y.gerekirse_al(lambda t, g: olaylar.append((t, g)))
     finally:
         Y.PROJE_KOKU = asil_kok
+        Y.gercek_projeler = _gp_asil
+    sina("gecici kokle yedek alinirken GERCEK proje listesi OKUNMADI", _gp_cagri == [])
     sina("sure dolunca aldi", bool(g.get("arsiv")))
+    # PROJE_KOKU geciciye cevrildi: gercek ofis SANILIP patronun gercek
+    # projeleri bu gecici arsive KOPYALANMAMALI (01.10 olculdu, duzeltildi).
+    with zipfile.ZipFile(g["arsiv"]) as _zg:
+        _gn = _zg.namelist()
+    sina("  gecici kokle alinan gunluk yedege GERCEK projeler girmedi",
+         not any(n.startswith("projeler/") for n in _gn), str([n for n in _gn if n.startswith("projeler/")][:3]))
     sina("olay yazildi", any(t == "yedek_alindi" for t, _ in olaylar))
     sina("bayat ayar tazelendi", Y.son_yedek_saat() < 1)
     (ANA / "yedek.json").write_text("{bozuk", encoding="utf-8")

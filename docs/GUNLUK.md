@@ -13384,3 +13384,29 @@ Aşama 3 (kök kapısı):
 - Bulgu (aşama 4'e): ZIP yedeği "yedek klasörü kökün içinde olamaz" diyor;
   yeni evde yedekler AgentOfis\ev\yedekler → taşımadan sonraki ilk yedek
   düşerdi. GuvenKart-3D projesinin klasörü masaüstünde YOK.
+
+Aşama 4 (ZIP yedeği):
+- Yedek klasörü kök/ev içinde OLABİLİR (ev arşive girmez); kökün başka
+  yerinde hâlâ reddedilir. Bulgu: kural olduğu gibi kalsaydı taşımadan
+  sonraki ilk günlük yedek düşerdi.
+- Masaüstündeki projeler arşivde `projeler/<ad>/…` (sır, node_modules,
+  `.ofis/karalama` hariç; `.ofis/ekler` dahil); klasörü bulunamayan proje
+  raporda (GuvenKart-3D). Gerçek proje listesi YALNIZ gerçek ofisin kod
+  yeriyle karşılaştırılarak okunur — `PROJE_KOKU` değişkenine bakılsaydı
+  sınama gerçek projeleri geçici arşive kopyalardı. Sınama önce sonuca
+  bakıyordu ve mutasyon GEÇTİ (gerçek defterde klasörü olan dış proje
+  yoktu) → davranış ölçülür: gerçek liste OKUNMADI mı. duman_yedek 60.
+
+Aşama 5 (taşıma aracı, `ofis/tasima.py`, `kabuk tasi`):
+- Varsayılan DENEME; `--uygula`: engel (panel açık, koşan iş, hedef dolu)
+  varsa başlamaz; defter yedeği; ev geçici adla kopyalanır (sayı
+  doğrulanır), eski ev YERİNDE; proje eşlenerek kopyalanır (ekler →
+  .ofis/ekler, karalama → .ofis/karalama, AJANIN eski BRIFING.md'si evin
+  arşivine; ajan olmayan klasördeki aynı adlı dosya projede kalır), her
+  dosya boyut+özetle doğrulanır; defter EN SON tek işlemde; eski kök
+  SİLİNMEZ, evin arşivine taşınır.
+- Gerçek ofiste DENEME: ev 1,21 GB → AgentOfis\ev; Ofisim 41 dosya
+  (4,6 MB) → Masaüstü\Ofisim; bilge/cinar BRIFING.md arşive; 6 ajan
+  klasörü çevrilecek; engel yok.
+- duman_tasima 24 (gerçek kopyalı sahne). `ofis_kopyasi.py` kökü
+  defterden okur. Tam takım 3632/3632.

@@ -182,6 +182,26 @@ def dosyalari_topla(kok: Path) -> dict:
     return {"dosyalar": dosyalar, "sirlar": sirlar}
 
 
+def _arsiv_adi(ad: str) -> str:
+    return "".join(c if c.isalnum() or c in "-_ ." else "-" for c in str(ad))[:60].strip() or "proje"
+
+
+def gercek_projeler() -> list:
+    """Gercek defterdeki projelerin (ad, kok) listesi -- kok OFISIN DISINDAysa.
+    Ofisin icindeki kok zaten ana arsivde; salt okunur acilir."""
+    from .db import VARSAYILAN_YOL
+    from .yollar import ofis_icinde_mi
+    import sqlite3 as _sq
+    if not Path(VARSAYILAN_YOL).exists():
+        return []
+    c = _sq.connect(f"file:{Path(VARSAYILAN_YOL).as_posix()}?mode=ro", uri=True)
+    try:
+        rows = c.execute("SELECT ad, kok_klasor FROM proje").fetchall()
+    finally:
+        c.close()
+    return [(ad, k) for ad, k in rows if k and not ofis_icinde_mi(k)]
+
+
 def _sha(yol: Path) -> str:
     h = hashlib.sha256()
     with open(yol, "rb") as f:
@@ -215,7 +235,8 @@ def _ad(zaman: _dt.datetime, neden: str) -> str:
 
 
 def al(neden: str = "elle", *, kok: Path = None, hedef_kok: Path = None,
-       ek_hedefler: list = None, saklanan: int = SAKLANAN) -> dict:
+       ek_hedefler: list = None, saklanan: int = SAKLANAN,
+       projeler: list = None) -> dict:
     """Yedek alir, dogrular, ek hedeflere dagitir, budar.
 
     Donus: {"arsiv", "boyut", "dosya", "db", "sirlar_atlandi",
@@ -224,15 +245,38 @@ def al(neden: str = "elle", *, kok: Path = None, hedef_kok: Path = None,
     kok = Path(kok or PROJE_KOKU).resolve()
     hedef_kok = Path(hedef_kok or yedek_koku())
     hedef_kok.mkdir(parents=True, exist_ok=True)
-    try:
-        hedef_kok.resolve().relative_to(kok)
+    # Yedek klasoru kokun icinde OLAMAZ (arsiv kendini icerirdi) -- AMA
+    # ofisin evi (kok/ev, 01.10.2026) arsive girmedigi icin orasi serbest.
+    _h = hedef_kok.resolve()
+    if (_h == kok or kok in _h.parents) and not (
+            _h == kok / "ev" or (kok / "ev") in _h.parents):
         raise YedekHatasi("Yedek klasoru proje kokunun icinde olamaz.")
-    except ValueError:
-        pass
 
     zaman = _dt.datetime.now()
     ad = _ad(zaman, neden)
     topla = dosyalari_topla(kok)
+    # PATRONUN PROJELERI (01.10.2026 ayrim): masaustunde, ofisin DISINDA.
+    # Arsivde `projeler/<ad>/...`. Verilmediyse ve kok GERCEK ofisse
+    # defterden okunur; sinama kendi listesini verir (gercege dokunmaz).
+    if projeler is None:
+        # GERCEK ofisin kod yeriyle karsilastirilir (`PROJE_KOKU` degiskeni
+        # sinamada geciciye cevrilir; ona bakilsaydi sinama patronun gercek
+        # projelerini gecici arsive kopyalardi).
+        from .yollar import OFIS_KODU as _OFIS_KODU
+        projeler = gercek_projeler() if kok == _OFIS_KODU.resolve() else []
+    proje_dosyalari, bulunamayan = [], []
+    for p_ad, p_kok in projeler:
+        p_kok = Path(p_kok)
+        if not p_kok.is_dir():
+            bulunamayan.append(f"{p_ad}: {p_kok}")
+            continue
+        pt = dosyalari_topla(p_kok)
+        on = f"projeler/{_arsiv_adi(p_ad)}/"
+        for g in pt["dosyalar"]:
+            if g.startswith(".ofis/karalama/"):
+                continue
+            proje_dosyalari.append((on + g, p_kok / g))
+        topla["sirlar"] += [on + s for s in pt["sirlar"]]
     manifest = {"bicim": BICIM, "zaman": zaman.isoformat(timespec="seconds"),
                 "neden": neden, "kaynak": str(kok), "dosyalar": [],
                 "db": [], "sirlar_atlandi": topla["sirlar"]}
@@ -265,6 +309,24 @@ def al(neden: str = "elle", *, kok: Path = None, hedef_kok: Path = None,
                     manifest["dosyalar"].append(
                         {"yol": goreli, "boyut": kaynak.stat().st_size,
                          "sha256": _sha(kaynak)})
+                for arsiv_yolu, kaynak in proje_dosyalari:
+                    if arsiv_yolu.lower().endswith(".sqlite3"):
+                        kopya = tmp / f"db{len(manifest['db'])}.sqlite3"
+                        bilgi = _sqlite_kopyala(kaynak, kopya)
+                        if bilgi["butunluk"] != "ok":
+                            raise YedekHatasi(f"{arsiv_yolu} butunluk denetiminden gecmedi")
+                        kaynak = kopya
+                        manifest["db"].append({"yol": arsiv_yolu, **bilgi})
+                    try:
+                        z.write(kaynak, arsiv_yolu)
+                    except (PermissionError, FileNotFoundError) as exc:
+                        manifest.setdefault("okunamayan", []).append(
+                            f"{arsiv_yolu}: {exc.__class__.__name__}")
+                        continue
+                    manifest["dosyalar"].append(
+                        {"yol": arsiv_yolu, "boyut": kaynak.stat().st_size,
+                         "sha256": _sha(kaynak)})
+                manifest["projeler_bulunamayan"] = bulunamayan
                 z.writestr("_manifest.json",
                            json.dumps(manifest, ensure_ascii=False, indent=1))
         except BaseException:
@@ -282,6 +344,7 @@ def al(neden: str = "elle", *, kok: Path = None, hedef_kok: Path = None,
              "dosya": len(manifest["dosyalar"]), "db": manifest["db"],
              "sirlar_atlandi": manifest["sirlar_atlandi"],
              "okunamayan": manifest.get("okunamayan", []),
+             "projeler_bulunamayan": bulunamayan,
              "hedefler": [], "budanan": budama(hedef_kok, saklanan, arsiv)}
 
     if ek_hedefler is None:

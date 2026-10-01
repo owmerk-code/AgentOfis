@@ -57,10 +57,15 @@ def kopya_kur() -> tuple:
     hedef = sqlite3.connect(db_yol)
     kaynak.backup(hedef)                     # tutarli kopya (acik panel yazsa bile)
     kaynak.close()
+    # Projenin GERCEK koku defterden okunur (01.10.2026 ayrim: kok artik
+    # masaustunde, `AgentOfis\\calisma` degil). Sabit yol tasimadan sonra
+    # olmayan bir klasoru kopyalamaya calisirdi.
+    _r = hedef.execute("SELECT kok_klasor FROM proje WHERE ad = ?", (PROJE,)).fetchone()
+    kaynak_kok = Path((_r[0] if _r else "") or (KOK / "calisma"))
     calisma = ana / "calisma"
-    shutil.copytree(KOK / "calisma", calisma,
+    shutil.copytree(kaynak_kok, calisma,
                     ignore=shutil.ignore_patterns(".pytest_cache", "__pycache__"))
-    gercek = str((KOK / "calisma").resolve()).lower().replace("\\", "/")
+    gercek = str(kaynak_kok.resolve()).lower().replace("\\", "/")
     for r in hedef.execute("SELECT ad, klasor FROM ajan").fetchall():
         if (r[1] or "").lower().replace("\\", "/").rstrip("/") == gercek:
             hedef.execute("UPDATE ajan SET klasor=? WHERE ad=?", (str(calisma), r[0]))
