@@ -13236,3 +13236,31 @@ REDDEDİLİYORDU ("bitmesini bekle").
   kaynak sebebinden çıkarılınca artık 3 sınama düşüyor. duman_kesinti 28.
 - Not (onay yorgunluğu, E80'e): tarayıcıda salt okuyan `fetch` "SAYFAYI
   DEĞİŞTİREN KOD" diye soruldu.
+
+## 01.10.2026 — F5/3: masaüstü bildirimi
+
+Kullanıcı (aynı gün): ölçüt Claude Code / Codex / VS Code rahatlığı + çok
+model; panel eksiklerini tek tek söylemiyor (hafıza: olcut-claude-code-gibi).
+Sohbette patrona sorulan sorunun yer tutucusu "cevap gelmedi (tur yarıda
+kalmış olabilir)" diyordu — arıza gibi; "senin cevabını bekliyor" oldu.
+
+- `ofis/bildirim.py`: panel DEFTERİ izler (2 sn) — onay isteyen ajanın MCP
+  sunucusu ayrı süreç, panelin belleğine ulaşmaz. Açılıştan SONRAKİ
+  olaylar: onay, ajanın patrona sorusu, liderin cevabı, dönüş raporu,
+  kesinti toparlandı, sıradaki iş düştü (sıradan ajan hatası değil).
+  Öncelik: patronu bekleyen önce; tek turda en fazla 3 + özet (sınama
+  yakaladı: tablo sırasıyla kesilince liderin cevabı özete düşüyordu).
+- Windows bildirimi PowerShell + WinRT, ek kurulum yok; metin
+  `-EncodedCommand` (UTF-16): BOM'suz .ps1 PowerShell 5'te ANSI okunur.
+  Ajan metni XML'de kaçırılır (enjeksiyon sınandı). Tıklayınca panel açılır.
+- VARSAYILAN KAPALI: yalnız `panel.calistir` açar (sınama ekrana bildirim
+  atmaz); patron üst çubuktaki "bildirim" düğmesiyle kapatır (defter
+  ayarı `bildirim`). Gönderici düşerse izleyici durmaz, bir kez söyler.
+- duman_bildirim 17. Canlı (8911): üç bildirim gönderildi (iki deneme +
+  "demir cevapladı"), Windows'a hatasız ulaştı; ekranda görüldüğünü
+  kullanıcı doğrulayacak (odak modu gizleyebilir).
+- Kullanıcı doğruladı: "demir cevapladı — Kızılırmak" ekranda, Türkçe harf
+  doğru. Elle yazılan deneme .ps1'i ise beklendiği gibi bozuk ("â€”",
+  "gÃ¶rÃ¼yorsan") — UTF-16 yolunun gerekçesi ölçüldü. Bildirim başlığı
+  "Windows PowerShell" görünüyor; "AgentOfis" için uygulama kimliği kaydı
+  gerekir → F9 (Tauri) ile.

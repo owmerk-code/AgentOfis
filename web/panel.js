@@ -5160,6 +5160,23 @@ function okunurAnahtar() {
 }
 $("#okunur-anahtar").onclick = okunurAnahtar;
 
+/* MASAUSTU BILDIRIMI (01.10.2026). Ayar defterde (`bildirim`); panel
+   yalniz gosterir ve degistirir. Sinama panelinde bildirim izleyicisi
+   calismiyorsa dugme bunu SOYLER (acik gorunup sessiz kalmasin). */
+async function bildirimDurumu(r) {
+  try { r = r || await al("/api/bildirim"); } catch (e) { return; }
+  const d = $("#bildirim-anahtar");
+  d.classList.toggle("acik", !!(r.acik && r.panelde_calisiyor));
+  $("#bildirim-etiket").textContent = !r.panelde_calisiyor ? "bildirim (bu panelde yok)"
+    : r.acik ? "bildirim açık" : "bildirim kapalı";
+  d.dataset.acik = r.acik ? "1" : "";
+}
+$("#bildirim-anahtar").onclick = async () => {
+  try { bildirimDurumu(await yolla("/api/bildirim", { acik: !$("#bildirim-anahtar").dataset.acik })); }
+  catch (e) { bildir(String(e.message || e).slice(0, 160), "uyari"); }
+};
+bildirimDurumu();
+
 /* EFOR MODU. Panel karar vermez: secimi ayara yazar, kural sunucuda
    (`roller.tur_eforu`). Komut satirindan panelde dugmesi olmayan bir
    seviye secildiyse (orn. `dusuk`) hicbir dugme yalan yere secili

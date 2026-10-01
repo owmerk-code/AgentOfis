@@ -365,6 +365,18 @@ def _kuyrugu_kostur(db_yolu, proje_ad: str) -> None:
     _arkada_calistir(db_yolu, proje_ad, isi, "sira")
 
 
+def bildirimleri_baslat(db_yolu, proje_ad: str, adres: str) -> None:
+    """Masaustu bildirimi (F5/3): yalniz GERCEK panel acar; sinamalar
+    `olustur` kullanir ve ekrana bildirim dusmez."""
+    from . import bildirim as _b
+    _b.ACIK = True
+
+    def ofis_ac():
+        _db = Veritabani(db_yolu)
+        return Ofis(_db, _proje_id_bul(_db, proje_ad))
+    _b.arkada_izle(ofis_ac, adres)
+
+
 def acilista_toparla(db_yolu, proje_ad: str = None) -> dict:
     """Panel ACILIRKEN: kesintide yarim kalani toparla, sirayi baslat.
 
@@ -2512,6 +2524,21 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
                 "kosuyor": True, "tarayici": web, "kabin": bool(kabin_cdp),
                 "sirada": not basladi, "sira": k["sira"], "kuyruk_id": k["id"]}
 
+    @uygulama.get("/api/bildirim")
+    def api_bildirim_durum():
+        from . import bildirim as _b
+        o = ofis_ac()
+        return {"acik": (o.db.ayar_oku(o.proje_id, _b.AYAR, "acik") or "acik") != "kapali",
+                "panelde_calisiyor": _b.ACIK}
+
+    @uygulama.post("/api/bildirim")
+    def api_bildirim_ayar(govde: dict):
+        """Masaustu bildirimini acar/kapatir (patronun ayari, defterde)."""
+        from . import bildirim as _b
+        o = ofis_ac()
+        o.db.ayar_yaz(o.proje_id, _b.AYAR, "acik" if govde.get("acik") else "kapali")
+        return api_bildirim_durum()
+
     @uygulama.get("/api/kuyruk")
     def api_kuyruk():
         """Siradaki isler (eklenme sirasiyla) ve ofisin su anki isi."""
@@ -2682,6 +2709,8 @@ def kos(adres: str = "127.0.0.1", kapi: int = 8900, db_yolu=None,
         print(f"UYARI: {adres} yerel ya da Tailscale adresi degil.")
     uygulama = olustur(db_yolu, proje_ad)
     acilista_toparla(db_yolu or VARSAYILAN_YOL, proje_ad)
+    bildirimleri_baslat(db_yolu or VARSAYILAN_YOL, proje_ad,
+                        f"http://{adres}:{kapi}/")
     _gunluk_yedek_arkada(db_yolu)
     _limit_tazele_arkada(db_yolu, proje_ad)
     _guncelleme_arkada(db_yolu, proje_ad)
