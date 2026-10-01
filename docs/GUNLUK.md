@@ -13487,3 +13487,51 @@ altta açılıyordu, soru çıkmıyordu (ölçmek istediği sınıra ulaşmıyor
   ikinci geçerse kurulur (ilk sebep nota yazılır), ikisi de düşerse geri
   dönülür ve İKİ sebep de söylenir. duman_guncelleme 115 (kural
   kaldırılınca 4 düşüyor).
+
+## 01.10.2026 ~16:40 — kök sebep: panelde imleç DÜZ ">"
+
+Kullanıcı paneli yeniden açtı: yeni kod devredeydi ve hata bu kez AÇIKTI
+("Klasör güven sorusu CEVAPLANAMADI", 1500 harf ekran). Ekranda imleç
+`❯` değil DÜZ `>`: `>No,exit` / `>Yes, I trust this folder`; ofis imleci
+aşağı-yukarı gezdirmiş, Yes'e gelmiş ama `>`'yu imleç tanımadığı için
+Enter basmamış. Benim ölçümlerim Claude Code'un ortamından koştuğu için
+`❯` görüyordu; panel `baslat.bat`tan açılır. SADE ortamda (`env -i` +
+temel Windows değişkenleri) gerçek claude `>1.Yes,Itrust…` çizdi → eski
+kod Enter BASAMADI (panel hatası birebir üretildi), yeni kod bastı.
+- Düzeltme: imleç `❯` ya da `>`; yalnız ardından seçenek (Yes/No,
+  numaralı ya da değil) geliyorsa (ekrandaki `>0q` imleç sayılmaz).
+  duman_tui 64 (patronun panelinden ölçülen ekranla).
+- Uçtan uca (panel benzeri sade ortam, güvenilmemiş klasör, ofis kopyası,
+  araştırma işi): güven kaydı `true`, bilge gerçek terminalde, 160 sn.
+- Ders (hafızaya): ölçüm ortamı patronun ortamı olmalı — Claude Code'dan
+  koşturulan süreç onun ortam değişkenlerini miras alır ve CLI farklı
+  çizer. Gerçek koşul = sade ortam.
+- #37 (semuparfum denetimi): patron İSTEMEMİŞ; 30.09'dan kalma yarım iş,
+  panel açılınca kendiliğinden sürdürülmüştü → iptal (defter yedeği alındı).
+  Bunu sorun olarak not: açılışta toparlama ESKİ yarım işleri patrona
+  sormadan sürdürüyor (kendi kararıyla değil, `devam` satırıyla değil;
+  halka "hazır" işi aldı).
+
+## 01.10.2026 — #37 olayı: iptal ezildi, durmayan döngü, eski iş kendiliğinden başladı
+
+Ölçülen (gerçek defter): #37 30.09'da açılmış, bir gün `hazır` beklemiş.
+Patron "naber" yazınca triyaj `cevap` dedi; cevap yolu "açık iş varsa halka
+döner" kuralıyla #37'yi KENDİLİĞİNDEN başlattı. İş güven sorusunda düştü ve
+~20 sn arayla 13 kez yeniden koştu. 13:41:38'de iptal ettim; 13:41:47'de
+düşen tur `tahta.birak` ile işi yeniden `hazır` yaptı (iptal ezildi).
+
+Düzeltmeler:
+- `tahta.birak`: `iptal`/`bitti` olan işi `hazır`a çevirmez (kilit yine bırakılır).
+- `Orkestra._takildi_mi`: son 3 bırakma "tur basarisiz" ve sonuncusu 30 dk'dan
+  yeniyse iş seçilmez; patrona BİR kez `takildi` olayı (sohbet akışı + masaüstü
+  bildirimi). Sayaç `surdur_istendi` (panel Sürdür, `kabuk devam`) ya da o işe
+  yazılan notla sıfırlanır; arada başka sebepli bırakma (limit) zinciri bozar.
+- `Orkestra.bayat_mi`: 12 saattir dokunulmamış `hazır` iş, son 12 saatte
+  (ve işten sonra) Sürdür basılmadıysa bayattır: halka seçmez, sohbetin cevap
+  yolu halka döndürmez; lider cevabının altına bir kez "kendiliğinden
+  BAŞLATMADIM" notu eklenir (`bayat_hatirlatildi`).
+- Sınama `testler/duman_takilma.py` (30); 9 mutasyonun 9'u yakalandı. İlk
+  koşuda bayat kuralında açık bulundu: haftalar önce basılmış Sürdür işi
+  sonsuza dek taze sayıyordu → yalnız son 12 saat sayılır.
+- Gerçek defterde şu an açık iş yok (salt okunur sorgu): kural bugün hiçbir
+  işi bekletmiyor.

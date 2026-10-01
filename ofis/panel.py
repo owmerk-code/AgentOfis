@@ -1849,6 +1849,8 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
                                      "Yeni is icin lidere yaz.")
         # Insan yeni bir sey baslatiyor: eski durdurma istegi KALKAR.
         durdurma_temizle(ofis.db, ofis.proje_id)
+        # Patron Surdur'e basti: TAKILAN islerin bekleme sayaci sifirlanir.
+        ofis.db.olay_yaz(ofis.proje_id, "surdur_istendi", "Patron Surdur'e basti", ajan_ad="insan")
         _KOSU.update(dur=False, calisiyor=True, mesaj="halka surduruluyor")
         threading.Thread(target=_halkayi_kostur, args=(db.yol, proje_ad),
                          daemon=True).start()

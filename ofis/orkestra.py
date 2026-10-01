@@ -919,6 +919,78 @@ class Orkestra:
             return ""
         return sahiplenme["ajan_ad"] or ""
 
+    #: TAKILAN IS (01.10.2026 OLCULDU): #37 ayni hatayla 13 kez, ~20 sn arayla
+    #: yeniden kostu; kimse durdurmadi, patrona sorulmadi. Bu kadar ust uste
+    #: AYNI bicimde dusen is BEKLETILIR; patron bir kez haberdar edilir.
+    TAKILMA_ESIGI = 3
+    TAKILMA_BEKLEME_SN = 30 * 60
+
+    def _takildi_mi(self, gorev: dict) -> bool:
+        """Son TAKILMA_ESIGI birakma 'tur basarisiz' ise ve sonuncusu yeniyse
+        is bekletilir. Patron Surdur'e basarsa ya da not yazarsa (`surdur_istendi`
+        / `not` olayi) sayac sifirlanir."""
+        from datetime import datetime, timezone
+        with self.db.baglanti() as c:
+            sifir = c.execute("SELECT MAX(rowid) FROM olay WHERE proje_id = ? AND (tur = 'surdur_istendi' "
+                              "OR (tur = 'not' AND gorev_id = ?))",
+                              (self.proje_id, gorev["id"])).fetchone()[0] or 0
+            son = c.execute("SELECT govde, olusturuldu FROM olay WHERE proje_id = ? AND gorev_id = ? "
+                            "AND tur = 'birakildi' AND ajan_ad = '' AND rowid > ? "
+                            "ORDER BY rowid DESC LIMIT ?",
+                            (self.proje_id, gorev["id"], sifir, self.TAKILMA_ESIGI)).fetchall()
+        if len(son) < self.TAKILMA_ESIGI or not all("tur basarisiz" in (r["govde"] or "") for r in son):
+            return False
+        try:
+            yas = (datetime.now(timezone.utc) - datetime.fromisoformat(son[0]["olusturuldu"])).total_seconds()
+        except ValueError:
+            return False
+        if yas > self.TAKILMA_BEKLEME_SN:
+            return False
+        with self.db.baglanti() as c:
+            soylendi = c.execute("SELECT 1 FROM olay WHERE proje_id = ? AND gorev_id = ? "
+                                 "AND tur = 'takildi' AND rowid > ?",
+                                 (self.proje_id, gorev["id"], sifir)).fetchone()
+            hata = c.execute("SELECT govde FROM olay WHERE proje_id = ? AND gorev_id = ? "
+                             "AND tur = 'hata' ORDER BY rowid DESC LIMIT 1",
+                             (self.proje_id, gorev["id"])).fetchone()
+        if not soylendi:
+            self.db.olay_yaz(self.proje_id, "takildi",
+                             f"#{gorev['no']} üst üste {self.TAKILMA_ESIGI} kez düştü; "
+                             f"{self.TAKILMA_BEKLEME_SN // 60} dk bekletiliyor (Sürdür'e basarsan hemen "
+                             f"denenir). Son hata: {((hata or {'govde': ''})['govde'] or '')[:300]}",
+                             ajan_ad="ofis", gorev_id=gorev["id"])
+        return True
+
+    #: BAYAT IS (01.10.2026 OLCULDU): #37 30.09'da acilmis, bir gun "hazir"
+    #: bekledi; patron "naber" yazinca cevap yolunun halkasi onu KENDILIGINDEN
+    #: baslatti -- patron "ben bir sey istemedim ki" dedi. Bu kadar suredir
+    #: dokunulmamis bekleyen is, patron Surdur demeden kosmaz; lider hatirlatir.
+    BAYAT_SN = 12 * 3600
+
+    def bayat_mi(self, gorev: dict) -> bool:
+        """`hazir` is BAYAT_SN'den uzun suredir dokunulmamissa ve isin son
+        dokunusundan sonra SON BAYAT_SN icinde patron Surdur'e basmadiysa
+        (`surdur_istendi`) bayattir. (Haftalar once basilan Surdur isi
+        sonsuza dek 'taze' saymasin.)"""
+        from datetime import datetime, timedelta, timezone
+        if gorev.get("durum") != "hazir" or not gorev.get("guncellendi"):
+            return False
+        try:
+            son = datetime.fromisoformat(gorev["guncellendi"])
+        except ValueError:
+            return False
+        simdi_ = datetime.now(timezone.utc)
+        if (simdi_ - son).total_seconds() <= self.BAYAT_SN:
+            return False
+        esik = max(gorev["guncellendi"],
+                   (simdi_ - timedelta(seconds=self.BAYAT_SN))
+                   .isoformat(timespec="seconds"))
+        with self.db.baglanti() as c:
+            surdur = c.execute("SELECT 1 FROM olay WHERE proje_id = ? AND tur = 'surdur_istendi' "
+                               "AND olusturuldu >= ? LIMIT 1",
+                               (self.proje_id, esik)).fetchone()
+        return surdur is None
+
     def _uygun_ajan(self, gorev: dict, rezerve: set = frozenset()) -> str:
         """Bu isi kim yapmali. Lider atadiysa o; atamadiysa uygun bosta olan.
 
@@ -1062,8 +1134,9 @@ class Orkestra:
         # Sira onemli: atamayi da paralel yapsaydik iki iplik ayni bos
         # ajani secebilirdi -- veritabani henuz "mesgul" demiyor, cunku
         # is daha baslamadi.
-        kosulacak = (self.ofis.tahta.liste(durum="hazir")
-                     + self.ofis.tahta.liste(durum="calisiyor"))
+        kosulacak = [g for g in (self.ofis.tahta.liste(durum="hazir")
+                                 + self.ofis.tahta.liste(durum="calisiyor"))
+                     if not self._takildi_mi(g) and not self.bayat_mi(g)]
         atamalar = []
         rezerve = set()
         # KABIN TEK YUZEYDIR -- ayni anda tek is kullanabilir.

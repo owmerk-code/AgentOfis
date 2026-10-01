@@ -345,6 +345,8 @@ def komut_devam(a) -> None:
     """
     ofis = ofis_ac(a.db, a.proje)
     durdurma_temizle(ofis.db, ofis.proje_id)
+    # Patronun Surdur'u: bayat ve takilan isler yeniden denenir.
+    ofis.db.olay_yaz(ofis.proje_id, "surdur_istendi", "Patron kabuk devam", ajan_ad="insan")
     _gunluk_yedek(ofis)
     bekleyen = (len(ofis.postane.insan_bekleyenler())
                 + len(ofis.postane.bekleyen_onaylar()))

@@ -706,6 +706,7 @@ class Sohbet:
             if not cevap:
                 cevap = "(Lider cevap metni vermedi.)"
             cevap = self._ekleri_hazirla(cevap, lider["ad"])
+            cevap += self._bayat_hatirlatma()
             self.ofis.postane.cevapla(kayit["id"], cevap,
                                       cevaplayan=lider["ad"])
             yield {"tur": "cevap", "govde": cevap, "ek": {}}
@@ -840,8 +841,31 @@ class Sohbet:
         return bool(self._acik_ve_yeni())
 
     def _acik_ve_yeni(self) -> list:
+        # Bayat is (bkz. Orkestra.BAYAT_SN) halkayi DONDURMEZ: patron sohbet
+        # etti diye unutulmus is kendiliginden baslamaz.
         return [g for g in self.ofis.tahta.liste()
-                if g["durum"] in ("hazir", "calisiyor", "inceleme")]
+                if g["durum"] in ("hazir", "calisiyor", "inceleme")
+                and not self.orkestra.bayat_mi(g)]
+
+    def _bayat_hatirlatma(self) -> str:
+        """Bayat isleri patrona BIR KEZ soyler (her sohbette tekrar etmez)."""
+        bayat = [g for g in self.ofis.tahta.liste(durum="hazir")
+                 if self.orkestra.bayat_mi(g)]
+        with self.ofis.db.baglanti() as c:
+            soylenen = {r["gorev_id"] for r in c.execute(
+                "SELECT gorev_id FROM olay WHERE proje_id = ? AND tur = 'bayat_hatirlatildi'",
+                (self.ofis.proje_id,)).fetchall()}
+        yeni = [g for g in bayat if g["id"] not in soylenen]
+        if not yeni:
+            return ""
+        for g in yeni:
+            self.ofis.db.olay_yaz(self.ofis.proje_id, "bayat_hatirlatildi",
+                                  f"#{g['no']} bekliyor, kendiliginden baslatilmadi",
+                                  ajan_ad="ofis", gorev_id=g["id"])
+        satirlar = "\n".join(f"- #{g['no']} {g['baslik'][:80]}" for g in yeni)
+        return ("\n\nNot: uzun süredir bekleyen iş var; kendiliğinden "
+                "BAŞLATMADIM:\n" + satirlar
+                + "\nSürdürmek için 'Sürdür'e bas, istemiyorsan iptal et.")
 
     # -- ic isleyis --------------------------------------------------------
 

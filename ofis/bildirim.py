@@ -92,7 +92,7 @@ class Izleyici:
     """Defterdeki YENI olaylari bildirime cevirir. `tik()` bir tarama yapar."""
 
     OLAYLAR = ("onay_istendi", "donus_raporu", "kesinti_toparlandi", "hata",
-               "zamanli_calisti")
+               "zamanli_calisti", "takildi")
 
     def __init__(self, ofis, adres: str = ""):
         self.ofis, self.adres = ofis, adres
@@ -118,6 +118,8 @@ class Izleyici:
                     ogeler.append(("Onay bekliyor", g))
                 elif r["tur"] == "donus_raporu":
                     ogeler.append(("Sıradaki işler bitti", "Dönüş raporu hazır."))
+                elif r["tur"] == "takildi":
+                    ogeler.append(("Bir iş takıldı", g))
                 elif r["tur"] == "zamanli_calisti":
                     ogeler.append(("Zamanlanmış iş başladı", g))
                 elif r["tur"] == "kesinti_toparlandi":

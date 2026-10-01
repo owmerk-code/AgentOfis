@@ -760,10 +760,13 @@ class Tahta:
         gorev = self.gorev(no)
         with self.db.baglanti() as conn:
             conn.execute("DELETE FROM yazma_kilidi WHERE gorev_id = ?", (gorev["id"],))
+            # IPTAL/BITTI EZILMEZ (01.10.2026 OLCULDU): patron #37'yi iptal
+            # etti, 9 sn sonra kosan tur dustu ve `birak` isi yeniden
+            # "hazir" yapti -- iptal sessizce geri alindi, is yine kostu.
             conn.execute(
                 "UPDATE gorev SET sahip = '', durum = ?, revizyon = revizyon + 1, "
-                "guncellendi = ? WHERE id = ?",
-                (HAZIR, simdi(), gorev["id"]),
+                "guncellendi = ? WHERE id = ? AND durum NOT IN (?, ?)",
+                (HAZIR, simdi(), gorev["id"], IPTAL, BITTI),
             )
         self.db.olay_yaz(self.proje_id, "birakildi", f"#{no} birakildi. {sebep}".strip(),
                          gorev_id=gorev["id"])

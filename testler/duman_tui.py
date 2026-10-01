@@ -312,6 +312,14 @@ sina("NUMARALI secenek: imlec 1.Yes uzerinde -> evet", tui._imlec_evette_mi(_olc
 sina("  NUMARALI: imlec 2.No uzerinde -> evet DEGIL",
      not tui._imlec_evette_mi(_olc.replace("\u276f1.Yes", "1.Yes").replace("2.No", "\u276f2.No"), "Yes, I trust"))
 sina("asagi tusu Esc sayilan '\\x1b[B' DEGIL", "\x1b[B" not in tui._ASAGI)
+# 01.10 OLCULEN ekran (PATRONUN PANELI, baslat.bat ortami): imlec DUZ ">".
+_panel = ("Securityguide\n\n>No,exit\nYes,Itrustthisfolder\n\nEntertoconfirm\u00b7Esctocancel\n>0q"
+          " No, exit>Yes, I trust this folder\n\n\n")
+sina("DUZ '>' imlec Yes uzerinde -> evet (patronun paneli)", tui._imlec_evette_mi(_panel, "Yes, I trust"))
+sina("  DUZ '>' imlec No uzerinde -> evet DEGIL",
+     not tui._imlec_evette_mi(_panel + ">No, exit Yes, I trust this folder\n\n\n", "Yes, I trust"))
+sina("  secenek olmayan '>' (>0q) imlec SAYILMAZ",
+     not tui._imlec_evette_mi("Yes, I trust\n>0q", "Yes, I trust"))
 
 
 class _SahteT:

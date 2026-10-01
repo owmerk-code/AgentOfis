@@ -91,20 +91,32 @@ IMLEC = "\u276f"
 _ASAGI = ("\x1bOB",)
 
 
+#: Secim imleci: claude ortama gore `\u276f` ya da duz `>` ciziyor (01.10.2026
+#: OLCULDU: patronun paneli `baslat.bat`tan acilinca `>No,exit` /
+#: `>Yes, I trust this folder`; Claude Code icinden acilinca `\u276f`).
+IMLECLER = (IMLEC, ">")
+
+
 def _imlec_evette_mi(ekran: str, evet: str) -> bool:
-    """Ekranin SON karesinde imlec 'evet' seceneginde mi (bosluklar yok sayilir)."""
+    """Ekranin SON karesinde secim imleci 'evet' seceneginde mi.
+
+    Son SECENEK imleci aranir: imlec isaretinden sonra (bosluk ve `1.` gibi
+    numara atlanarak) 'evet' ya da 'No' gelmeli -- ekranda baska yerde gecen
+    `>` (orn. `>0q`) imlec SAYILMAZ. Bosluklar yok sayilir (ConPTY doker).
+    """
     ekran = ekran or ""
-    i = ekran.rfind(IMLEC)
-    if i < 0:
-        return False
-    sonrasi = "".join(ekran[i + 1:i + 1 + 3 * len(evet) + 6].split())
-    # SECENEK NUMARASI (01.10.2026, gercek ofis tasimadan sonra OLCULDU):
-    # claude 2.1.285 ekrani `\u276f1.Yes,Itrustthisfolder` ciziyor; numara
-    # imlecle secenek arasinda. Eslesmedi, Enter basilmadi, brifing guven
-    # sorusunun ustune yapistirildi ve tur dustu (yeni klasor Masaustu\\Ofisim;
-    # gercek set guvenilmis gecici klasorde kostugu icin soru hic cikmiyordu).
-    sonrasi = re.sub(r"^\d+[.)]", "", sonrasi)
-    return sonrasi.lower().startswith("".join(evet.split()).lower())
+    hedef = "".join(evet.split()).lower()
+    for i in range(len(ekran) - 1, -1, -1):
+        if ekran[i] not in IMLECLER:
+            continue
+        sonrasi = "".join(ekran[i + 1:i + 1 + 3 * len(evet) + 6].split())
+        # SECENEK NUMARASI (01.10.2026): claude 2.1.285 `\u276f1.Yes,...` ciziyor.
+        sonrasi = re.sub(r"^\d+[.)]", "", sonrasi).lower()
+        if sonrasi.startswith(hedef):
+            return True
+        if sonrasi.startswith("no"):
+            return False
+    return False
 
 
 def _guven_sec(t, evet: str, deneme: int = 6) -> bool:
