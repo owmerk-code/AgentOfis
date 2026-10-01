@@ -37,3 +37,7 @@ calisma/**/*.log
 calisma/**/*.sqlite3*
 calisma/**/*.db
 calisma/**/node_modules/
+
+# Codex uygulamasinin "Claude Code'dan ice aktar"i CLAUDE.md'yi AGENTS.md olarak kopyaliyor
+# (01.10.2026 21:04 olculdu). Kullanici karari (30.09): Codex gelistirici degil.
+/AGENTS.md

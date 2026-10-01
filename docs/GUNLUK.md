@@ -13609,3 +13609,9 @@ işler) ile ölçülen ve düzeltilen:
   "no such column" ile veritabanını açılamaz yapıyordu → sütun yoksa atlar.
   Tam takım 3745/3745, çıkış koduyla (9 artık = yönetici izinli eski deneme
   önbellekleri).
+- `AGENTS.md` yedekle GitHub'a girdi (21:39). Kaynağı ofis DEĞİL: Codex
+  masaüstü uygulamasının "Claude Code'dan içe aktar"ı (`~/.codex/
+  external_agent_session_imports.json`, 21:04:16; 30.09 06:30'da da) Claude
+  oturumlarını aktarırken CLAUDE.md'yi "Claude"→"Codex" çevirerek kopyaladı.
+  Kullanıcı kararı (30.09) gereği silindi ve `.gitignore`'a eklendi. Ofisin
+  codex ajanları onu zaten okumaz (`project_doc_max_bytes=0`).
