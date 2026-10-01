@@ -164,13 +164,18 @@ with db.baglanti() as c:
 # (b) is acildiktan sonra olen istek
 b = K.ekle(ofis, "is acilmis istek", "demir")
 kb = K.sira_al(ofis, "s")
-_t.sleep(1.1)
+ofis.postane.soru_sor("insan", "demir", "is acilmis istek")
 gb = kosan_yap(gorev("acilan is", ["b/"]))
 kimlik_yaz(gb, olu)
 with db.baglanti() as c:
     c.execute("UPDATE kuyruk SET kosan_surec = ? WHERE id = ?", (olu, kb["id"]))
 s = acilista_toparla(ofis)
 _bk = K.bekleyenler(ofis)
+# Ilk alim ESKI bir ana sabitlenir: hizli sinamada iki alim ayni saniyeye
+# duser ve "baslangic korundu mu" farki gorunmez (olculdu: mutasyon gecti).
+with db.baglanti() as c:
+    c.execute("UPDATE kuyruk SET basladi = '2001-01-01T00:00:00+00:00' WHERE id = ?", (kb["id"],))
+kb["basladi"] = "2001-01-01T00:00:00+00:00"
 sina("is acilmis istek YENIDEN PLANLANMAZ, devam eder", s["yeniden"] == 0 and len(_bk) == 1
      and _bk[0]["devam"] == 1 and _bk[0]["metin"] == "is acilmis istek", str(_bk))
 sina("  acilan isi icin ayrica devam satiri EKLENMEDI (cift yok)", s["devam"] == 1, str(s))
@@ -208,10 +213,45 @@ try:
     with db.baglanti() as c:
         _d = c.execute("SELECT durum, not_ FROM kuyruk WHERE metin = 'is acilmis istek'").fetchone()
     sina("  satir bitti", _d["durum"] == "bitti", str(dict(_d)))
+    with db.baglanti() as c:
+        _s2 = c.execute("SELECT gorev_sinir, basladi FROM kuyruk WHERE id = ?", (kb["id"],)).fetchone()
+        _mc = c.execute("SELECT cevap FROM mesaj WHERE govde = 'is acilmis istek'").fetchone()
+    sina("  yeniden alinca ILK baslangic ve is siniri KORUNDU",
+         _s2["gorev_sinir"] == kb["gorev_sinir"] and _s2["basladi"] == kb["basladi"], str(dict(_s2)))
+    sina("  yarim kalan patron mesaji ofisin CEVABIYLA kapandi (isin durumu)",
+         f"#{gb['no']} acilan is" in (_mc["cevap"] or "") and "sürdürüldü" in _mc["cevap"],
+         str(dict(_mc)))
 finally:
     _O.Orkestra.kos, _S.Sohbet.konus = _asil_kos, _asil_konus
     _P.MOTOR_FABRIKASI = None
     _P._KOSU.update(calisiyor=False, mesaj="", dur=False)
+
+print("\n8. patronu BEKLEYEN ise dokunulmaz (01.10 canli: #42 deniz->bilge->cinar)")
+ofis.kadro.ise_al("yaprak", "backend", kanat_id=kn, motor="sahte", klasor=str(kok / "calisma"))
+gw = kosan_yap(gorev("onay bekleyen is", ["w/"]), "yaprak")
+kimlik_yaz(gw, olu)
+ofis.postane.onay_iste("yaprak", "GONDERIM: form yolla", ayrinti="x", risk="yuksek")
+_sw = acilista_toparla(ofis)
+sina("onay bekleyen is BIRAKILMADI (ayni onay yeniden sorulmaz, sahip degismez)",
+     gw["no"] not in _sw["birakilan"] and ofis.tahta.gorev(gw["no"])["durum"] == "calisiyor"
+     and ofis.tahta.gorev(gw["no"])["sahip"] == "yaprak", str(_sw))
+with db.baglanti() as c:
+    sina("  onay TEK kez", c.execute("SELECT COUNT(*) FROM onay WHERE isteyen='yaprak'"
+                                     ).fetchone()[0] == 1)
+
+# Sahne: cinar'in kosan (yasayan) isi kapanir -> cinar bosta; ayrica BASKA bosta
+# bir ajan (ayaz) var. Dagitim "ilk bostaki"ni degil ONCEKI SAHIBI secmeli.
+with db.baglanti() as c:
+    _kapat = (g3["id"], gb["id"], g4["id"])   # cinar'in kosan, acilan ve eski isi
+    c.execute("UPDATE gorev SET durum = 'iptal' WHERE id IN (?, ?, ?)", _kapat)
+    c.execute("DELETE FROM yazma_kilidi WHERE gorev_id IN (?, ?, ?)", _kapat)
+# Kadro ALFABETIK siralanir: "ayaz" cinar'dan once gelir -- tercih olmasa ilk
+# bostaki o olurdu (olculdu: "ege" ile sinama bu ayrimi OLCMUYORDU).
+ofis.kadro.ise_al("ayaz", "backend", kanat_id=kn, motor="sahte", klasor=str(kok / "calisma"))
+_gg1 = ofis.tahta.gorev(g1["no"])
+sina("kesintiyle birakilan is dagitimda ONCEKI SAHIBINE gider (baska bosta ajan varken)",
+     _gg1["durum"] == "hazir" and ofis.orkestra._uygun_ajan(_gg1) == "cinar",
+     f"{_gg1['durum']} -> {ofis.orkestra._uygun_ajan(_gg1)}")
 
 print(f"\n== sonuc: {GECEN} gecti, {KALAN} kaldi ==")
 print(f"klasor: {kok}")

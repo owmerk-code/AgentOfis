@@ -13213,3 +13213,26 @@ REDDEDİLİYORDU ("bitmesini bekle").
   bağlandı → `kuyruk.gorev_sinir` (alınırken gorev MAX(rowid)), tek yer
   `kuyruk.acilan_gorevler` (rapor + toparlama).
 - duman_kesinti 23 (gerçek öldürülen alt süreç). Mutasyon 4/4 ateşliyor.
+- CANLI (8911, patronun ofis kopyası, iki çökme): (1) #42 deniz'de koşarken
+  panel öldürüldü → açılışta "#42 kesinti" bulundu, deniz AYNI oturumdan
+  sürdü (ilk sözü "Sayfa kapanmış; yeniden açıyorum"), ajanın CLI'ı panelle
+  birlikte kapanmıştı (iş nesnesi). (2) #43 ege'de koşarken öldürüldü →
+  ege aynı oturumdan bitirdi, lider kapattı, dosya doğru.
+- Canlıda çıkan üç kusur, düzeltildi:
+  - Sürdürülen isteğin patron mesajı CEVAPSIZ kalıyordu ("cevap gelmedi")
+    → `kuyruk.devam_cevabi`: modelsiz, işlerin gerçek durumu + sana düşen.
+    Kısıt: patron "ilk 3 satırı söyle" demişti; modelsiz cevap bunu
+    söylemez (liderin cevabı ölmüştü).
+  - Yeniden alınan satırın başlangıcı/iş sınırı üzerine yazılıyordu → ilk
+    değerler korunur (sınama önce ölçmüyordu: hızlı koşuda iki alım aynı
+    saniyeye düşüyordu; sahne eski ana sabitlendi, mutasyon artık düşüyor).
+  - ONAY BEKLEYEN iş (#42) her açılışta "yarım" sayılıp bırakıldı → aynı
+    onay yeniden soruldu (2 bekleyen kart) ve sahip "boşta değil" sayıldığı
+    için iş BAŞKA ajana gitti (deniz→bilge→cinar, oturum kayboldu). Patronu
+    bekleyen iş yarım değildir → toparlama dokunmaz.
+- Sınama sahnesi iki kez ölçmüyordu: "önceki sahibe gider" sınamasında
+  cinar başka bir işle meşguldü; sonra kadro ALFABETİK sıralandığı için
+  "ege" ile tercih olmasa da cinar seçiliyordu → "ayaz" ile; "kesinti"
+  kaynak sebebinden çıkarılınca artık 3 sınama düşüyor. duman_kesinti 28.
+- Not (onay yorgunluğu, E80'e): tarayıcıda salt okuyan `fetch` "SAYFAYI
+  DEĞİŞTİREN KOD" diye soruldu.

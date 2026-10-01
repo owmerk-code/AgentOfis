@@ -339,6 +339,7 @@ def _kuyrugu_kostur(db_yolu, proje_ad: str) -> None:
                             if adim.get("bitti") or _durdurulduysa(o, "Halka"):
                                 break
                         _kuyruk.bitir(o, k["id"], "bitti", "kesintiden sonra surduruldu")
+                        _kuyruk.devam_cevabi(o, k["id"])
                         continue
                     if MOTOR_FABRIKASI is None:
                         sohbet = o.sohbet

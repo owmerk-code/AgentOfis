@@ -46,12 +46,19 @@ def acilista_toparla(ofis) -> dict:
     birakilan, yeniden, devam = [], 0, 0
     with ofis.db.baglanti() as c:
         gorevler = [dict(r) for r in c.execute(
-            "SELECT no, id, kosan_surec, olusturuldu FROM gorev WHERE proje_id = ? "
+            "SELECT no, id, sahip, kosan_surec, olusturuldu FROM gorev WHERE proje_id = ? "
             "AND durum = 'calisiyor'", (ofis.proje_id,))]
         satirlar = [dict(r) for r in c.execute(
             "SELECT * FROM kuyruk WHERE proje_id = ? AND durum = 'kosuyor'",
             (ofis.proje_id,))]
+    # PATRONU BEKLEYEN is yarim degildir (01.10.2026 canli deneme): onay
+    # bekleyen #42 her acilista birakildi, ayni onay YENIDEN soruldu ve sahibi
+    # "bosta degil" sayildigi icin is BASKA ajana gitti (deniz -> bilge ->
+    # cinar, oturum kayboldu). Cevap gelince is zaten kaldigi yerden surer.
+    bekleyen = set(ofis._duraklatilmis_ajanlar())
     for g in gorevler:
+        if g.get("sahip") in bekleyen:
+            continue
         if _olu(g["kosan_surec"]):
             ofis.tahta.birak(g["no"], sebep=SEBEP)
             birakilan.append(g["no"])
@@ -75,8 +82,8 @@ def acilista_toparla(ofis) -> dict:
                           "AND (cevap = '' OR cevap IS NULL)",
                           ("(yarıda kaldı — ofis kapanmıştı; istek baştan çalıştırılıyor)",
                            simdi(), ofis.proje_id, k["lider_ad"], bas))
-                c.execute("UPDATE kuyruk SET durum = 'bekliyor', kosan_surec = '', not_ = ? "
-                          "WHERE id = ?", (SEBEP, k["id"]))
+                c.execute("UPDATE kuyruk SET durum = 'bekliyor', kosan_surec = '', not_ = ?, "
+                          "basladi = NULL, gorev_sinir = 0 WHERE id = ?", (SEBEP, k["id"]))
                 yeniden += 1
     sahipsiz = [n for n in birakilan if n not in bagli]
     if sahipsiz and not any(x.get("devam") for x in _kuyruk.bekleyenler(ofis)):

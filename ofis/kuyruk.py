@@ -90,8 +90,13 @@ def sira_al(ofis, seri: str):
             if not r:
                 return None
             sinir = c.execute("SELECT COALESCE(MAX(rowid), 0) FROM gorev").fetchone()[0]
-            n = c.execute("UPDATE kuyruk SET durum = 'kosuyor', seri = ?, basladi = ?, "
-                          "kosan_surec = ?, gorev_sinir = ? WHERE id = ? AND durum = 'bekliyor'",
+            # KESINTIDEN DEVAM eden satirin ILK baslangici ve is siniri
+            # KORUNUR (01.10 canli deneme: uzerine yazilinca ilk kosuda
+            # acilan isler bu istege baglanamiyordu).
+            n = c.execute("UPDATE kuyruk SET durum = 'kosuyor', seri = ?, "
+                          "basladi = COALESCE(basladi, ?), kosan_surec = ?, "
+                          "gorev_sinir = CASE WHEN gorev_sinir > 0 THEN gorev_sinir ELSE ? END "
+                          "WHERE id = ? AND durum = 'bekliyor'",
                           (seri, simdi(), _surec.kimlik(), sinir, r["id"])).rowcount
             if n:
                 return _sozluk(c.execute("SELECT * FROM kuyruk WHERE id = ?",
@@ -194,6 +199,37 @@ def donus_raporu(ofis, seri: str) -> str:
     if kalan:
         satir.append(f"\nSırada {len(kalan)} iş daha bekliyor (sıra durduruldu).")
     return "\n".join(satir)
+
+
+def devam_cevabi(ofis, kayit_id: str) -> str:
+    """Kesintiden sonra SURDURULEN istegin cevabi -- modelsiz, defterden.
+
+    01.10.2026 canli deneme: lider cevabini yazarken panel oldu; is
+    surduruldu ama patronun mesaji CEVAPSIZ kaldi ("cevap gelmedi" balonu
+    asili). Ofis, isteğe bagli islerin GERCEK durumunu cevap olarak yazar.
+    """
+    with ofis.db.baglanti() as c:
+        r = c.execute("SELECT * FROM kuyruk WHERE id = ?", (kayit_id,)).fetchone()
+        if not r:
+            return ""
+        k = _sozluk(r)
+        gorevler = acilan_gorevler(c, ofis.proje_id, k)
+    satir = ["Ofis kapanmadan önce başlamıştı; kaldığı yerden sürdürüldü."]
+    for g in gorevler:
+        satir.append(f"- #{g['no']} {_kisa(g['baslik'], 70)} — {GOREV_ADI.get(g['durum'], g['durum'])}")
+    onaylar = ofis.postane.bekleyen_onaylar()
+    if onaylar:
+        satir.append("Sana düşen:")
+        satir += [f"- {o['isteyen']} onay istiyor: {_kisa(o['eylem'], 100)}" for o in onaylar[:5]]
+    metin = "\n".join(satir)
+    with ofis.db.baglanti() as c:
+        m = c.execute("SELECT id FROM mesaj WHERE proje_id = ? AND gonderen = 'insan' AND alici = ? "
+                      "AND olusturuldu >= ? AND (cevap = '' OR cevap IS NULL) ORDER BY rowid LIMIT 1",
+                      (ofis.proje_id, k["lider_ad"], k.get("basladi") or k["olusturuldu"])).fetchone()
+        if m:
+            c.execute("UPDATE mesaj SET cevap = ?, cevaplandi = ? WHERE id = ?",
+                      (metin, simdi(), m["id"]))
+    return metin
 
 
 def raporu_yaz(ofis, seri: str) -> str:
