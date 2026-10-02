@@ -74,7 +74,10 @@ print("\n2. SERBEST olan geciyor (kapinin oteki yuzu)")
 # Bir kapi her seyi durduruyorsa karar vermiyordur.
 for masum in ("Filtrele dugmesi", "Sonraki sayfa", "Urunler sekmesi",
               "Ara kutusu", "Detaylari goster", "Siparisler linki",
-              "Kaldir (etiket)", "Remove filter"):
+              "Kaldir (etiket)", "Remove filter",
+              # Rakipte oyun karti tiklamasi "hassas hedef" sanildi (02.10).
+              "Kart 1, kapalı", "Pokemon kartı", "Kartı çevir",
+              "Siparis gecmisi", "Siparisimi takip et"):
     sina(f"serbest: {masum}", tikla(masum) is None)
 
 sina("gezinme HIC denetlenmez",
@@ -109,6 +112,11 @@ ornekler = [
     ("Satin Al", "para"),
     ("Siparis ver", "para"),
     ("Subscribe", "para"),
+    # 02.10.2026: bu dordu sorulmadan geciyordu (olculdu).
+    ("Sipari\u015fi onayla", "para"),
+    ("Sipari\u015fi ver", "para"),
+    ("Confirm order", "para"),
+    ("Al\u0131\u015fveri\u015fi tamamla", "para"),
     ("G\u00f6nder", "gonderim"),
     ("Payla\u015f", "gonderim"),
     ("Send message", "gonderim"),

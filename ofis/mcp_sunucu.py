@@ -253,8 +253,12 @@ def arac_karar_yaz(oturum: Oturum, args: dict) -> str:
             gorev_id = oturum.gorev()["id"]
         except Exception:
             gorev_id = None
-    oturum.ofis.bellek.karar_yaz(karar, gerekce, oturum.ajan_ad,
-                                 gorev_id=gorev_id)
+    from ofis.bellek import BellekHatasi
+    try:
+        oturum.ofis.bellek.karar_yaz(karar, gerekce, oturum.ajan_ad, denetle=True,
+                                     gorev_id=gorev_id)
+    except BellekHatasi as exc:
+        return f"HATA: {exc}"
     return f"Karar gunluge yazildi: {karar}"
 
 

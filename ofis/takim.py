@@ -55,7 +55,7 @@ _IS = re.compile(r"^\s*(?:is|iş|IS|İŞ|Is|İş)\s*[:\-]\s*(.*)$", re.S)
 #: sohbete girmez (patron o konusmanin tarafi degil).
 # `donus_raporu` (01.10.2026): kuyruk serisi bitince ofisin modelsiz ozeti.
 AKIS_OLAYLARI = ("onay_istendi", "ajan_sohbet", "donus_raporu", "kesinti_toparlandi",
-                 "zamanli_calisti", "takildi")
+                 "zamanli_calisti", "takildi", "hafiza_reddi")
 #: Akista metin KESILMEZ (4000 = cevap siniri, yalniz bellek korumasi).
 #: OLCULDU (29.09.2026): ilk surum her ogeyi 600 harfte kesiyordu ve
 #: liderin uzun cevabi panelde "**3..." diye yarida kaldi -- eski sohbet
@@ -351,7 +351,7 @@ def akis(ofis, *, kanat_id=None, adet: int = 80) -> list:
                "ret": "ret", "onay_istendi": "onay",
                "ajan_sohbet": "bildirim", "donus_raporu": "ozet",
                "kesinti_toparlandi": "ozet", "zamanli_calisti": "ozet",
-               "takildi": "ozet"}
+               "takildi": "ozet", "hafiza_reddi": "ozet"}
     for o in olaylar:
         o = dict(o)
         ajan = o["ajan_ad"] or ""

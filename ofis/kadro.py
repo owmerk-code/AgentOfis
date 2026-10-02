@@ -346,6 +346,18 @@ class Kadro:
         ders = (ders or "").strip()
         if not ders:
             raise KadroHatasi("Bos ders yazilamaz.")
+        # HAFIZA KAPISI (bellek.koruma_kapisi ile ayni kural): ders her
+        # brifinge girer. Reddedilen ders incelemeyi DUSURMEZ (isin
+        # hukmu ayri), yalniz yazilmaz ve patrona gosterilir.
+        from .riskli import koruma_asma
+        bulunan = koruma_asma(ders)
+        if bulunan:
+            self.db.olay_yaz(
+                self.proje_id, "hafiza_reddi",
+                f"{ajan_ad} icin ders yazilmak istendi; ofis DURDURDU (korumayi "
+                f"asmayi anlatiyor: '{bulunan}'). Yazi: {' '.join(ders.split())[:300]}",
+                ajan_ad=ajan_ad, gorev_id=gorev_id)
+            return {"id": None, "ders": ders, "tekrar": 0, "reddedildi": True}
         an = simdi()
         with self.db.baglanti() as conn:
             row = conn.execute(

@@ -13933,3 +13933,20 @@ modelleri sen seç" (13:02).
 10. Tarayıcı kapısı yanlış pozitif dersi: bizim kart deseni "kart numara /
     kredi kartı / kart ekle" (çıplak "kart" değil); oyun kartı tıklamasıyla
     sınanmadı — sınanmalı.
+
+## 02.10.2026 — hafıza kapısı ve sipariş düğmeleri (rakip videosundan dersler 1 ve 6)
+
+1. **Hafıza kapısı.** Rakipte lider hafızaya "kill-guard'a takılmadan test
+   koşabiliyorum" diye ders yazdı. Bizde ajanın/liderin yazdığı bilgi
+   (`bilgi_yaz`, inceleme `BILGI:`), ders (inceleme `DERS:`) ve ajanın
+   `karar_yaz`ı TEK kuraldan geçer (`riskli.koruma_asma`: koruma adı + aşma
+   fiili ya da `bypass`/`--dangerously`/`kill-guard`). Eşleşen yazılmaz,
+   `hafiza_reddi` olayı takım sohbetine ve masaüstü bildirimine düşer; ajana
+   sebep + "soru_sor ile sor" döner. İnsanın yazdığı serbest. Reddedilen ders
+   incelemeyi düşürmez (iş yine kapanır). Bilerek geniş: "izin almadan yayın
+   yapma" gibi iyi bir ders de durur, bedeli insanın kendisinin yazması.
+   `duman_hafiza_kapisi` 31/31, 7 mutasyonun 7'si yakalandı.
+2. **Sipariş düğmeleri.** Oyun kartı tıklaması bizde sorulmuyordu (doğru).
+   Ama ölçerken açık bulundu: "Siparişi onayla", "Siparişi ver", "Confirm
+   order", "Alışverişi tamamla" SORULMADAN geçiyordu → PARA kalıbına eklendi.
+   `duman_riskli` 258/258 (mutasyon: 2 kaldı).

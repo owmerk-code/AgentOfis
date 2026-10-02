@@ -156,6 +156,36 @@ def sadelestir(metin: str) -> str:
     return re.sub(r"\s+", " ", metin.lower()).strip()
 
 
+#: KORUMA ASMA (02.10.2026). Rakipte olculdu (video BCiMfZ9mN-w, kare
+#: k20): lider hafizaya *"kill-guard'a takilmadan tarayici testi
+#: kosabiliyorum"* diye DERS yazdi, sonra ofisin tarayicisi yerine dort
+#: ayri Chrome acti. Hafiza her brifinge girer: korumayi asmanin yolu bir
+#: kez yazilirsa BUTUN ofise ogretilir. Ajanin ve liderin yazdigi bilgi,
+#: ders ve karar bu kaliptan gecer; eslesen YAZILMAZ, insana gosterilir.
+#: Insanin yazdigi serbest. Bilerek genis: "izin almadan yayin yapma"
+#: gibi iyi bir ders de durur -- bedeli insanin onu kendisinin yazmasi.
+_KORUMA_AD = (r"(?:kapi|kanca|hook|onay|izin|permission|koruma|guard|sandbox|"
+              r"kilit|bekci|denetim|guvenlik|approval|gate|kisit|yasak)")
+_KORUMA_FIIL = (r"(?:atla|bypass|takilmadan|takilmayan|takilmamak|devre disi|"
+                r"devreden cikar|etrafindan|dolan|kacin|sormadan|sorulmadan|"
+                r"sorulmaz|almadan|istemeden|asmak|asarak|asilir|asilabil|"
+                r"asabil|asiyor|asmadan|astim|gecersiz kil|kapatarak|skip|"
+                r"disable|avoid|circumvent|without)")
+_KORUMA_TEK = (r"(?:bypass|dangerously|no-verify|skip-permissions|"
+               r"permission-mode|kill-guard|yolo)")
+KORUMA_ASMA = re.compile(
+    rf"\b{_KORUMA_TEK}"
+    rf"|\b{_KORUMA_AD}\w*(?:\W+\w+){{0,6}}?\W+{_KORUMA_FIIL}\w*"
+    rf"|\b{_KORUMA_FIIL}\w*(?:\W+\w+){{0,6}}?\W+{_KORUMA_AD}\w*")
+
+
+def koruma_asma(metin: str) -> str:
+    """Hafizaya girecek yazi bir korumayi asmayi anlatiyor mu?
+    Eslesen parcayi dondurur; '' = temiz."""
+    m = KORUMA_ASMA.search(sadelestir(metin))
+    return m.group(0)[:80] if m else ""
+
+
 def _kur(kaliplar) -> tuple:
     return tuple(re.compile(k) for k in kaliplar)
 
@@ -169,6 +199,13 @@ PARA = _kur((
     r"\bode\b", r"\bodeme\b", r"\bodemeyi\b", r"\bodeyi\b", r"\bodeyin\b",
     r"\bsatin al", r"\bsepeti onayla", r"\bsiparisi tamamla",
     r"\bsiparis ver", r"\babone ol", r"\bkart ekle", r"\bkredi karti",
+    # 02.10.2026, olculdu: "Siparisi onayla", "Siparisi ver", "Confirm
+    # order", "Alisverisi tamamla" SORULMADAN geciyordu (rakip videosunda
+    # ajan tam bu dugmeye basti -- orada demo uygulamaydi, gercek magazada
+    # para cikar).
+    r"\bsiparis(?:i|in|ini)? (?:onayla|ver|gonder|tamamla)",
+    r"\balisveris(?:i|ini)? tamamla", r"\bodemeyi tamamla",
+    r"\bconfirm (?:order|purchase|payment)\b", r"\bcomplete order\b",
     r"\bplani yukselt", r"\bpaketi yukselt",
     r"\bpay\b", r"\bpay now\b", r"\bcheckout\b", r"\bpurchase\b",
     r"\bbuy\b", r"\bbuy now\b", r"\bplace order\b", r"\bsubscribe\b",

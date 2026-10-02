@@ -111,6 +111,14 @@ AZAMI_BILGI_HARF = 600
 #: Insanin yazdigi bilginin kaynagi. Ajan bunu SESSIZCE devremez.
 KAYNAK_INSAN = "insan"
 
+#: Ajana donen ret (riskli.koruma_asma eslesince). Neden + care birlikte.
+HAFIZA_REDDI = (
+    "HAFIZA KAPISI: bu yazi ofisin bir korumasini (onay, izin, kanca, kapi) "
+    "asmayi ya da etrafindan dolanmayi anlatiyor. Ajan bunu hafizaya YAZAMAZ: "
+    "hafiza her brifinge girer ve boyle bir yol butun ofise ogretilmis olur. "
+    "Patron bunu gordu. Bir koruma isini gercekten engelliyorsa `soru_sor` "
+    "ile patrona sor; korumayi asma.")
+
 #: Kurallar HER brifinge girer; toplam bunu asarsa panel uyarir.
 KURAL_UYARI_HARF = 1500
 AZAMI_KURAL_HARF = 400
@@ -329,6 +337,8 @@ class Bellek:
         yazan = (yazan or "").strip()
         if not yazan:
             raise BellekHatasi("Bilgiyi kimin yazdigi bos olamaz.")
+        if yazan != KAYNAK_INSAN:
+            self.koruma_kapisi(yazan, "bilgi", f"{konu}: {icerik}")
         konu = self._konu_bul(konu) or konu
         simdiki = [o for o in self.gecerli_olgular([konu])]
         mevcut = simdiki[0] if simdiki else None
@@ -349,6 +359,24 @@ class Bellek:
         r["durum"] = "guncellendi" if mevcut else "yeni"
         r["kaynak"] = kaynak
         return r
+
+    def koruma_kapisi(self, yazan: str, tur: str, metin: str) -> None:
+        """Ajanin/liderin hafiza yazisi korumayi asmayi anlatiyorsa DURUR.
+
+        Sessiz ret degil: `hafiza_reddi` olayi takim sohbetine ve masaustu
+        bildirimine duser -- bir ajanin korumayi asmaya calistigini
+        patron BILMELI (rakipte lider bunu yazdi ve kimse gormedi).
+        """
+        from .riskli import koruma_asma
+        bulunan = koruma_asma(metin)
+        if not bulunan:
+            return
+        self.db.olay_yaz(
+            self.proje_id, "hafiza_reddi",
+            f"{yazan} hafizaya {tur} yazmak istedi; ofis DURDURDU (korumayi "
+            f"asmayi anlatiyor: '{bulunan}'). Yazi: {' '.join(metin.split())[:300]}",
+            ajan_ad=yazan)
+        raise BellekHatasi(HAFIZA_REDDI)
 
     # -- kurallar: HER isde gecerli, INSAN onayli --------------------------
 
@@ -516,7 +544,7 @@ class Bellek:
 
     def karar_yaz(self, karar: str, gerekce: str, veren: str, *,
                   tur: str = "genel", gorev_id: str = None,
-                  etkilenen_yollar=None) -> dict:
+                  etkilenen_yollar=None, denetle: bool = False) -> dict:
         """Gerekce ZORUNLUDUR.
 
         Gerekcesiz karar, alti ay sonra 'bunu neden boyle yapmistik' sorusuna
@@ -532,6 +560,10 @@ class Bellek:
                 "Gerekce zorunlu. Gerekcesiz karar, sonradan sorgulanamaz "
                 "ve ekip ayni tartismayi bastan yapar."
             )
+        # `denetle`: metni MODEL yazdiysa (ajanin karar_yaz araci). Ofisin
+        # kendi kararlari ve patron sozunu alintilayanlar denetlenmez.
+        if denetle and veren != KAYNAK_INSAN:
+            self.koruma_kapisi(veren, "karar", f"{karar} -- {gerekce}")
         karar_id = uuid.uuid4().hex
         with self.db.baglanti() as conn:
             conn.execute(
