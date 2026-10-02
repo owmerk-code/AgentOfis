@@ -276,5 +276,30 @@ _lk = (KOK / "ofis" / "lider.py").read_text(encoding="utf-8")
 sina("  incelemede SESSIZ kesme kalmadi ([:160]/[:400]/[:600]/[:1500] yok)",
      not any(x in _lk for x in ("_metin[:160]", "['govde'][:400]", ".strip()[:600]", "['icerik'][:1500]")))
 
+print("\n12. onceki oturumdan kalan ESKI ayarli kabin")
+# 02.10.2026 patronun ekrani: panel yeniden acildi ama 00:08'de eski
+# ayarla acilmis kabin YENIDEN KULLANILDI (Google robot dogrulamasi) ve
+# carpi onu KAPATAMADI ("baska bir surec hala acik tutuyor").
+_kapatilan = []
+_s_eski, _ck_eski, _ak_eski = kabin._surum, kabin.cdp_kapat, kabin.acik_mi
+try:
+    kabin._surum = lambda k, *a, **kw: {"User-Agent": "Mozilla/5.0 HeadlessChrome/154.0.0.0"}
+    sina("HeadlessChrome kimlikli kabin ESKI sayilir", kabin.eski_kimlikli_mi(9398))
+    kabin._surum = lambda k, *a, **kw: {"User-Agent": "Mozilla/5.0 Chrome/154.0.0.0"}
+    sina("  normal kimlikli kabin eski DEGIL", not kabin.eski_kimlikli_mi(9398))
+    kabin.acik_mi = lambda *a, **kw: True
+    kabin.cdp_kapat = lambda k=None, *a, **kw: _kapatilan.append(k) or True
+    _kk = kabin.Kabin(kapi=9398)
+    _kk.durum = lambda: {"acik": False}
+    _kk.kapat()
+    sina("carpi bu panelin BASLATMADIGI kabini da kapatir (CDP)", _kapatilan == [9398], str(_kapatilan))
+finally:
+    kabin._surum, kabin.cdp_kapat, kabin.acik_mi = _s_eski, _ck_eski, _ak_eski
+sina("panel acilisinda eski kimlikli kabin kapatilir",
+     "if kabin.acik_mi() and kabin.eski_kimlikli_mi():" in _pp
+     or "if kabin.acik_mi() and kabin.eski_kimlikli_mi():" in (KOK / "ofis" / "panel.py").read_text(encoding="utf-8"))
+sina("acarken eski kimlikli kabin yeniden KULLANILMAZ",
+     "eski_kimlikli_mi(self.kapi)" in (KOK / "ofis" / "kabin.py").read_text(encoding="utf-8"))
+
 print(f"\n== sonuc: {GECEN} gecti, {KALAN} kaldi ==")
 sys.exit(1 if KALAN else 0)

@@ -13755,3 +13755,16 @@ profili (`OFIS_KABIN_PROFIL`) ve kapı 9333.
   ("Example Domains"; ilk organik sonuç Vikipedi). Google araması engellenmedi.
 - Not: Codex tarayıcı araçlarını kod kipinden (`tools.mcp__tarayici__…` Bash
   sarmalında) çağırıyor; kapı yine her çağrıyı görüyor.
+
+## 02.10.2026 03:06 — patronun ekranı: Google robot doğrulaması, ✕ kapatmıyor
+
+Ölçüldü: patronun paneli 03:01'de yeni kodla açılmış, ama kabin Chrome'u
+00:08'de ESKİ ayarlarla (HeadlessChrome kimliği) açılmıştı; panel açık duran
+kabini YENİDEN KULLANDI → kimlik düzeltmesi hiç devreye girmedi, Google
+robot doğrulaması istedi. ✕ onu kapatamadı ("başka bir süreç hâlâ açık
+tutuyor"): `Kabin.kapat` yalnız kendi başlattığı süreci kapatıyordu.
+Düzeltme: `kabin.eski_kimlikli_mi` + `kabin.cdp_kapat` (CDP `Browser.close`,
+yalnız 127.0.0.1 kabin kapısı); panel açılışında eski kimlikli kabin kapanır,
+`ac` onu yeniden kullanmaz, ✕ önceki oturumun kabinini de kapatır. Gerçek
+Chrome'la yeniden üretildi (9333): eski kabin tanındı → ✕ KAPADI → yeniden
+açılış NORMAL kimlik → Google araması AÇILDI.

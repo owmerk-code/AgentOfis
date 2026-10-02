@@ -2783,6 +2783,16 @@ def kos(adres: str = "127.0.0.1", kapi: int = 8900, db_yolu=None,
     # kabin kapali -> ofis acar. Yalniz gercekten calisan panelde.
     from . import orkestra as _ork_mod
     _ork_mod.KABIN_ACICI["islev"] = _KABIN_CDP.get("acici")
+    # ESKI KIMLIKLI KABIN (02.10.2026, patronun ekrani: Google robot
+    # dogrulamasi): onceki oturumdan acik kalan kabin panel yeniden
+    # baslayinca yeniden kullaniliyordu. Kapatilir; sonraki acilis
+    # (patron ya da ajan) yeni ayarlarla olur.
+    try:
+        if kabin.acik_mi() and kabin.eski_kimlikli_mi():
+            kabin.cdp_kapat()
+            print("Eski ayarli tarayici kapatildi; sonraki acilis yeni ayarlarla.")
+    except Exception:                    # noqa: BLE001 -- panel acilisini durdurmaz
+        pass
     acilista_toparla(db_yolu or VARSAYILAN_YOL, proje_ad)
     bildirimleri_baslat(db_yolu or VARSAYILAN_YOL, proje_ad,
                         f"http://{adres}:{kapi}/")

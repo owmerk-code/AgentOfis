@@ -150,6 +150,41 @@ def acik_mi(kapi: int = tarayici.KABIN_KAPISI) -> bool:
     return _surum(kapi) is not None
 
 
+def eski_kimlikli_mi(kapi: int = tarayici.KABIN_KAPISI) -> bool:
+    """Kapidaki kabin kendini "HeadlessChrome" diye mi tanitiyor.
+
+    02.10.2026 OLCULDU (patronun ekrani): duzeltmeden ONCE acilmis kabin
+    panel yeniden baslayinca YENIDEN KULLANILDI; kimlik duzeltmesi hic
+    devreye girmedi, Google robot dogrulamasi istedi. Bassiz kabin artik
+    normal kimlikle acilir; eski kimlikli kabin yeniden baslatilmalidir."""
+    s = _surum(kapi) or {}
+    return "Headless" in str(s.get("User-Agent") or "")
+
+
+def cdp_kapat(kapi: int = tarayici.KABIN_KAPISI, bekle_sn: float = 8.0) -> bool:
+    """Kapidaki kabin Chrome'unu CDP ile KAPATIR (`Browser.close`).
+
+    Bu panelin baslatmadigi (onceki oturumdan kalan) kabin icin: surec
+    elimizde yok ama kabin kapisi bizim -- yalniz 127.0.0.1 ve kabin
+    kapisi. Patronun KISISEL Chrome'u bu kapida dinlemez. Doner: kapandi mi."""
+    s = _surum(kapi)
+    if not s:
+        return True
+    try:
+        from websockets.sync.client import connect
+        with connect(s["webSocketDebuggerUrl"], open_timeout=5,
+                     max_size=None, origin=None) as ws:
+            ws.send(json.dumps({"id": 1, "method": "Browser.close"}))
+    except Exception:                    # noqa: BLE001 -- kapanirken baglanti kopar
+        pass
+    bitis = time.time() + bekle_sn
+    while time.time() < bitis:
+        if not acik_mi(kapi):
+            return True
+        time.sleep(0.25)
+    return not acik_mi(kapi)
+
+
 def sayfa_ws(kapi: int = tarayici.KABIN_KAPISI) -> str:
     """Akitilacak sekmenin CDP WebSocket adresi."""
     try:
@@ -222,6 +257,11 @@ class Kabin:
 
     def _ac(self, baslangic: str = "about:blank", bekle_sn: float = 20.0,
             *, gorunur: bool = False) -> dict:
+        # ESKI KIMLIKLI KABIN yeniden kullanilmaz: kapatilir, yeni
+        # ayarlarla acilir (bkz. `eski_kimlikli_mi`).
+        if acik_mi(self.kapi) and not gorunur and eski_kimlikli_mi(self.kapi):
+            cdp_kapat(self.kapi)
+            time.sleep(1.5)                # profil kilidi birakilsin
         """Kabini acar. ZATEN ACIKSA yenisini baslatmaz.
 
         Ikinci bir Chrome ayni profille acilamaz (kilit) ve ayni kapiyi
@@ -275,6 +315,10 @@ class Kabin:
                 self.surec.wait(timeout=8)
             except subprocess.TimeoutExpired:
                 self.surec.kill()
+        elif acik_mi(self.kapi):
+            # ONCEKI OTURUMDAN KALAN kabin (02.10.2026): surec elimizde
+            # degildi ve panelin carpisi onu KAPATAMIYORDU.
+            cdp_kapat(self.kapi)
         self.surec = None
         self.gorunur = None
         return self.durum()
