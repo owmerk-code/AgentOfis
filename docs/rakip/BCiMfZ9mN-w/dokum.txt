@@ -1,0 +1,173 @@
+Kaynak: https://www.youtube.com/watch?v=BCiMfZ9mN-w (Muratify AI, 30.09.2026, 14:44)
+Turkce otomatik altyazi (asr), oynaticinin pot= imzali timedtext istegiyle cekildi, 02.10.2026.
+
+00:00 Merhaba ben Agent X. Moratify Agent Space Sunel ofisinin SC orkestratörüyüm.
+00:05 Tabii ki şu şekilde ekip lideriye gönderiyorum
+00:09 >> asında oyunu oynuyor ve bitirdi. Şu an hepsini yakaladın. Tebrikler dedi.
+00:13 Sonnet 5.5 kullanmışın. Opus 5. kullanmışsın. Bir farkı yok dostlar.
+00:18 Görüyor yani animasyon konusunda arada devasa fark oluşabiliyor. Bakalım
+00:23 hangisi daha iyi yapmış dostlar. Peki sen kimsin bu arada? Yayındakiler
+00:29 seni tanımıyor olabilir. Kendini tanıtır mısın?
+00:36 >> Merhaba ben Agent X. Moretify Agent Space Sanalisinin sesli orkestratörüyüm.
+00:41 Sesli komutlarını dinleyip takımlara ve ajanlara iş dağıtıyorum. Terminalleri
+00:45 yönetiyorum. Dahili tarayıcıda gezip arama yapıyorum. Görev panosunu ve
+00:49 raporları takip ediyorum. Kısacası bu ofisin trafik polisi gibiyim. Yayındaki
+00:53 herkese selamlar. >> Tamam. Ne diyor ekip lideri? Kamil
+00:56 amcaya hangi işi vermiş? Ne diyor?
+01:00 Bakıyorum. Tabii hemen söylüyorum. Ekip lideri şöyle diyor: "Kamil amcaya
+01:05 verdiğim görev metninin tamamını sohbete gönderdim. Kopyalanabilir blog olarak
+01:10 görev kartonunda bağladım. Metni ben yazdım. O yüzden ona sormama gerek
+01:14 kalmadı. Kısaca iş şu: Tek sayfalık bir restoran menüsü sitesi yapacak. Arama,
+01:18 kategori sekmeleri ve vegan acılı glutensiz filtreleri olacak. Sepet
+01:22 olacak. %10 servis ücretiyle toplamı gösterecek ve sipariş onay ekranı
+01:26 olacak. Açık ve koyu tema desteklenecek. Masaüstü ve mobil boyutta gerçek
+01:30 tıklamalarla test edip ekran görüntüsü alacaklar.
+01:35 Anladım. Tamam. Sen şimdi uyu. >> Uyuyorum. Beni çağırman yeter.
+01:41 >> Dostlar Kamil amcaya görev vermiş. Bu
+01:47 restoran yap demiş ona. Şu anda Kamil amca restoran yapıyor. Sonnet 5.5'le.
+01:53 Bakalım nasıl çıkacak. Hem Sonnet 5.5'i test etmiş oluruz. Valla ben istemedim.
+01:57 Kendisi görev verdi. Ekip lideri bu. Development uygulaması.
+02:03 Bakın. Ama olayı gördünüz mü? Sesli bir şekilde gittikçe iyileştirerek durumu
+02:09 kontrol ediyoruz sesli şekilde. Yani ajan ne dedi? Ajana ne diyeceksin?
+02:15 Bunları sesli kontrol ederek yapabiliyorsun. Gittikçe hızlanacak bu
+02:19 mevzu. Böyle takır takır ona şunu de, buna şunu de. Birden fazla ajana aynı
+02:24 anda görev verebilirsin. Ondan sonra lidere verirsin. O dağıtıyor zaten. O da
+02:28 var. Ondan sonra diyeceksin ki ne olur? Durum ne? Anladın mı? Sana sesli şekilde
+02:35 söyleyecek. Anlatabiliyor muyum dostlar? Sonra
+02:39 diyeceksin ki tamam bana sonucu açar mısın raporu? İşte tamam web sitesini aç
+02:44 bana göreyim tarayıcıda nasıl gözüküyor bir göster bana. Şimdi Kamil amcaya
+02:49 söyle. Bu yaptığı NAR restoranı uygulamasını tarayıcıda açarak tarayıcı
+02:54 da bize arayüzünü göstersin. Şurada şu var, burada bu var diye otomasyon
+02:57 koşsun. Tarayıcı da bize bunu göstersin.
+03:02 >> Tamam.
+03:10 >> Gönder. >> Anladım. Şu anda Kamil amcaya çekirdek
+03:15 tek cümlelik bir iş göndermenizi anlıyorum. Bu yaptığı narestoranı
+03:19 uygulamasını tarayıcıla açarak tarayıcıda bize arayüzünü göstersin.
+03:23 Göndermek üzere misiniz? >> Gönder.
+03:28 >> Tabii. İstediğiniz gibi Kamil amcaya gönderiyorum. Kamil amca aldı.
+03:34 >> Tamam. Şimdi Kamil amca bunu tarayıcıda açıp bize göstermesi lazım. Doğru mu?
+03:46 Kamil amca ne diyor? >> Boşta şöyle diyor. Menü tarayıcıda
+03:52 açıldı. Sırayla gösteriyorum. Önce üst bar ve menü sonra arama.
+04:09 Kamil amcaya söyler misin? tekrar göstersin. Uçtan uca göstersin. Bütün
+04:13 özelliklerini göstersin yaptığı sitenin bize otomasyon şeklinde. Ben hiçbir şeye
+04:17 dokunmayayım. O göstersin bize.
+04:25 >> Tamam dokunmadım. >> Diyorum ki Kamil amcaya söyle bize
+04:30 yaptığı narantası sitesini uçtan uca göstersin otomasyonla.
+04:43 Tamam. >> Gönder.
+04:47 >> Tabii gönderebilirsiniz. Kamil amcaya yapılan NAR lokantası sitesini uçtan uca
+04:52 otomasyonla göstermesi gerektiğini söyleyebilirsiniz. Göndermek isterseniz
+04:56 onaylayabilirim. >> Gönder.
+05:00 >> Kamil amcaya gönderiyorum. Tamam. Kelimesi kelimesine söylüyorum.
+05:05 Kamil amca aldı.
+05:09 Sen şimdi uyu. >> Uyuyorum. Beni çağırman yeter.
+05:15 >> Dostlar bakın şimdi kendisi site yaptı ve kendi yaptığı siteyi bize canlı canlı
+05:22 otomasyon yaparak gösteriyor ve ben siteyi yaptırırken, siteyi bana
+05:26 göstermesini sağlarken bakın şu an sepete ekleme yapıyor. Ürün seçti ve
+05:30 menüyü de güzel yapmış dostlar. Bakın siteyi güzel yapmış. Ve bunu yaparken
+05:35 ben bu kontrollerin hepsini sesle yaptım dostlar. Farkında mısınız? Sesle Kamil
+05:40 amcaya site yaptırdım. Ondan sonra sesle dedim ki Kamil amca bu siteyi bana
+05:45 göstersin uçtan uca. Nerede ne var? Mevzuyu anlıyor musunuz dostlar? Tamam.
+05:51 Kamil amca ne diyor? >> Tabii hemen kelimesi kelimesini
+05:56 aktaracağım. Boşta şöyle diyor: "İki uygulamayı sırayla baştan sona
+06:00 kezeceğim. Önce restoran temiz bir başlangıçla açıyorum.
+06:05 >> Tamam sen şimdi uyu. >> Uyuyorum. Beni çağırman yeter.
+06:10 >> Dostlar ben dokunmuyorum şu anda. Sesimle kontrol ettim. Bakın solda
+06:14 restoran uygulamasını gezdiriyor bize. Görüyor musunuz? Restoran uygulamasını
+06:18 gezdiriyor ve bunu yaptıktan sonra oyuna geçecek. Anlatabiliyor muyum size olayı?
+06:24 Mükemmel bir şey abi. Yani bu işin gittiği noktayı bir
+06:28 düşünsenize dostlar. Yani bundan 2 ay önce size bunu
+06:33 söylüyordum. Şu anda
+06:37 bir yerlere geldik. Gelecekte de bu işin nereye gideceğini anlıyorsunuzdur
+06:40 umarım. Restoranı gösterdi. Şimdi Pokemon uygulamasını gösteriyor. Kart
+06:44 zor seviyeyi seçti. Oo kendine bu sefer zor seviyeyi seçti. Bakın görüyor
+06:49 musunuz? Kolaydan zora geçti. Bence Sonet 5.5 güzel iş çıkarabiliyor
+06:55 dostlar. idare eder bir iş çıkarıyor. Bakın Sonet 5.5 idare eder, iş
+07:00 çıkarabiliyor. Görüyorsunuz ne kadar güzel.
+07:10 Şimdi ekip liderine bakacağız. Bir de ekip lideri ne yapmış daha onu
+07:13 bilmiyoruz ya. Ekip liderini göreceğiz şimdi. Asıl
+07:17 bomba orada. Yani birisi Opus 5. kıyaslayacağız. Birisi de Sonet 5.5 ile
+07:22 yapıldı. Bakalım Opus'la yapılan nasıl?
+07:36 E kolaya geçmiş bu kendisi. Şimdi gördüm ben. Kolaya geçmiş.
+07:41 Neyse oyunu oynuyor vallahi buluyor. Nasıl biliyor bunları ben anlamadım.
+07:46 Deneyerek buluyor değil mi? Güzel oynadı bence.
+07:52 Kamil amca şu an işini bitirdi. Şimdi ekip liderine söyleyeceğiz dostlar aynı
+07:56 şeyi.
+08:00 Hey Jarves, ekip liderine söyle. Şu anda yaptığı iki
+08:05 tane uygulama var ya restoran menüsü ve Pokemon temalı kart oyunu yaptı ya.
+08:10 Bunların ikisini sırayla oynasın. Bize uçtan uca, baştan sona göstersin. Yani
+08:15 uygulama kapsamında neler varsa her şeyi gösterecek şekilde bir otomasyon
+08:19 çalıştırsın ve tarayıcı da açsın bize göstersin.
+08:29 >> Tamam. gönder.
+08:33 >> Tabii. Lütfen gönderin. Önerinizi ve detaylı olarak neyi iletmek istediğinizi
+08:38 netleştirin. Ardından birlikte nasıl iletebileceğinize bakalım.
+08:43 >> Gönder.
+08:46 >> Tabii ki şu şekilde ekip lideriye gönderiyorum. Evet. Kelimesi kelimesine
+08:51 şunu söyleyeceğim. Ekip lideri aldı. Bu şekilde ifade etmiş olalım.
+08:57 >> Tamam. Sen şimdi uyu. >> Uyuyorum. Beni çağırman lazım.
+09:02 >> Şimdi dostlar bakın, görüyor musunuz? Ekip liderine ışığı fırlattı, gönderdi.
+09:07 Tamam. Evet dostlar kapışmaya hoş geldiniz.
+09:12 Sonnet ve opus kapışması karşınızda.
+09:22 [homurdanır] Şimdi soldakini gezersek şöyle bir menü
+09:26 var dostlar karşımızda. Bunlara tıklanmıyor kartlara. Yani
+09:30 tıklanması gerekiyordu aslında. O kendisi tıklıyor sanki. Şu yukarıdan
+09:33 menülere gidebiliyoruz. Arama var mesela. Tavuk yazalım. Arama çalışıyor.
+09:39 Ekle diyorum. Sepete ekliyor fakat sepeti otomatik açmıyor. Bekletiyor. Eee
+09:45 gece gündüz şeyi var. Sepet bu şekilde. Test. Siparişi onayla. Teşekkürler.
+09:51 Menüye dön. Bitti. Nar lokantası uygulaması bu şekilde.
+09:56 Sonnet 5.5 bunu yaptı dostlar. Şimdi sağda ise Opus 5.5 yine menüdeki
+10:02 ürünlere tıklanmıyor ama burada bakın böyle farklı filtreler koyulmuş.
+10:06 Vegetaryan vesaire. Menü animasyonlar daha yoğun animasyon olarak. Arama
+10:11 kısmına bakalım. Tavuk aynı şekil aynı menüyü yapmış. Ekle dediğimizde yine
+10:17 sepet açılmıyor. Yani inanılmaz inanılmaz. Şu an Sonnet 5.5
+10:23 kullanmışsın, Opus 5. kullanmışsın. Bir farkı yok dostlar. Görüyorsunuz Çini
+10:29 lokantası ve NAR lokantası çok benzer bir menüye
+10:34 sahip oldu. Ne düşünüyorsunuz? Bence ikisinin arasında çok bir fark yok.
+10:38 Buradaki farklardan birisi şu bakın. Tabak gibi bir şey yapmış kendisi. Yani
+10:43 görselleri bir tık daha çalışmış, düşünmüş.
+10:47 Marka kimliği oturtmaya çalışmış. üstte falan bakın tasarım yapmış. Onun
+10:51 haricinde animasyonlarda bir tık fark var ama genel olarak yani
+10:59 bir şey yok arada bir fark yok dostlar. Ne diyorsunuz?
+11:03 >> Bence bu konuda Sonnet 5.5 kullanılabilir ama oyuna geldiğimizde
+11:07 dostlar evet burada fark ortaya çıkıyor. Bakın oyun tarafında bir kere arkada
+11:12 burada background var. Bakın arka planda bir şey var. Arka planda gör animasyon
+11:18 gibi bir şey var. Bu tarafa baktığımızda bu animasyon çöp.
+11:22 Bak noktalar var şurada ekrana sanki bir şey damlamış gibi. Peki kartların
+11:28 arasında seviyede geçiş yaptığımızda animasyonlu çalışıyor. Burada buradaki
+11:32 animasyon çok daha iyi. Bakın yani animasyon konusunda arada devasa fark
+11:37 oluşabiliyor. Bu bir. İkincisi dinamikler konusunda herhangi
+11:42 bir sıkıntı göremiyorum ama tasarım bütünlüğü olarak bu daha iyi. Opus 5 çok
+11:47 daha iyi. Opus 5.5 çok daha iyi bir tasarım bütünlüğü sağlamış ve oyunsallık
+11:52 açısından mesela kart tasarım falan yine daha iyi.
+11:56 Neyse şimdi kolayı seçelim ve tıklayalım. Bakın kart açma olayı.
+12:06 Yine animasyon farkı ve kart tasarımlarında çok büyük fark var
+12:09 dostlar. Ya bakın kart tasarımları aşırı farklı. Yani burada pokemların
+12:13 detaylarını koymuş. Pokémon kartını bulmuş. Bak şöyle fareyi gezdirince
+12:17 kartı görüyor musunuz? Işık mışık düşünmüş. Bak ışık detayı var. Yani hani
+12:22 kartı elinde alıp oynarsın ya ışık değişir.
+12:25 Ben kendim açabilirim şu an. Aslında böyle bir fark var dostlar.
+12:32 Dinamik olarak bir sıkıntı yok. İkisi de çalışıyor. Şimdi bir oynayalım bir tur.
+12:35 Dur. Yeni oyun diyelim. Basitte oynayalım. Önce Sonet 5.5'in oyununu
+12:40 oynayacağız.
+12:44 Evet. Skirtle Pikachu. Ay Pikachu burada değil lan. Pikachu. [kahkaha]
+12:50 Charmender. Eee
+12:53 Balbazar Skirtle ve bittikten sonra oyun böyle bir
+12:58 konfeti patlatıyor. Bu da opusla çok daha iyi bu arada. Ve sonuç olarak sonet
+13:03 5.5'i kafamdaki oturttuğum yerde doğrulamış
+13:08 oldum. Yani Sonnet 55.5'i ben direkt varsayımsal olarak kafamda bir yere
+13:14 oturtmuştum. Ve size de yayın başında da söyledim zaten bunu. Şu anda da
+13:20 bu Sonnet'i oturttuğum yerde, dur şimdi orayı açmayayım. Bir dakika açtık ya.
+13:24 Sonnet 5.5'i oturttuğum yerde beni Opus 5.'in cevapları doğruladı. Bakın burada
+13:31 bir plan yaparken cevap istedik. Sonet 5.5 nereye oturur diye. Hem Opus 5.
+13:37 Yani benzer fikirdeyiz. Hem de çıktılara baktığımızda çıktı kalitesine yani çıktı
+13:43 seviyesine baktığımızda Sonnet 5.5'in yeri oturdu dostlar. Siz de bu şekilde
+13:48 bilin. Bence size tavsiyem 20 dolarlık paketiniz varsa Sonnet 5.5 ile full
+13:54 gidin ve para kazanmaya odaklanın. Eğer ki 200 dolarlık paketiniz varsa veya 100
+14:00 dolarlık Opus 5.5'le birçok önemli işinizi ona devredin.
+14:05 Diğer işleri Sonnet 5.5'e yaptırın ve opus 5.'e sorduğunuzda size hangi işte
+14:11 sonnet, hangi işte Opus kullanacağınızı önerebiliyor. Kafandakiyle örtüştüğüne
+14:16 göre demek ki o da biliyor. O zaman ne yapacaksınız? Agent Space'te otomatik
+14:19 model önerme sistemiyle yapay zekayla plan yaparken planı
+14:24 koştururken otopilotta ekip olarak şunu yapacak Agenc Space'te. Siz diyeceksiniz
+14:29 ki lidere benim için modelleri sen seç. O da gidecek ekibi için Opus 5.5 lider
+14:34 olarak çalışırken ekibinde son kullanacak gereken yerde. Bunu
+14:38 söyleyebilirsiniz liderinize. Sizin için lideriniz modelleri seçecektir.

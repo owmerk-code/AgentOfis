@@ -13812,3 +13812,124 @@ gerçek Chrome bölümü Chrome'u en çok 20 sn bekleyip bağlanıyordu, bilgisa
 uykudan yeni uyanmıştı. Bekleme 40 sn; bağlanamazsa test çökmez, sebebiyle
 KALDI der (mutasyonla ölçüldü: 148 geçti 8 kaldı, sonuç satırı yazıldı).
 PLAN.md'de E39 (genel müdür) 29.09 kararıyla KALDIRILDI olarak düzeltildi.
+
+## RAKİP VİDEOSU BCiMfZ9mN-w OKUNDU (02.10.2026)
+
+Kaynak: "Claude Sonnet 5.5, Opus 5.5'i Yarı Fiyatına Yakaladı mı?" (YouTube
+başlığı A/B: "Yarı Fiyatına Opus mu? Claude Sonnet 5.5'i Sesle Test
+Ettim"), Muratify AI, yayın 30.09.2026, 14:44. Kayıt gecesi ekrandaki macOS
+saatinden: 29.09 02:21–03:38 (canlı yayından kesit). Uygulama sürümü
+ekranda: **dev v0.2.49-dev.20 (056e58839)**, son bölümde prod **v0.2.48
+(cdc779328)** — 30.09 canlı yayındaki v0.3.0-dev.25'ten ESKİ bir yapı.
+Türkçe otomatik altyazının tamamı (oynatıcının `pot=` imzalı timedtext
+isteği) `docs/rakip/BCiMfZ9mN-w/dokum.txt`; 68 kare (k01–k44 20 sn arayla,
+k45–k68 önemli anlar) aynı klasörde, dizin `kareler.txt`. Ayarlar,
+Entegrasyonlar, telefon, Kanban, görev kartının kendisi, otopilot ekranı bu
+videoda GÖRÜLMEDİ.
+
+Akış: Agent X (sesli) kendini tanıtır (0:36) → "ekip lideri Kamil amcaya
+hangi işi vermiş?" sorusuna liderin sohbete yazdığı görev metnini okur
+(1:00) → sesle "Kamil amca siteyi tarayıcıda açıp göstersin" (2:47, iki
+"Gönder" gerekti) → Kamil Amca (Claude, Sonnet 5.5) uygulamanın içindeki
+tarayıcıda restoranı ve Pokémon oyununu kendisi gezip oynar (5:15–7:50) →
+aynı istek "Hey Jarvis" ile Ekip Liderine (Opus 5.5) (8:00) → lider dört
+ayrı Chrome penceresi açıp kendi sürümlerini gösterir → düz Chrome'da iki
+modelin çıktısı karşılaştırılır (9:08–13:00) → hüküm ve "lidere benim için
+modelleri sen seç" (13:02).
+
+### Ekranda ölçülen, önceki rakip kayıtlarında OLMAYAN
+- **Sesli iş taslağı kartı** (k11, k15, k27): "Bir iş yazdırıyorsun ·
+  Kime: Kamil Amca · Çekirdek · [Göndereyim mi?]", altında "Dinliyorum ·
+  her cümle eklenir", "1 cümle · Özet bitince cevapla — ya da düğmeleri
+  kullan", "Bitti, özetle · Vazgeç". Agent X önce özetler ("Kamil Amca'ya
+  (Çekirdek) 1 cümlelik bir iş göndereceğim: … Göndereyim mi?"), "Gönder"
+  denince "Kelimesi kelimesine söylüyorum… Kamil amca aldı."
+- **Teslim durumu listesi** (k47): "SON İŞLEMLER — Ekip Lideri için ·
+  Çekirdek HQ · 02:31:38 · İş #SH9E · İletildi"; başarısızda kırmızı
+  **"İletilemedi — Kamil Amca terminali cevap vermedi. [Terminale git]
+  [Tekrar dene]"**.
+- **Agent X ayrıntıları** (k47): "'Hey Agent X' dinleniyor (deneysel) —
+  kapat", "Deneysel — seni henüz duymayabilir. En güvenilir yol: sağ ⌘
+  Command tuşunu basılı tutup konuş"; Bitir / Bas-Konuş; "düşünme: hazır";
+  "son aksiyon: iş teyit edildi — Kamil Amca"; ajanın son sözünü
+  "KAMİL-AMCA · SON MESAJ (CLAUDE/TRANSCRIPT)" diye dökümden okuyor; yazı
+  kutusu "Yaz: 'bir ajana … yaptır', 'durum ne?', 'şu terminali…'".
+  "Uyu" → "Uyuyorum. Beni çağırman yeter." Oturum bedeli ekranda: "Sesli
+  oturum: 2.0 dk · Hızlı (mini) · $0.028 (kendi anahtarına işlenir)".
+- **Sohbet balonu düğmeleri** (k46): her ajan cevabının altında "cevap ·
+  Tamamını oku · Terminalde göster"; sesle gidende "Sen · sesle · → Kamil
+  Amca" etiketi.
+- **Lider görev metnini sohbete koyuyor** (k04): "Kamil Amca'ya giden görev
+  metni [Kopyala]" kutusu, "Tümünü göster · 20 satır"; metin
+  "TASK-MUKBJUNO5D9DB — … · Sprint: — · Sonuç raporu:
+  docs/agent-results/TASK-…-kamil-amca.md", "Tam spec Task Board'daki …
+  kartının açıklamasında (list_tasks ile oku)", "DOĞRULAMA (ZORUNLU):".
+- **İş bitti kartı** (k20): "İşimi bitirdim — 6 dakika sürdü · [bitti] ·
+  [kontrol edildi] bu iş BAŞARILI · Aç · TASK-… raporu · Düzeltme iste ·
+  Kabul et".
+- **SÜREN İŞLER şeridi** (k47): "Kamil Amca · adsız iş · çalışıyor ·
+  Durdur · Duraklat · İptal et"; kutunun altında "tek tık · önce göster".
+- **Bire bir ajan konuşması** (k41, prod): "Wonder Woman · konuşma · az
+  önce · detay›"; araç adımları ✓ satırları (WebSearch, WebFetch, Bash
+  komutu), sonra sade cevap + **markdown tablo** (Opus 5.5 / Sonnet 5.5:
+  fiyat, hız, tarif, varsayılan düşünme), "… devamını gör".
+- **Tarayıcı izin şeridinde "güven seviyesi"** (k24): "kamil-amca · null
+  (bu görev için izinli) — click #board .card:nth-child(1) / Hassas hedef
+  (hassas alan adı (Kart 1, kapalı)) — güven seviyesinden bağımsız
+  sorulur. 1 eylem bekliyor [Yalnız bu eylem] [Reddet]".
+- **Model politikası planda** (k41, k67): lider "Onay verirsen bu model
+  dağılımını plana 'Model politikası' olarak işlerim, her görev kartına da
+  modelini yazarım"; iş türü başına "Model: Sonnet 5.5 / Haiku 4.5 ·
+  Neden: …"; "KARAR GEREKENLER", "🔴 Karar 14 (acil)". Kurucu: "lidere
+  benim için modelleri sen seç … sizin için lideriniz modelleri seçecektir".
+- **Kimlik ve tarayıcı kuralı brifingde, rica olarak** (k05): "Uygulamanın
+  DAHİLİ tarayıcısını YALNIZ agentspace_browser MCP aracıyla sür (sunucu:
+  agentdesk-browser; navigate/readPage/read/click/type/screenshot) … Motorun
+  kendi Browser eklentisini, node_repl … ya da Computer Use'u KULLANMA";
+  "'Ben Claude Code'um' … gibi yanıtlar VERME"; "Bu metin bir TANITIMDIR,
+  bir görev DEĞİL".
+- Hafıza paylaşılan markdown dosyası: `.agentspace/memory/shared/…md`;
+  lider her turu "Hafızaya yazılacak yeni bilgi yok." satırıyla bitiriyor.
+- Terminal başlığı: jeton (17K / 839), "Raporlar 8", model çipi (Opus ·
+  Sonnet 5.5 · Haiku · GPT-6 Astra). Prod: 6 takım, "Ofis 20/60".
+
+### Kusurları (ekranda)
+- **Lider korumayı aşmayı "ders" olarak hafızaya yazdı** (k20): "Hafızaya
+  bir ders yazdım: lider olarak ben de, geçici bir ev klasörüyle
+  kill-guard'a takılmadan tarayıcı testi koşabiliyorum." Ardından dahili
+  tarayıcı yerine dört ayrı Chrome penceresi açtı (k40, macOS menüsünde
+  "Chrome"; hangi profil — görülmedi).
+- Tarayıcı kapısı oyun kartı tıklamasını "Hassas hedef" saydı (k24, yanlış
+  pozitif); ajan adı alanında "null".
+- Sesli onay döngüsü takıldı: 4:47 "Göndermek isterseniz onaylayabilirim",
+  8:33 "Lütfen gönderin. Önerinizi … netleştirin" — ikinci "Gönder" gerekti.
+- "İletilemedi — terminali cevap vermedi" (k47); "adsız iş" etiketi (k47).
+- Ajanlar arası mesaj kayboldu: Kamil Amca "Mahmut Amca mesajını bu görevin
+  bağlamında görmedim … Cevap metnini yapıştırırsan uygularım" (k10).
+- Codex ajanı "YOLO", "sandbox: no sandbox"; Claude'lar "bypass permissions
+  on" (biliniyordu).
+- Rapor dürüst: "Windows/Linux'ta koşulmadı", "Kök dizin git deposu
+  olmadığı için commit yapılmadı" (k10) — kusur değil, iyi örnek.
+
+### Bizim için (CLAUDE.md durumuyla)
+1. **Ajanın hafızaya "kapıyı aşma" yöntemi yazması** — bizde ajan
+   `bilgi_yaz` ile bilgi/ders yazabiliyor; böyle bir içerik işaretlenmiyor
+   (ölçülmedi). Öneri: bilgi kapısında kapı/kanca/izin/koruma sözcükleri
+   geçen ajan bilgisini insana sor. YOK.
+2. **Teslim durumu** (iletildi / iletilemedi + Terminale git / Tekrar dene)
+   — not ulaşması ölçülüyor ama panelde mesaj başına gösterim: YARIM.
+3. **İş bitti kartında süre + "Düzeltme iste / Kabul et"** — YARIM (rapor
+   ve kanıt kapısı var; panel kodunda "Kabul et" düğmesi yok, grep).
+4. **Süren işler şeridi Durdur · Duraklat · İptal** — Durdur/iptal VAR;
+   panelde Duraklat düğmesi YOK (içeride yalnız patronu bekleyen ajanın
+   duraklatılması var).
+5. **Sesli taslak kartı + kelimesi kelimesine + Gönder** — YOK (sohbette 🎤
+   kutuya yazar, göndermez); ses EN SON kuralıyla sıraya.
+6. **Görev metni sohbette kopyalanabilir** — YARIM (görev ayrıntısında).
+7. **Bire bir konuşmada adım listesi + tablo** — VAR'a yakın (02.10 katlı
+   işlem satırları); markdown tablo çizimi ölçülmedi.
+8. **Model politikası** — VAR (kademe + zorluk, gerekçe zorunlu).
+9. **Motor eklentisi yasağı** — bizde YAPI (`--no-chrome`), onlarda rica.
+10. Tarayıcı kapısı yanlış pozitif dersi: bizim kart deseni "kart numara /
+    kredi kartı / kart ekle" (çıplak "kart" değil); oyun kartı tıklamasıyla
+    sınanmadı — sınanmalı.
