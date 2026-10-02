@@ -14066,3 +14066,36 @@ TASLAĞI yazar, kanıtla gelir, patron onaylarsa yayına girer. Maliyet ölçüm
   `OFIS_BECERI_KOK`, `OFIS_GIZLI_YOLU`, `OFIS_GOLGE_KOK`, `OFIS_KABIN_*` artık
   MCP ortamına açıkça geçiyor; iki motorla yeniden ölçüldü, sızıntı yok.
 `duman_beceri` 35/35, mutasyonlar yakalandı.
+
+## 02.10.2026 — Motorlardan gelenler: Claude ve Codex'te ne varsa ajanlara da (ertelenmiş yükleme)
+
+Patron: "Claude ve Codex'teki tüm beceri, bağlayıcı, eklenti, MCP otomatik
+gelsin, ayarlarda görünsün, gerekirse ben kapatırım." İstisnalar (patron):
+masaüstü işi SORULUR, kişisel Chrome AÇILMAZ, kancalı eklenti SORULUR,
+tarayıcı TEK: gömülü (tıklama, doldurma, izleme, oyun dahil).
+- **Ölçüm (haiku, aynı tek cümle):** bugünkü 18.611 jeton/tur · her şey açık
+  ama ertelenmiş yükleme kapalı 91.323 · her şey açık + `ENABLE_TOOL_SEARCH`
+  18.848 · + 6 eklenti, 118 beceri, context7 (restricted korunarak) 23.820.
+  Codex (ofis hesabı): eklentiler açıkken 7.146, kapalıyken 16.926 (Codex de
+  erteliyor); `features.browser_use/in_app_browser=false` ile 7.548, çalışıyor.
+  `--disallowedTools mcp__claude_ai_<Ad>` bağlayıcıyı TAMAMEN çıkarıyor (ad
+  kuralı ölçüldü: ASCII dışı düşer, gerisi `_`); iki `--mcp-config` birlikte
+  yükleniyor. Patronun eklentilerinde kanca YOK.
+- **Kurulan (`ofis/kaynaklar.py`):** Claude araçlı turda ertelenmiş yükleme +
+  hesabın bağlayıcıları; eklentiler `--plugin-dir`; kendi MCP'leri ikinci
+  `--mcp-config` (`playwright` ÇIKARILIR); kapatılan bağlayıcı `--disallowedTools`;
+  saf yargı turu ve limit okuma bağlayıcısız (`BAGLAYICISIZ`, strict). Patronun
+  claude.ai becerileri ofis deposuna OTOMATİK (`beceri.claude_esitle`, güncellenir,
+  silineni geri getirmez; chrome-browser/built-in-browser/computer-use KAPALI gelir).
+  Codex: kendi tarayıcıları kapalı (`OFIS_KURALLARI`, dört başlatma yolu),
+  masaüstü kapatılmadı (kapıda sorulur); eklenti kur/kaldır ayarlardan.
+  Ayarlar: "Eklentiler ve MCP" bölümü, entegrasyon kartında "ajanlara açık".
+  Ofis ve tarayıcı MCP'si `alwaysLoad: true` (ölçüldü: yoksa `kanit_ekle` bile
+  önce ToolSearch ile aranıyordu). Haiku bağlayıcı engeli kaldırıldı.
+- **Takım bağlayıcı izni KALDIRILDI** (aynı gün kurulmuştu): bağlayıcılar artık
+  herkese açık; işe yaramayan kutucuk yanlış gösterge olurdu.
+- **Gerçek koşu:** haiku ajan context7'yi ToolSearch ile bulup kullandı, özeti
+  yazdı, kanıt ekledi (tur ~280k jeton toplam, çok adımlı); codex luna yeni
+  bayraklarla beceri kullandı. Sınamalar artık patronun `~/.claude`ını değil
+  boş klasörü okuyor (`OFIS_CLAUDE_EV`, `_temizlik`).
+`duman_kaynaklar` 28/28 (mutasyonlar yakalandı).

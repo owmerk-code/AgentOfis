@@ -211,42 +211,6 @@ class Lider:
         # bir siteye acilirdi. Yetki insandan gelir, dagitim liderden.
         insan_web = set(tarayici.kaynaklari_dogrula(tarayici_alani or []))
 
-        # TAKIM IZNIYLE BAGLAYICI (02.10.2026). Verilmeyen SESSIZ kalmaz.
-        from . import entegrasyon as _ent
-        _kol_bag = {}
-
-        def _baglar(kol) -> list:
-            if id(kol) in _kol_bag:
-                return _kol_bag[id(kol)]
-            out = list(baglayicilar or [])
-            istenen = kol.get("baglayicilar") or []
-            if isinstance(istenen, str):
-                istenen = [istenen]
-            if istenen:
-                verilen, ret = _ent.kol_baglayicilari(
-                    self.ofis.db, self.ofis.proje_id, kanat_id, istenen)
-                out += [v for v in verilen if v not in out]
-                if verilen:
-                    self.ofis.db.olay_yaz(
-                        self.ofis.proje_id, "uyari",
-                        f"'{kol.get('baslik', '')}' isine takim izniyle baglayici: "
-                        + ", ".join(verilen), ajan_ad=lider_ad)
-                if ret:
-                    self.ofis.db.olay_yaz(
-                        self.ofis.proje_id, "uyari",
-                        f"'{kol.get('baslik', '')}' icin istenen baglayici VERILMEDI: "
-                        + " | ".join(ret), ajan_ad=lider_ad)
-            _kol_bag[id(kol)] = out
-            return out
-
-        def _zorluk(kol) -> tuple:
-            # Baglayicili is haiku'ya SIGMAZ (olculdu 22.09: 225k jeton >
-            # 200k pencere; koltuk reddeder). 'kolay' -> 'orta', sebebiyle.
-            z, g = kol.get("zorluk", ""), kol.get("zorluk_gerekce", "")
-            if _baglar(kol) and z == "kolay":
-                return "orta", (g + " " if g else "") + "(ofis: baglayicili is haiku'ya sigmaz)"
-            return z, g
-
         def _kol_web(kol) -> list:
             # Modelin yazdigi listede bos satir olabilir; bos kaynak
             # `gorev_ac`ta istisna atar ve plan kapisindan gecmis bir isi
@@ -285,12 +249,11 @@ class Lider:
                 # *yetki insandan gelir, dagitim liderden.*
                 tarayici_yazma=bool(tarayici_yazma),
                 tarayici_kabin=_kabin_mi(kol),
-                # Lider baglayici SECMEZ; insanin verdigini isler --
-                # ve TAKIM IZNI (insanin Ayarlar'da verdigi) icinden
-                # kola yazdigini (02.10.2026, `entegrasyon.kol_baglayicilari`).
-                baglayicilar=_baglar(kol),
-                zorluk=_zorluk(kol)[0],
-                zorluk_gerekce=_zorluk(kol)[1],
+                # Lider baglayici SECMEZ; insanin verdigini isler.
+                # Yetki insandan gelir, dagitim liderden.
+                baglayicilar=baglayicilar or [],
+                zorluk=kol.get("zorluk", ""),
+                zorluk_gerekce=kol.get("zorluk_gerekce", ""),
             ))
         return acilan
 

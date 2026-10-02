@@ -8,7 +8,7 @@ Sinanan:
   2. kapatilan bildirim turu gelmez, kapatilamayan gelir
   3. entegrasyon kartlari OLCUMDEN: bagli / giris gerekli / hesapta yok /
      olculemedi; hesapta olup katalogda olmayan "Diger"de; anahtar degeri sizmaz
-  4. takim izni: izinli + bagli baglayici kola verilir, izinsiz/bagsiz verilmez
+  4. baglayicilar herkese acik; kapatilan ajandan cikar (takim izni kaldirildi)
      (sebebi olaya), baglayicili 'kolay' is 'orta'ya cikar; plan metni izni
      ve sema satirini yalniz izin varken gosterir
   5. panel uclari
@@ -137,38 +137,20 @@ sina("anahtar adi + parmak izi var, DEGER YOK",
 sina("kartlardaki risk cumlesi kapinin olculen kuraliyla ayni",
      "Taslak oluşturma ve düzenleme sorulmaz" in k["Shopify"]["risk"])
 
-print("\n4. takim izni")
-sina("izin yokken lider blogu 'yazma' der", "VERMEDI" in entegrasyon.lider_blogu(db, ofis.proje_id, MAG))
-ayarlar.yaz(ofis, "takim_izni", {"kanat_id": MAG, "adlar": ["Shopify", "Supabase"]})
-sina("izin yazildi", entegrasyon.takim_izinleri(db, ofis.proje_id, MAG) == ["Shopify", "Supabase"])
-ver, ret = entegrasyon.kol_baglayicilari(db, ofis.proje_id, MAG, ["Shopify", "Meta Reklamları", "Supabase"])
-sina("izinli+bagli verildi", ver == ["Shopify"], str(ver))
-sina("izinsiz (Meta) ve bagsiz (Supabase) VERILMEDI, sebepli",
-     len(ret) == 2 and "izin vermedi" in ret[0] and "yetki" in ret[1], str(ret))
-ver2, _ = entegrasyon.kol_baglayicilari(db, ofis.proje_id, YAZ, ["Shopify"])
-sina("baska takima (YAZILIM) Shopify verilmez", ver2 == [])
-
-acilan = ofis.lider.dagit("magaza isi", [
-    {"baslik": "urunleri listele", "sahip": "deniz", "neden": "n", "kabul_olcutu": "k",
-     "govde": "g", "yazma_alani": ["m/"], "zorluk": "kolay", "baglayicilar": ["Shopify"]},
-    {"baslik": "reklam", "sahip": "deniz", "neden": "n", "kabul_olcutu": "k",
-     "govde": "g", "yazma_alani": ["r/"], "zorluk": "orta", "baglayicilar": ["Meta Reklamları"]},
-], gerekce="iki ayri is", lider_ad="ayse", kanat_id=MAG)
-g1, g2 = ofis.tahta.gorev(acilan[0]["no"]), ofis.tahta.gorev(acilan[1]["no"])
-sina("izinli baglayici ISE verildi", g1["baglayicilar"] == ["Shopify"], str(g1["baglayicilar"]))
-sina("baglayicili 'kolay' is 'orta'ya cikti, sebebi yazili",
-     g1["zorluk"] == "orta" and "haiku" in g1["zorluk_gerekce"], f"{g1['zorluk']} {g1['zorluk_gerekce']}")
-sina("izinsiz baglayici ise VERILMEDI", g2["baglayicilar"] == [], str(g2["baglayicilar"]))
-with db.baglanti() as c:
-    uy = [r[0] for r in c.execute("SELECT govde FROM olay WHERE tur='uyari' AND govde LIKE '%baglayici%'")]
-sina("verilen ve verilmeyen ikisi de olaya yazildi",
-     any("takim izniyle" in u for u in uy) and any("VERILMEDI" in u for u in uy), str(uy)[:300])
-pm = ofis.orkestra.plan_metni("magaza isi", MAG)
-sina("plan metni takimin iznini gosterir + semada baglayicilar", "Izinli: Shopify, Supabase" in pm
-     and '"baglayicilar": [],' in pm)
-pm2 = ofis.orkestra.plan_metni("kod isi", YAZ)
-sina("izinsiz takimin plan metninde sema satiri YOK", '"baglayicilar": [],' not in pm2
-     and "VERMEDI" in pm2)
+print("\n4. baglayicilar HERKESE acik (02.10.2026: takim izni kaldirildi)")
+from ofis import kaynaklar as _KY  # noqa: E402
+sina("plan metninde takim izni blogu YOK", "BAGLAYICI IZNI" not in ofis.orkestra.plan_metni("magaza isi", MAG))
+sina("kartta 'ajanlara acik' varsayilan ACIK", k["Shopify"].get("ajanlara_acik") is True
+     and k["Shopify"].get("grup") == "claude_baglayici")
+_KY.ayarla("claude_baglayici", "Meta Reklamları", False)
+_k2 = {x["ad"]: x for x in entegrasyon.kartlar()["kartlar"]}
+sina("kapatilan baglayici kartta KAPALI", _k2["Meta Reklamları"]["ajanlara_acik"] is False)
+sina("kapatilan baglayici ajandan CIKAR (olculen ad kurali)",
+     "mcp__claude_ai_Meta_Reklamlar" in _KY.claude_bayraklari()["yasak"], str(_KY.claude_bayraklari()["yasak"]))
+_KY.ayarla("claude_baglayici", "Meta Reklamları", True)
+sina("acilan geri gelir", _KY.claude_bayraklari()["yasak"] == [])
+sina("Takimlar ekraninda izin kutucugu YOK (ise yaramayan gosterge kalmasin)",
+     "takim-izin" not in (KOK / "web" / "ayarlar.js").read_text(encoding="utf-8"))
 
 print("\n5. panel uclari")
 from fastapi.testclient import TestClient  # noqa: E402
@@ -192,7 +174,9 @@ HTML = (KOK / "web" / "index.html").read_text(encoding="utf-8")
 sina("Ayarlar dugmesi ve betigi sayfada", 'id="ayarlar-ac"' in HTML and "/varlik/ayarlar.js" in HTML)
 sina("tasinan anahtarlar ust cubukta gizli", 'id="efor-sec" hidden' in HTML
      and 'id="kip-sec" hidden' in HTML and 'id="bildirim-anahtar" hidden' in HTML)
-sina("yedi bolum", JS.count('["') >= 7 and "Takımlar ve izinler" in JS and "Yedek ve sağlık" in JS)
+sina("dokuz bolum (Beceriler, Eklentiler ve MCP dahil)", all(f'["{b}"' in JS for b in (
+    "entegrasyon", "beceri", "kaynak", "takim", "modeller", "calisma", "bildirim", "guvenlik", "yedek"))
+     and "Eklentiler ve MCP" in JS and "Yedek ve sağlık" in JS)
 
 print(f"\n== sonuc: {GECEN} gecti, {KALAN} kaldi ==")
 sys.exit(1 if KALAN else 0)

@@ -332,6 +332,9 @@ def sunucu_girdisi(kaynaklar, *, profil: str = "", gorunur: bool = False,
         "command": sys.executable,
         "args": [vekil, "--"] + bayraklar,
         "env": dict(kimlik or {}),
+        # Tarayici isi verilen turda araclar ERTELENMEZ (02.10.2026): her
+        # tarayici adiminda once arama yapmak bos tur ve jeton olurdu.
+        "alwaysLoad": True,
     }
 
 

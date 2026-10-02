@@ -56,6 +56,11 @@ if not os.environ.get("OFIS_GOLGE_KOK"):
 if not os.environ.get("OFIS_KABIN_KAPI"):
     os.environ["OFIS_KABIN_KAPI"] = "9399"
 
+# Patronun Claude klasoru yerine BOS klasor (02.10.2026): becerileri ve
+# MCP'leri otomatik getiren kod sinamada gercek klasoru okumasin.
+if not os.environ.get("OFIS_CLAUDE_EV"):
+    os.environ["OFIS_CLAUDE_EV"] = tempfile.mkdtemp(prefix="ofis-claude-sinama-")
+    os.environ["OFIS_CLAUDE_JSON"] = os.path.join(os.environ["OFIS_CLAUDE_EV"], "claude.json")
 if not os.environ.get("OFIS_EV"):
     os.environ["OFIS_EV"] = tempfile.mkdtemp(prefix="ofis-ev-sinama-")
 

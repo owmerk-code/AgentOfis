@@ -122,6 +122,11 @@ def _cli_olc(taze: bool) -> dict:
     return _ONBELLEK["cli"]
 
 
+def _kapali_baglayici() -> set:
+    from .kaynaklar import kapalilar
+    return kapalilar("claude_baglayici")
+
+
 def _claude_karti(ad: str, kategori: str, d: dict, olculdu: bool) -> dict:
     kayit = d.get(ad)
     if not olculdu:
@@ -142,6 +147,8 @@ def _claude_karti(ad: str, kategori: str, d: dict, olculdu: bool) -> dict:
         "bagla": {"komut": f'claude mcp login "{ad_cli}"', "url": CLAUDE_BAGLAYICI_SAYFASI},
         "kopar": {"komut": f'claude mcp logout "{ad_cli}"'},
         "risk": CLAUDE_RISK, "arac_motoru": "claude",
+        "grup": "claude_baglayici",
+        "ajanlara_acik": ad not in _kapali_baglayici(),
     }
 
 
@@ -179,79 +186,3 @@ def kartlar(*, taze: bool = False) -> dict:
     return {"kartlar": out, "olcum_zamani": baglayici.olcum_zamani() or "",
             "anahtarlar": anahtarlar, "kasa_hatasi": hata}
 
-
-# ---------------------------------------------------------------------------
-# TAKIM IZINLERI (02.10.2026) -- hangi takim hangi baglayiciyi SORMADAN alir
-# ---------------------------------------------------------------------------
-#
-# Rakipte ayarlarda "Takim Izinleri" var. Bizde bugune kadar bir ise
-# baglayiciyi YALNIZ patron veriyordu (kabuk ya da giris onayi); sohbetten
-# gelen iste lider baglayici isteyemiyordu -- magaza takimi her Shopify isi
-# icin ayrica onay bekliyordu.
-#
-# Kural: YETKI INSANDAN gelir (bu liste), DAGITIM liderden (kola yazar).
-# Lider yalniz takiminin izinli listesinden isteyebilir; izinsiz ya da
-# BAGLI olmayan istenirse VERILMEZ ve sebebi olaya yazilir (sessiz degil).
-# Ajan gerekirse yine `giris_iste` ile patrona sorar -- o yol degismedi.
-
-IZIN_ONEKI = "entegrasyon_izni:"
-
-
-def takim_izinleri(db, proje_id: str, kanat_id) -> list:
-    if not kanat_id:
-        return []
-    import json
-    try:
-        v = json.loads(db.ayar_oku(proje_id, IZIN_ONEKI + str(kanat_id), "[]") or "[]")
-    except ValueError:
-        return []
-    return [str(a) for a in v if str(a).strip()] if isinstance(v, list) else []
-
-
-def takim_izni_yaz(db, proje_id: str, kanat_id, adlar) -> list:
-    import json
-    if not kanat_id:
-        raise ValueError("Takim belirtilmeli.")
-    temiz = []
-    for a in adlar or []:
-        a = " ".join(str(a).split())
-        if not a or len(a) > 60:
-            raise ValueError(f"Gecersiz baglayici adi: {a!r}")
-        if a not in temiz:
-            temiz.append(a)
-    db.ayar_yaz(proje_id, IZIN_ONEKI + str(kanat_id), json.dumps(temiz, ensure_ascii=False))
-    return temiz
-
-
-def kol_baglayicilari(db, proje_id: str, kanat_id, istenen, *, mevcut: dict = None) -> tuple:
-    """Liderin kola yazdigi baglayicilardan VERILECEKLER ve sebepli RETLER."""
-    from . import baglayici
-    izinli = {baglayici._anahtarla(a) for a in takim_izinleri(db, proje_id, kanat_id)}
-    verilen, ret = [], []
-    for ham in [str(a) for a in (istenen or []) if str(a).strip()]:
-        if baglayici._anahtarla(ham) not in izinli:
-            ret.append(f"{ham}: bu takima patron izin vermedi")
-            continue
-        try:
-            for g in baglayici.dogrula([ham], mevcut=mevcut):
-                if g not in verilen:
-                    verilen.append(g)
-        except baglayici.BaglayiciHatasi as exc:
-            ret.append(f"{ham}: {exc}")
-    return verilen, ret
-
-
-def lider_blogu(db, proje_id: str, kanat_id) -> str:
-    izinli = takim_izinleri(db, proje_id, kanat_id)
-    if not izinli:
-        return ("## BU TAKIMIN BAGLAYICI IZNI\n\nPatron bu takima baglayici izni "
-                "VERMEDI: kola `baglayicilar` YAZMA. Is bir baglayici gerektiriyorsa "
-                "patrona soyle (Ayarlar > Takimlar ve izinler).")
-    return ("## BU TAKIMIN BAGLAYICI IZNI (patron verdi)\n\n"
-            f"Izinli: {', '.join(izinli)}.\n"
-            "Bir kol bunlardan birini GERCEKTEN gerektiriyorsa kola "
-            "`\"baglayicilar\": [\"<ad>\"]` yaz; is onunla acilir. Izinsiz ya da bagli "
-            "olmayani yazma -- verilmez. Gerekmiyorsa YAZMA: baglayici turu ~225.000 "
-            "jeton pahalilastirir ve haiku'ya sigmaz (kola zorluk en az orta). "
-            "Baglayicili kolu CLAUDE motorlu bir ajana ver: codex claude.ai "
-            "baglayicilarini yukleyemez.")

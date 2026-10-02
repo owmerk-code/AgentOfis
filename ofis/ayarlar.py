@@ -95,7 +95,7 @@ def oku(ofis) -> dict:
         "takimlar": [],
         "hatalar": hatalar,
     }
-    from . import entegrasyon, takim as _takim
+    from . import takim as _takim
     ajanlar = ofis.kadro.liste()
     for k in _takim.kanatlar(ofis):
         uyeler = [a for a in ajanlar if a.get("kanat_id") == k["id"]]
@@ -105,7 +105,6 @@ def oku(ofis) -> dict:
             "ajanlar": [{"ad": a["ad"], "meslek": a.get("meslek", ""),
                          "motor": a.get("motor", ""), "klasor": a.get("klasor", "")}
                         for a in uyeler],
-            "izinli": entegrasyon.takim_izinleri(db, pid, k["id"]),
         })
     for rol in ("isci", "lider"):
         esik, bozuk = zincir.gecis_esikleri(db, pid, rol)
@@ -192,16 +191,6 @@ def yaz(ofis, anahtar: str, deger) -> None:
         db.ayar_yaz(pid, f"gecis_esigi:{rol}:{pencere}", f"{sayi:.2f}")
     elif anahtar == "onceden_gecis":
         db.ayar_yaz(pid, "onceden_gecis", "acik" if deger else "kapali")
-    elif anahtar == "takim_izni":
-        from . import entegrasyon, takim as _takim
-        d = deger or {}
-        kid = str(d.get("kanat_id") or "")
-        if kid not in {k["id"] for k in _takim.kanatlar(ofis)}:
-            raise AyarHatasi("Boyle bir takim yok.")
-        try:
-            entegrasyon.takim_izni_yaz(db, pid, kid, d.get("adlar") or [])
-        except ValueError as exc:
-            raise AyarHatasi(str(exc))
     elif anahtar == "guncelleme_otomatik":
         guncelleme.otomatik_ayarla(db, pid, bool(deger))
     else:

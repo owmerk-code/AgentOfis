@@ -1607,6 +1607,11 @@ def yapilandirma(db_yolu: str, proje_id: str, ajan_ad: str,
             "command": sys.executable,
             "args": [str(Path(__file__).resolve())],
             "env": ortam,
+            # OFISIN ARACLARI HEP HAZIR (02.10.2026, olculdu): ertelenmis
+            # yuklemede kanit_ekle bile once ToolSearch ile aranmisti (fazladan
+            # adim). Claude Code: `alwaysLoad: true` sunucunun araclarini
+            # ertelemez; hesabin baglayicilari ertelenmis kalir.
+            "alwaysLoad": True,
         }
     }
     # EK SUNUCULAR isle gelir, hesapla degil: tarayici gibi yetenekler

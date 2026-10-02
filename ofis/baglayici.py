@@ -114,7 +114,9 @@ OLCULEN_EK_JETON = 225_000
 #: Baglayicili is bu modellerde kosamaz -- katalog pencereye sigmiyor.
 #: Tahmin degil, olculdu: haiku'da "Prompt is too long (~225.765 /
 #: 200.000)".
-DAR_PENCERELI_MODELLER = ("haiku",)
+#: 02.10.2026: ERTELENMIS YUKLEMEYLE (ENABLE_TOOL_SEARCH) haiku butun
+#: baglayicilarla 18.848 jeton/tur kosar (olculdu) -- engel KALKTI.
+DAR_PENCERELI_MODELLER = ()
 
 
 class BaglayiciHatasi(RuntimeError):
@@ -536,7 +538,5 @@ def ozet(baglayicilar) -> str:
     """Insana tek satir: ne acildi, kaca mal oluyor, ve HEPSI aciliyor."""
     if not baglayicilar:
         return "baglayici: YOK (gorev bildirmemis, ek jeton odenmiyor)"
-    return (f"baglayici: {', '.join(baglayicilar)} icin acildi"
-            f" · ~{OLCULEN_EK_JETON:,} ek jeton"
-            f" · DIKKAT: teknik olarak hesabin TUMU yukleniyor,"
-            f" bildirim bir suzgec degil niyet kaydidir")
+    return (f"baglayici: {', '.join(baglayicilar)} isin niyeti olarak kayitli"
+            f" · hesabin baglayicilari her turda ERTELENMIS yuklu (02.10.2026)")

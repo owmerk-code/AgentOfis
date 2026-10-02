@@ -165,6 +165,11 @@ SANDBOX_TAM = "danger-full-access"
 #: sahnede ust CLAUDE.md'yi ALMADI (davranis testi, 2/2). Ajanin baglami
 #: ofisin brifingidir; iki motor esit.
 PROJE_BELGESI_KAPALI = ("-c", "project_doc_max_bytes=0")
+#: TARAYICI TEK: GOMULU (02.10.2026 patron karari). Codex'in KENDI tarayicilari
+#: (browser_use, in_app_browser) ofiste kapali; masaustu (computer_use) KAPATILMAZ,
+#: masaustu isi onay kapisinda SORULUR. Butun baslatma yollari ayni demeti alir.
+from ..kaynaklar import codex_bayraklari as _codex_bayraklari
+OFIS_KURALLARI = (*PROJE_BELGESI_KAPALI, *_codex_bayraklari())
 
 #: OLCULDU (29.09.2026, rollout): kancanin reddi Codex'te bu onekle doner:
 #: "Script error:\nCommand blocked by PreToolUse hook: ONAY ISTENDI ...".
@@ -660,7 +665,7 @@ class CodexMotoru(Motor):
         argv += (["resume", oturum_id] if oturum_id else [])
         if model:
             argv += ["-m", model]
-        argv += ["-c", "check_for_update_on_startup=false", *PROJE_BELGESI_KAPALI]
+        argv += ["-c", "check_for_update_on_startup=false", *OFIS_KURALLARI]
         ortam = ortam_hazirla(os.environ, ek={**(ek_ortam or {}), "CODEX_HOME": str(ev)},
                               izinli=tuple(ek_ortam or ()) + ("CODEX_HOME",))
         return {"argv": argv, "ortam": ortam, "kapat": "/quit"}
@@ -1067,7 +1072,7 @@ class CodexMotoru(Motor):
         gider; burada yalniz surec BASINDA sabitlenmesi gerekenler var."""
         komut = [self.calistirilabilir, "app-server",
                  "--strict-config",   # sessizce dusen ayar olmasin (exec ile ayni)
-                 *PROJE_BELGESI_KAPALI]
+                 *OFIS_KURALLARI]
         if ek_klasorler:
             komut += ["-c", "sandbox_workspace_write.writable_roots="
                       + json.dumps([str(ek) for ek in ek_klasorler])]
@@ -1644,7 +1649,7 @@ class CodexMotoru(Motor):
         if oturum_id:
             argv += ["resume", self._oturum_dogrula(oturum_id)]
         argv += ["--no-alt-screen", "-c", "check_for_update_on_startup=false",
-                 *PROJE_BELGESI_KAPALI,
+                 *OFIS_KURALLARI,
                  "-s", korumali_alan(yazabilir, True),
                  "-a", "never", "--dangerously-bypass-hook-trust",
                  "-c", "hooks.PreToolUse=[{matcher=\"*\",hooks=[{type=\"command\","
@@ -1796,7 +1801,7 @@ class CodexMotoru(Motor):
                    yazabilir: bool, ek_klasorler: tuple, klasor: str,
                    mcp_yapilandirma: str = "") -> list:
         sandbox = SANDBOX_YAZAR if yazabilir else SANDBOX_OKUR
-        komut = [self.calistirilabilir, "exec", *PROJE_BELGESI_KAPALI]
+        komut = [self.calistirilabilir, "exec", *OFIS_KURALLARI]
         if devam:
             # `codex exec resume <UUID> -`: kimlik motorun, bizim degil.
             komut += ["resume", oturum]

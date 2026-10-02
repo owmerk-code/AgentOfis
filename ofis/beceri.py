@@ -178,7 +178,8 @@ def claude_becerileri() -> list:
     `~/.claude/skills/synced/<hesap>/<ad>/SKILL.md`. Ofis buradan yalniz
     KOPYALAR; patronun klasorune yazmaz.
     """
-    kok = Path.home() / ".claude" / "skills"
+    from .kaynaklar import _claude_ev
+    kok = _claude_ev() / "skills"
     out, var = [], {b["ad"] for b in liste()}
     for md in sorted(kok.glob("*/*/*/SKILL.md")) + sorted(kok.glob("*/SKILL.md")):
         bilgi = on_bilgi(md)
@@ -188,6 +189,59 @@ def claude_becerileri() -> list:
         out.append({"ad": ad, "aciklama": bilgi.get("description", "")[:300],
                     "yol": str(md.parent), "eklenmis": ad in var})
     return out
+
+
+#: Patronun claude.ai becerileri OTOMATIK gelir (02.10.2026 karari: "ne varsa
+#: otomatik gelsin, gerekirse ben kapatirim"). Kaynak salt okunur; degisen
+#: beceri guncellenir; patronun SILDIGI otomatik beceri bir daha eklenmez.
+OTOMATIK = "claude-otomatik"
+_ESITLEME = {"an": 0.0}
+#: Otomatik gelirken KAPALI gelenler (02.10.2026 patron karari: tarayici tek,
+#: gomulu; kisisel Chrome acilmaz; masaustu kapida sorulur). Bunlar ofiste
+#: OLMAYAN araclari (Claude in Chrome, bilgisayar kullanimi) tarif eder ve
+#: ajani bos ugrastirir. Ayarlar'da gorunur; patron isterse acar.
+VARSAYILAN_KAPALI = {"chrome-browser": "kisisel Chrome'u surer (ofiste tarayici: gomulu)",
+                     "built-in-browser": "baska bir uygulamanin tarayicisi (ofiste: gomulu)",
+                     "computer-use": "masaustunu surer (ofiste masaustu isi kapida sorulur)"}
+ESITLEME_ARALIGI_SN = 300
+
+
+def _kaynak_surumu(p: Path) -> float:
+    try:
+        return max((f.stat().st_mtime for f in p.rglob("*") if f.is_file()), default=0.0)
+    except OSError:
+        return 0.0
+
+
+def claude_esitle(*, zorla: bool = False) -> list:
+    """Patronun Claude becerilerini depoya getirir. Doner: yeni eklenenler."""
+    if not zorla and time.time() - _ESITLEME["an"] < ESITLEME_ARALIGI_SN:
+        return []
+    _ESITLEME["an"] = time.time()
+    kayit = _kayit_oku()
+    silinen = set(kayit.get("_silinen") or [])
+    eklenen = []
+    for b in claude_becerileri():
+        ad, src = b["ad"], Path(b["yol"])
+        if ad in silinen:
+            continue
+        surum = _kaynak_surumu(src)
+        durum, p = _yer(ad)
+        try:
+            if durum is None:
+                shutil.copytree(src, _kok() / ("kapali" if ad in VARSAYILAN_KAPALI else "skills") / ad,
+                                ignore=shutil.ignore_patterns("__pycache__", ".git", ISARET))
+                kayit[ad] = {"kaynak": OTOMATIK, "eklendi": _an(), "surum": surum}
+                eklenen.append(ad)
+            elif (durum != "taslak" and (kayit.get(ad) or {}).get("kaynak") == OTOMATIK
+                  and float(kayit[ad].get("surum") or 0) < surum):
+                shutil.rmtree(p)
+                shutil.copytree(src, p, ignore=shutil.ignore_patterns("__pycache__", ".git", ISARET))
+                kayit[ad]["surum"] = surum
+        except OSError:
+            continue                    # bir beceri bozuksa digerleri gelir
+    _kayit_yaz(kayit)
+    return eklenen
 
 
 def kapat(ad: str) -> None:
@@ -210,7 +264,9 @@ def sil(ad: str) -> None:
         raise BeceriHatasi(f"'{ad}' diye bir beceri yok.")
     shutil.rmtree(p)
     kayit = _kayit_oku()
-    kayit.pop(p.name, None)
+    if (kayit.pop(p.name, None) or {}).get("kaynak") == OTOMATIK:
+        # Patron otomatik geleni SILDI: bir daha getirilmez.
+        kayit["_silinen"] = sorted(set(kayit.get("_silinen") or []) | {p.name})
     _kayit_yaz(kayit)
 
 
@@ -300,6 +356,7 @@ def taslak_reddet(ad: str) -> None:
 
 def claude_eklentisi() -> str:
     """Claude'a `--plugin-dir` olarak verilecek klasor; acik beceri yoksa ''."""
+    claude_esitle()
     try:
         if any((p / "SKILL.md").exists() for p in (_kok() / "skills").iterdir()):
             return str(KOK)
@@ -316,6 +373,7 @@ def codex_esitle(codex_evi) -> list:
     cagiran bos listeyle devam eder.
     """
     hedef = Path(codex_evi) / "skills"
+    claude_esitle()
     try:
         acik = {p.name: p for p in (_kok() / "skills").iterdir() if (p / "SKILL.md").exists()}
         hedef.mkdir(parents=True, exist_ok=True)

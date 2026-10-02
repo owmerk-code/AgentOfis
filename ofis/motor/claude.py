@@ -90,7 +90,7 @@ EFOR_CEVRIMI = {"dusuk": "low", "normal": "medium", "yuksek": "high",
 #: DUSUYOR; ikisinde de `rm` durduruldu. Alt ajan ust ajanin arac
 #: sinirini MIRAS alir (yazamayan ajanin alt ajani dosya yazamadi).
 #: Bedel: tur basina ~5.400 jeton (13.907 -> 19.308, cogu onbellekten).
-ALT_AJAN_ARACLARI = "Task,Skill"
+ALT_AJAN_ARACLARI = "Task,Skill,ToolSearch"
 ELLER_ARACLARI = ("Read,Glob,Grep,Edit,Write,Bash,TodoWrite,WebSearch,WebFetch,"
                   + ALT_AJAN_ARACLARI)
 
@@ -128,7 +128,8 @@ KAFA_ARACLARI = "Read,Glob,Grep,WebSearch,WebFetch," + ALT_AJAN_ARACLARI
 #: -- burada "ulasabilir mi", orada "hakki var mi".
 OFIS_ARACLARI = ("mcp__ofis",)
 
-KAFA_IZINLI = ("Read", "Glob", "Grep", "WebSearch", "WebFetch", "Task", "Skill") + OFIS_ARACLARI
+KAFA_IZINLI = ("Read", "Glob", "Grep", "WebSearch", "WebFetch", "Task", "Skill",
+               "ToolSearch") + OFIS_ARACLARI
 
 #: Sorulmadan kosturulabilecek komutlar. OLCULDU: `acceptEdits` dosya
 #: yazmaya izin verir ama komut calistirmaya VERMEZ; izin isteyen Bash
@@ -160,7 +161,7 @@ ELLER_IZINLI = (
     "WebSearch", "WebFetch", "mcp__ofis",
     # Alt ajani BASLATMAK ve beceri yuklemek kendisi bir sey degistirmez;
     # alt ajanin ICINDEKI her cagri kapidan gecer (olculdu).
-    "Task", "Skill",
+    "Task", "Skill", "ToolSearch",
     "Bash(python *)", "Bash(python3 *)", "Bash(py *)",
     "Bash(pytest *)", "Bash(python -m pytest *)", "Bash(python -m *)",
     "Bash(node *)", "Bash(npm test*)", "Bash(npm run *)",
@@ -221,10 +222,16 @@ def claude_pencereleri(bilgi) -> dict | None:
 NOT_BEKLEME_SN = 45.0
 
 TUR_ORTAMI = {
-    "ENABLE_TOOL_SEARCH": "false",          # araclar ertelenmesin, hepsi acik gelsin
-    "ENABLE_CLAUDEAI_MCP_SERVERS": "false", # hesabin connector'lari yuklenmesin
+    # ERTELENMIS YUKLEME + HESABIN BAGLAYICILARI (02.10.2026, patron: "ne
+    # varsa gelsin"). OLCULDU: arama acikken butun baglayicilar 18.848
+    # jeton/tur (kapaliyken 18.611), arama kapaliyken 91.323. Kural ve
+    # kapatilanlar `ofis/kaynaklar.py`.
+    "ENABLE_TOOL_SEARCH": "true",
+    "ENABLE_CLAUDEAI_MCP_SERVERS": "true",
     "CLAUDE_CODE_DISABLE_BACKGROUND_TASKS": "1",  # tur bitince arka is kalmasin
 }
+#: Saf yargi turu (araclar kapali) ve limit okuma baglayici TASIMAZ.
+BAGLAYICISIZ = {"ENABLE_CLAUDEAI_MCP_SERVERS": "false"}
 
 #: Brifingin ustune eklenen kisa durus. Brifing ISI anlatir; bu metin
 #: ajanin hangi evde oldugunu anlatir. Kisa tutuluyor: her jeton brifingin
@@ -475,7 +482,7 @@ class ClaudeMotoru(Motor):
         """
         if not self.calistirilabilir:
             return None
-        ortam = ortam_hazirla(os.environ, ek={**TUR_ORTAMI, **(ek_ortam or {})},
+        ortam = ortam_hazirla(os.environ, ek={**TUR_ORTAMI, **BAGLAYICISIZ, **(ek_ortam or {})},
                               izinli=tuple(ek_ortam or ()))
         import tempfile
         # GECICI KLASOR ELLE silinir (02.10.2026, olculdu): `with
@@ -651,7 +658,9 @@ class ClaudeMotoru(Motor):
         # ihtiyac duymaz; `izinli` bos birakiliyor. Ajanin elinde
         # `Bash(echo *)` var -- gecen her anahtar, terminal kaniti olarak
         # tahtaya dusebilir (bkz. tip.SIR_ONEKLERI).
-        ortam = ortam_hazirla(os.environ, ek={**TUR_ORTAMI, **(ek_ortam or {})},
+        ortam = ortam_hazirla(os.environ, ek={**TUR_ORTAMI,
+                                              **(BAGLAYICISIZ if araclar_kapali else {}),
+                                              **(ek_ortam or {})},
                               izinli=tuple(ek_ortam or ()))
         # Safe mode acik kalirsa kendi MCP yapilandirmamiz da devre disi
         # kalir; turu yalitmanin yolu safe mode degil, acik bayraklar.
@@ -1115,7 +1124,10 @@ class ClaudeMotoru(Motor):
             # Magaza ajani Shopify'i alir, backend ajani almaz. Bu secim
             # gorevle birlikte gelir (`mcp_yapilandirma`), hesabin tamamiyla
             # degil.
-            "--strict-mcp-config",
+            # MCP: saf yargi turu yalniz ofisinkini alir (--strict). Arac
+            # kullanan tur hesabin baglayicilarini ve patronun MCP'lerini
+            # de alir (asagida, `kaynaklar.claude_bayraklari`).
+            *(("--strict-mcp-config",) if araclar_kapali else ()),
             # KISISEL CHROME KAPALI (02.10.2026 OLCULDU): patronun Claude
             # ayari "Claude in Chrome varsayilan acik"; etkilesimli (gercek
             # terminal) kipte ajana 21 `claude-in-chrome` araci geliyordu --
@@ -1135,6 +1147,15 @@ class ClaudeMotoru(Motor):
             _bk = _beceri.claude_eklentisi()
             if _bk:
                 komut += ["--plugin-dir", _bk]
+            # MOTORLARDAN GELENLER: eklentiler, patronun MCP'leri, kapatilan
+            # baglayicilar listeden cikar (olculdu: --disallowedTools ile).
+            from .. import kaynaklar as _kay
+            _kb = _kay.claude_bayraklari()
+            komut += _kb["argv"]
+            if _kb["mcp"]:
+                komut += ["--mcp-config", _kb["mcp"]]
+            if _kb["yasak"]:
+                komut += ["--disallowedTools", *_kb["yasak"]]
         if mcp_yapilandirma:
             komut += ["--mcp-config", mcp_yapilandirma]
             # Ofis araclari da izin ister. Izin listesine ALINMAZSA

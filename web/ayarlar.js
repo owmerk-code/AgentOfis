@@ -10,7 +10,8 @@
 const AYAR_BOLUMLERI = [
   ["entegrasyon", "Entegrasyonlar"],
   ["beceri", "Beceriler"],
-  ["takim", "Takımlar ve izinler"],
+  ["kaynak", "Eklentiler ve MCP"],
+  ["takim", "Takımlar"],
   ["modeller", "Hesaplar ve modeller"],
   ["calisma", "Çalışma"],
   ["bildirim", "Bildirimler"],
@@ -71,7 +72,7 @@ async function ayarlarCiz() {
   govde.append(el("h2", "ayarlar-bolum-baslik", ad[1]));
   if ((AYAR.veri.hatalar || []).length)
     govde.append(el("div", "form-ipucu uyari", "Okunamayan: " + AYAR.veri.hatalar.join(" · ")));
-  const ciz = { entegrasyon: ayarEntegrasyon, beceri: ayarBeceri, takim: ayarTakim, modeller: ayarModeller,
+  const ciz = { entegrasyon: ayarEntegrasyon, beceri: ayarBeceri, kaynak: ayarKaynak, takim: ayarTakim, modeller: ayarModeller,
                 calisma: ayarCalisma, bildirim: ayarBildirim, guvenlik: ayarGuvenlik,
                 yedek: ayarYedek }[ad[0]];
   const taze = AYAR.taze; AYAR.taze = false;
@@ -154,6 +155,16 @@ function entegrasyonKarti(k) {
   c.append(ust, el("div", "ent-alt", `${k.kategori} · ${k.kaynak}`));
   if (k.ayrinti) c.append(el("div", "ent-ayrinti", k.ayrinti));
   c.append(el("div", "ent-risk", k.risk));
+  if (k.grup) {
+    const s = el("div", "ent-ajan");
+    s.append(el("span", "ent-alt", "ajanlara açık "),
+      ayarAnahtar(k.ajanlara_acik, async (a) => {
+        try { await yolla("/api/kaynaklar", { grup: k.grup, ad: k.ad, acik: a }); }
+        catch (e) { bildir(String(e.message || e).slice(0, 200), "kotu"); }
+        ayarlarCiz();
+      }));
+    c.append(s);
+  }
   const dug = el("div", "ent-dugmeler");
   const yer = el("div", "ent-yonerge");
   const yonerge = (baslik, adimlar) => {
@@ -243,36 +254,13 @@ function ayarAnahtarlar(kap, r) {
 }
 
 async function ayarTakim(kap, v) {
-  kap.append(el("div", "ayar-aciklama",
-    "İşaretlediğin bağlayıcıyı o takımın lideri işe kendisi verebilir; sana ayrıca sorulmaz. " +
-    "İşaretlemediğin bağlayıcı o takımın işine verilmez (ajan gerekirse senden ister). " +
-    "Bağlayıcının içindeki riskli adım (yayına alma, gönderme, silme, para) her durumda sorulur."));
-  let ent = { kartlar: [] };
-  try { ent = await al("/api/entegrasyon"); } catch (_) {}
-  const baglar = ent.kartlar.filter((k) => k.kaynak === "claude.ai bağlayıcısı" && k.durum !== "hesapta_yok");
+  // Baglayici/eklenti/beceri artik HERKESE acik (02.10.2026 patron karari);
+  // takim basina izin kaldirildi. Kapatmak: Entegrasyonlar ve Eklentiler.
   for (const t of v.takimlar) {
     ayarAltBaslik(kap, t.ad);
     ayarSatir(kap, "Lider", "", el("span", "ayar-deger", t.lider || "lider yok"));
     ayarSatir(kap, "Ajanlar", "",
       el("span", "ayar-deger uzun", t.ajanlar.map((a) => `${a.ad} (${a.meslek}, ${a.motor})`).join(" · ") || "—"));
-    const kutu = el("div", "takim-izin");
-    const secili = new Set(t.izinli);
-    for (const b of baglar) {
-      const et = el("label", "takim-izin-oge");
-      const cb = el("input"); cb.type = "checkbox"; cb.checked = secili.has(b.ad);
-      cb.onchange = () => {
-        if (cb.checked) secili.add(b.ad); else secili.delete(b.ad);
-        ayarYaz("takim_izni", { kanat_id: t.id, adlar: [...secili] },
-                `${t.ad}: ${b.ad} ${cb.checked ? "izinli" : "izinsiz"}`);
-      };
-      et.append(cb, document.createTextNode(" " + b.ad));
-      if (b.durum !== "bagli") et.append(el("span", "ent-alt", " (" + (ENT_DURUM[b.durum] || [b.durum])[0] + ")"));
-      kutu.append(et);
-    }
-    // Olcumde gorunmeyen eski izinler de gorunur (sessizce kaybolmasin).
-    for (const ad of t.izinli.filter((a) => !baglar.some((b) => b.ad === a)))
-      kutu.append(el("span", "takim-izin-oge uyari", ad + " (ölçümde yok)"));
-    ayarSatir(kap, "Bağlayıcı izni", baglar.length ? "" : "bağlayıcı ölçülemedi", kutu);
   }
   ayarAltBaslik(kap, "Klasörler");
   kap.append(el("div", "ayar-aciklama",
@@ -281,6 +269,63 @@ async function ayarTakim(kap, v) {
   for (const t of v.takimlar)
     for (const a of t.ajanlar)
       ayarSatir(kap, `${a.ad} · ${t.ad}`, "", el("span", "ayar-deger uzun", a.klasor || "—"));
+}
+
+/* -- Eklentiler ve MCP (02.10.2026): motorlarda ne varsa, varsayilan ACIK --- */
+
+async function ayarKaynak(kap, _v, taze) {
+  kap.append(el("div", "ayar-aciklama",
+    "Claude Code ve Codex'te ne varsa ajanlara da gelir; varsayılan açık, istemediğini kapat. " +
+    "Girişi olmayan bir bağlantıyı ajan kullanmak isterse giriş ister. Kendi Chrome'un açılmaz, " +
+    "tarayıcı işi ofisin gömülü tarayıcısında yapılır; masaüstü işi her seferinde sorulur."));
+  let r;
+  try { r = await al("/api/kaynaklar" + (taze ? "?taze=1" : "")); }
+  catch (e) { kap.append(el("div", "form-ipucu uyari", "okunamadı: " + e.message)); return; }
+  const yaz = async (govde) => {
+    try { await yolla("/api/kaynaklar", govde); } catch (e) { bildir(String(e.message || e).slice(0, 200), "kotu"); }
+    ayarlarCiz();
+  };
+  ayarAltBaslik(kap, "Claude eklentileri");
+  if (!r.claude_eklenti.length) kap.append(el("div", "bos-yazi", "Claude hesabında eklenti yok."));
+  for (const e of r.claude_eklenti) {
+    let k;
+    if (e.kancali && !e.kanca_onayli) {
+      k = el("button", "dugme", "kancayı onayla ve aç");
+      k.title = "Bu eklentinin kancası (hook) onay kapısının görmediği otomatik komut çalıştırır.";
+      k.onclick = () => { if (confirm(`${e.ad} eklentisinin kancası onay kapısının dışında çalışır. Açılsın mı?`)) yaz({ ad: e.ad, kanca_onay: true }); };
+    } else k = ayarAnahtar(e.acik, (a) => yaz({ grup: "claude_eklenti", ad: e.ad, acik: a }));
+    ayarSatir(kap, e.ad, `${e.aciklama} · ${e.beceri} beceri` + (e.mcp.length ? ` · ${e.mcp.length} bağlantı` : "") +
+              (e.kancali ? " · KANCALI" : ""), k);
+  }
+  ayarAltBaslik(kap, "Claude Code'daki kendi MCP'lerin");
+  if (!r.claude_mcp.length) kap.append(el("div", "bos-yazi", "Kendi MCP'in yok."));
+  for (const m of r.claude_mcp)
+    ayarSatir(kap, m.ad, m.cikarildi || `${m.tur} · ${m.adres}`,
+      ayarAnahtar(m.acik, (a) => yaz({ grup: "claude_mcp", ad: m.ad, acik: a }), m.cikarildi || ""));
+  ayarAltBaslik(kap, "Codex eklentileri (ofisin Codex hesabı)");
+  const kurulu = r.codex_eklenti.filter((e) => e.kurulu);
+  const katalog = r.codex_eklenti.filter((e) => !e.kurulu);
+  const codex = async (ad, kaldir) => {
+    try { await yolla("/api/kaynaklar/codex", { ad, kaldir }); bildir(`${ad} ${kaldir ? "kaldırıldı" : "kuruldu"}`, "iyi"); }
+    catch (e) { bildir(String(e.message || e).slice(0, 200), "kotu"); }
+    AYAR.taze = true; ayarlarCiz();
+  };
+  for (const e of kurulu) {
+    const b = el("button", "dugme olumsuz", "kaldır"); b.onclick = () => codex(e.ad, true);
+    ayarSatir(kap, e.ad, `kurulu · ${e.acik ? "açık" : "kapalı"} · ${e.surum}`, b);
+  }
+  if (katalog.length) {
+    const d = el("details");
+    d.append(el("summary", null, `Katalogda kurulmamış ${katalog.length} eklenti`));
+    for (const e of katalog) {
+      const s = el("div", "ayar-satir");
+      const b = el("button", "dugme", "kur"); b.onclick = () => codex(e.ad, false);
+      s.append(el("span", "ayar-sol", e.ad), b);
+      d.append(s);
+    }
+    kap.append(d);
+  }
+  kap.append(el("div", "ayar-aciklama", "Codex eklentisinin çalışması için ofisin Codex hesabında (ChatGPT) o bağlantının bağlı olması gerekir."));
 }
 
 /* -- Beceriler (02.10.2026): GENEL, tek tek kapatilir; ajan taslak onerir --- */

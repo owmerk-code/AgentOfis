@@ -188,8 +188,20 @@ sina("permission-prompts none", "none" == eller[eller.index("--permission-prompt
 sina("restricted acik", "--restricted" in eller)
 # Olculmus hata: bu bayrak olmadan hesabin butun connector'lari ajanin
 # baglamina yukleniyor ve tur brifingi okumadan 53.831 jetonda dusuyor.
-sina("strict-mcp-config acik (baglam patlamasin)", "--strict-mcp-config" in eller)
-sina("MCP verilmezse hicbiri yuklenmiyor", "--mcp-config" not in eller)
+# 02.10.2026: arac kullanan tur hesabin baglayicilarini ERTELENMIS yukler
+# (olculdu: 18.848 jeton/tur); strict yalniz saf yargi turunda kalir.
+sina("arac kullanan turda strict YOK (hesabin baglayicilari gelir)",
+     "--strict-mcp-config" not in eller)
+sina("kullanicinin MCP'si yokken ek MCP yapilandirmasi yok", "--mcp-config" not in eller)
+_saf = cm._komut_kur("11111111-1111-1111-1111-111111111111", devam=False, model="",
+                     efor="normal", yazabilir=False, ek_klasorler=(), butce_usd=None,
+                     araclar_kapali=True)
+sina("saf yargi turunda strict VAR (baglayicisiz)", "--strict-mcp-config" in _saf)
+from ofis.motor import claude as _CLM  # noqa: E402
+sina("ertelenmis yukleme + hesabin baglayicilari acik",
+     _CLM.TUR_ORTAMI["ENABLE_TOOL_SEARCH"] == "true"
+     and _CLM.TUR_ORTAMI["ENABLE_CLAUDEAI_MCP_SERVERS"] == "true"
+     and _CLM.BAGLAYICISIZ["ENABLE_CLAUDEAI_MCP_SERVERS"] == "false")
 mcpli = cm._komut_kur("11111111-1111-1111-1111-111111111111", devam=False,
                       model="", efor="normal", yazabilir=True,
                       ek_klasorler=(), butce_usd=None,

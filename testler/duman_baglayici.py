@@ -102,9 +102,9 @@ sina("bos ozet 'odenmiyor' diyor", "odenmiyor" in B.ozet([]))
 print("")
 print("3. bildirim bir SUZGEC OLMADIGINI soyluyor mu")
 oz = B.ozet(["Shopify"])
-sina("ozet 'TUMU yukleniyor' diyor", "TUM" in oz, oz)
-sina("ozet olculmus bedeli soyluyor", str(B.OLCULEN_EK_JETON // 1000) in oz
-     or "95" in oz, oz)
+# 02.10.2026: hesabin baglayicilari her turda ERTELENMIS yuklu; ozet bunu soyler.
+sina("ozet 'ertelenmis yuklu' diyor", "ERTELENMIS" in oz, oz)
+sina("ozet isin niyetini yaziyor", "Shopify" in oz, oz)
 sina("olculen bedel gercekci (>50k)", B.OLCULEN_EK_JETON > 50_000)
 
 
@@ -207,15 +207,13 @@ try:
     ofis.kadro.motor_ayarla("cinar", model="haiku")
     g_dar = ofis.tahta.gorev_ac("dar pencere", neden="n", ana_hedef="h",
                                 kabul_olcutu="k", baglayicilar=["Shopify"])
+    # 02.10.2026: ertelenmis yuklemeyle haiku butun baglayicilarla 18.848
+    # jeton/tur kosar (olculdu) -- dar pencere engeli KALKTI.
     try:
         Koltuk(ofis, motor_fabrikasi=_f).kos(g_dar["no"], "cinar")
-        sina("haiku + baglayici REDDEDILIYOR", False, "-- kabul edildi!")
+        sina("haiku + baglayici artik KABUL (ertelenmis yukleme)", True)
     except Exception as _dexc:
-        sina("haiku + baglayici REDDEDILIYOR", "SIGMAZ" in str(_dexc),
-             str(_dexc)[:120])
-        # Teshis koyup CARE soylemeyen gosterge, insani bir kez daha
-        # dusundurur.
-        sina("ret CAREYI soyluyor", "ajan degistir" in str(_dexc))
+        sina("haiku + baglayici artik KABUL (ertelenmis yukleme)", False, str(_dexc)[:160])
     ofis.kadro.motor_ayarla("cinar", model="sonnet")
     # Ters yon: genis pencerede ayni is GECMELI, yoksa "her seyi
     # reddeden" bir kapi da sinamayi gecerdi.

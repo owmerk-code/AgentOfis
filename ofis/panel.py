@@ -1443,6 +1443,54 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
                       ajan_ad="insan")
         return {"silindi": ad.upper()}
 
+    # -- MOTORLARDAN GELENLER (02.10.2026): kural ofis/kaynaklar.py ---------
+    @uygulama.get("/api/kaynaklar")
+    def api_kaynaklar(taze: int = 0):
+        from . import kaynaklar as _ky
+        from .motor.codex import CodexMotoru
+        def _ozet(t):
+            # MCP tanimi baslik/ortam (anahtar) tasiyabilir: panele YALNIZ tur+adres.
+            t = t or {}
+            return {"tur": t.get("type") or ("komut" if t.get("command") else ""),
+                    "adres": t.get("url") or t.get("command") or ""}
+        return {
+            "claude_eklenti": [{k: v for k, v in e.items() if k != "yol"}
+                               for e in _ky.claude_eklentileri()],
+            "claude_mcp": [{"ad": m["ad"], "acik": m["acik"], "cikarildi": m["cikarildi"],
+                            **_ozet(m["tanim"])} for m in _ky.claude_mcpleri()],
+            "codex_eklenti": _ky.codex_eklentileri(CodexMotoru._ev_bul(), taze=bool(taze)),
+        }
+
+    @uygulama.post("/api/kaynaklar")
+    def api_kaynak_ayarla(govde: dict):
+        from . import kaynaklar as _ky
+        o = ofis_ac()
+        try:
+            if govde.get("kanca_onay") is not None:
+                _ky.kanca_onayla(str(govde.get("ad") or ""), bool(govde["kanca_onay"]))
+            else:
+                _ky.ayarla(str(govde.get("grup") or ""), str(govde.get("ad") or ""),
+                           bool(govde.get("acik")))
+        except _ky.KaynakHatasi as exc:
+            raise HTTPException(400, str(exc))
+        o.db.olay_yaz(o.proje_id, "ayar", f"motor kaynagi: {govde}"[:300], ajan_ad="insan")
+        return {"tamam": True}
+
+    @uygulama.post("/api/kaynaklar/codex")
+    def api_codex_eklenti(govde: dict):
+        """Katalogdaki eklentiyi ofisin Codex evine kurar/kaldirir (patronun eylemi)."""
+        from . import kaynaklar as _ky
+        from .motor.codex import CodexMotoru
+        o = ofis_ac()
+        try:
+            r = _ky.codex_kur(str(govde.get("ad") or ""), CodexMotoru._ev_bul(),
+                              kaldir=bool(govde.get("kaldir")))
+        except _ky.KaynakHatasi as exc:
+            raise HTTPException(400, str(exc))
+        o.db.olay_yaz(o.proje_id, "ayar", f"codex eklentisi {'kaldirildi' if govde.get('kaldir') else 'kuruldu'}: "
+                      f"{govde.get('ad')}", ajan_ad="insan")
+        return {"tamam": True, "cikti": r}
+
     # -- BECERILER (02.10.2026): kural ofis/beceri.py ----------------------
     @uygulama.get("/api/beceriler")
     def api_beceriler():
