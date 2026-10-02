@@ -14099,3 +14099,112 @@ tarayıcı TEK: gömülü (tıklama, doldurma, izleme, oyun dahil).
   bayraklarla beceri kullandı. Sınamalar artık patronun `~/.claude`ını değil
   boş klasörü okuyor (`OFIS_CLAUDE_EV`, `_temizlik`).
 `duman_kaynaklar` 28/28 (mutasyonlar yakalandı).
+
+## RAKİP VİDEOSU IgkwSECTjfI OKUNDU (03.10.2026) — hafıza
+
+Kaynak: "Gün 60 | Metaverse Yapay Zeka Ekibi İle AI Ofisim Şirketim | Hedef:
+10.000.000₺ | ARR: 1.347.746₺", Muratify AI, canlı yayın kaydı 02.10.2026
+16:05–20:22 UTC, 4:17:17. Ekranda sürüm: **v0.3.0 · 89b052959** ("Yeni sürüm
+v0.3.1 indirildi · Yeniden başlat"); 2:07'den sonra ikinci yapı **v0.3.0-dev.25 ·
+5885c9a2b · DEV · bulut:…** ("Yeni sürüm v0.3.1 hazır · İndir"). Takımlar MARVEL
+14 · DC 7 · TRANSFORMERS 12 · HUMAN; ofis "17/60 active".
+**Altyazı YOK** (oynatıcıda `captions` null, `timedtext` isteği yok; yayın 2 saat
+önce bitmişti). Yerine: sekme tespitiyle (30 sn arayla 515 küçük kare) Hafıza
+ekranının açık olduğu iki bölüm bulundu (33:44–34:10 ve 1:35:30–1:52:00), orada
+2 sn arayla kare alındı; ayrıca üç bölümün sesi yerel konuşma-tanımayla (faster-
+whisper small, geçici klasörde) döküldü — YouTube altyazısı değil, hatalı olabilir.
+68 kare + `kareler.txt` + `dokum.txt`: `docs/rakip/IgkwSECTjfI/`.
+
+### Hafıza — ekranda görülen (önceki kayıtlarda OLMAYAN)
+- **Kayıt yolu = görev isteminde zorunlu son adım (rica, yapı değil)** (k08, k13):
+  "[HAFIZA — DONE'dan ÖNCEKİ ZORUNLU SON ADIM: Bu görevden öğrendiğin KALICI ve
+  gelecekte faydalı olacak şeyleri (kök-neden, alınan karar, gotcha, kullanıcı
+  tercihi, işe yarayan yaklaşım) spawn'da sana verilen KENDİ hafıza dizinine yaz —
+  tek-gerçek-tek-dosya + frontmatter (`name` + `description`; indeks MEMORY.md
+  bundan OTOMATİK türetilir, elle satır ekleme) + [[link]]. Kod/git'te ZATEN olanı
+  yazma; yeni-kalıcı bir şey yoksa "yeni bilgi yok" deyip geç. Takım geneli bir
+  bilgiyse shared/ hafızaya yaz.]" Onay kapısı görülmedi; ajan doğrudan dosya yazar.
+- **Veri modeli = ajan başına markdown dosyası**: `.agentspace/memory/agents/<ajan>/
+  <ad>.md` + `shared/`; frontmatter `name`, `description`, `metadata: type: project`
+  (yeni kurulumda `type: reference`), `updatedAt`; gövdede tarihli satır +
+  "**How to apply:**" (Claude Code'un kendi hafıza biçimi). Dosyalar proje git
+  deposunun içinde.
+- **Ajanlar gerçekten yazıyor** (k22, Bumblebee): "Hafızaya iki not yazdım: ekibe
+  "boş profilde tur testlerde tıkları yutuyor" tuzağını, kendime de "derleme
+  sürerken src/ altına geçici dosya koyma" notunu." Ratchet (k20): "Hafızaya
+  yazılacak yeni bilgi y[ok]". Yeni kurulumda lider İLK işinde (k47) ürün hatasının
+  geçici çözümünü hafızaya yazdı (`create_task assignee:"ines"` "bilinmeyen ajan"
+  diye reddedildi → "How to apply: … seçsin").
+- **Ekran "Ajan Hafıza Haritası"** (k23): "Ajana göre kümelenmiş · her düğüm bir
+  hafıza, her bağ bir [[link]]". Binlerce düğüm, ajan rengine göre küme; düğüm
+  seçilince bağları vurgulanır (k29). Araç çubuğu (k24, k64, k58): "Hazır — **4154
+  dosya, 18905 parça (15563 tanesi anlamla ara[nabiliyor])** · İndeksi kur · Takım ·
+  hafıza ara…". 24.09'da 2347 dosya / 12169 parçaydı. Ajan başına sayı (k23, kısmen
+  örtülü): Blaster 61 · Bumblebee 271 · Codex-I-Abla 1 · Ironhide 62 · Optimus 197 ·
+  Prowl 151 · Ratchet 232 (öteki satırlar sohbet balonları altında).
+- **Ayrıntı paneli** (k12, k62): başlık (ör. "Agentvoice-Update-Feed"), örtülü bir
+  düğme (okunamadı), **"Yanlış" ve "Düzelt"** düğmeleri, tırnak içinde açıklama,
+  markdown gövde ("## Kısa reçete", bash blok, "Kanıt + ayrıntı: agentdesk/docs/
+  agent-results/ADP-673-bumblebee.md. İlgili: [[…]] · [[…]]"), **"BAĞLI HAFIZALAR
+  17"** listesi. İkinci örnek "Agentdesk-Test-Gate-Blindspots": tek dosyada sürüm
+  etiketli birikim "v33 (PLAN-FIX-01) … v32 (ENG-ACC-P1) … v31 (REL-02 PROD) …"
+  (hepsi sahte yeşil/sahte kırmızı ölçüm tuzakları, görev kimliğiyle).
+- **Unutma/temizleme**: ekranda yok; tek iz k13 — bir ajanın git farkında Batman'ın
+  hafıza dosyası `klip0301-…md` SİLİNİYOR (-61), sebebi görülmedi.
+- Görülmedi: arama sonucu listesi, brifinge kaç kaydın girdiği, isabet ölçümü,
+  "Kurala yükselt"in tıklanması, hafızadan beceriye dönüşüm, Yanlış/Düzelt'in sonucu.
+- Sesten (yerel döküm, 1:30:54–1:31:30, 1:33:18–1:34:21): lider sıradaki göreve
+  gerekmeyen bilgiyi bağlamdan çıkarıyor, ~150K'da oturumu tazeliyor; "Obsidian
+  yok … kendi sistemimiz var".
+
+### Hafıza dışı yeni
+- Görev isteminde iki yeni kural (k08): "[Bu alt-görevi KENDİN yürüt —
+  alt-ajan/subagent AÇMA (Task) …  DONE:st1 · FAIL:st1 <sebep>]" ve
+  "[⛔AgentSpace'i ve öteki çalışanların pane'lerini KAPATMA: killall/pkill/
+  taskkill … ~/.agentspace/keys.env … silme]" — ikisi de rica.
+- Yeni kurulum akışı (dev yapı, İngilizce): "Welcome to AgentSpace" klasör seçimi
+  (k43), "Now it's your turn … Send to the team" (k45), Settings / Voice & Agent X
+  (OpenAI API key, "Also run commands typed in the chat") (k46), **"Yardımcı — İlk
+  10 Dakika 4/10"** kontrol listesi (AI motorunu bağla ✓ · Ofisini kur ✓ · Lidere
+  ilk işini yaz ✓ · Açılan karttan gör · Bir çalışanı işbaşında izle ✓ · İlk sonuç
+  raporunu oku · Ekibine bir skill öğret · Sesle bir iş ver · El kontrolünü dene ·
+  Topluluğa katıl) (k47).
+- Fiyat (k18): Basic $7.50 · Pro $14.50 · Ultra $24.50 /ay (yarı fiyat, LAUNCH50),
+  ömür boyu $149.50; Pro "Sınırsız AI çalışan … Kendi motorun — Claude Code, Codex,
+  Groq, DeepSeek, Kimi".
+
+### Kusurları (ekranda)
+- Hafıza kuralı rica; her istemde uzun bir paragraf (jeton). Ajanlar yazıyor ama
+  kalite kapısı yok: lider ürün hatasını hata olarak değil "uygulama yolu" olarak
+  hafızaya gömdü (k47).
+- Hafıza dosyaları kodla aynı git deposunda: bir ajanın değişiklik kümesi başka
+  ajanın hafıza dosyasını siliyor (k13, -61; aynı kümede +398590 satır log/durum).
+- 18905 parçanın 15563'ü anlamsal aranabiliyor: ~3300 parça indekssiz.
+- Tek dosyada v31…v33 birikim: "tek-gerçek-tek-dosya" kuralı uzun, çok konulu
+  dosyalar üretiyor (k62).
+- Yeni kurulumda isimle iş atama düştü ("bilinmeyen ajan") (k47).
+
+### Bizim için (bellek.py · brifing.py · beceri.py ile)
+1. **Hafızada "Yanlış / Düzelt"** — bizde panelde bilgi için "geçmiş" ve "kurala
+   yükselt" var; insan bilgiyi formdan yeniden yazınca devrilir (`bilgi_ekle`,
+   insan kaynağı), ama tek tık "Yanlış" (kaldır/kapat) YOK. Ajanın yazdığı yanlış
+   bilgiyi kapatma: YARIM. Öncelik 1.
+2. **Hafıza yazımı her işin zorunlu son adımı** — bizde brifingde tetikleyicili
+   ZORUNLU kural + şablon + örnek var (yalnız "değer" öğrenilince), inceleme
+   `BILGI:`/`DERS:`; ajanın "yeni bilgi yok" demesi zorunlu değil. VAR (daha dar).
+   Ölçüm önerisi: gerçek ofiste olgu/ders sayısı şimdi kaç (24.09'da olgu 0'dı).
+3. **Bağlı hafızalar listesi + seçilen düğümün bağları** — bizde çizge ve `[[bağ]]`
+   çipleri VAR; "bu bilgiye kim bağlanıyor" (geri bağ) sayısı YOK.
+4. **Anlamsal arama + "hafıza ara" kutusu** — bizde kelime/önek eşlemesi + bağ bir
+   adım; panelde arama kutusu YOK. Ölçmeden anlamsal aramaya geçilmez (19.09
+   isabet ölçümü sentetikti); önce panelde basit arama: YOK → ucuz.
+5. **Ajan başına hafıza / takım geneli ayrımı** — bizde ders ajan başına (sicil),
+   bilgi proje geneli. VAR.
+6. **Kanıt bağı** — onların kaydı rapor dosyasına işaret ediyor; bizde kaynak
+   "ajan:ad #görev" VAR.
+7. **Hafıza dosyasının başka ajan/commit ile silinmesi** — bizde hafıza SQLite'ta,
+   ajan yazma alanının dışında: VAR (yapı).
+8. **Ürün hatasını hafızaya gömmek** — bizde koruma kapısı yalnız korumayı aşmayı
+   yakalar; "araç hatası → geçici yol" yazısı geçer. Öneri: araç/ofis hatası
+   içeren bilgi yazımı patrona ayrıca bildirilsin (ölçülmeli). YOK.
+9. **İlk 10 dakika kontrol listesi** — YOK (F8/F9 sırası).

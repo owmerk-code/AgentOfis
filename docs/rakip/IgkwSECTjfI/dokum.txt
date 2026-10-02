@@ -1,0 +1,201 @@
+Kaynak: https://www.youtube.com/watch?v=IgkwSECTjfI (Muratify AI, canli yayin kaydi, 02.10.2026 16:05-20:22 UTC, 4:17:17)
+Baslik: "Gun 60 | Metaverse Yapay Zeka Ekibi Ile AI Ofisim Sirketim | Hedef: 10.000.000TL | ARR: 1.347.746TL"
+
+ALTYAZI YOK. Oynaticinin cevabinda `captions` bos (null); ag isteklerinde hic `timedtext` istegi olmadi
+(03.10.2026 00:10 TR saatiyle olculdu; yayin ~2 saat once bitmisti, YouTube otomatik altyazisi uretilmemisti).
+
+Asagidaki parcalar YouTube altyazisi DEGIL: oynaticinin sesi tarayicida kaydedildi (MediaRecorder, sessize alinmis
+video) ve bilgisayarda yerel konusma-tanima ile (faster-whisper "small", int8, gecici klasorde; para yok, hesap yok)
+yaziya dokuldu. Otomatik dokum: ozel adlar ve bazi kelimeler yanlis olabilir. Yalniz uc parca dokuldu (hafiza
+bolumleri): 33:10-34:53, 1:26:00-1:34:45, 1:34:45-1:48:50 (son parcanin cogu yayin arasinda calan sarki, atlandi).
+
+== 0:33:10 - 0:34:53 (Hafiza haritasi ilk kez acildi, 34:00) ==
+0:33:10 AgentSpace, nasıl kurulacak, ilk nasıl başlayacaksın, görev nasıl vereceksin, agent xer'ler nasıl yapacaksın, sesini nasıl yöneteceksin, ondan sonra mcp nasıl bağlarsın şimdi ne bileyim, entegraasyonları nasıl kullanırsın gibi gibi, bu örnek başlıklar var kapak için ama detaylı böyle uzun uzadı ya 15, 20, 30 videoda farklı videolarda farklı videolarda farklı konuları ele alarak, ajan space,
+0:33:40 detaylarını ineceğiz, yani mesela görevler ne yapar, tasarım sekmesi ne yapar, işte ondan sonra ne bileyim kararlar geldi, bu daha aktifleşmedi,
+0:33:49 iniversiyonunda aktifleşecek kararlar geldi, bu ne yapar, anlatabiliyor muyum, bunları göreceğiz hafıza nasıl çalışır ne yapar, burada devasa bir hafıza mı var, bu hafıza ne yapar, ne eder, ne yer ne içer, anladınız mı, kaç çeker kilometrede, bunları işlememiz gerekiyor bir şekilde çünkü çok fazla soruluyor, insanlar çok fazla
+0:34:09 merak ediyor, o yüzden bunları işleyeceğiz, böyle kapak tasarımları çalışması yaptık, şimdi başka ne var mesela bak, Windows testleri için bana rapor hazırlıyor bak, siz bir şey yapacaksanız bunu da söyleyeyim, bir şey yapacaksanız size yapay zeker rehber hazırlasın,
+0:34:27 desin ki, salı anlatır gibi bak, dostum şu linki aç, şu arayüzde şuraya gir, şuraya tıkla, bunu soralım söylesin, hatta bunun için bir sistem geliştiriyorum şimdi, orası birazcık spoydur olacak ama
+0:34:40 4 ve 500 karakterlik bilan satırlarında sohbet kartı artık 3 düğmenin hepsini ve önerilen etiketini gösteriyor, birim ve E2 testleri tabanda, kirmizi, düzeltme ile yeşil, bana bakın, Agent X şu an bana bilgi veriyor dostlar, görüyor musunuz, mesela bak, burada geliştirmeler yapıldıkça bana bilgi veriyor,
+
+== 1:26:00 - 1:34:45 (soru-cevap; hafiza/Obsidian sorusu) ==
+1:26:00 sistemleri, raporlar, kararlar sistemi geldi, hafıza var, hafıza kendi yapısına uygun çalışıyor.
+1:26:07 Sadece ofis görmüyorsun mesela, istersen ofis görüyorsun böyle değil mi?
+1:26:11 Ama ben belki teknik olarak müdahale etmek istiyorum ya da bazı şeyleri mümkün kılmak istiyorum.
+1:26:18 O zaman terminale geçeceğim değil mi?
+1:26:21 Bunu yapamazsan nasıl işi yapacaksın abi o zaman?
+1:26:24 Bu arada bakın bak göreve tıklayabiliyorum buradan.
+1:26:27 Tıkladım onunla ilgili görevi açtı.
+1:26:29 Bu görevin kapsamı neymiş? Bunların hepsi kayıt altında.
+1:26:32 Yani kaybolan hiçbir şey yok.
+1:26:37 İkisinin arasında çok fazla fark var dostlar o yüzden, öyle söyleyeyim size.
+1:26:41 Şimdi mesela OpenAI Dats çıktı bak, o da aynısı.
+1:26:45 Bu OpenAI Dats mesela ben bunları yerinde olsam çoktan yapmıştım bunu.
+1:26:49 Benim vizyonumla mesela ben 5 ay önce tek başıma yapmışım.
+1:26:53 Bu adamlar Koskoca AI firması, Koskoca Elim Mask daha yeni yapıyorlar bunu.
+1:26:59 Öyle düşün yani.
+1:27:01 Belki de yaptılar, duyurmalar orasını bilemem ama duyurduklarına göre.
+1:27:05 Sonuçta yeni çıkan bir şey.
+1:27:07 Ve bunlar için Koskoca ekipler çalışıyor.
+1:27:10 Benim aklım almıyor mesela Koskoca ekipler nasıl olur da böyle bir şey yapar.
+1:27:16 Benim vizyonum kimsede yok mu abi ben anlamıyorum.
+1:27:19 Neden yapamıyorlar?
+1:27:20 Çünkü bu ürün dünyaya globale genel e hitap eden bir ürün olmayacağı için diyorlar diye düşünüyorlar.
+1:27:27 Yani sen sonuçta gidip Ahmet'e, Mehmet'e yani şey herkese hitap etsin diye bir şey yapıyorsun.
+1:27:34 O zaman ne yapıyordan bir tane sohbet yapıyor.
+1:27:37 Böyle sohbetten konuşsun diyor.
+1:27:40 Ama bence bu sohbet olayını artık açmamız lazım.
+1:27:45 Sohbet çok yetersiz bence böyle düz sohbet.
+1:27:47 Yani düz sohbet olmamalı.
+1:27:49 Tamam işleri kolaylaştırıyor ama düz sohbetle şuan ki AI'la sen istediğin yere gidemezsin.
+1:27:55 Şuan ki AI o kadar bir güce sahip değil.
+1:28:01 Elimizdeki tuğulları güçlendirmemiz gerekiyor o yüzden.
+1:28:05 Aradaki fark böyle dostlar.
+1:28:11 Ve burada temel farklı adamın bir tanesinde söyledim mi hatırlamıyorum ama yani burada mesela sadece GPT modellerini kullanabiliyorsun.
+1:28:19 Mesela kıladığı burada kullanabilir misin?
+1:28:21 Hayır.
+1:28:22 Veya burada arkada cursor'a bağlı cursor artık ne support ediyorsa onu kullanıyorsun.
+1:28:29 Kılad varsa kılad işte ne bileyim.
+1:28:31 Grock modellerini falan.
+1:28:37 Onları sonra bir arada kullanıyorum nasıl kullanıyorum.
+1:28:40 Yani bu tarz detaylar var dostlar işte.
+1:28:42 Peki VP olarak hangisini önerisin?
+1:28:51 Hangisi derken?
+1:28:53 Agent Space'de gereksiz tokun harcaması olmasın diye 2-3 dakikada bir yapılan işleri inceleyen ve gereksiz şeyler yaptığı düşünüldüğünde sana biliren bir agent kurulabilir mi?
+1:29:01 Ve bu mantıklı mı?
+1:29:05 Gereksiz şeyler yaptığını düşünün.
+1:29:07 Dostum o iş şöyle çalışıyor.
+1:29:09 Gereksiz bir şey yapmıyorsun zaten.
+1:29:11 Onun mantığı şu.
+1:29:13 Bakın dostlar gereksiz bir şey yapmamak için öncesinde şöyle bir aşamadan geçiyorsun.
+1:29:19 Ajan'a görevi verdiğinde lideri, lider gidip araştırma yaparsa yani seni yanlışı olsakmamak için önce araştırma yapar.
+1:29:28 Der ki biz hangi yoldan gitmeliyiz?
+1:29:31 Sonra yolu belirler ve senin için planlama çıkarır.
+1:29:35 Der ki bak biz işte bu görevleri bu görevleri yaparsak bu sonucu ulaşırız.
+1:29:40 En ideal senaryo budur.
+1:29:42 O yüzden boş yapmamış oluyorsun.
+1:29:44 O şeyi de araştırmayı da filanlamayı da senin taleplerine göre açar.
+1:29:49 Yani sen dersen ki ben işte şöyle bir uygulama istiyorum.
+1:29:53 Rengi kırmızı olsun.
+1:29:55 İşte şekli yuvarlak olsun falan.
+1:29:58 Hani nasıl tanımlarsan sana sorarak o şekilde bir uygulama yapacak.
+1:30:03 O yüzden ona göre plan çıkaracak.
+1:30:05 O yüzden gereksiz bir şey olma ihtimali yok.
+1:30:07 Bir de onun haricinde tokun optimizasyonu mekanizmalar var.
+1:30:12 Mesela burada bu adam şimdi 150K tokun yapmış.
+1:30:15 Değil mi?
+1:30:16 Bu seyşinde bak.
+1:30:17 Şu reçet.
+1:30:18 Şimdi reçetin 150K ayaklarını gördüğü için bunu biraz sonra kapatacak.
+1:30:21 Oturumunu tazeleyecek.
+1:30:23 Kendini oturum tazeleme özeti bıraklayacak.
+1:30:25 Ve yeniden başlatıp öyle görevi verecek.
+1:30:28 Görevleri verirken de optimizasyonu yapmak için oturumu tazeliyor.
+1:30:33 Daha fazla tokun yakmasını diye sıfırdan başlatıyor.
+1:30:37 Çünkü orada konteks büyüdükçe konteks çeşiyor yani.
+1:30:41 Yani bağlamda bilgi bir iki mi artıyor.
+1:30:45 Bu sefer ne oluyor bilgi bir iki mi arttın ne?
+1:30:47 Sen her prompt derdinde abi bütün bilgiyi okuyor.
+1:30:50 Bütün bilgiyi okuduğu için ne oluyor?
+1:30:53 Çok fazla tokun yakıyor.
+1:30:54 Ama sen bilgiyi seyreltirsen ihtiyacın olmayan bütün bilgileri aradan çıkarırsan
+1:31:00 Bu sefer tokun harcamayacaktır o kadar.
+1:31:03 Çünkü sen ihtiyacın olmayan bilgileri dışarıya atmışsındır.
+1:31:06 İşte lider olduğu için lider senin hangi bilgiye ihtiyacın var.
+1:31:09 Hangisine yok biliyor çünkü planını yapmışsın.
+1:31:12 Plan belli olduğu için sıradaki görev neyse sıradaki görevi biliyor.
+1:31:17 Sıradaki görev de diyor ki bu bilgiye gerek yok.
+1:31:20 O zaman bunu yap.
+1:31:21 Bu şeyi silelim diyor bu bilgiyi hafızadan şeyden hafız ediyorum.
+1:31:25 Konteksten.
+1:31:27 Böylelikle kontekstin seni şişmiyor bu ajanlardan.
+1:31:30 Şişmediği için ajanlar daha az tokun yakıyor.
+1:31:33 Bilmem anlatabildim mantığını.
+1:31:35 Bu şekilde hem iki yönlü farklı farklı şeyler var.
+1:31:41 Tokun optimizasyonu var.
+1:31:44 Lider rolünü verdiğimiz ajan otomatik olarak bana bunları söylüyor mu?
+1:31:50 Yoksa benim ona mı planları ilerle diye söylemem gerekiyor.
+1:31:53 Dostum şöyle.
+1:31:54 Şimdi özellikle yeni yapıda sistemler daha da oturdu.
+1:31:58 Sen mesela lideri dedin ki örnek olarak bana kitap takip uygulaması yap.
+1:32:04 Dümdüz böyle söyledin.
+1:32:06 Kitap takip uygulaması yap.
+1:32:08 O kendisi görevin büyüklüğünü algılıyor mesela.
+1:32:11 Şunu dersen işte bana bir cümle yaz dersen ne yapar kısa bir görev.
+1:32:15 Hemen yapar onu görevler oluşturmasına gerek yoktur.
+1:32:18 Ama bana bir kitap takip uygulaması yap dersen orta ölecek bir mekanizmle çalışır.
+1:32:22 Nedir abi?
+1:32:24 Ufak bir araştırma yapayım.
+1:32:26 Bir plan yapayım görevlerini açayım.
+1:32:28 Sonra ekibe dağıtayım.
+1:32:29 Otomatik onu diyecektir.
+1:32:31 Sonra sonuç bittikten sonra sana raporlayacaktır.
+1:32:35 Ekstra olarak teste falan sokuyor.
+1:32:37 Mesela gerçek proje istiyorsan.
+1:32:40 Ara yüzü test ediyor.
+1:32:42 Sana istediğin gerçekleştikten sonra veriyor.
+1:32:44 Mesela bakıyor.
+1:32:45 Omksiyonalitesini test ediyor.
+1:32:47 Ondan sonra diyor ki tamam sen istediğin gibi çalışıyor.
+1:32:49 Tamam vereyim sana diyor.
+1:32:51 Ya da otopilot çalışmak istiyorsan görevleri tanınarsın.
+1:32:58 Otopilot istiyorsan görevleri tamamen tanınıldıktan sonra otopilot yap dediğinde.
+1:33:03 Lider hiç durmadan o görevleri sonuna kadar otopilotta sürekli ajanları veriyor.
+1:33:10 Tekrar takip video ajanları veriyor.
+1:33:11 Sürekli döngü içerisinde döndürüyor.
+1:33:13 Bunların hepsi otomatik işte.
+1:33:18 Arka planını bizi ve yaptığımız işleri hatırlayabilmesi ve otomize edebilmesi için obsiden kullanıyor.
+1:33:24 Yok dostum obsiden falan yok.
+1:33:26 Obsiden birazcık ağız alışkanlığı gibi oldu artık şu an.
+1:33:29 Herkes obsiden diyor da obsiden önemli bir şey değil dostlar.
+1:33:34 Obsiden'e çok takılmayın.
+1:33:36 Ben şimdi çok duyduğum için söylüyorum.
+1:33:38 Herkes şimdi ilk akla gelen obsiden oldu.
+1:33:40 Dostlar obsiden dünyada tek değil.
+1:33:43 Obsiden var olmadan önce hafızada sistemi vardı.
+1:33:46 Ya da ne bileyim bu hafızada için konuştuğumuz için söylüyorum.
+1:33:50 Yani obsiden olayına abartan kişiler
+1:33:54 sosyal medyada içerik üreten kişiler
+1:33:57 ve bunlar da globaldeki popüleriterin kurbanı.
+1:34:00 Şimdi bunu neden söylüyorum.
+1:34:02 Herkes obsiden diye o yüzden söylüyorum.
+1:34:04 Senin sorun içinde dostum obsiden değil de kendi sistemimiz var.
+1:34:09 Ahmet öyle yani.
+1:34:17 Yani aynı obsiden ekstra bir şey.
+1:34:19 Ne koymuş oluyor ortaya?
+1:34:21 Kendi sistemi var.
+1:34:20 Ne koymuş oluyor ortaya? Kendi sistemim var hafifcisinin. Farklı bir şey.
+1:34:24 Ben onu istediğim gibi ayarlamakla uğraşamam yani.
+1:34:28 Burada benim sıfırdan kendine oturttuğum bir sistem var.
+1:34:34 Sistem bu şekilde çalışıyor.
+1:34:38 Zaman alip anlatan için teşekkür ederim. Rica ederim dostum. Ne demek?
+1:34:45 Şimdi dostlar.
+1:35:14 Yayın 1,5 saat olmuş.
+1:35:22 Daha az geçmişsiniz ama ya. Çok geçtiği gibi geldi bana.
+1:35:28 Çok dikkatçı bir yöntü oldu.
+
+== 1:35:30 - 1:48:50: yayin arasi, 'Burasi Muratify' sarkisi; tekrar eden sarki sozleri atlandi. Sondaki konusma: ==
+1:47:02 burası muratify ai
+1:47:04 burda geleceği inşa ediyoruz dostlar
+1:47:06 ya da gelecek bizi inşa ediyor bakalım
+1:47:08 ettirini kurduk
+1:47:14 robot yapıyoruz durmuyor sistem
+1:47:23 marka muratify
+1:47:26 geleceği inşa etme
+1:47:28 burası muratify ai
+1:47:41 obsidiyanın
+1:47:43 gereksiz olduğunu kulağı açıkladı
+1:47:45 zaten burası muratify
+1:47:47 burası muratify
+1:47:49 burası muratify
+1:47:51 burası muratify
+1:47:59 eksiz olduğunu kulağı açıkladı
+1:48:01 zaten bu aya eğilim tanrıs
+1:48:03 delan fikri
+1:48:05 biz de onu konuşuyorduk dostum
+1:48:07 vallaha bolkan
+1:48:11 neyse ki obsiden kullanmıyoruz
+1:48:15 biz de onu konuşuyorduk
+1:48:37 burası muratify ai
+1:48:41 gece gündüz çalışır sessizce
+1:48:43 burası muratify ai
+1:48:47 evet dostlar burası muratify ai

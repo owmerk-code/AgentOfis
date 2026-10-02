@@ -1,0 +1,72 @@
+Kare dizini (videodaki saniye -> dosya). 1920x1080 ekran goruntusu, oynatici kontrolleri ve sohbet gizli.
+k01-k53 ilk tur (seyrek tarama + hafiza bolumleri), k54-k68 hafiza bolumlerinde 2 sn arayla ek kareler.
+Hafiza ekraninin gorundugu bolumler (sekme tespiti, 30 sn arayla): 33:44-34:10 ve 1:35:30-1:52:00.
+
+k01.jpg  0:01:00  (60 sn)
+k02.jpg  0:04:00  (240 sn)
+k03.jpg  0:07:00  (420 sn)
+k04.jpg  0:10:00  (600 sn)
+k05.jpg  0:13:00  (780 sn)
+k06.jpg  0:19:00  (1140 sn)
+k07.jpg  0:22:00  (1320 sn)
+k08.jpg  0:25:00  (1500 sn)  -- terminal: gorev istemine eklenen [HAFIZA - DONE'dan ONCEKI ZORUNLU SON ADIM ...] kurali (Ratchet)
+k09.jpg  0:33:44  (2024 sn)
+k10.jpg  0:33:52  (2032 sn)
+k11.jpg  0:33:56  (2036 sn)
+k12.jpg  0:34:02  (2042 sn)  -- Ajan Hafiza Haritasi + ayrinti paneli 'Agentvoice-Update-Feed' (Yanlis / Duzelt, BAGLI HAFIZALAR 17)
+k13.jpg  0:34:06  (2046 sn)  -- terminal: git farkinda .agentspace/memory/agents/batman/klip0301-...md SILINIYOR (-61), frontmatter gorunur
+k14.jpg  0:34:08  (2048 sn)
+k15.jpg  0:37:00  (2220 sn)
+k16.jpg  0:46:00  (2760 sn)
+k17.jpg  0:58:00  (3480 sn)
+k18.jpg  1:22:00  (4920 sn)  -- fiyat sayfasi (Basic/Pro/Ultra, LAUNCH50)
+k19.jpg  1:25:00  (5100 sn)
+k20.jpg  1:34:00  (5640 sn)  -- takim sohbeti + terminaller; Ratchet 'Hafizaya yazilacak yeni bilgi y[ok]'
+k21.jpg  1:35:00  (5700 sn)
+k22.jpg  1:35:30  (5730 sn)  -- terminaller; Bumblebee 'Hafizaya iki not yazdim: ekibe ... kendime de ...'
+k23.jpg  1:35:34  (5734 sn)  -- Hafiza sekmesi: baslik 'Ajan Hafiza Haritasi', sol altta ajan basina hafiza sayilari
+k24.jpg  1:35:50  (5750 sn)  -- arac cubugu 'Hazir - 4154 dosya, 18905 parca (15563 tanesi anlamla ara...)', tum dugumler
+k25.jpg  1:35:58  (5758 sn)  -- yakinlastirilmis harita, dugum adlari
+k26.jpg  1:36:02  (5762 sn)
+k27.jpg  1:36:04  (5764 sn)
+k28.jpg  1:36:08  (5768 sn)
+k29.jpg  1:36:12  (5772 sn)  -- bir dugum secili: baglari vurgulu (Parallel-Agent-Same-Tree, Memory-Index-Runtime-Go...)
+k30.jpg  1:36:40  (5800 sn)
+k31.jpg  1:37:40  (5860 sn)
+k32.jpg  1:39:40  (5980 sn)
+k33.jpg  1:41:40  (6100 sn)
+k34.jpg  1:43:40  (6220 sn)
+k35.jpg  1:45:40  (6340 sn)
+k36.jpg  1:46:40  (6400 sn)
+k37.jpg  1:47:40  (6460 sn)
+k38.jpg  1:48:20  (6500 sn)
+k39.jpg  1:48:40  (6520 sn)
+k40.jpg  1:50:00  (6600 sn)
+k41.jpg  1:51:00  (6660 sn)
+k42.jpg  1:52:00  (6720 sn)
+k43.jpg  1:59:00  (7140 sn)  -- 'Welcome to AgentSpace' klasor secimi
+k44.jpg  2:07:00  (7620 sn)
+k45.jpg  2:10:00  (7800 sn)  -- yeni kurulum: 'Now it's your turn' ilk is kutusu, URUN HQ ofisi
+k46.jpg  2:13:00  (7980 sn)  -- yeni kurulum: Settings / Voice & Agent X (OpenAI API key, 'Also run commands typed in the chat')
+k47.jpg  2:16:00  (8160 sn)  -- yeni kurulum (dev v0.3.0-dev.25): liderin ilk isinde hafizaya yazdigi dosya + 'Ilk 10 Dakika 4/10' yardimci
+k48.jpg  2:19:00  (8340 sn)
+k49.jpg  3:37:00  (13020 sn)
+k50.jpg  3:43:00  (13380 sn)
+k51.jpg  3:49:00  (13740 sn)
+k52.jpg  4:01:00  (14460 sn)
+k53.jpg  4:13:00  (15180 sn)
+k54.jpg  0:33:48  (2028 sn)
+k55.jpg  0:33:50  (2030 sn)
+k56.jpg  0:33:54  (2034 sn)
+k57.jpg  0:33:58  (2038 sn)
+k58.jpg  0:34:00  (2040 sn)  -- arac cubugu: '...la aranabiliyor) Indeksi kur · Takim · hafiza ara...'
+k59.jpg  0:34:04  (2044 sn)
+k60.jpg  1:35:36  (5736 sn)
+k61.jpg  1:35:40  (5740 sn)
+k62.jpg  1:35:44  (5744 sn)  -- ayrinti paneli 'Agentdesk-Test-Gate-Blindspots' (v33/v32/v31 surum notlari)
+k63.jpg  1:35:48  (5748 sn)
+k64.jpg  1:35:52  (5752 sn)  -- arac cubugu sayilari (4154 dosya / 18905 parca / 15563)
+k65.jpg  1:35:54  (5754 sn)
+k66.jpg  1:35:56  (5756 sn)
+k67.jpg  1:36:06  (5766 sn)
+k68.jpg  1:36:10  (5770 sn)
