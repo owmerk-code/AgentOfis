@@ -1443,6 +1443,45 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
                       ajan_ad="insan")
         return {"silindi": ad.upper()}
 
+    # -- BECERILER (02.10.2026): kural ofis/beceri.py ----------------------
+    @uygulama.get("/api/beceriler")
+    def api_beceriler():
+        from . import beceri as _bc
+        return {"beceriler": _bc.liste(), "claude": _bc.claude_becerileri()}
+
+    @uygulama.post("/api/beceriler/ekle")
+    def api_beceri_ekle(govde: dict):
+        """Klasorden ya da patronun kendi Claude becerisinden (ad ile) kopyalar."""
+        from . import beceri as _bc
+        o = ofis_ac()
+        try:
+            if govde.get("claude"):
+                kay = next((b for b in _bc.claude_becerileri() if b["ad"] == govde["claude"]), None)
+                if not kay:
+                    raise _bc.BeceriHatasi("Bu adda bir Claude becerin bulunamadi.")
+                r = _bc.klasorden_ekle(kay["yol"], kaynak_adi="claude")
+            else:
+                r = _bc.klasorden_ekle(str(govde.get("yol") or ""), kaynak_adi="klasor")
+        except _bc.BeceriHatasi as exc:
+            raise HTTPException(400, str(exc))
+        o.db.olay_yaz(o.proje_id, "ayar", f"beceri eklendi: {r['ad']}", ajan_ad="insan")
+        return r
+
+    @uygulama.post("/api/beceriler/{ad}/{eylem}")
+    def api_beceri_eylem(ad: str, eylem: str):
+        from . import beceri as _bc
+        islev = {"kapat": _bc.kapat, "ac": _bc.ac, "sil": _bc.sil,
+                 "onayla": _bc.taslak_onayla, "reddet": _bc.taslak_reddet}.get(eylem)
+        if not islev:
+            raise HTTPException(404, "Bilinmeyen eylem.")
+        o = ofis_ac()
+        try:
+            islev(ad)
+        except _bc.BeceriHatasi as exc:
+            raise HTTPException(400, str(exc))
+        o.db.olay_yaz(o.proje_id, "ayar", f"beceri {eylem}: {ad}", ajan_ad="insan")
+        return {"ad": ad, "eylem": eylem}
+
     @uygulama.post("/api/ayarlar/yedek")
     def api_ayarlar_yedek():
         """Simdi yedekle: arkada alinir, sonuc olay olarak duser."""

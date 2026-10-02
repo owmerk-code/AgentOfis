@@ -237,6 +237,25 @@ def arac_bilgi_yaz(oturum: Oturum, args: dict) -> str:
     return f"Bilgi {fiil}: {r['konu']}.{ek}"
 
 
+def arac_beceri_oner(oturum: Oturum, args: dict) -> str:
+    """Beceri TASLAGI (02.10.2026): kanitla gelir, patron onaylarsa yayina girer."""
+    from ofis import beceri
+    if not oturum.ajan_ad:
+        return "HATA: kimliksiz tur -- taslagi kim oneriyor?"
+    try:
+        r = beceri.taslak_yaz(oturum.ofis, ad=str(args.get("ad") or ""),
+                              aciklama=str(args.get("aciklama") or ""),
+                              govde=str(args.get("yordam") or ""),
+                              gorevler=args.get("kanit_isleri") or [],
+                              gerekce=str(args.get("gerekce") or ""),
+                              oneren=oturum.ajan_ad)
+    except beceri.BeceriHatasi as exc:
+        return f"HATA: {exc}"
+    return (f"Beceri taslagi yazildi: {r['ad']} (kanit: "
+            + ", ".join(f"#{n}" for n in r["gorevler"])
+            + "). Patron onaylarsa butun ajanlar kullanir.")
+
+
 def arac_karar_yaz(oturum: Oturum, args: dict) -> str:
     """Gerekce ZORUNLU: gerekcesiz karar alti ay sonra sorgulanamaz."""
     karar = str(args.get("karar") or "").strip()
@@ -1210,6 +1229,27 @@ ARACLAR = [
         "islev": arac_bilgi_yaz,
     },
     {
+        "name": "beceri_oner",
+        "description": (
+            "Tekrar eden, ise yaramis bir yordami BECERI TASLAGI olarak onerir. "
+            "Patron onaylarsa butun ajanlar kullanir. KANIT zorunlu: yordamin "
+            "ise yaradigi kapanmis islerin numaralari. Tek seferlik isi beceri yapma."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "ad": {"type": "string", "description": "kucuk-harf-tireli ad, orn. 'urun-aciklamasi-yaz'"},
+                "aciklama": {"type": "string", "description": "Ne ZAMAN kullanilir, tek cumle."},
+                "yordam": {"type": "string", "description": "Adim adim yordam (markdown)."},
+                "kanit_isleri": {"type": "array", "items": {"type": "integer"},
+                                 "description": "Ise yaradigi KAPANMIS islerin numaralari."},
+                "gerekce": {"type": "string", "description": "Neden beceri olmali."},
+            },
+            "required": ["ad", "aciklama", "yordam", "kanit_isleri"],
+        },
+        "islev": arac_beceri_oner,
+    },
+    {
         "name": "karar_yaz",
         "description": (
             "Kalici bir karari GEREKCESIYLE gunluge yazar. Gerekce "
@@ -1553,6 +1593,15 @@ def yapilandirma(db_yolu: str, proje_id: str, ajan_ad: str,
     }
     if gorev_no is not None:
         ortam["OFIS_GOREV"] = str(gorev_no)
+    # EVIN YOLU DA SUREC SINIRINI GECER (02.10.2026, olculdu): iki motor da
+    # MCP sunucusunu YALNIZ burada yazan ortamla baslatiyor. Gecici evle
+    # (sinama paneli, olcum betigi) kosan ofisin MCP sunucusu GERCEK eve
+    # dusuyordu -- ajanin beceri taslagi gercek depoya yazildi. Hayalet
+    # veritabani dersinin aynisi: surec sinirini gecen her yol acikca verilir.
+    for _ad in ("OFIS_EV", "OFIS_BECERI_KOK", "OFIS_GIZLI_YOLU", "OFIS_GOLGE_KOK",
+                "OFIS_KABIN_KAPI", "OFIS_KABIN_PROFIL"):
+        if os.environ.get(_ad):
+            ortam[_ad] = os.environ[_ad]
     sunucular = {
         SUNUCU_ADI: {
             "command": sys.executable,

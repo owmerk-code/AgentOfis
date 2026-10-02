@@ -1127,6 +1127,14 @@ class ClaudeMotoru(Motor):
             "--append-system-prompt",
             SISTEM_EKI_ORTAK + (KANIT_MCP if mcp_yapilandirma else KANIT_METIN),
         ]
+        # OFISIN BECERILERI (02.10.2026): depo bir Claude eklentisidir;
+        # `--restricted` altinda da yuklenir (olculdu). Saf yargi turu
+        # (araclar kapali) beceri kullanamaz, verilmez.
+        if not araclar_kapali:
+            from .. import beceri as _beceri
+            _bk = _beceri.claude_eklentisi()
+            if _bk:
+                komut += ["--plugin-dir", _bk]
         if mcp_yapilandirma:
             komut += ["--mcp-config", mcp_yapilandirma]
             # Ofis araclari da izin ister. Izin listesine ALINMAZSA

@@ -612,6 +612,10 @@ class CodexMotoru(Motor):
                 gecici.replace(cfg)        # yerinde yazma ATOMIK olmali
         except OSError:
             pass
+        # OFISIN BECERILERI (02.10.2026): `$CODEX_HOME/skills` (olculdu,
+        # codex beceriyi okuyup kullandi). Hata turu durdurmaz.
+        from .. import beceri as _beceri
+        _beceri.codex_esitle(ev)
 
     @staticmethod
     def _calistirilabilir_bul() -> str:
@@ -1624,6 +1628,8 @@ class CodexMotoru(Motor):
             raise MotorHatasi("Kanca yolu bosluk iceriyor; codex kancasi "
                               "tirnaksiz calisir. Tur baslatilmadi.")
         ev = (ek_ortam or {}).get("CODEX_HOME") or self._ev_bul()
+        from .. import beceri as _beceri
+        _beceri.codex_esitle(ev)          # gercek terminalde de ayni beceriler
         # `.CMD` ARACILIGIYLA KOSMAZ. OLCULDU (29.09): `cmd /c codex.CMD`
         # kanca ayarindaki tirnak/koseli parantezleri bozdu ve terminal
         # hic acilmadi -- claude'da bir kez odenen tuzagin aynisi. npm

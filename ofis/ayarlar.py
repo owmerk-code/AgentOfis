@@ -31,6 +31,7 @@ BILDIRIM_TURLERI = {
     "takildi": ("Bir iş takıldı", True),
     "dustu": ("Bir iş düştü / iletilemedi", True),
     "hafiza": ("Hafıza yazısı durduruldu", True),
+    "beceri": ("Ajan bir beceri önerdi", True),
     "zamanli": ("Zamanlanmış iş başladı", True),
     "kesinti": ("Ofis kaldığı yerden sürüyor", True),
 }

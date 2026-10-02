@@ -33,6 +33,8 @@ ve plani reddetti. Artik kopya ofis evinde AJAN BASINA durur
 
 from __future__ import annotations
 
+from .beceri import TASLAK_KURALI as _BECERI_KURALI
+
 import json
 import uuid
 from pathlib import Path
@@ -484,6 +486,8 @@ class Brifing:
                 "(docker-compose.yml)`. "
                 "Ilgili bilgiye `[[konu]]` ile bagla. Gecici is notu YAZMA "
                 "-- o DURUM satirina gider. Arac sende yoksa atla.",
+                "",
+                "**BECERI ONERMEK (istege bagli).** " + _BECERI_KURALI,
             ]
         # DURUM NOTU -- yalniz tam brifingde (olcut ile ayni sebep: devam
         # AYNI oturumda kosar, ajan bunu zaten okudu). Kanal METINDIR,

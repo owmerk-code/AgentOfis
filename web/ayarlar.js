@@ -9,6 +9,7 @@
 
 const AYAR_BOLUMLERI = [
   ["entegrasyon", "Entegrasyonlar"],
+  ["beceri", "Beceriler"],
   ["takim", "Takımlar ve izinler"],
   ["modeller", "Hesaplar ve modeller"],
   ["calisma", "Çalışma"],
@@ -70,7 +71,7 @@ async function ayarlarCiz() {
   govde.append(el("h2", "ayarlar-bolum-baslik", ad[1]));
   if ((AYAR.veri.hatalar || []).length)
     govde.append(el("div", "form-ipucu uyari", "Okunamayan: " + AYAR.veri.hatalar.join(" · ")));
-  const ciz = { entegrasyon: ayarEntegrasyon, takim: ayarTakim, modeller: ayarModeller,
+  const ciz = { entegrasyon: ayarEntegrasyon, beceri: ayarBeceri, takim: ayarTakim, modeller: ayarModeller,
                 calisma: ayarCalisma, bildirim: ayarBildirim, guvenlik: ayarGuvenlik,
                 yedek: ayarYedek }[ad[0]];
   const taze = AYAR.taze; AYAR.taze = false;
@@ -280,6 +281,73 @@ async function ayarTakim(kap, v) {
   for (const t of v.takimlar)
     for (const a of t.ajanlar)
       ayarSatir(kap, `${a.ad} · ${t.ad}`, "", el("span", "ayar-deger uzun", a.klasor || "—"));
+}
+
+/* -- Beceriler (02.10.2026): GENEL, tek tek kapatilir; ajan taslak onerir --- */
+
+async function ayarBeceri(kap) {
+  kap.append(el("div", "ayar-aciklama",
+    "Beceriler bütün ajanlarda açıktır (Claude ve Codex). Her turda yalnız adı ve kısa açıklaması " +
+    "modele gider; ajan işine yarayacaksa tamamını o an açar. İşe yaramayanı kapat. " +
+    "Ajanların önerdiği beceriler kanıtla gelir; sen onaylamadan kullanılmaz. " +
+    "Beceri yalnız talimattır: içindeki her adım yine onay kapısından geçer."));
+  let r;
+  try { r = await al("/api/beceriler"); }
+  catch (e) { kap.append(el("div", "form-ipucu uyari", "okunamadı: " + e.message)); return; }
+  const eylem = async (ad, e, iyi) => {
+    try { await yolla(`/api/beceriler/${encodeURIComponent(ad)}/${e}`, {}); bildir(iyi, "iyi"); }
+    catch (er) { bildir(String(er.message || er).slice(0, 200), "kotu"); }
+    ayarlarCiz();
+  };
+  const taslak = r.beceriler.filter((b) => b.durum === "taslak");
+  if (taslak.length) {
+    ayarAltBaslik(kap, `Onay bekleyen taslaklar (${taslak.length})`);
+    for (const b of taslak) {
+      const k = el("div", "ayar-kontrol");
+      const on = el("button", "dugme olumlu", "Onayla");
+      on.onclick = () => eylem(b.ad, "onayla", `${b.ad} yayında`);
+      const red = el("button", "dugme olumsuz", "Reddet");
+      red.onclick = () => eylem(b.ad, "reddet", `${b.ad} reddedildi`);
+      k.append(on, red);
+      ayarSatir(kap, b.ad, `${b.aciklama} · öneren: ${b.oneren} · kanıt: ` +
+                (b.gorevler || []).map((n) => "#" + n).join(", ") + (b.gerekce ? ` · ${b.gerekce}` : ""), k);
+    }
+  }
+  ayarAltBaslik(kap, "Ofisin becerileri");
+  const yayin = r.beceriler.filter((b) => b.durum !== "taslak");
+  if (!yayin.length) kap.append(el("div", "bos-yazi", "Henüz beceri yok. Aşağıdan kendi Claude becerilerinden ekleyebilirsin."));
+  for (const b of yayin) {
+    const k = el("div", "ayar-kontrol");
+    k.append(ayarAnahtar(b.durum === "acik", (a) => eylem(b.ad, a ? "ac" : "kapat", `${b.ad} ${a ? "açıldı" : "kapatıldı"}`)));
+    const sil = el("button", "dugme olumsuz", "sil");
+    sil.onclick = () => { if (confirm(`${b.ad} ofisten silinsin mi?`)) eylem(b.ad, "sil", "silindi"); };
+    k.append(sil);
+    ayarSatir(kap, b.ad, `${b.aciklama}` + (b.kaynak ? ` · kaynak: ${b.kaynak}` : ""), k);
+  }
+  ayarAltBaslik(kap, "Kendi Claude becerilerinden ekle");
+  const eklenmemis = r.claude.filter((c) => !c.eklenmis);
+  if (!eklenmemis.length) kap.append(el("div", "bos-yazi", "Eklenecek Claude becerisi yok (hepsi eklenmiş ya da hiç yok)."));
+  for (const c of eklenmemis) {
+    const e = el("button", "dugme", "ekle");
+    e.onclick = async () => {
+      e.disabled = true;
+      try { await yolla("/api/beceriler/ekle", { claude: c.ad }); bildir(`${c.ad} eklendi`, "iyi"); }
+      catch (er) { bildir(String(er.message || er).slice(0, 200), "kotu"); }
+      ayarlarCiz();
+    };
+    ayarSatir(kap, c.ad, c.aciklama, e);
+  }
+  ayarAltBaslik(kap, "Klasörden ekle");
+  const k = el("div", "ayar-kontrol");
+  const yol = el("input", "ayar-girdi"); yol.placeholder = "içinde SKILL.md olan klasörün yolu";
+  const ek = el("button", "dugme", "ekle");
+  ek.onclick = async () => {
+    try { const x = await yolla("/api/beceriler/ekle", { yol: yol.value }); bildir(`${x.ad} eklendi`, "iyi"); }
+    catch (er) { bildir(String(er.message || er).slice(0, 200), "kotu"); }
+    ayarlarCiz();
+  };
+  k.append(yol, ek);
+  ayarSatir(kap, "Beceri klasörü", "", k);
 }
 
 /* -- 3. Hesaplar ve modeller ----------------------------------------------- */

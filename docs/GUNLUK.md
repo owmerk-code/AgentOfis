@@ -14038,3 +14038,31 @@ Patron: "ai modellerin alt ajanları çalıştırması bize ne zarar verir?"
   gerekçesi artık olaya yazılıyor (teşhis yeniden koşu gerektirmişti).
 `duman_codex_app` 79/79 (alt ajan bölümü + mutasyon: 2 kaldı), `duman_motor`,
 `duman_riskli` eklemeleri; tam takım 3998/3998.
+
+## 02.10.2026 — Beceriler (skills): tek depo, iki motor, ajan taslağı + patron onayı
+
+Patron kararı: beceriler GENEL (tek tek kapatılır, takım izni yok); ajan beceri
+TASLAĞI yazar, kanıtla gelir, patron onaylarsa yayına girer. Maliyet ölçümü
+("ofis çarpanı") sonraya.
+- **Ölçüm önce:** `--restricted` altında patronun becerileri gelmiyordu (yalnız 22
+  yerleşik). Claude: `--plugin-dir <depo>` restricted altında YÜKLENİYOR, haiku
+  beceriyi kullandı. Codex: `$CODEX_HOME/skills` + belgeye göre `.agents/skills`;
+  luna beceriyi okuyup kullandı. Codex'te `multi_agent`, `plugins`, `skill_search`,
+  `browser_use`, `computer_use` varsayılan açık (bilgisayar/tarayıcı eklentisi
+  ofis evinde yok; kapatma ayrı iş).
+- **Kurulan (`ofis/beceri.py`):** depo `ev/beceriler/` = aynı zamanda Claude
+  eklentisi (`.claude-plugin`, `skills/` açık, `kapali/`, `taslak/`, `kayit.json`).
+  Claude'a `--plugin-dir` (saf yargı turunda yok); Codex evine işaretli kopya
+  eşitleme (`_evi_hazirla` ve gerçek terminal planı), ofisin koymadığına dokunmaz.
+  Ofis MCP'sine `beceri_oner` (kanıt: en az bir KAPANMIŞ iş; korumayı aşan RED +
+  `hafiza_reddi`); `beceri_taslagi` olayı sohbet + bildirim. Ayarlar > Beceriler:
+  taslak onayla/reddet, aç/kapat/sil, kendi Claude becerilerinden (claude.ai
+  eşitlenmiş, salt okunur kaynak) ekle, klasörden ekle. Brifinge tek satır kural.
+- **Gerçek koşu (iki motor):** ajan depodaki beceriyi kullandı (TURUNCU-AYI-77
+  doğru), `beceri_oner` ile kanıtlı taslak yazdı.
+- **Ölçerken bulunan yalıtım açığı:** iki motor da ofis MCP sunucusunu YALNIZ
+  yapılandırmadaki ortamla başlatıyor; geçici evle koşan ofisin MCP sunucusu
+  GERÇEK eve düşüyordu (taslak gerçek depoya yazıldı, silindi). `OFIS_EV`,
+  `OFIS_BECERI_KOK`, `OFIS_GIZLI_YOLU`, `OFIS_GOLGE_KOK`, `OFIS_KABIN_*` artık
+  MCP ortamına açıkça geçiyor; iki motorla yeniden ölçüldü, sızıntı yok.
+`duman_beceri` 35/35, mutasyonlar yakalandı.
