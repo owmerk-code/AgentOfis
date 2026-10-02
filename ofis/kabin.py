@@ -185,17 +185,79 @@ def cdp_kapat(kapi: int = tarayici.KABIN_KAPISI, bekle_sn: float = 8.0) -> bool:
     return not acik_mi(kapi)
 
 
-def sayfa_ws(kapi: int = tarayici.KABIN_KAPISI) -> str:
-    """Akitilacak sekmenin CDP WebSocket adresi."""
+#: Kabin acilinca ve yeni sekmede gidilen sayfa (02.10.2026, patron:
+#: "chrome gibi google ile acilsa").
+ACILIS_SAYFASI = "https://www.google.com/"
+
+_SEKME_KIMLIGI = __import__("re").compile(r"^[A-Za-z0-9_-]{1,64}$")
+
+
+def _cdp_json(kapi: int, yol: str, yontem: str = "GET"):
+    r = urllib.request.Request(f"http://127.0.0.1:{kapi}{yol}", method=yontem)
     try:
-        with urllib.request.urlopen(
-                f"http://127.0.0.1:{kapi}/json", timeout=2.0) as y:
-            liste = json.loads(y.read().decode("utf-8"))
+        with urllib.request.urlopen(r, timeout=3.0) as y:
+            govde = y.read().decode("utf-8")
     except (urllib.error.URLError, OSError, ValueError, TimeoutError) as exc:
         raise KabinHatasi(f"Kabine ulasilamadi: {exc}")
-    for h in liste:
-        if h.get("type") == "page" and h.get("webSocketDebuggerUrl"):
+    try:
+        return json.loads(govde)
+    except ValueError:
+        return govde
+
+
+def sekmeler(kapi: int = tarayici.KABIN_KAPISI) -> list:
+    """Kabindeki SAYFA sekmeleri: [{id, baslik, adres}] (Chrome'un kendi
+    ic sayfalari ve eklenti arka planlari sayilmaz).
+
+    SEKMELER (02.10.2026, patron: "tarayicida sekme acma neden yok"):
+    panel yalniz ILK sekmeyi akitiyordu; yeni sekmede acilan baglanti
+    panelde hic gorunmuyordu."""
+    out = []
+    for h in _cdp_json(kapi, "/json") or []:
+        if h.get("type") != "page" or not h.get("webSocketDebuggerUrl"):
+            continue
+        adres = str(h.get("url") or "")
+        if adres.startswith(("chrome://", "chrome-extension://", "devtools://")):
+            continue
+        out.append({"id": h.get("id"), "baslik": str(h.get("title") or adres)[:80],
+                    "adres": adres})
+    return out
+
+
+def sekme_ac(kapi: int = tarayici.KABIN_KAPISI, adres: str = "") -> dict:
+    """Yeni sekme (bos verilirse acilis sayfasi). Chrome `PUT /json/new`."""
+    from urllib.parse import quote
+    hedef = (adres or ACILIS_SAYFASI).strip()
+    if not hedef.startswith(("http://", "https://", "about:")):
+        raise KabinHatasi("Sekme yalniz http(s) adresiyle acilir.")
+    h = _cdp_json(kapi, "/json/new?" + quote(hedef, safe=":/?&=%#+"), "PUT")
+    if not isinstance(h, dict) or not h.get("id"):
+        raise KabinHatasi(f"Sekme acilamadi: {h}")
+    return {"id": h["id"], "baslik": h.get("title") or hedef, "adres": hedef}
+
+
+def sekme_kapat(kapi: int, kimlik: str) -> None:
+    if not _SEKME_KIMLIGI.match(kimlik or ""):
+        raise KabinHatasi("Gecersiz sekme kimligi.")
+    if len(sekmeler(kapi)) <= 1:
+        # Son sekme kapanirsa Chrome bassizda sayfasiz kalir; acilis
+        # sayfasina dondurmek, "tarayici gitti" sanilmasindan iyidir.
+        sekme_ac(kapi)
+    _cdp_json(kapi, f"/json/close/{kimlik}")
+
+
+def sayfa_ws(kapi: int = tarayici.KABIN_KAPISI, sekme: str = "") -> str:
+    """Akitilacak sekmenin CDP WebSocket adresi. `sekme` verilip
+    bulunamazsa (kapanmis) ilk sekmeye dusulur."""
+    liste = _cdp_json(kapi, "/json") or []
+    sayfalar = [h for h in liste if h.get("type") == "page" and h.get("webSocketDebuggerUrl")
+                and not str(h.get("url") or "").startswith(("chrome://", "chrome-extension://",
+                                                             "devtools://"))]
+    for h in sayfalar:
+        if sekme and h.get("id") == sekme:
             return h["webSocketDebuggerUrl"]
+    if sayfalar:
+        return sayfalar[0]["webSocketDebuggerUrl"]
     raise KabinHatasi("Kabinde akitilacak sekme yok.")
 
 

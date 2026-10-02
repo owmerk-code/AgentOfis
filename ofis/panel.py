@@ -1582,8 +1582,32 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
                         if d.get("acik") else ""))
         return d
 
+    @uygulama.get("/api/kabin/sekmeler")
+    def api_kabin_sekmeler():
+        if not kabin.acik_mi(_kabin.kapi):
+            return {"sekmeler": []}
+        try:
+            return {"sekmeler": kabin.sekmeler(_kabin.kapi)}
+        except KabinHatasi as exc:
+            raise HTTPException(status_code=503, detail=str(exc))
+
+    @uygulama.post("/api/kabin/sekme")
+    def api_kabin_sekme_ac(govde: KabinGovdesi):
+        try:
+            return kabin.sekme_ac(_kabin.kapi, govde.url or "")
+        except KabinHatasi as exc:
+            raise HTTPException(status_code=400, detail=str(exc))
+
+    @uygulama.post("/api/kabin/sekme/{kimlik}/kapat")
+    def api_kabin_sekme_kapat(kimlik: str):
+        try:
+            kabin.sekme_kapat(_kabin.kapi, kimlik)
+        except KabinHatasi as exc:
+            raise HTTPException(status_code=400, detail=str(exc))
+        return {"sekmeler": kabin.sekmeler(_kabin.kapi)}
+
     @uygulama.websocket("/ws/kabin")
-    async def ws_kabin(soket: WebSocket):
+    async def ws_kabin(soket: WebSocket, sekme: str = ""):
         """Kabinin karelerini panele akitir, girdiyi geri tasir.
 
         SAYFAYA HAM CDP VERILMEZ. Istemci yalnizca kucuk bir sozluk
@@ -1600,7 +1624,7 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
         """
         await soket.accept()
         try:
-            hedef = kabin.sayfa_ws(_kabin.kapi)
+            hedef = kabin.sayfa_ws(_kabin.kapi, sekme)
         except KabinHatasi as exc:
             await soket.send_json({"tur": "hata", "govde": str(exc)})
             await soket.close()

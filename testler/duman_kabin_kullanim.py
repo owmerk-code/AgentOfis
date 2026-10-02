@@ -301,5 +301,59 @@ sina("panel acilisinda eski kimlikli kabin kapatilir",
 sina("acarken eski kimlikli kabin yeniden KULLANILMAZ",
      "eski_kimlikli_mi(self.kapi)" in (KOK / "ofis" / "kabin.py").read_text(encoding="utf-8"))
 
+print("\n13. sekmeler (Chrome gibi) ve Google ile acilis")
+# 02.10.2026, patron: "tarayicida sekme acma neden yok; chrome gibi google
+# ile acilsa". Panel yalniz ILK sekmeyi akitiyordu.
+_cagri = []
+_eski_json = kabin._cdp_json
+
+
+def _sahte_json(kapi, yol, yontem="GET"):
+    _cagri.append((yol, yontem))
+    if yol == "/json":
+        return [{"id": "A1", "type": "page", "url": "https://www.google.com/", "title": "Google",
+                 "webSocketDebuggerUrl": "ws://a"},
+                {"id": "B2", "type": "page", "url": "chrome://newtab/", "title": "x",
+                 "webSocketDebuggerUrl": "ws://b"},
+                {"id": "C3", "type": "service_worker", "url": "https://x", "webSocketDebuggerUrl": "ws://c"},
+                {"id": "D4", "type": "page", "url": "https://example.com/", "title": "Example Domain",
+                 "webSocketDebuggerUrl": "ws://d"}]
+    if yol.startswith("/json/new"):
+        return {"id": "E5", "title": "", "url": "https://www.google.com/"}
+    return "Target is closing"
+
+
+kabin._cdp_json = _sahte_json
+try:
+    _sk = kabin.sekmeler(9398)
+    sina("sekme listesi yalniz SAYFALAR (chrome:// ve arka plan iscisi yok)",
+         [t["id"] for t in _sk] == ["A1", "D4"], str(_sk))
+    sina("secilen sekme akitilir", kabin.sayfa_ws(9398, "D4") == "ws://d")
+    sina("  kapanmis sekme secildiyse ilk sekmeye dusulur", kabin.sayfa_ws(9398, "YOK") == "ws://a")
+    _y = kabin.sekme_ac(9398)
+    sina("yeni sekme GOOGLE ile acilir (PUT /json/new)",
+         _y["id"] == "E5" and any(c[0].startswith("/json/new?https://www.google.com") and c[1] == "PUT"
+                                  for c in _cagri), str(_cagri[-1:]))
+    try:
+        kabin.sekme_ac(9398, "file:///C:/gizli.txt")
+        sina("  http(s) disi adres REDDEDILIR", False)
+    except kabin.KabinHatasi:
+        sina("  http(s) disi adres REDDEDILIR", True)
+    try:
+        kabin.sekme_kapat(9398, "../json/version")
+        sina("  gecersiz sekme kimligi REDDEDILIR", False)
+    except kabin.KabinHatasi:
+        sina("  gecersiz sekme kimligi REDDEDILIR", True)
+    kabin.sekme_kapat(9398, "D4")
+    sina("sekme kapatilir", ("/json/close/D4", "GET") in _cagri)
+finally:
+    kabin._cdp_json = _eski_json
+sina("panel acilisi Google (about:blank degil)", 'url || "https://www.google.com/"' in JS)
+sina("sekme seridi HTML'de", 'id="kabin-sekmeler"' in HTML)
+sina("eski soketin gec kapanisi YENI soketi silmez (olculdu)", "if (K.soket !== s) return;" in JS)
+sina("yeni sekme SAGA eklenir (Chrome sirasi)", "K.sekmeSira" in JS)
+sina("tarayici dugmeleri sayfa acilisinda HEMEN baglanir (olculdu: ilk basis bosa gidiyordu)",
+     JS.index("kabinKur();") < JS.index("  await yenile();\n  // HESAP LIMITLERI"))
+
 print(f"\n== sonuc: {GECEN} gecti, {KALAN} kaldi ==")
 sys.exit(1 if KALAN else 0)

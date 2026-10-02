@@ -2390,7 +2390,8 @@ async function kabinAc(url) {
   et.textContent = "açılıyor…";
   let d;
   try {
-    d = await yolla("/api/kabin/ac", { url: url || "about:blank" });
+    // Chrome gibi Google ile acilir (02.10.2026, patron).
+    d = await yolla("/api/kabin/ac", { url: url || "https://www.google.com/" });
   } catch (e) {
     // UYDURMAZ: acilmadiysa sebebi gorunur olur.
     et.textContent = "tarayıcı";
@@ -2425,6 +2426,8 @@ function kabinGoster(d) {
 }
 
 async function kabinKapat() {
+  K.sekme = null; K.bilinenSekmeler = null;
+  K.sekmeDegisiyor = true;
   if (K.soket) { try { K.soket.close(); } catch (e) {} K.soket = null; }
   try { kabinGoster(await yolla("/api/kabin/kapat", {})); }
   catch (e) { kabinGoster({ acik: false }); }
@@ -2434,7 +2437,9 @@ function kabinBagla() {
   if (K.soket) return;
   const s = new WebSocket(
     (location.protocol === "https:" ? "wss://" : "ws://")
-    + location.host + "/ws/kabin");
+    + location.host + "/ws/kabin"
+    + (K.sekme ? "?sekme=" + encodeURIComponent(K.sekme) : ""));
+  kabinSekmeleriCiz();
   K.soket = s;
   s.onmessage = (m) => {
     const v = JSON.parse(m.data);
@@ -2464,6 +2469,7 @@ function kabinBagla() {
       // URL cubugu GERCEGI gosterir: yonlendirme olursa yazdigin
       // adres degil GIDILEN adres. Uydurmaz.
       K.sonAdres = v.govde || "";
+      setTimeout(kabinSekmeleriCiz, 600);    // baslik / yeni sekme
       if (document.activeElement !== $("#kabin-adres"))
         $("#kabin-adres").value = K.sonAdres;
       // Sayfa degisti: cerceve artik baska bir yeri gosterirdi. Secilen
@@ -2475,6 +2481,10 @@ function kabinBagla() {
     }
   };
   s.onclose = async () => {
+    // ESKI SOKETIN GEC KAPANISI (02.10.2026 olculdu): sekme degisirken
+    // eski soketin onclose'u YENI soketi siliyordu; adres cubugundan
+    // giden komutlar tarayiciya hic ulasmiyordu. Yalniz KENDISI.
+    if (K.soket !== s) return;
     K.soket = null;
     // DONMUS KARE, CANLI TARAYICI GIBI GORUNUR.
     //
@@ -2489,8 +2499,85 @@ function kabinBagla() {
     if (!d.acik) {
       $("#kabin-kare").hidden = true;
       $("#kabin-bos").textContent = "tarayıcı kapandı";
+      kabinSekmeleriCiz();
+    } else if (!K.sekmeDegisiyor) {
+      // Izlenen SEKME kapandi (tarayici acik): kalan sekmeye gecilir.
+      K.sekme = null;
+      setTimeout(kabinBagla, 300);
     }
+    K.sekmeDegisiyor = false;
   };
+}
+
+/* SEKMELER (02.10.2026, patron: "tarayicida sekme acma neden yok").
+   Panel eskiden yalniz ILK sekmeyi akitiyordu; yeni sekmede acilan
+   baglanti hic gorunmuyordu. Secili sekme `K.sekme`; gecmek = o sekmeye
+   yeniden baglanmak. Liste sunucudan gelir (uydurulmaz). */
+async function kabinSekmeleriCiz() {
+  const kap = $("#kabin-sekmeler");
+  if (!kap) return;
+  if (!K.acik) { kap.innerHTML = ""; return; }
+  let r;
+  try { r = await al("/api/kabin/sekmeler"); } catch (e) { return; }
+  // SIRA Chrome gibi: yeni sekme SAGA eklenir. Chrome'un listesi en
+  // yeniyi basa koyuyor (olculdu); ilk gorulme sirasi tutulur.
+  K.sekmeSira = K.sekmeSira || new Map();
+  for (const t of [...(r.sekmeler || [])].reverse())
+    if (!K.sekmeSira.has(t.id)) K.sekmeSira.set(t.id, K.sekmeSira.size);
+  const liste = [...(r.sekmeler || [])].sort(
+    (a, b) => K.sekmeSira.get(a.id) - K.sekmeSira.get(b.id));
+  // SAYFANIN ACTIGI YENI SEKME: patron sayfaya tikladiktan hemen sonra
+  // beliren sekmeye Chrome gibi gecilir (target=_blank baglanti).
+  const onceki = K.bilinenSekmeler;
+  K.bilinenSekmeler = new Set(liste.map((t) => t.id));
+  if (onceki && Date.now() - (K.sonTik || 0) < 5000) {
+    const yeni = liste.find((t) => !onceki.has(t.id));
+    if (yeni && yeni.id !== K.sekme) { K.sonTik = 0; kabinSekmeSec(yeni.id); return; }
+  }
+  // Yeni secilen sekme Chrome'un listesine birkac yuz ms gec duser;
+  // o arada secim GERI ALINMAZ (olculdu: "+" yeni sekmeyi acti ama
+  // panel ilk sekmede kaldi).
+  if (K.sekme && !K.bilinenSekmeler.has(K.sekme)
+      && Date.now() - (K.sekmeSecildi || 0) > 4000) K.sekme = null;
+  if (!K.sekme && liste.length) K.sekme = liste[0].id;
+  kap.innerHTML = "";
+  for (const t of liste) {
+    const b = el("div", "kabin-sekme" + (t.id === K.sekme ? " secili" : ""));
+    b.title = t.adres;
+    b.append(el("span", null, t.baslik || t.adres || "yeni sekme"));
+    const x = el("button", null, "✕");
+    x.title = "Sekmeyi kapat";
+    x.onclick = async (e) => {
+      e.stopPropagation();
+      try { await yolla("/api/kabin/sekme/" + encodeURIComponent(t.id) + "/kapat", {}); }
+      catch (er) { return bildir("kapatılamadı: " + er.message, "uyari"); }
+      if (t.id === K.sekme) kabinSekmeSec(null); else kabinSekmeleriCiz();
+    };
+    b.append(x);
+    b.onclick = () => { if (t.id !== K.sekme) kabinSekmeSec(t.id); };
+    kap.append(b);
+  }
+  const yeni = el("button", "kabin-sekme-yeni", "+");
+  yeni.title = "Yeni sekme (Google)";
+  yeni.onclick = async () => {
+    let t;
+    try { t = await yolla("/api/kabin/sekme", {}); }
+    catch (er) { return bildir("sekme açılamadı: " + er.message, "uyari"); }
+    kabinSekmeSec(t.id);
+  };
+  kap.append(yeni);
+}
+
+function kabinSekmeSec(kimlik) {
+  K.sekme = kimlik;
+  K.sekmeSecildi = Date.now();
+  K.sonAdres = undefined;
+  if (K.soket) {
+    K.sekmeDegisiyor = true;
+    try { K.soket.close(); } catch (e) {}
+    K.soket = null;
+  }
+  kabinBagla();
 }
 
 const kabinYolla = (m) => {
@@ -2576,6 +2663,7 @@ function kabinKur() {
     if (document.activeElement && document.activeElement !== document.body)
       document.activeElement.blur();
     alan.classList.add("odakli");
+    K.sonTik = Date.now();
     const p = kabinNokta(e);
     if (K.secKipi) {                 // SECIM: fare sayfaya GITMEZ
       kabinYolla({ tur: "oge", ...p, sec: true });
@@ -2659,6 +2747,10 @@ function kabinKur() {
     b.textContent = acik ? "ajanlar: burada" : "ajanlar: kapalı";
   };
   al("/api/kabin/izle").then((r) => izleCiz(r.acik)).catch(() => {});
+  // Sekme seridi tazelenir (yeni sekme, degisen baslik); pano gorunurken.
+  setInterval(() => {
+    if (K.acik && !document.hidden && panoGorunur("tarayici")) kabinSekmeleriCiz();
+  }, 2500);
   $("#kabin-izle").onclick = async () => {
     const simdi = $("#kabin-izle").classList.contains("acik");
     try {
@@ -5456,6 +5548,10 @@ $("#komut-ses").onclick = () => sesleYaz($("#komut-girdi"), $("#komut-ses"));
   // olmadigina (`panoAcik`) bakar.
   D.yerlesim = yerlesimYukle();
   yerlesimCiz();
+  // KABIN DUGMELERI HEMEN baglanir (02.10.2026 olculdu): eskiden butun
+  // veri yuklendikten SONRA baglaniyordu; o birkac saniyede "tarayici"
+  // dugmesine basmak HICBIR SEY yapmiyordu.
+  kabinKur();
   await yenile();
   // HESAP LIMITLERI SUREKLI GUNCEL (27.09.2026): sunucu iki dakikada bir
   // saglayicidan okur; bos ofiste olay akmadigi icin ray kendiliginden
@@ -5487,10 +5583,12 @@ $("#komut-ses").onclick = () => sesleYaz($("#komut-girdi"), $("#komut-ses"));
 
   baglan();
   canliYoklamaKur();
-  // KABIN: dinleyiciler her zaman kurulur ama kabin ISTENMEDIKCE
-  // ACILMAZ. Acilis durumu SORULUR, varsayilmaz -- panel yeniden
-  // açıldığında dışarıda zaten açık bir kabin olabilir.
-  kabinKur();
-  kabinGoster(await kabinDurum());
-  if (K.acik) kabinBagla();
+  // KABIN: dinleyiciler basta kuruldu; kabin ISTENMEDIKCE ACILMAZ.
+  // Acilis durumu SORULUR, varsayilmaz -- panel yeniden acildiginda
+  // disarida zaten acik bir kabin olabilir. (Patron bu arada actiysa
+  // ikinci kez baglanilmaz.)
+  if (!K.acik) {
+    kabinGoster(await kabinDurum());
+    if (K.acik) kabinBagla();
+  }
 })();

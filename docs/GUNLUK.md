@@ -13768,3 +13768,21 @@ yalnız 127.0.0.1 kabin kapısı); panel açılışında eski kimlikli kabin kap
 `ac` onu yeniden kullanmaz, ✕ önceki oturumun kabinini de kapatır. Gerçek
 Chrome'la yeniden üretildi (9333): eski kabin tanındı → ✕ KAPADI → yeniden
 açılış NORMAL kimlik → Google araması AÇILDI.
+
+## 02.10.2026 03:20 — gömülü tarayıcıya sekmeler, Google ile açılış
+
+Patron: "tarayıcıda sekme açma neden yok; Chrome gibi Google ile açılsa".
+Panel yalnız İLK sekmeyi aktarıyordu; yeni sekmede açılan bağlantı panelde
+hiç görünmüyordu. Eklenen: sekme şeridi (tıkla geç, ✕ kapat, + yeni sekme
+Google), sayfanın açtığı yeni sekmeye tıklamadan sonra Chrome gibi geçiş,
+Chrome sırası (Chrome `/json` en yeniyi başa koyuyor — ilk görülme sırası
+tutulur), açılış ve yeni sekme `https://www.google.com/`. Sunucu:
+`kabin.sekmeler/sekme_ac/sekme_kapat`, `/ws/kabin?sekme=`.
+Sınama panelinde gerçekten kullanılarak ölçülen iki hata düzeltildi:
+1. Sekme değişirken eski soketin geç `onclose`'u YENİ soketi siliyordu →
+   adres çubuğundan giden komut tarayıcıya ULAŞMIYORDU.
+2. Tarayıcı düğmesine işlev bütün veri yüklendikten SONRA bağlanıyordu →
+   sayfa açılır açılmaz basınca hiçbir şey olmuyordu (bugün iki kez görüldü).
+   `kabinKur` artık açılışın başında.
+Son ölçüm: Google ile açılış, + yeni sekme sağda, sekmede wikipedia açıldı,
+geçişler ve ✕ doğru; `duman_kabin_kullanim` 69/69.
