@@ -358,6 +358,10 @@ def _kuyrugu_kostur(db_yolu, proje_ad: str) -> None:
                     import traceback
                     traceback.print_exc()
                     _kuyruk.bitir(o, k["id"], "hata", f"{exc}")
+                    try:
+                        _kuyruk.dusus_cevabi(o, k["id"], exc)
+                    except Exception:   # noqa: BLE001 -- olay asagida yine yazilir
+                        traceback.print_exc()
                     o.db.olay_yaz(o.proje_id, "hata",
                                   f"Siradaki is dustu ({k['metin'][:60]}): {exc}")
         finally:
@@ -1176,6 +1180,7 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
                 "kilitli": bool([k for k in kilitler if k["gorev_id"] == g["id"]]),
                 "kanit": len(ofis.tahta.kanitlar(g["no"])),
                 "blokci": [b["no"] for b in ofis.tahta.blokcular(g["no"])],
+                "duraklatildi": bool(g.get("duraklatildi")),
             })
         return sutunlar
 
@@ -1891,6 +1896,32 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
         threading.Thread(target=_halkayi_kostur, args=(db.yol, proje_ad),
                          daemon=True).start()
         return {"kosuyor": True, "acik_is": len(acik)}
+
+    @uygulama.post("/api/gorev/{no}/duraklat")
+    def api_duraklat(no: int):
+        """Tek isi beklemeye alir; oteki isler ve takimlar SURER."""
+        try:
+            g = ofis_ac().tahta.duraklat(no, "insan")
+        except TahtaHatasi as exc:
+            raise HTTPException(400, str(exc))
+        return {"no": g["no"], "duraklatildi": True}
+
+    @uygulama.post("/api/gorev/{no}/surdur")
+    def api_gorev_surdur(no: int):
+        """Duraklatilan isi acar; ofis bos ise halkayi baslatir."""
+        ofis = ofis_ac()
+        try:
+            g = ofis.tahta.devam_ettir(no, "insan")
+        except TahtaHatasi as exc:
+            raise HTTPException(400, str(exc))
+        basladi = False
+        if not _KOSU["calisiyor"]:
+            durdurma_temizle(ofis.db, ofis.proje_id)
+            _KOSU.update(dur=False, calisiyor=True, mesaj=f"#{no} surduruluyor")
+            threading.Thread(target=_halkayi_kostur, args=(db.yol, proje_ad),
+                             daemon=True).start()
+            basladi = True
+        return {"no": g["no"], "duraklatildi": False, "halka_basladi": basladi}
 
     # -- DEVRAL (E18): insan ajanin isini gercek terminalde alir ----------
     @uygulama.post("/api/gorev/{no}/devral")
@@ -2650,6 +2681,28 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
             raise HTTPException(400, str(exc))
         return {"iptal": True, "metin": k["metin"]}
 
+    @uygulama.post("/api/kuyruk/{kayit_id}/tekrar")
+    def api_kuyruk_tekrar(kayit_id: str):
+        """Dusen isi (Iletilemedi) ayni ayarlarla yeniden siraya koyar."""
+        from . import kuyruk as _kuyruk
+        try:
+            k = _kuyruk.tekrar_dene(ofis_ac(), kayit_id)
+        except _kuyruk.KuyrukHatasi as exc:
+            raise HTTPException(400, str(exc))
+        basladi = _kuyrugu_baslat(db.yol, proje_ad)
+        return {"tekrar": True, "kuyruk_id": k["id"], "sira": k["sira"],
+                "sirada": not basladi}
+
+    @uygulama.post("/api/kuyruk/{kayit_id}/kapat")
+    def api_kuyruk_kapat(kayit_id: str):
+        """Dusen isi sohbetten kaldirir (patron gordu, birakti)."""
+        from . import kuyruk as _kuyruk
+        try:
+            _kuyruk.dusuk_kapat(ofis_ac(), kayit_id)
+        except _kuyruk.KuyrukHatasi as exc:
+            raise HTTPException(400, str(exc))
+        return {"kapandi": True}
+
     @uygulama.post("/api/ajana-sor")
     def api_ajana_sor(govde: AjanaSorGovdesi):
         """Bir ajana DOGRUDAN soru. Cevap Sohbet panosuna duser.
@@ -2728,6 +2781,16 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
             x["akis"] = akan.get(str(x["id"]), "") if x["bekliyor"] else ""
         return {"ogeler": ogeler, "kosu": dict(_KOSU),
                 "danisma": dict(_DANISMA)}
+
+    @uygulama.post("/api/mesaj/{mesaj_id}/kabul")
+    def api_kabul(mesaj_id: str):
+        """Patron teslimi kabul etti (karar gunlugune girer)."""
+        from . import takim as _takim
+        try:
+            _takim.kabul_et(ofis_ac(), mesaj_id)
+        except _takim.TakimHatasi as exc:
+            raise HTTPException(400, str(exc))
+        return {"kabul": True}
 
     @uygulama.get("/api/sohbet/akis")
     def api_sohbet_akis():

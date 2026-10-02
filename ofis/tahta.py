@@ -915,6 +915,43 @@ class Tahta:
                          f"#{no}: " + " · ".join(notlar), gorev_id=g["id"])
         return self.gorev(no)
 
+    #: Duraklatilabilen durumlar: henuz kapanmamis ve inceleme disinda.
+    DURAKLAR = ("bekliyor", "hazir", "calisiyor")
+
+    def duraklat(self, no: int, kim: str = "insan") -> dict:
+        """ISI DURAKLATIR (02.10.2026; rakipte is basina "Duraklat" var).
+
+        Ofisin genel Durdur'u BUTUN takimlari durdurur; patron tek bir isi
+        beklemeye almak ister. Kosan tur kesilir (koltuk), halka bu isi
+        SECMEZ; oturum, kilit ve kanit korunur. `devam_ettir` ayni
+        oturumdan surdurur. Inceleme duraklatilmaz (lider karar veriyor).
+        """
+        g = self.gorev(no)
+        if g["durum"] not in self.DURAKLAR:
+            raise TahtaHatasi(f"#{no} '{g['durum']}' durumunda; yalniz bekleyen, "
+                              "siradaki ya da calisan is duraklatilir.")
+        if g.get("duraklatildi"):
+            return g
+        with self.db.baglanti() as conn:
+            conn.execute("UPDATE gorev SET duraklatildi = ? WHERE id = ?",
+                         (simdi(), g["id"]))
+        self.db.olay_yaz(self.proje_id, "uyari",
+                         f"{kim} #{no} isini DURAKLATTI: kosan tur kesilir, "
+                         "'Surdur' ile kaldigi yerden devam eder.",
+                         ajan_ad=kim, gorev_id=g["id"])
+        return self.gorev(no)
+
+    def devam_ettir(self, no: int, kim: str = "insan") -> dict:
+        """Duraklatilan isi yeniden halkaya acar (ayni oturum)."""
+        g = self.gorev(no)
+        if not g.get("duraklatildi"):
+            raise TahtaHatasi(f"#{no} duraklatilmamis.")
+        with self.db.baglanti() as conn:
+            conn.execute("UPDATE gorev SET duraklatildi = '' WHERE id = ?", (g["id"],))
+        self.db.olay_yaz(self.proje_id, "surdur_istendi",
+                         f"{kim} #{no} isini surdurdu", ajan_ad=kim, gorev_id=g["id"])
+        return self.gorev(no)
+
     def iptal_et(self, no: int, *, sebep: str, iptal_eden: str) -> dict:
         """Isi IPTAL eder ve KILITLERINI BIRAKIR.
 

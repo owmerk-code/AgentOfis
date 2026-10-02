@@ -13950,3 +13950,34 @@ modelleri sen seç" (13:02).
    Ama ölçerken açık bulundu: "Siparişi onayla", "Siparişi ver", "Confirm
    order", "Alışverişi tamamla" SORULMADAN geçiyordu → PARA kalıbına eklendi.
    `duman_riskli` 258/258 (mutasyon: 2 kaldı).
+
+## 02.10.2026 — rakip videosundan dersler 2–5: teslim durumu, duraklat, kabul, görev metni
+
+Hepsi sınama panelinde (8911, ofisin kopyası, gerçek claude ajanı deniz) ekranda denendi.
+
+2. **Teslim durumu.** Notun çipi üç durum: ulaştı / "ulaşmadı — iş kapandı" /
+   "iş incelemede — lider görür" (önce iş kapansa da sonsuza kadar "iletilecek"
+   diyordu — yanlış gösterge). Sıradaki iş DÜŞERSE: patronun mesajı ofisin
+   "İLETİLEMEDİ: sebep" cevabıyla kapanır (önce cevapsız asılı kalıyor ya da
+   hiç görünmüyordu) ve sohbetin altında kırmızı balon + Tekrar dene / Kapat
+   (`kuyruk.dusus_cevabi/iletilemeyenler/tekrar_dene/dusuk_kapat`, 24 saat).
+3. **Teslim satırı.** Liderin isteğe cevabında süre (⏱), "kanıtla kontrol
+   edildi" ve iş yapılmışsa Kabul et (karar günlüğüne) / Düzeltme iste
+   (girdiye "Düzeltme (#40): " yazar). `mesaj.kabul` sütunu.
+4. **İş başına Duraklat.** Üst çubuktaki Durdur BÜTÜN ofisi durdurur; sohbetin
+   altında "Süren işler" şeridi: iş başına Duraklat/Sürdür + İptal et (ayrıntı
+   çekmecesini açar, sebep orada). `gorev.duraklatildi`; koltuk koşan turu keser,
+   halka seçmez, hepsi duraklatıldıysa "DURAKLATILDI" der. Gerçek ajanla:
+   Duraklat → tur kesildi, iş hazır+bayrak; Sürdür → 110 sn sonra bitti.
+   **Canlı bulunan iki hata:** (a) lider raporu duraklatılan işi "bitmiş
+   sayılmaz" diye arıza sandı → `sohbet.durum_yazisi` "PATRON DURAKLATTI";
+   (b) cevaptan SONRA biten iş sohbete hiç ulaşmıyordu (cevap "bitmedi" diye
+   kaldı) → takım akışına "güncelleme: iş sonradan bitti" (liderin patrona
+   taslağı, yoksa ofisin kaydı).
+5. **Görev metni.** İsteğin katlı bloğunda verilen her iş: "Görev metni" →
+   tam metin + Kopyala; yeniden çizimde açık kalır (ilk sürümde 4 sn sonra
+   kayboluyordu — canlı ölçüldü).
+Testler: `duman_duraklat` (yeni), `duman_kuyruk`, `duman_sohbet_akis`
+eklemeleri; her yeni kural için mutasyon (hepsi yakalandı, çöken yok).
+Not: geçici klasördeki proje gölge depoyu `%TEMP%\ofis-golge`ye yazar (sınama
+paneli sonrası elle silinir).

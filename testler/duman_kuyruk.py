@@ -158,7 +158,8 @@ sina("  sohbet akisinda 'ozet' olarak gorunuyor",
 _an = "2099-01-01T00:00:00+00:00"
 with db.baglanti() as cn:
     cn.execute("UPDATE olay SET olusturuldu = ? WHERE tur = 'donus_raporu'", (_an,))
-_ak = [x for x in takim.akis(ofis) if x["tur"] != "sirada"]
+# Sirada ve Iletilemedi bilerek EN ALTA sabit (patrondan is bekliyorlar).
+_ak = [x for x in takim.akis(ofis) if x["tur"] not in ("sirada", "iletilemedi")]
 sina("  ayni saniyedeki CEVAPTAN SONRA geliyor (son oge rapor)",
      _ak[-1]["tur"] == "ozet" and any(x["tur"] == "cevap" and x["an"] == _an for x in _ak),
      str([(x["tur"], x["an"]) for x in _ak[-3:]]))
@@ -171,6 +172,9 @@ kostu, _asil_konus = [], _S.Sohbet.konus
 def _sahte_konus(self, mesaj, **kw):
     kostu.append(mesaj)
     if "PATLA" in mesaj:
+        # Gercek konus once mesaji yazar, sonra lideri kosturur; dusus
+        # mesaj yazildiktan SONRA olursa mesaj cevapsiz asili kaliyordu.
+        self.ofis.postane.soru_sor("insan", "demir", mesaj, mod="uyandiran")
         raise RuntimeError("bilerek dusuruldu")
     if "DURDUR" in mesaj:
         _P._KOSU["dur"] = True
@@ -207,6 +211,34 @@ try:
     sina("  dusen is HATA oldu ama sira SURDU", _d == {"is A": "bitti", "is PATLA": "hata",
                                                      "is C": "bitti"}, str(_d))
     sina("  dusus deftere yazildi (yutulmadi)", _h == 1)
+    # ILETILEMEDI (02.10.2026): mesaj cevapsiz ASILI kalmaz, sohbette kalir.
+    def _uyari(metin):
+        return [x for x in takim.akis(ofis) if x["tur"] == "iletilemedi" and x["metin"] == metin]
+    with db.baglanti() as cn:
+        _m = cn.execute("SELECT cevap FROM mesaj WHERE govde = 'is PATLA'").fetchone()
+    sina("  dusen isin mesaji ofisin cevabiyla KAPANDI (asili degil)",
+         bool(_m) and (_m["cevap"] or "").startswith(K.DUSUS_ONEKI)
+         and "bilerek dusuruldu" in _m["cevap"], str(_m and dict(_m)))
+    _il = _uyari("is PATLA")
+    sina("  sohbette ILETILEMEDI ogesi, sebebiyle",
+         len(_il) == 1 and "bilerek" in _il[0]["sebep"], str(_il)[:200])
+    _bul = _il[0]["id"] if _il else "xxxx"
+    try:
+        _ty = K.tekrar_dene(ofis, _bul)
+    except K.KuyrukHatasi as _e:          # cokmez: asagidaki denetimler KALDI der
+        _ty = {"sira": 0, "id": "", "hata": str(_e)}
+    sina("  Tekrar dene: ayni metin siranin sonunda",
+         [x["metin"] for x in K.bekleyenler(ofis)] == ["is PATLA"] and _ty["sira"] == 1)
+    sina("  ...ve uyari sohbetten KALKTI", not _uyari("is PATLA"))
+    sina("  ele alinmis is ikinci kez denenmez", "durumunda" in hata_mi(K.tekrar_dene, ofis, _bul))
+    if _ty["id"]:
+        K.iptal(ofis, _ty["id"])
+    _k2 = K.ekle(ofis, "is KAPAT", "demir")
+    K.bitir(ofis, _k2["id"], "hata", "x")
+    sina("  (sahne) kapatilacak uyari gorunuyor", len(_uyari("is KAPAT")) == 1)
+    K.dusuk_kapat(ofis, _k2["id"])
+    sina("  Kapat: uyari kalkar, is yeniden siraya GIRMEZ",
+         not _uyari("is KAPAT") and not K.bekleyenler(ofis))
     sina("  seri sonunda rapor (3 is, hata gorunur)", len(_rp) == 2 and "3 iş" in _rp[-1]
          and "HATA" in _rp[-1], (_rp[-1][:200] if _rp else ""))
 

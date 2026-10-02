@@ -1213,6 +1213,7 @@ class Orkestra:
         kosulacak = [g for g in (self.ofis.tahta.liste(durum="hazir")
                                  + self.ofis.tahta.liste(durum="calisiyor"))
                      if self.takimin_isi(g, kanat_id)
+                     and not g.get("duraklatildi")
                      and not self._takildi_mi(g) and not self.bayat_mi(g)]
         atamalar = []
         rezerve = set()
@@ -1379,6 +1380,10 @@ class Orkestra:
             if not acik:
                 yield {"bitti": True, "sebep": "Butun isler kapandi.",
                        "tik": sira + 1}
+                return
+            if all(g.get("duraklatildi") for g in acik):
+                yield {"bitti": True, "sebep": "Kalan isler patron tarafindan "
+                       "DURAKLATILDI.", "tik": sira + 1}
                 return
             if not ozet["ilerleme"]:
                 sebep = ("Insan cevabi bekleniyor." if ozet["bekleyen"]

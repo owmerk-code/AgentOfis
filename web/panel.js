@@ -3280,7 +3280,8 @@ const TAKIM_KATLA_HARF = 700;
 const TAKIM_TUR = { sohbet: "", soru: "soru", not: "not", cevap: "", rapor: "rapor",
                     is: "iş açıldı", kapandi: "kapandı", ret: "geri gönderildi",
                     onay: "onay istiyor", bildirim: "takıma yazdı",
-                    sirada: "sırada", ozet: "dönüş raporu" };
+                    sirada: "sırada", ozet: "dönüş raporu", iletilemedi: "İLETİLEMEDİ",
+                    guncelleme: "güncelleme: iş sonradan bitti" };
 const GOREV_DURUM = { bekliyor: "bekliyor", hazir: "sırada", calisiyor: "çalışıyor",
                       inceleme: "incelemede", bitti: "bitti", iptal: "iptal" };
 
@@ -3292,6 +3293,12 @@ function kalinYaz(kap, metin) {
     if (!p) return;
     kap.append(i % 2 && i < parca.length - 1 ? el("b", null, p) : document.createTextNode(p));
   });
+}
+
+function sureYazi(sn) {
+  if (sn < 60) return sn + " sn sürdü";
+  const dk = Math.round(sn / 60);
+  return dk < 60 ? dk + " dk sürdü" : Math.floor(dk / 60) + " sa " + (dk % 60) + " dk sürdü";
 }
 
 function takimBalonu(x, D_ajanlar) {
@@ -3344,10 +3351,68 @@ function takimBalonu(x, D_ajanlar) {
     c.onclick = () => gorevAc(x.gorev_no);
     altlar.push(c);
   }
-  if (x.tur === "not") altlar.push(el("span", "sohbet-cip " + (x.ulasti ? "durum-bitti" : ""),
-                                      x.ulasti ? "ulaştı" : "iletilecek"));
+  // NOTUN UC DURUMU: ulasti / is kapandi, ulasmayacak / incelemede.
+  if (x.tur === "not") {
+    const [s, t] = x.ulasti ? ["durum-bitti", "ulaştı"]
+      : x.ulasmadi ? ["durum-kotu", "ulaşmadı — iş kapandı"]
+      : x.incelemede ? ["durum-inceleme", "iş incelemede — lider görür"]
+      : ["", "iletilecek"];
+    const c = el("span", "sohbet-cip " + s, t);
+    if (x.ulasmadi) c.title = "Ajan bu notu görmeden iş kapandı. Yeni bir iş için lidere yaz.";
+    altlar.push(c);
+  }
+  // ILETILEMEDI (02.10.2026): dusen istek -- sebep, Tekrar dene, Kapat.
+  if (x.tur === "iletilemedi") {
+    if (x.sebep) b.append(el("div", "sohbet-sebep", "Sebep: " + x.sebep));
+    const islem = async (yol, iyi) => {
+      try { await yolla("/api/kuyruk/" + encodeURIComponent(x.id) + yol, {});
+            bildir(iyi, "iyi"); }
+      catch (e) { bildir(String(e.message || e).slice(0, 160), "uyari"); }
+      yenile();
+    };
+    const td = el("button", "sohbet-cip", "Tekrar dene");
+    td.title = "aynı mesajı yeniden sıraya koy";
+    td.onclick = () => islem("/tekrar", "yeniden sıraya kondu");
+    const kp = el("button", "sohbet-cip", "Kapat");
+    kp.title = "bu uyarıyı kaldır";
+    kp.onclick = () => islem("/kapat", "kaldırıldı");
+    altlar.push(td, kp);
+  }
   // SIRADAKI IS (01.10.2026): kac kisi onde ve iptal. Kosan is iptal
   // edilmez (Durdur) -- sunucu da reddeder; dugme yalniz bekleyende.
+  // TESLIM SATIRI (02.10.2026; rakipte "Isimi bitirdim -- 6 dakika surdu ·
+  // kontrol edildi · Duzeltme iste · Kabul et"). Liderin istege cevabinda.
+  if (x.tur === "cevap" && x.istek && !(x.metin || "").startsWith("İLETİLEMEDİ")) {
+    if (x.sure_sn != null) altlar.push(el("span", "sohbet-cip", "⏱ " + sureYazi(x.sure_sn)));
+    const isler = x.isler || [];
+    if (isler.length && isler.every((g) => g.durum === "bitti"))
+      altlar.push(el("span", "sohbet-cip durum-bitti",
+                     isler.length === 1 ? "kanıtla kontrol edildi" : `${isler.length} iş kanıtla kontrol edildi`));
+    // Kabul/Duzeltme yalniz IS yapilmis teslimde (duz soru-cevapta anlamsiz).
+    if (!isler.length) {}
+    else if (x.kabul) altlar.push(el("span", "sohbet-cip durum-bitti", "✓ kabul ettin"));
+    else {
+      const kb = el("button", "sohbet-cip", "Kabul et");
+      kb.title = "teslimi kabul et (karar günlüğüne yazılır)";
+      kb.onclick = async () => {
+        try { await yolla("/api/mesaj/" + encodeURIComponent(x.id) + "/kabul", {});
+              bildir("kabul edildi", "iyi"); }
+        catch (e) { bildir(String(e.message || e).slice(0, 160), "uyari"); }
+        yenile();
+      };
+      altlar.push(kb);
+    }
+    const dz = el("button", "sohbet-cip", "Düzeltme iste");
+    dz.title = "lidere bu teslim için düzeltme yaz";
+    dz.onclick = () => {
+      const g = $("#sohbet-girdi");
+      if (!g) return;
+      const ist = (x.isler || []).map((i) => "#" + i.no).join(" ");
+      g.value = `Düzeltme${ist ? " (" + ist + ")" : ""}: `;
+      g.focus(); g.setSelectionRange(g.value.length, g.value.length);
+    };
+    if (isler.length) altlar.push(dz);
+  }
   if (x.tur === "sirada") {
     altlar.push(el("span", "sohbet-cip", `${x.sira_no}. sırada`));
     const ip = el("button", "sohbet-cip", "İptal");
@@ -3380,13 +3445,18 @@ function takimBalonu(x, D_ajanlar) {
    Basta tek satir: is surerken "bilge calisiyor · 0:40 -- <son durum>",
    bitince "▸ 12 islem · 2 mesaj". Tiklayinca ajan mesajlari acilir. */
 D.acikAdim = D.acikAdim || new Set();
+// Acik gorev metinleri yeniden cizimde KAPANMAZ (sohbet birkac sn'de bir
+// cizilir; olculdu: kutu 4 sn sonra kayboluyordu). Metin bir kez cekilir.
+D.acikMetin = D.acikMetin || new Set();
+D.gorevMetni = D.gorevMetni || {};
 function adimBlogu(x, cocuklar, adlar, kosuyor) {
   const d = x.istek_durum || {};
   const kap = el("div", "sohbet-adimlar" + (x.bekliyor ? " suruyor" : ""));
   const acik = D.acikAdim.has(x.id);
   const bas = el("button", "sohbet-adim-bas");
   const adimlar = d.adimlar || [];
-  const acilir = cocuklar.length || adimlar.length;
+  const verilen = d.isler || [];
+  const acilir = cocuklar.length || adimlar.length || verilen.length;
   const ok = el("span", "sohbet-adim-ok", acilir ? (acik ? "▾" : "▸") : "·");
   bas.append(ok);
   if (x.bekliyor) {
@@ -3409,6 +3479,39 @@ function adimBlogu(x, cocuklar, adlar, kosuyor) {
   kap.append(bas);
   const govde = el("div", "sohbet-adim-govde");
   govde.hidden = !acik;
+  // VERILEN ISLER (02.10.2026; rakipte "Kamil Amca'ya giden gorev metni
+  // [Kopyala]"): liderin ajana verdigi isin TAM metni, istenince.
+  for (const g of verilen) {
+    const s = el("div", "sohbet-verilen");
+    s.append(el("span", "sohbet-adim-ajan", g.sahip || "—"),
+             el("span", null, ` #${g.no} ${g.baslik || ""} · ${GOREV_DURUM[g.durum] || g.durum}`));
+    const gm = el("button", "sohbet-cip", "Görev metni");
+    gm.title = "liderin bu ajana verdiği işin tam metni";
+    const goster = (metin) => {
+      const kutu = el("div", "sohbet-gorev-metni");
+      const kp = el("button", "sohbet-cip", "Kopyala");
+      kp.onclick = async () => {
+        try { await navigator.clipboard.writeText(metin); bildir("görev metni kopyalandı", "iyi"); }
+        catch (_) { bildir("kopyalanamadı (tarayıcı izin vermedi)", "uyari"); }
+      };
+      const pre = el("pre"); pre.textContent = metin;
+      kutu.append(kp, pre);
+      s.append(kutu);
+    };
+    gm.onclick = async (e) => {
+      e.stopPropagation();
+      const var_ = s.querySelector(".sohbet-gorev-metni");
+      if (var_) { D.acikMetin.delete(g.no); return var_.remove(); }
+      try {
+        if (!D.gorevMetni[g.no]) D.gorevMetni[g.no] = gorevMetni(await al("/api/gorev/" + g.no));
+        D.acikMetin.add(g.no);
+        goster(D.gorevMetni[g.no]);
+      } catch (er) { bildir("görev okunamadı: " + er.message, "uyari"); }
+    };
+    s.append(gm);
+    if (D.acikMetin.has(g.no) && D.gorevMetni[g.no]) goster(D.gorevMetni[g.no]);
+    govde.append(s);
+  }
   // Islem satirlari (Claude Code gibi): kim · ne · kisa ozet.
   if (adimlar.length) {
     const l = el("div", "sohbet-adim-liste");
@@ -3432,6 +3535,18 @@ function adimBlogu(x, cocuklar, adlar, kosuyor) {
   return kap;
 }
 
+// Ajana giden isin metni: ajanin brifingindeki isin tanimiyla AYNI alanlar.
+function gorevMetni(g) {
+  const p = [`#${g.no} ${g.baslik}`];
+  if (g.sahip) p.push("Sahip: " + g.sahip);
+  if (g.ana_hedef) p.push("Ana hedef: " + g.ana_hedef);
+  if (g.neden) p.push("Neden: " + g.neden);
+  if (g.govde) p.push("", g.govde);
+  if (g.kabul_olcutu) p.push("", "Kabul ölçütü: " + g.kabul_olcutu);
+  if ((g.yazma_alani || []).length) p.push("Yazma alanı: " + g.yazma_alani.join(", "));
+  return p.join("\n");
+}
+
 function sureleriYaz() {
   for (const s of document.querySelectorAll(".sohbet-sure[data-bas]")) {
     const t = Date.parse(s.dataset.bas);
@@ -3453,6 +3568,42 @@ setInterval(async () => {
   if (kap.dataset.altta !== "0") kap.scrollTop = kap.scrollHeight;
   else kap.scrollTop = Number(kap.dataset.kaydir || 0);
 }, 3000);
+
+// SUREN ISLER (02.10.2026; rakipte sohbetin altinda is basina "Durdur ·
+// Duraklat · Iptal et" var). Ust cubuktaki Durdur BUTUN ofisi durdurur;
+// burada tek is beklemeye alinir, oteki isler ve takimlar surer.
+function surenIsler() {
+  const satirlar = [];
+  for (const d of ["calisiyor", "hazir", "bekliyor"])
+    for (const g of (D.tahta && D.tahta[d]) || []) satirlar.push([d, g]);
+  if (!satirlar.length) return null;
+  const s = el("div", "suren-isler");
+  s.append(el("b", "suren-baslik", "Süren işler"));
+  for (const [d, g] of satirlar) {
+    const r = el("div", "suren-is" + (g.duraklatildi ? " duraklatildi" : ""));
+    r.append(el("span", "suren-sahip", g.sahip || "—"),
+             el("span", "suren-ad", ` #${g.no} ${g.baslik}`),
+             el("span", "sohbet-cip " + (g.duraklatildi ? "durum-inceleme" : "durum-" + d),
+                g.duraklatildi ? "duraklatıldı" : (GOREV_DURUM[d] || d)));
+    const dk = el("button", "sohbet-cip", g.duraklatildi ? "Sürdür" : "Duraklat");
+    dk.title = g.duraklatildi ? "aynı oturumdan devam eder"
+      : "yalnız bu işi beklemeye alır (koşan turu keser); öteki işler sürer";
+    dk.onclick = async () => {
+      dk.disabled = true;
+      try {
+        await yolla(`/api/gorev/${g.no}/` + (g.duraklatildi ? "surdur" : "duraklat"), {});
+        bildir(g.duraklatildi ? `#${g.no} sürüyor` : `#${g.no} duraklatıldı`, "iyi");
+      } catch (e) { bildir(String(e.message || e).slice(0, 160), "uyari"); }
+      yenile();
+    };
+    const ip = el("button", "sohbet-cip", "İptal et");
+    ip.title = "işin ayrıntısını açar; iptal sebebi orada yazılır";
+    ip.onclick = () => gorevAc(g.no);
+    r.append(dk, ip);
+    s.append(r);
+  }
+  return s;
+}
 
 async function cizSohbet(kap) {
   let r;
@@ -3521,6 +3672,8 @@ async function cizSohbet(kap) {
       l.append(y); kap.append(l);
     }
   }
+  const _suren = surenIsler();
+  if (_suren) kap.append(_suren);
   // KAYDIRMA KORUNUR: patron yukari kaydirmissa yeniden cizim onu
   // en alta firlatmaz (canli durum tazelemesi birkac saniyede bir cizer).
   if (kap.dataset.altta !== "0") kap.scrollTop = kap.scrollHeight;

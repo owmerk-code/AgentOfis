@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import json
 import uuid
+from datetime import datetime, timedelta, timezone
 
 from . import surec as _surec
 from .db import simdi
@@ -230,6 +231,82 @@ def devam_cevabi(ofis, kayit_id: str) -> str:
             c.execute("UPDATE mesaj SET cevap = ?, cevaplandi = ? WHERE id = ?",
                       (metin, simdi(), m["id"]))
     return metin
+
+
+#: ILETILEMEDI (02.10.2026). Rakipte (video BCiMfZ9mN-w, k47) mesajin
+#: yaninda "Iletilemedi -- terminal cevap vermedi [Terminale git]
+#: [Tekrar dene]" var. Bizde siradaki is DUSERSE patronun mesaji ya hic
+#: gorunmuyordu (konus mesaji yazamadan dustuyse) ya da cevapsiz ASILI
+#: kaliyordu -- "lider calisiyor" diyen yanlis gosterge. Dusen is
+#: sohbette kalir (sebep + Tekrar dene + Kapat), bir gun sonra duser.
+ILETILEMEDI_SAAT = 24
+DUSUS_ONEKI = "İLETİLEMEDİ"
+
+
+def dusus_cevabi(ofis, kayit_id: str, sebep) -> str:
+    """Dusen istegin cevapsiz mesajini OFISIN cevabiyla kapatir (modelsiz)."""
+    with ofis.db.baglanti() as c:
+        r = c.execute("SELECT * FROM kuyruk WHERE id = ?", (kayit_id,)).fetchone()
+        if not r:
+            return ""
+        k = _sozluk(r)
+        metin = (f"{DUSUS_ONEKI}: lider bu mesajı işleyemedi "
+                 f"({' '.join(str(sebep or '').split())[:200]}). "
+                 "Sohbetteki “Tekrar dene” ile yeniden sıraya koyabilirsin.")
+        m = c.execute("SELECT id FROM mesaj WHERE proje_id = ? AND gonderen = 'insan' AND alici = ? "
+                      "AND olusturuldu >= ? AND (cevap = '' OR cevap IS NULL) ORDER BY rowid LIMIT 1",
+                      (ofis.proje_id, k["lider_ad"], k.get("basladi") or k["olusturuldu"])).fetchone()
+        if m:
+            c.execute("UPDATE mesaj SET cevap = ?, cevaplandi = ? WHERE id = ?",
+                      (metin, simdi(), m["id"]))
+    return metin
+
+
+def iletilemeyenler(ofis) -> list:
+    """Son ILETILEMEDI_SAAT icinde dusen ve patronun henuz ele almadigi isler."""
+    sinir = (datetime.now(timezone.utc) - timedelta(hours=ILETILEMEDI_SAAT)
+             ).isoformat(timespec="seconds")
+    with ofis.db.baglanti() as c:
+        rows = c.execute("SELECT * FROM kuyruk WHERE proje_id = ? AND durum = 'hata' "
+                         "AND COALESCE(bitti, '') >= ? ORDER BY bitti, rowid",
+                         (ofis.proje_id, sinir)).fetchall()
+    return [_sozluk(r) for r in rows]
+
+
+def _dusen(c, ofis, kayit_id: str):
+    kayit_id = (kayit_id or "").strip()
+    if len(kayit_id) < 4:
+        raise KuyrukHatasi("Is kimligini ver (en az 4 harf).")
+    rows = c.execute("SELECT * FROM kuyruk WHERE proje_id = ? AND id LIKE ?",
+                     (ofis.proje_id, kayit_id + "%")).fetchall()
+    if len(rows) != 1:
+        raise KuyrukHatasi("Bu kimlikle tek bir is bulunamadi.")
+    if rows[0]["durum"] != "hata":
+        raise KuyrukHatasi(f"Is '{rows[0]['durum']}' durumunda; yalniz DUSEN is "
+                           "yeniden denenir ya da kapatilir.")
+    return rows[0]
+
+
+def tekrar_dene(ofis, kayit_id: str) -> dict:
+    """Dusen isi AYNI ayarlarla siranin sonuna koyar; eskisi kapanir."""
+    with ofis.db.baglanti() as c:
+        r = _sozluk(_dusen(c, ofis, kayit_id))
+        n = c.execute("UPDATE kuyruk SET durum = 'iptal', not_ = 'yeniden denendi' "
+                      "WHERE id = ? AND durum = 'hata'", (r["id"],)).rowcount
+    if n != 1:
+        raise KuyrukHatasi("Is zaten ele alinmis.")
+    return ekle(ofis, r["metin"], r["lider_ad"], atanan=r.get("atanan") or "",
+                tarayici_alani=r.get("tarayici_alani") or None,
+                kabin=bool(r.get("kabin")), kaynak=r.get("kaynak") or "insan")
+
+
+def dusuk_kapat(ofis, kayit_id: str) -> dict:
+    """Patron dusen isi gordu ve birakti: sohbetten kalkar."""
+    with ofis.db.baglanti() as c:
+        r = _dusen(c, ofis, kayit_id)
+        c.execute("UPDATE kuyruk SET durum = 'iptal', not_ = 'patron kapatti' "
+                  "WHERE id = ? AND durum = 'hata'", (r["id"],))
+    return _sozluk(r)
 
 
 def raporu_yaz(ofis, seri: str) -> str:

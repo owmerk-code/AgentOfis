@@ -306,6 +306,18 @@ def akislar(db, proje_id: str) -> dict:
         return {m: v for (p, m), v in _AKISLAR.items() if p == proje_id}
 
 
+def durum_yazisi(g: dict) -> str:
+    """Liderin gordugu is durumu. DURAKLATILAN is ayrica soylenir.
+
+    OLCULDU (02.10.2026, sinama paneli): patron calisan isi duraklatti, is
+    `hazir`a dondu; lider raporunda *"is hazir diye isaretlenmis ama dosya
+    yok, bitmis sayilmaz"* yazdi -- patronun kendi istegini ariza sandi.
+    """
+    if g.get("duraklatildi"):
+        return f"{g['durum']} -- PATRON DURAKLATTI (Surdur'e basinca devam eder; ariza degil)"
+    return g["durum"]
+
+
 class Sohbet:
     def __init__(self, ofis, *, motor_fabrikasi=motor_ac, zincir=None) -> None:
         self.ofis = ofis
@@ -370,7 +382,7 @@ class Sohbet:
             satirlar.append("### Acik isler")
             for g in acik:
                 kanit = len(self.ofis.tahta.kanitlar(g["no"]))
-                satirlar.append(f"- #{g['no']} [{g['durum']}] {g['baslik']} "
+                satirlar.append(f"- #{g['no']} [{durum_yazisi(g)}] {g['baslik']} "
                                 f"— {g['sahip'] or 'atanmadi'} — {kanit} kanit")
         else:
             satirlar.append("### Acik is yok.")
@@ -951,7 +963,7 @@ class Sohbet:
         satirlar = ["# PATRONUN ISTEGI", "", mesaj, "", "# SONUC", ""]
         for g0 in plan["gorevler"]:
             g = self.ofis.tahta.gorev(g0["no"])
-            satirlar.append(f"## #{g['no']} {g['baslik']} — {g['durum']}")
+            satirlar.append(f"## #{g['no']} {g['baslik']} — {durum_yazisi(g)}")
             satirlar.append(f"- sahip: {g['sahip'] or '-'}")
             satirlar.append(f"- kabul olcutu: {g['kabul_olcutu']}")
             for k in self.ofis.tahta.kanitlar(g["no"]):
@@ -1096,7 +1108,7 @@ class Sohbet:
             kanit = len(self.ofis.tahta.kanitlar(g["no"]))
             if g["durum"] not in ("bitti", "iptal"):
                 acik.append((g, kanit))
-            satirlar.append(f"- #{g['no']} {g['baslik']}: **{g['durum']}** "
+            satirlar.append(f"- #{g['no']} {g['baslik']}: **{durum_yazisi(g)}** "
                             f"({kanit} kanit)")
 
         bekleyen = (self.ofis.postane.insan_bekleyenler()
@@ -1116,7 +1128,7 @@ class Sohbet:
             parca.append(
                 f"**Not (ofisin kaydı):** {len(acik)} iş henüz bitmedi — "
                 + "; ".join(f"#{g['no']} {g['baslik']} "
-                            f"({durum_adi.get(g['durum'], g['durum'])})"
+                            f"({'patron duraklattı' if g.get('duraklatildi') else durum_adi.get(g['durum'], g['durum'])})"
                             for g, _ in acik) + ".")
         if bekleyen:
             parca.append(f"**{len(bekleyen)} karar seni bekliyor** "

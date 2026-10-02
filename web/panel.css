@@ -1005,6 +1005,24 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .sohbet-balon.tur-soru, .sohbet-balon.tur-onay { border-color: color-mix(in srgb, var(--bekleyen) 45%, var(--cizgi)); }
 /* SIRADAKI IS (01.10.2026): henuz baslamadi -- soluk ve kesik cizgili. */
 .sohbet-balon.tur-sirada { opacity: .72; border-style: dashed; }
+.sohbet-verilen { display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+  font-size: var(--yz-mikro); margin-bottom: 4px; }
+.sohbet-gorev-metni { flex-basis: 100%; }
+.sohbet-gorev-metni pre { white-space: pre-wrap; margin: 4px 0 0; padding: 6px 8px;
+  border: 1px solid var(--cizgi); border-radius: 6px; max-height: 260px; overflow: auto;
+  font-family: ui-monospace, Consolas, monospace; }
+.suren-isler { border-top: 1px solid var(--cizgi); margin-top: 8px; padding-top: 6px;
+  font-size: var(--yz-kucuk); }
+.suren-baslik { display: block; color: var(--metin-2); font-size: var(--yz-mikro);
+  margin-bottom: 4px; }
+.suren-is { display: flex; align-items: center; gap: 6px; padding: 2px 0; }
+.suren-is.duraklatildi { opacity: .7; }
+.suren-sahip { color: var(--vurgu); font-weight: 600; }
+.suren-ad { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sohbet-balon.tur-iletilemedi { border-color: var(--kotu); }
+.sohbet-balon.tur-iletilemedi .sohbet-tur { color: var(--kotu); font-weight: 600; }
+.sohbet-sebep { font-size: var(--yz-mikro); color: var(--metin-2); margin-top: 4px; }
+.sohbet-cip.durum-kotu { border-color: var(--kotu); color: var(--kotu); }
 .sohbet-balon.tur-ozet { border-color: color-mix(in srgb, var(--iyi) 45%, var(--cizgi)); }
 .sohbet-altlar { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 7px; }
 .sohbet-cip { font: inherit; font-size: var(--yz-mikro); padding: 2px 8px; border-radius: 99px;

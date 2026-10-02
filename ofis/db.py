@@ -799,6 +799,10 @@ class Veritabani:
         # sohbeti isin adimlarini o mesajin altinda toplar (Claude Code
         # gibi tek konusma). Bos = eski is ya da istekten dogmayan is.
         ("gorev", "istek_id", "TEXT NOT NULL DEFAULT ''"),
+        # DURAKLATILDI (02.10.2026): patronun is basina beklemesi (an).
+        ("gorev", "duraklatildi", "TEXT NOT NULL DEFAULT ''"),
+        # KABUL (02.10.2026): patron teslimi kabul etti (an).
+        ("mesaj", "kabul", "TEXT NOT NULL DEFAULT ''"),
     )
 
     def _veri_goc(self, conn) -> None:

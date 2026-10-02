@@ -236,6 +236,36 @@ def _kes(m: str) -> str:
 _KOD_ARACI = re.compile(r"tools\.(?:mcp__)?([A-Za-z0-9_]+?)(?:__([A-Za-z0-9_]+))?\s*\(\s*(\{[^}]{0,300})?")
 
 
+def _sure(bas: str, son: str):
+    """Iki ISO an arasi saniye; okunamazsa None (uydurmaz)."""
+    from datetime import datetime
+    try:
+        return max(0, int((datetime.fromisoformat(son) - datetime.fromisoformat(bas))
+                          .total_seconds()))
+    except (TypeError, ValueError):
+        return None
+
+
+def kabul_et(ofis, mesaj_id: str) -> dict:
+    """Patron teslimi KABUL etti: an yazilir, karar gunlugune girer.
+
+    Ileride liderin karar kalitesi (E29) ve teslime puan (E78) bunu
+    okur; bugun patronun "tamam" demesinin kalici izidir.
+    """
+    from .db import simdi
+    with ofis.db.baglanti() as c:
+        m = c.execute("SELECT * FROM mesaj WHERE proje_id = ? AND id = ?",
+                      (ofis.proje_id, mesaj_id)).fetchone()
+        if not m or m["gonderen"] != "insan" or not m["cevaplandi"]:
+            raise TakimHatasi("Kabul edilecek, cevaplanmis bir istek bulunamadi.")
+        if m["kabul"]:
+            return dict(m)
+        c.execute("UPDATE mesaj SET kabul = ? WHERE id = ?", (simdi(), mesaj_id))
+    ofis.bellek.karar_yaz(f"Patron teslimi kabul etti: {' '.join(m['govde'].split())[:100]}",
+                          "Patron panelde Kabul et'e basti.", "insan", tur="genel")
+    return dict(m)
+
+
 def adim_ozeti(govde: str) -> dict:
     """Arac olayi -> {ad, ozet}: insanin okuyacagi tek satir.
     `mcp__tarayici__browser_navigate` -> `browser_navigate`; Codex'in kod
@@ -262,7 +292,7 @@ def istek_durumlari(ofis, istek_idleri) -> dict:
     soru = ",".join("?" * len(istek_idleri))
     with ofis.db.baglanti() as c:
         isler = c.execute(
-            f"SELECT id, no, sahip, durum, istek_id, guncellendi FROM gorev WHERE proje_id = ? "
+            f"SELECT id, no, baslik, sahip, durum, istek_id, guncellendi FROM gorev WHERE proje_id = ? "
             f"AND istek_id IN ({soru}) "
             # DURUM SATIRI CALISANI gosterir (olculdu: incelemedeki is
             # calisanin onune geciyordu): calisiyor > inceleme > hazir.
@@ -277,7 +307,8 @@ def istek_durumlari(ofis, istek_idleri) -> dict:
             for r in c.execute("SELECT ajan_ad, govde FROM olay WHERE gorev_id = ? AND tur = 'arac' "
                                "ORDER BY rowid DESC LIMIT 25", (g["id"],)).fetchall()[::-1]:
                 d["adimlar"].append({"ajan": r[0], **adim_ozeti(r[1] or "")})
-            d["isler"].append({"no": g["no"], "sahip": g["sahip"], "durum": g["durum"]})
+            d["isler"].append({"no": g["no"], "sahip": g["sahip"], "durum": g["durum"],
+                               "baslik": g["baslik"]})
             d["adim"] += c.execute("SELECT COUNT(*) FROM olay WHERE gorev_id = ? AND tur = 'arac'",
                                    (g["id"],)).fetchone()[0]
             if d["aktif"] is None and g["durum"] in ("calisiyor", "inceleme", "hazir"):
@@ -346,7 +377,11 @@ def akis(ofis, *, kanat_id=None, adet: int = 80) -> list:
                            "tur": "cevap", "metin": _kes(m["cevap"]),
                            "gorev_no": m["gorev_no"], "id": m["id"],
                            "istek": m["id"] if tur == "sohbet" else "",
-                           "bekliyor": False, "ulasti": None})
+                           "bekliyor": False, "ulasti": None,
+                           # TESLIM (02.10.2026; rakipte "6 dakika surdu ·
+                           # Duzeltme iste · Kabul et"): istekten cevaba sure.
+                           "sure_sn": _sure(m["olusturuldu"], m["cevaplandi"]),
+                           "kabul": m.get("kabul") or ""})
     tur_adi = {"rapor": "rapor", "gorev_acildi": "is", "kapandi": "kapandi",
                "ret": "ret", "onay_istendi": "onay",
                "ajan_sohbet": "bildirim", "donus_raporu": "ozet",
@@ -390,6 +425,15 @@ def akis(ofis, *, kanat_id=None, adet: int = 80) -> list:
                        "metin": _kes(k["metin"]), "gorev_no": None,
                        "id": k["id"], "bekliyor": False, "ulasti": None,
                        "sira_no": _i})
+    # ILETILEMEDI (02.10.2026): dusen is sohbette kalir, sebebiyle.
+    for k in _kuyruk.iletilemeyenler(ofis):
+        if not takimda(k["lider_ad"]):
+            continue
+        ogeler.append({"an": k["bitti"], "sira": (1 << 30, 0),
+                       "kimden": "ofis", "kime": "insan", "tur": "iletilemedi",
+                       "metin": _kes(k["metin"]), "sebep": (k.get("not_") or "")[:300],
+                       "gorev_no": None, "id": k["id"], "bekliyor": False,
+                       "ulasti": None})
     # Kimin konustugu (meslegi) ve isin SU ANKI durumu: rakipteki gibi
     # "Kamil Amca · frontend" ve bir durum etiketi. Durum defterden
     # okunur, ogeye yazilmis eski hal degil -- "basliyor" diyen bir
@@ -410,6 +454,43 @@ def akis(ofis, *, kanat_id=None, adet: int = 80) -> list:
     for x in ogeler:
         if x["tur"] == "sohbet" and x["id"] in _durum:
             x["istek_durum"] = _durum[x["id"]]
+        # Cevabin altindaki teslim satiri: istegin isleri ne durumda.
+        if x["tur"] == "cevap" and x.get("istek") in _durum:
+            x["isler"] = _durum[x["istek"]]["isler"]
+    # SONRADAN BITEN IS (02.10.2026, sinama panelinde olculdu: patron isi
+    # duraklatti, cevap "bitmedi" diye yazildi, Surdur'den sonra is BITTI
+    # ama sohbet hala "bitmedi" diyordu). Istegin cevabindan SONRA kapanan
+    # is sohbete GUNCELLEME olarak duser: liderin patrona taslagi, yoksa
+    # ofisin kaydi (modelsiz). Normal akista is cevaptan ONCE kapanir.
+    _cevaplar = {x["istek"]: x for x in ogeler
+                 if x["tur"] == "cevap" and x.get("istek") in _durum}
+    guncel = []
+    if _cevaplar:
+        with ofis.db.baglanti() as conn:
+            for ist, cv in _cevaplar.items():
+                for r in conn.execute(
+                        "SELECT g.id, g.no, g.baslik, o.olusturuldu AS an, o.rowid AS sira "
+                        "FROM gorev g JOIN olay o ON o.gorev_id = g.id AND o.tur = 'kapandi' "
+                        "WHERE g.proje_id = ? AND g.istek_id = ? AND g.durum = 'bitti' "
+                        "AND o.olusturuldu > ?", (ofis.proje_id, ist, cv["an"])).fetchall():
+                    t = conn.execute("SELECT govde FROM olay WHERE gorev_id = ? AND "
+                                     "tur = 'rapor_taslak' ORDER BY rowid DESC LIMIT 1",
+                                     (r["id"],)).fetchone()
+                    k = conn.execute("SELECT COUNT(*) FROM kanit WHERE gorev_id = ?",
+                                     (r["id"],)).fetchone()[0]
+                    metin = ((t[0] if t else "") or
+                             f"#{r['no']} {r['baslik']} bitti ({k} kanıt, lider kontrol etti).")
+                    guncel.append({"an": r["an"], "sira": (r["sira"], 2),
+                                   "kimden": cv["kimden"], "kime": "insan",
+                                   "tur": "guncelleme", "metin": _kes(metin),
+                                   "gorev_no": r["no"], "id": "", "istek": "",
+                                   "bekliyor": False, "ulasti": None})
+    if guncel:
+        durumlar.update({x["gorev_no"]: "bitti" for x in guncel})   # cip "#40 bitti"
+        _sabit = ("sirada", "iletilemedi")   # bilerek en altta kalanlar
+        _akan = [x for x in ogeler if x["tur"] not in _sabit] + guncel
+        _akan.sort(key=lambda x: (x["an"] or "", x["sira"]))
+        ogeler = _akan + [x for x in ogeler if x["tur"] in _sabit]
     from . import ekler as _ek
     for x in ogeler:
         # EKLER mesaj satirindan cikarilir, balonda resim/baglanti olur.
@@ -418,4 +499,11 @@ def akis(ofis, *, kanat_id=None, adet: int = 80) -> list:
         a = kadro.get(x["kimden"])
         x["meslek"] = (a or {}).get("meslek", "")
         x["gorev_durum"] = durumlar.get(x.get("gorev_no"), "")
+        # NOTUN GERCEK DURUMU (02.10.2026): is kapandiysa okunmamis not
+        # ARTIK ULASMAYACAK -- "iletilecek" demek yanlis gosterge olurdu.
+        if x["tur"] == "not" and not x["ulasti"]:
+            if x["gorev_durum"] in ("bitti", "iptal"):
+                x["ulasmadi"] = True
+            elif x["gorev_durum"] == "inceleme":
+                x["incelemede"] = True
     return ogeler

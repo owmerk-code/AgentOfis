@@ -1664,7 +1664,8 @@ class Koltuk:
         bekler ve bir sonraki turun basinda gider. Durdurma da o motorda
         tur ortasinda UYGULANAMAZ -- halka tur sinirinda durur; bu SOYLENIR.
         """
-        if durdurma_istendi(self.db, self.proje_id):
+        if (durdurma_istendi(self.db, self.proje_id)
+                or self._duraklatildi_mi(gorev["id"])):
             if kanal is not None and not kanal.durdurulsun:
                 kanal.durdur()
                 yield self._olay("uyari",
@@ -1687,6 +1688,16 @@ class Koltuk:
                 continue
             kd["itilen"].add(n["id"])
             kanal.gonder(n["id"], self.not_metni(n["govde"]))
+
+    def _duraklatildi_mi(self, gorev_id: str) -> bool:
+        """Patron bu isi DURAKLATTI mi (tahta.duraklat)? Defterden, taze."""
+        try:
+            with self.db.baglanti() as conn:
+                r = conn.execute("SELECT duraklatildi FROM gorev WHERE id = ?",
+                                 (gorev_id,)).fetchone()
+        except sqlite3.Error:
+            return False
+        return bool(r and r[0])
 
     @staticmethod
     def not_metni(govde: str) -> str:

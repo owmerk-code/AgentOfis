@@ -228,7 +228,7 @@ matrisin ölçümüyle karşılaştırır.
 - **F5 "ben yokken" altyapısı (01.10):** kuyruk + dönüş raporu, kesintiden devam, masaüstü bildirimi, zamanlayıcı — dördü canlı (8911, gerçek motor) ölçüldü. Kalan F5: telefon, onay yorgunluğu (E80), bağlam göstergesi, ses (en son).
 - **Güncelleme hemen:** 30 dakikada bir ölçer, uyguladıktan sonra yeniden
   ölçer (`olc_ve_ilerle`). CLI güncellemesinin deneme turu, ofis gerçek terminal kipindeyse terminalde de koşar (30.09).
-- **Sınamalar:** **3869/3869** (02.10; 57 dosya; tam takım ÇIKIŞ KODUYLA koşulur — kod 3 = artık klasör) + gerçek set (`gercek_set.py`, her gece 03:30). Deneme seti 15/15
+- **Sınamalar:** **3949/3949** (02.10; 59 dosya; tam takım ÇIKIŞ KODUYLA koşulur — kod 3 = artık klasör) + gerçek set (`gercek_set.py`, her gece 03:30). Deneme seti 15/15
   (Claude ve Codex, işçi+lider).
 - **Kullanıcının belirttiği eksikler (29.09):** her panoda her zaman açık
   yazma yeri; sesli orkestratör;
