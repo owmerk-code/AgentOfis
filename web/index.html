@@ -43,14 +43,16 @@
               title="Panelin içinde gerçek tarayıcı aç (ayrı profil, ajanla paylaşılır).">
         <span class="kip-nokta"></span><span id="kabin-etiket">tarayıcı</span>
       </button>
-      <button class="kip-anahtar" id="bildirim-anahtar"
+      <!-- AYARLARA TASINDI (02.10.2026): bildirim, efor, ajan terminali.
+           Dugumler kalir (eski kod onlari tazeler), gorunmez. -->
+      <button class="kip-anahtar" id="bildirim-anahtar" hidden
               title="Masaüstü bildirimi: onay, soru, cevap ve sıra bitince Windows bildirimi gelir.">
         <span class="kip-nokta"></span><span id="bildirim-etiket">bildirim</span>
       </button>
       <!-- EFOR: kullanicinin dugmesi. "Zoruga gore" her is kendi
            zorluguyla (lider secer, gerekceyle); sabit secenekler BUTUN
            turlari o seviyeye koyar. `max` bilerek yok. -->
-      <div class="efor-sec" id="efor-sec"
+      <div class="efor-sec" id="efor-sec" hidden
            title="Ajanlar ne kadar derin düşünsün. 'Zorluğa göre': lider her işe kolay/orta/zor/çok zor der, efor ona göre seçilir.">
         <span class="efor-etiket">efor</span>
         <button data-mod="zorluk">zorluğa göre</button>
@@ -59,7 +61,7 @@
       </div>
       <!-- AJAN TERMINALI: ajanlar arka planda mi, Claude/Codex'in kendi
            terminalinde mi calissin. Riskli adim iki kipte de sorulur. -->
-      <div class="efor-sec" id="kip-sec"
+      <div class="efor-sec" id="kip-sec" hidden
            title="Ajanlar nerede çalışsın. 'Gerçek': Claude/Codex'in kendi terminali, panoda canlı görünür, içine yazabilirsin. Sonraki turlardan itibaren geçerli.">
         <span class="efor-etiket">ajan terminali</span>
         <button data-kip="arka">arka plan</button>
@@ -76,6 +78,9 @@
               title="Panoların yerini ve boyutunu varsayılana döndür.">düzeni sıfırla</button>
       <div class="ana-bosluk"></div>
       <div class="motor-rozetleri" id="motor-rozetleri"></div>
+      <button class="kip-anahtar ayar-dugme" id="ayarlar-ac" type="button"
+              title="Ayarlar: entegrasyonlar, hesaplar ve modeller, çalışma, bildirimler, güvenlik, yedek"
+              onclick="ayarlarAc()">⚙ Ayarlar</button>
     </div>
 
     <!-- YERLESIM (23.09.2026): sutunlar artik SABIT DEGIL.
@@ -234,5 +239,6 @@
 <script src="/varlik/vendor/xterm/xterm.js"></script>
 <script src="/varlik/vendor/xterm/addon-fit.js"></script>
 <script src="/varlik/panel.js"></script>
+<script src="/varlik/ayarlar.js"></script>
 </body>
 </html>

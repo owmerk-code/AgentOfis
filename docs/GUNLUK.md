@@ -13981,3 +13981,39 @@ Testler: `duman_duraklat` (yeni), `duman_kuyruk`, `duman_sohbet_akis`
 eklemeleri; her yeni kural için mutasyon (hepsi yakalandı, çöken yok).
 Not: geçici klasördeki proje gölge depoyu `%TEMP%\ofis-golge`ye yazar (sınama
 paneli sonrası elle silinir).
+
+## 02.10.2026 — Ayarlar ekranı, Entegrasyonlar, Takım izinleri
+
+Patron: "ayarlara tıklayınca ne görünecek, doğru dürüst sırala" + "Shopify/Meta
+altyapısı hazır olsun, gerektiğinde ben bağlarım" (karar: hafızada ve
+anayasada; "ertelendi" hatırlatılmaz).
+- **Ayarlar** (üst çubukta ⚙): 7 bölüm — Entegrasyonlar · Takımlar ve izinler ·
+  Hesaplar ve modeller (kota, kademe→model, önceden geçiş eşikleri, otomatik
+  güncelleme + geri al) · Çalışma (ajan/lider terminali, efor, gömülü
+  tarayıcı) · Bildirimler (tür tür; onay ve soru KAPATILAMAZ) · Onay ve
+  güvenlik (kalıcı izinler + kaldır, her zaman sorulanlar, para kilidi
+  yalnız gösterilir, hafıza kapısının durdurdukları) · Yedek ve sağlık.
+  Kural taşımaz: `ofis/ayarlar.py` tek okuma + İZİNLİ anahtar yazma, kuralı
+  evinde uygular. Efor/ajan terminali/bildirim anahtarları üst çubuktan
+  kalktı. Liderin terminal kipi, kademe ve eşikler panelde İLK kez.
+- **Entegrasyonlar** (`ofis/entegrasyon.py`): claude.ai bağlayıcıları
+  `claude mcp list`ten (gerçek: Shopify, Meta, Gmail, Drive, Canva bağlı;
+  Supabase, Higgsfield, WordPress, n8n, M365 giriş gerekli), GitHub `gh auth
+  status` (owmerk-code), Vercel CLI kurulu değil. Bağla = `claude mcp login
+  "claude.ai <Ad>"` (CLI --help'te var) + kopyala + panel konsolu; Kopar =
+  logout komutu. Ofis giriş/çıkış YAPMAZ. API anahtarı ekle/sil: değer hiçbir
+  cevaba ve deftere girmez (sınandı).
+  **Ölçünce düzeltilen vaat:** kart "yazan her çağrı sorulur" diyordu; gerçek
+  araç adlarıyla ölçüldü: create-product/update-product/set-inventory/
+  ads_create_campaign(PAUSED) SORULMUYOR (kayıt), status ACTIVE/publish/
+  discount/boost/delete/send soruluyor. Cümle gerçeğe çekildi.
+- **Takım izni**: `entegrasyon_izni:<takım>`; liderin plan isteğinde izinli
+  liste + şemada `baglayicilar` (yalnız izin varsa); `lider.dagit` izinli+
+  bağlı olanı işe verir, izinsiz/bağsızı vermez (ikisi de olaya), bağlayıcılı
+  "kolay" iş "orta"ya çıkar (haiku'ya sığmaz). Gerçek bağlayıcıyla uçtan uca
+  koşu YAPILMADI (patron mağazayı şimdi kullanmıyor; sahte motorla sınandı).
+- **Yan hata (ölçüldü):** `limit_oku`nun `TemporaryDirectory`si Claude süreci
+  klasörü tutarken siliniyordu → PermissionError ölçümü None yapıyor ve
+  `%TEMP%\ofis-limit-*` kalıyordu. Elle silme + yeniden deneme; 3/3 okuma,
+  artık yok.
+`duman_ayarlar` 42/42, 8 mutasyonun 8'i yakalandı. Tam takım 3991/3991 (60 dosya).

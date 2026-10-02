@@ -266,6 +266,11 @@ class Orkestra:
         # GORMEDEN yol yazmis ve var olmayan bir klasor uydurmustu.
         # Gormeden karar vermek tahmindir -- baglayicida da oyle.
         satirlar += ["", baglayici.lider_blogu()]
+        # TAKIMIN IZNI (02.10.2026): lider hangi baglayiciyi kola
+        # yazabilecegini GORUR; izni patron Ayarlar'da verir.
+        from . import entegrasyon as _ent
+        _izinli = _ent.takim_izinleri(self.db, self.proje_id, kanat_id)
+        satirlar += ["", _ent.lider_blogu(self.db, self.proje_id, kanat_id)]
 
         # AJANLARIN NE YAPABILDIGI LIDERE SOYLENIR.
         #
@@ -418,6 +423,7 @@ class Orkestra:
             '      "yazma_alani": ["klasor/yol"],',
             '      "zorluk": "kolay | orta | zor | cok_zor",',
             '      "zorluk_gerekce": "zor/cok_zor ise NEDEN -- zorunlu",',
+        ] + (['      "baglayicilar": [],'] if _izinli else []) + [
             '      "bekler": []',
             "    }",
             "  ]" + (',' if patron_sozu else ''),

@@ -88,6 +88,20 @@ def acik_mi(ofis) -> bool:
         return True
 
 
+def tur_anahtari(baslik: str) -> str:
+    """Bildirim basligi -> Ayarlar'daki tur anahtari (`ayarlar.BILDIRIM_TURLERI`)."""
+    if baslik == "Onay bekliyor":
+        return "onay"
+    if baslik.endswith("sana soruyor"):
+        return "soru"
+    if baslik.endswith("cevapladı"):
+        return "cevap"
+    return {"Sıradaki işler bitti": "donus", "Bir iş takıldı": "takildi",
+            "Bir iş düştü": "dustu", "Ofis bir hafıza yazısını durdurdu": "hafiza",
+            "Zamanlanmış iş başladı": "zamanli",
+            "Ofis kaldığı yerden sürüyor": "kesinti"}.get(baslik, "")
+
+
 class Izleyici:
     """Defterdeki YENI olaylari bildirime cevirir. `tik()` bir tarama yapar."""
 
@@ -140,6 +154,12 @@ class Izleyici:
                 self.son_cevap = max(self.son_cevap or "", r["cevaplandi"])
                 from . import ekler as _ek
                 ogeler.append((f"{r['alici']} cevapladı", _ek.ayikla(r["cevap"] or "")[0]))
+        # PATRONUN SECIMI (Ayarlar > Bildirimler): kapattigi turler gelmez.
+        # Onay ve soru kapatilamaz (kural `ayarlar.BILDIRIM_TURLERI`).
+        from .ayarlar import bildirim_kapalilar
+        _kapali = bildirim_kapalilar(self.ofis.db, pid)
+        if _kapali:
+            ogeler = [o for o in ogeler if tur_anahtari(o[0]) not in _kapali]
         # ONCELIK: senden bir sey BEKLEYEN (onay, soru) once, sonra liderin
         # cevabi, en son bilgi. Sinama yakaladi: tablo sirasiyla kesilince
         # liderin cevabi ozete dusup kayboluyordu.

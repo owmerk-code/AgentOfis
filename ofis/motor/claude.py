@@ -466,8 +466,16 @@ class ClaudeMotoru(Motor):
         ortam = ortam_hazirla(os.environ, ek={**TUR_ORTAMI, **(ek_ortam or {})},
                               izinli=tuple(ek_ortam or ()))
         import tempfile
+        # GECICI KLASOR ELLE silinir (02.10.2026, olculdu): `with
+        # TemporaryDirectory` cikista, Claude sureci klasoru hala tutarken
+        # silmeye kalkiyordu; Windows reddedince PermissionError (OSError)
+        # asagidaki `except`e dusup OKUNMUS limiti de None yapiyordu ve
+        # %TEMP%'te bos `ofis-limit-*` kaliyordu. Simdi: surec biter,
+        # klasor birkac denemeyle silinir, silinemese de olcum kaybolmaz.
+        cevap = None
+        dizin = tempfile.mkdtemp(prefix="ofis-limit-")
         try:
-            with tempfile.TemporaryDirectory(prefix="ofis-limit-") as dizin:
+            if True:
                 p = subprocess.Popen(
                     [self.calistirilabilir, "-p", "--input-format", "stream-json",
                      "--output-format", "stream-json", "--verbose",
@@ -503,8 +511,19 @@ class ClaudeMotoru(Motor):
                         p.wait(5)
                     except subprocess.TimeoutExpired:
                         p.kill()
+                        try:
+                            p.wait(5)
+                        except subprocess.TimeoutExpired:
+                            pass
         except (OSError, ValueError):
             return None
+        finally:
+            import shutil as _sh
+            for _ in range(10):
+                _sh.rmtree(dizin, ignore_errors=True)
+                if not os.path.exists(dizin):
+                    break
+                time.sleep(0.2)
         if not cevap or cevap.get("subtype") != "success":
             return None
         return self.usage_pencereleri(cevap.get("response") or {})

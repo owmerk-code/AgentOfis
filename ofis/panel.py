@@ -1388,6 +1388,77 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
                     "kendi turlaridir."),
         }
 
+    # -- AYARLAR (02.10.2026): tek okuma, izinli yazma (kural ofis/ayarlar.py)
+    @uygulama.get("/api/ayarlar")
+    def api_ayarlar():
+        from . import ayarlar as _ay
+        o = ofis_ac()
+        r = _ay.oku(o)
+        from . import bildirim as _b
+        r["bildirim"]["acik"] = _b.acik_mi(o)
+        r["bildirim"]["panelde_calisiyor"] = bool(_b.ACIK)
+        return r
+
+    @uygulama.post("/api/ayarlar")
+    def api_ayarlar_yaz(govde: dict):
+        from . import ayarlar as _ay
+        o = ofis_ac()
+        try:
+            _ay.yaz(o, str(govde.get("anahtar") or ""), govde.get("deger"))
+        except _ay.AyarHatasi as exc:
+            raise HTTPException(400, str(exc))
+        return api_ayarlar()
+
+    @uygulama.get("/api/entegrasyon")
+    def api_entegrasyon(taze: int = 0):
+        """Entegrasyon kartlari -- OLCULMUS durum (kural ofis/entegrasyon.py)."""
+        from . import entegrasyon as _en
+        return _en.kartlar(taze=bool(taze))
+
+    @uygulama.post("/api/entegrasyon/anahtar")
+    def api_anahtar_ekle(govde: dict, istek: Request):
+        """Kasaya API anahtari. Deger GERI DONMEZ, kayda da yazilmaz
+        (yalniz ad + parmak izi). Yalniz bu bilgisayardan."""
+        if istek.client and istek.client.host not in TERMINAL_YEREL:
+            raise HTTPException(403, "Anahtar yalniz bu bilgisayardan eklenir.")
+        from . import gizli as _gz
+        try:
+            r = _gz.ekle(str(govde.get("ad") or ""), str(govde.get("deger") or ""))
+        except _gz.GizliHatasi as exc:
+            raise HTTPException(400, str(exc))
+        o = ofis_ac()
+        o.db.olay_yaz(o.proje_id, "ayar", f"API anahtari eklendi: {r['ad']} "
+                      f"(parmak izi {r['parmak_izi']})", ajan_ad="insan")
+        return r
+
+    @uygulama.post("/api/entegrasyon/anahtar/{ad}/sil")
+    def api_anahtar_sil(ad: str, istek: Request):
+        if istek.client and istek.client.host not in TERMINAL_YEREL:
+            raise HTTPException(403, "Anahtar yalniz bu bilgisayardan silinir.")
+        from . import gizli as _gz
+        if not _gz.sil(ad):
+            raise HTTPException(404, f"Kasada boyle bir anahtar yok: {ad}")
+        o = ofis_ac()
+        o.db.olay_yaz(o.proje_id, "ayar", f"API anahtari silindi: {ad.upper()}",
+                      ajan_ad="insan")
+        return {"silindi": ad.upper()}
+
+    @uygulama.post("/api/ayarlar/yedek")
+    def api_ayarlar_yedek():
+        """Simdi yedekle: arkada alinir, sonuc olay olarak duser."""
+        from . import yedek as _y
+        o = ofis_ac()
+
+        def _al():
+            try:
+                r = _y.al("elle")
+                o.db.olay_yaz(o.proje_id, "uyari", f"Yedek alindi: {r.get('arsiv')}",
+                              ajan_ad="insan")
+            except Exception as exc:          # noqa: BLE001 -- sebebiyle soylenir
+                o.db.olay_yaz(o.proje_id, "hata", f"Yedek alinamadi: {exc}", ajan_ad="insan")
+        threading.Thread(target=_al, daemon=True).start()
+        return {"basladi": True}
+
     @uygulama.get("/api/efor")
     def api_efor():
         """Efor modu: zorluga gore mi, butun turlar sabit bir seviyede mi.

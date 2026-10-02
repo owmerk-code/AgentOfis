@@ -94,8 +94,10 @@ motor matrisinden geçmeden deftere girmez.
 - **GitHub:** yalnız gizli `owmerk-code/AgentOfis`, yalnız
   `python -m ofis.kabuk yedek github` ile. Yeni depo/uzak/hesap sormadan yok,
   asla herkese açık değil, sır ve müşteri verisi yok.
-- Mağaza/reklam/sosyal hesaplar sistem bitene kadar bağlanmaz (E26/E79
-  ertelendi). Tauri F9'u bekler.
+- Mağaza/reklam/sosyal hesaplar (Shopify, Meta…): **altyapı HAZIR olur**
+  (Ayarlar > Entegrasyonlar'da kart + Bağla), bağlamayı kullanıcı gerektiğinde
+  kendisi yapar (02.10 kararı; "ertelendi" diye hatırlatılmaz). Para/yayın
+  eylemleri yine kapıda sorulur. Tauri F9'u bekler.
 - Commit sonu: `Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>`.
 - Sıra kararı: **sesli orkestratör ve panel görünüşü EN SON** (kullanıcı,
   29.09); görünüş için önce 2–3 tasarım yönü gösterilir, kullanıcı seçer.
@@ -172,6 +174,7 @@ matrisin ölçümüyle karşılaştırır.
 | `ofis/devral.py` · `terminal.py` · `konsol.py` | Ajanın terminalini insan devralır (ConPTY) · bağımsız konsol. |
 | `ofis/ekler.py` | Sohbete dosya/görsel: kökün `ekler/` klasörü, `[ek] ekler/ad` satırı, ad/boyut/yol kapıları; `paylas` (ajan `sohbete_yaz(ekler=…)`, lider `[ek] <yol>` satırı; kök dışı/gizli ret); GitHub'a ve disk ölçümüne girmez. |
 | `ofis/gorsel.py` · `video.py` | Medya; codex aboneliğiyle görsel; para kilidi. |
+| `ofis/ayarlar.py` · `entegrasyon.py` · `web/ayarlar.js` | Ayarlar ekranı (⚙): tek okuma + İZİNLİ yazma, kural evinde · entegrasyon kartları (claude.ai bağlayıcıları `claude mcp list`, gh, vercel; bağla/kopar KOMUTU söylenir, giriş insanın) · takım başına bağlayıcı izni (lider izinliyi kola yazar, `lider.dagit` verir). |
 | `ofis/ekip.py` · `sablon.py` | Ekip önerisi (lider önerir, insan onaylar) · takım şablonları. |
 | `ofis/saglik.py` · `yetenek.py` · `denetim.py` · `baglayici.py` · `klasor.py` · `sartname.py` · `guncelleme.py` · `motor_karti.py` | Tıkanma teşhisi · yetenek envanteri · denetim kaydı · claude.ai bağlayıcıları · dış klasör kapısı · şartname kapısı (fable, araçsız) · otomatik güncelleme · motor kartı. |
 | `ofis/yedek.py` · `depo.py` | Günlük ZIP (bilgisayar + Drive) · gizli GitHub (kod + defterin metni, üç kapı), `metinden_defter`. |
@@ -228,7 +231,7 @@ matrisin ölçümüyle karşılaştırır.
 - **F5 "ben yokken" altyapısı (01.10):** kuyruk + dönüş raporu, kesintiden devam, masaüstü bildirimi, zamanlayıcı — dördü canlı (8911, gerçek motor) ölçüldü. Kalan F5: telefon, onay yorgunluğu (E80), bağlam göstergesi, ses (en son).
 - **Güncelleme hemen:** 30 dakikada bir ölçer, uyguladıktan sonra yeniden
   ölçer (`olc_ve_ilerle`). CLI güncellemesinin deneme turu, ofis gerçek terminal kipindeyse terminalde de koşar (30.09).
-- **Sınamalar:** **3949/3949** (02.10; 59 dosya; tam takım ÇIKIŞ KODUYLA koşulur — kod 3 = artık klasör) + gerçek set (`gercek_set.py`, her gece 03:30). Deneme seti 15/15
+- **Sınamalar:** **3991/3991** (02.10; 60 dosya; tam takım ÇIKIŞ KODUYLA koşulur — kod 3 = artık klasör) + gerçek set (`gercek_set.py`, her gece 03:30). Deneme seti 15/15
   (Claude ve Codex, işçi+lider).
 - **Kullanıcının belirttiği eksikler (29.09):** her panoda her zaman açık
   yazma yeri; sesli orkestratör;
