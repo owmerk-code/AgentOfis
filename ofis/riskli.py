@@ -704,8 +704,13 @@ KAPI_DISI_ONEKLER = ("mcp__ofis", "mcp__tarayici")
 #: kendisi degil.
 YERLESIK_SERBEST = frozenset("""
 Read Glob Grep LS Write Edit MultiEdit NotebookEdit WebFetch WebSearch
-TodoWrite ToolSearch webrun image_genimagegen clocksleep
+TodoWrite ToolSearch webrun image_genimagegen clocksleep Task Agent Skill
 """.split())
+# `Task`/`Agent`/`Skill` (02.10.2026): alt ajan baslatmak ve beceri yuklemek.
+# Kancada alt ajan araci `Agent` adiyla gorunur (olculdu). SERBEST cunku
+# alt ajanin ICINDEKI her arac cagrisi ayrica bu kapidan gecer (olculdu:
+# alt ajanin `rm`i iki yolda da durdu); yoksa her alt ajan patrona
+# "TANINMAYAN ARAC" diye sorulurdu.
 # `clocksleep`: codex'in yerlesik BEKLEME araci (`sleep`, girdi yalniz
 # `duration_ms`). OLCULDU (01.10.2026, #39): TANINMAYAN ARAC sayildi,
 # patrona onay karti dustu; patron 12 sn'de onayladi ama codex reddi

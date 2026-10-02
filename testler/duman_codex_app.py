@@ -86,7 +86,7 @@ def ilerle():
         if "istek" in a:
             kid = "s%d" % adim[0]
             yaz({"jsonrpc": "2.0", "id": kid, "method": a["istek"],
-                 "params": dict(a.get("params") or {}, threadId=T, turnId=U)})
+                 "params": dict({"threadId": T, "turnId": U}, **(a.get("params") or {}))})
             bekle[0] = kid
         elif "bildirim" in a:
             yaz({"jsonrpc": "2.0", "method": a["bildirim"], "params": a.get("params") or {}})
@@ -118,6 +118,10 @@ while True:
         ilerle()
     elif meth == "mcpServer/tool/call":
         g = (m["params"].get("arguments") or {})
+        if m["params"].get("threadId") not in (T, None, ""):
+            yaz({"jsonrpc": "2.0", "id": mid, "error": {"code": -32600, "message":
+                 "direct app-server input is not allowed for multi-agent v2 sub-agents"}})
+            continue
         if SEN.get("kapi_bozuk"):
             yaz({"jsonrpc": "2.0", "id": mid, "error": {"code": -1, "message": "kapi coktu"}})
             continue
@@ -485,6 +489,26 @@ try:
             oturum_id="", model="", efor="", yazabilir=False, ek_klasorler=(),
             mcp_yapilandirma="", izinli_araclar=(), ek_ortam={"CODEX_HOME": str(ANA / "ev")},
             kanca_komutu="k", gecici=ANA)["argv"])
+
+    # ------------------------------------------------------------ 13
+    print("\n13. ALT AJAN (multi_agent): onay istegi alt ajanin thread'iyle gelir")
+    # OLCULDU (02.10.2026, gercek codex gpt-6-luna): alt ajan thread'i uzerinden
+    # kapi cagrisi reddediliyordu ve alt ajanin HER adimi kapaniyordu.
+    ol, ek, gelen = kos("alt_zararsiz", [
+        {"istek": "item/commandExecution/requestApproval",
+         "params": {"command": KOMUT_SET, "threadId": "alt-thr-9"}},
+        {"bitir": "completed"}])
+    arg = (istekler(gelen, "mcpServer/tool/call") or [{}])[0].get("params") or {}
+    sina("kapiya ANA thread uzerinden soruldu", arg.get("threadId") == "thr-1", str(arg)[:160])
+    sina("alt ajanin zararsiz komutu KABUL edildi",
+         (cevap(gelen, "s1") or {}).get("result") == {"decision": "accept"}, str(cevap(gelen, "s1")))
+    ol, ek, gelen = kos("alt_rm", [
+        {"istek": "item/commandExecution/requestApproval",
+         "params": {"command": KOMUT_RM, "threadId": "alt-thr-9"}},
+        {"bitir": "completed"}])
+    sina("alt ajanin rm'i REDDEDILDI (kapidan gecti)",
+         (cevap(gelen, "s1") or {}).get("result") == {"decision": "decline"})
+    sina("ret SEBEBI olayda", any(o.tur == "izin" and "sebep:" in o.govde for o in ol))
 finally:
     import shutil
     shutil.rmtree(ANA, ignore_errors=True)

@@ -14017,3 +14017,24 @@ anayasada; "ertelendi" hatırlatılmaz).
   `%TEMP%\ofis-limit-*` kalıyordu. Elle silme + yeniden deneme; 3/3 okuma,
   artık yok.
 `duman_ayarlar` 42/42, 8 mutasyonun 8'i yakalandı. Tam takım 3991/3991 (60 dosya).
+
+## 02.10.2026 — alt ajanlar iki motorda açık, Codex alt ajan kapısı düzeltildi
+
+Patron: "ai modellerin alt ajanları çalıştırması bize ne zarar verir?"
+Ölçüldü (boş klasör, haiku ve gpt-6-luna, ofis koltuğundan gerçek koşu):
+- **Claude:** alt ajan aracı `Task` (kancada `Agent` adıyla). Alt ajanın HER
+  aracı kancaya (gerçek terminal) ve onay aracına (arka plan) düşüyor; iki
+  yolda da alt ajanın `rm`i durdu. Alt ajan üstün araç sınırını miras alır
+  (okuyan ajanın alt ajanı yazamadı). Bedel ~5.400 jeton/tur. `Task` ve `Skill`
+  ajanlara açıldı; `Agent/Task/Skill` kapıda serbest (içi ayrıca denetlenir).
+  `--restricted` altında yalnız yerleşik 22 beceri geliyor, patronun becerileri
+  GELMİYOR (sonraki iş).
+- **Codex:** `multi_agent` varsayılan açık, alt ajan açıyor. ÖLÇÜLEN HATA: alt
+  ajanın onay isteği kendi threadId'siyle geliyor, ofis kapıya o thread üzerinden
+  soruyordu → codex "direct app-server input is not allowed for multi-agent v2
+  sub-agents" → kapı cevapsız, HER alt ajan adımı reddediliyordu (güvenli taraf
+  ama alt ajan işe yaramıyordu). Kapı artık ANA thread'den soruluyor; düzeltme
+  sonrası gerçek koşu: alt ajan dosyayı yazdı, `rm` onay kartına düştü. Ret
+  gerekçesi artık olaya yazılıyor (teşhis yeniden koşu gerektirmişti).
+`duman_codex_app` 79/79 (alt ajan bölümü + mutasyon: 2 kaldı), `duman_motor`,
+`duman_riskli` eklemeleri; tam takım 3998/3998.

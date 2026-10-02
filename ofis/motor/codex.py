@@ -1438,8 +1438,14 @@ class CodexMotoru(Motor):
                              {"hatali": True, "arac": arac, "girdi": str(girdi)[:160]})
             return
         sunucu, kapi_araci = izin_hedefi
+        # KAPI ANA OTURUMDAN SORULUR (02.10.2026, olculdu): alt ajanin
+        # (multi_agent, varsayilan acik) onay istegi ALT ajanin threadId'siyle
+        # gelir; o thread uzerinden `mcpServer/tool/call` codex'te REDDEDILIR
+        # ("direct app-server input is not allowed for multi-agent v2
+        # sub-agents") ve kapi cevapsiz kalip HER alt ajan adimini kapatiyordu.
+        # Kapinin karari thread'e bagli degil (kimlik ortamdan, sunucu ayni).
         cid = iste("mcpServer/tool/call",
-                   {"threadId": str(prm.get("threadId") or baglam["thread"]),
+                   {"threadId": str(baglam["thread"] or prm.get("threadId") or ""),
                     "server": sunucu, "tool": kapi_araci,
                     "arguments": {"tool_name": arac, "input": girdi}}, "kapi")
         kararlar[cid] = {"kimlik": kimlik, "bicim": bicim, "arac": arac,
@@ -1463,7 +1469,10 @@ class CodexMotoru(Motor):
         if izin:
             return
         girdi = str(bekleyen["girdi"])[:160]
-        yield MotorOlayi("izin", f"{bekleyen['arac']} reddedildi: {girdi}",
+        # GEREKCE DE YAZILIR (02.10.2026): ret sebebi defterde yoktu; alt
+        # ajanin reddini teshis etmek ancak yeniden kosuyla mumkun oldu.
+        yield MotorOlayi("izin", f"{bekleyen['arac']} reddedildi: {girdi}"
+                         + (f" -- sebep: {gerekce[:240]}" if gerekce else ""),
                          {"hatali": True, "arac": bekleyen["arac"], "girdi": girdi,
                           "gerekce": gerekce[:600]})
         # `decline` modele yalniz "rejected by user" der. Ofisin gerekcesi

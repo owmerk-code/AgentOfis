@@ -603,5 +603,14 @@ if os.name == "nt":
 else:
     print("  [ATLANDI] kafes yalniz Windows'ta (gecti SAYILMAZ)")
 
+print("\nALT AJAN ve BECERI araclari (02.10.2026, gercek haiku ile olculdu)")
+from ofis.motor import claude as _CL  # noqa: E402
+sina("yazan ajanda Task ve Skill var", {"Task", "Skill"} <= set(ELLER_ARACLARI.split(",")))
+sina("okuyan ajanda Task ve Skill var, Write/Bash YOK (alt ajan sinir miras alir)",
+     {"Task", "Skill"} <= set(KAFA_ARACLARI.split(","))
+     and not {"Write", "Edit", "Bash"} & set(KAFA_ARACLARI.split(",")))
+sina("Task/Skill otomatik izinli (ici kapida)", {"Task", "Skill"} <= set(_CL.ELLER_IZINLI)
+     and {"Task", "Skill"} <= set(_CL.KAFA_IZINLI))
+
 print(f"\n== sonuc: {GECEN} gecti, {KALAN} kaldi ==")
 sys.exit(1 if KALAN else 0)

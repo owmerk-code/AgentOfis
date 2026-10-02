@@ -83,13 +83,22 @@ EFOR_CEVRIMI = {"dusuk": "low", "normal": "medium", "yuksek": "high",
 #: 'eller' ajanin kullanabilecegi araclar. `--restricted` komut calistiran
 #: araclari kaldirir; Bash'i geri getirmek icin ADIYLA saymak gerekir.
 #: Acikca sayilmasi iyidir: bir ajanin neye gucu yettigi tahmin edilmez.
-ELLER_ARACLARI = "Read,Glob,Grep,Edit,Write,Bash,TodoWrite,WebSearch,WebFetch"
+#: ALT AJAN (Task) ve BECERI (Skill) -- 02.10.2026, patron: "ai modellerin
+#: alt ajanlari calistirmasi bize ne zarar verir?" OLCULDU (haiku, bos
+#: klasor): alt ajanin HER arac cagrisi hem kancaya (PreToolUse, gercek
+#: terminal) hem onay aracina (--permission-prompt-tool, arka plan)
+#: DUSUYOR; ikisinde de `rm` durduruldu. Alt ajan ust ajanin arac
+#: sinirini MIRAS alir (yazamayan ajanin alt ajani dosya yazamadi).
+#: Bedel: tur basina ~5.400 jeton (13.907 -> 19.308, cogu onbellekten).
+ALT_AJAN_ARACLARI = "Task,Skill"
+ELLER_ARACLARI = ("Read,Glob,Grep,Edit,Write,Bash,TodoWrite,WebSearch,WebFetch,"
+                  + ALT_AJAN_ARACLARI)
 
 #: 'kafa' ajanin araclari. Yazan hicbir arac yok -- kural brifingde rica
 #: edilmez, surec duzeyinde uygulanir. Yazma yasagini TASIYAN sey bu
 #: liste: Write/Edit/Bash burada olmadigi icin ajan yazamaz. Izin kipine
 #: ya da brifing metnine bagli degildir.
-KAFA_ARACLARI = "Read,Glob,Grep,WebSearch,WebFetch"
+KAFA_ARACLARI = "Read,Glob,Grep,WebSearch,WebFetch," + ALT_AJAN_ARACLARI
 
 #: 'kafa' ajanin IZIN listesi. OLCULDU (19.09.2026): plan kipi, acikca
 #: izin verilmeyen her araci reddeder -- `--tools`ta bulunmasi yetmez.
@@ -119,7 +128,7 @@ KAFA_ARACLARI = "Read,Glob,Grep,WebSearch,WebFetch"
 #: -- burada "ulasabilir mi", orada "hakki var mi".
 OFIS_ARACLARI = ("mcp__ofis",)
 
-KAFA_IZINLI = ("Read", "Glob", "Grep", "WebSearch", "WebFetch") + OFIS_ARACLARI
+KAFA_IZINLI = ("Read", "Glob", "Grep", "WebSearch", "WebFetch", "Task", "Skill") + OFIS_ARACLARI
 
 #: Sorulmadan kosturulabilecek komutlar. OLCULDU: `acceptEdits` dosya
 #: yazmaya izin verir ama komut calistirmaya VERMEZ; izin isteyen Bash
@@ -149,6 +158,9 @@ KAFA_IZINLI = ("Read", "Glob", "Grep", "WebSearch", "WebFetch") + OFIS_ARACLARI
 ELLER_IZINLI = (
     "Edit", "Write", "Read", "Glob", "Grep", "TodoWrite",
     "WebSearch", "WebFetch", "mcp__ofis",
+    # Alt ajani BASLATMAK ve beceri yuklemek kendisi bir sey degistirmez;
+    # alt ajanin ICINDEKI her cagri kapidan gecer (olculdu).
+    "Task", "Skill",
     "Bash(python *)", "Bash(python3 *)", "Bash(py *)",
     "Bash(pytest *)", "Bash(python -m pytest *)", "Bash(python -m *)",
     "Bash(node *)", "Bash(npm test*)", "Bash(npm run *)",

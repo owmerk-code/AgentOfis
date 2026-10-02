@@ -1023,5 +1023,13 @@ sina("masaustu IZINLE ACILAMAZ (patron sozu de kalici izin de)",
 sina("brifing ofisin tarayicisini soyluyor, masaustunu yasakliyor",
      "YALNIZ ofisin" in R.brifing_blogu() and "SendKeys" in R.brifing_blogu())
 
+print("\nALT AJAN ve BECERI (02.10.2026)")
+# Kancada alt ajan araci `Agent` adiyla gelir (olculdu); taninmasa her alt
+# ajan patrona "TANINMAYAN ARAC" diye sorulurdu. Icindeki cagrilar ayrica kapida.
+for _ad in ("Agent", "Task", "Skill"):
+    sina(f"{_ad} serbest (alt ajanin ICI ayrica denetlenir)", R.arac_degerlendir(_ad, {}) is None)
+sina("alt ajanin rm'i yine durur", (R.arac_degerlendir("Bash", {"command": "rm sil.txt"}) or {}).get("sinif")
+     == "silme")
+
 print(f"\n== sonuc: {GECEN} gecti, {KALAN} kaldi ==")
 sys.exit(1 if KALAN else 0)
