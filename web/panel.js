@@ -3376,6 +3376,84 @@ function takimBalonu(x, D_ajanlar) {
   return b;
 }
 
+/* ISTEGIN ADIMLARI -- Claude Code'daki katli islem satirlari gibi.
+   Basta tek satir: is surerken "bilge calisiyor · 0:40 -- <son durum>",
+   bitince "▸ 12 islem · 2 mesaj". Tiklayinca ajan mesajlari acilir. */
+D.acikAdim = D.acikAdim || new Set();
+function adimBlogu(x, cocuklar, adlar, kosuyor) {
+  const d = x.istek_durum || {};
+  const kap = el("div", "sohbet-adimlar" + (x.bekliyor ? " suruyor" : ""));
+  const acik = D.acikAdim.has(x.id);
+  const bas = el("button", "sohbet-adim-bas");
+  const adimlar = d.adimlar || [];
+  const acilir = cocuklar.length || adimlar.length;
+  const ok = el("span", "sohbet-adim-ok", acilir ? (acik ? "▾" : "▸") : "·");
+  bas.append(ok);
+  if (x.bekliyor) {
+    const kim = d.aktif ? d.aktif.sahip : (x.kime || "lider");
+    const ne = d.aktif ? (d.aktif.durum === "inceleme" ? "inceleniyor" : "çalışıyor")
+                       : (kosuyor ? "düşünüyor" : "sırada");
+    bas.append(el("b", null, `${kim} ${ne}`));
+    const sure = el("span", "sohbet-sure");
+    sure.dataset.bas = (d.aktif && d.aktif.basladi) || x.an || "";
+    bas.append(document.createTextNode(" · "), sure);
+    if (d.son) bas.append(el("span", "sohbet-adim-son", " — " + d.son));
+  } else {
+    const parca = [];
+    if (d.adim) parca.push(`${d.adim} işlem`);
+    if (cocuklar.length) parca.push(`${cocuklar.length} mesaj`);
+    if ((d.isler || []).length) parca.push(d.isler.map((i) => i.sahip).filter(Boolean)
+      .filter((v, i, a) => a.indexOf(v) === i).join(", "));
+    bas.append(el("span", null, parca.join(" · ") || "ayrıntı yok"));
+  }
+  kap.append(bas);
+  const govde = el("div", "sohbet-adim-govde");
+  govde.hidden = !acik;
+  // Islem satirlari (Claude Code gibi): kim · ne · kisa ozet.
+  if (adimlar.length) {
+    const l = el("div", "sohbet-adim-liste");
+    for (const a of adimlar) {
+      const s = el("div", "sohbet-adim-satir");
+      s.append(el("span", "sohbet-adim-ajan", a.ajan), el("b", null, " " + a.ad),
+               el("span", "sohbet-adim-ozet", a.ozet ? " " + a.ozet : ""));
+      l.append(s);
+    }
+    govde.append(l);
+  }
+  for (const c of cocuklar) govde.append(takimBalonu(c, adlar));
+  kap.append(govde);
+  bas.onclick = () => {
+    if (!acilir) return;
+    const ac = govde.hidden;
+    govde.hidden = !ac; ok.textContent = ac ? "▾" : "▸";
+    if (ac) D.acikAdim.add(x.id); else D.acikAdim.delete(x.id);
+  };
+  sureleriYaz();
+  return kap;
+}
+
+function sureleriYaz() {
+  for (const s of document.querySelectorAll(".sohbet-sure[data-bas]")) {
+    const t = Date.parse(s.dataset.bas);
+    if (!t) { s.textContent = ""; continue; }
+    const sn = Math.max(0, Math.round((Date.now() - t) / 1000));
+    s.textContent = sn < 60 ? `${sn} sn` : `${Math.floor(sn / 60)}:${String(sn % 60).padStart(2, "0")}`;
+  }
+}
+setInterval(sureleriYaz, 1000);
+// CANLI DURUM: bir istek surerken sohbet 3 sn'de bir tazelenir (son durum
+// notu, calisan ajan). Cevap akarken akis izleyicisi zaten ciziyor.
+setInterval(async () => {
+  const kap = $("#pano-sohbet");
+  if (!kap || document.hidden || !panoAcik("sohbet") || _sohbetAkisZaman) return;
+  if (!kap.querySelector(".sohbet-adimlar.suruyor")) return;
+  const yeni = el("div");
+  await cizSohbet(yeni);
+  kap.replaceChildren(...yeni.childNodes);
+  if (kap.dataset.altta !== "0") kap.scrollTop = kap.scrollHeight;
+  else kap.scrollTop = Number(kap.dataset.kaydir || 0);
+}, 3000);
+
 async function cizSohbet(kap) {
   let r;
   try { r = await al("/api/takim" + (D.kanat ? "?kanat=" + D.kanat : "")); }
@@ -3395,8 +3473,33 @@ async function cizSohbet(kap) {
       "@ad iş: … ile işi o ajana verirsin."));
   const kosuyor = (r.kosu && r.kosu.calisiyor) || (r.danisma && r.danisma.calisiyor);
   if (!kosuyor) gecicIpuclariniGeriAl();
+  // TEK KONUSMA (02.10.2026, patron: "seninle konusur gibi"): bir istegin
+  // ajan mesajlari ve adimlari o istegin ALTINDA katli toplanir; is
+  // surerken tek satir canli durum. Senden bir sey bekleyen (onay, sana
+  // soru) disarida kalir -- aranmasin.
+  const istekler = new Set(ogeler.filter((x) => x.tur === "sohbet").map((x) => x.id));
+  const cocuk = {};
+  const ustler = [];
   for (const x of ogeler) {
+    const disarida = x.tur === "sohbet" || x.tur === "cevap" || x.tur === "onay"
+      || (x.bekliyor && x.kime === "insan");
+    if (x.istek && istekler.has(x.istek) && !disarida) (cocuk[x.istek] = cocuk[x.istek] || []).push(x);
+    else ustler.push(x);
+  }
+  for (const x of ustler) {
     kap.append(takimBalonu(x, adlar));
+    // SIRA Claude Code gibi: once liderin (akan) cumlesi, ALTINDA adimlar.
+    if (x.tur === "sohbet" && x.bekliyor && x.akis) {
+      const l = el("div", "sohbet-balon lider akiyor");
+      l.dataset.mesaj = x.id;
+      const u = el("div", "sohbet-ust"); u.append(el("b", "sohbet-kim", x.kime));
+      l.append(u);
+      const y = el("span", "sohbet-yazi"); y.textContent = x.akis;
+      l.append(y); kap.append(l);
+    }
+    if (x.tur === "sohbet" && (cocuk[x.id] || x.istek_durum || x.bekliyor))
+      kap.append(adimBlogu(x, cocuk[x.id] || [], adlar, kosuyor));
+    if (x.tur === "sohbet" && x.bekliyor) continue;   // yukarida cizildi
     // SANA SORULAN SORU (01.10.2026 canli): kime "insan" ise sira PATRONDA;
     // "cevap gelmedi (tur yarida kalmis olabilir)" yer tutucusu yanlisti --
     // ariza gibi gorunuyordu. Cevap yeri sagdaki "Senden bekleniyor"da.
@@ -3418,7 +3521,14 @@ async function cizSohbet(kap) {
       l.append(y); kap.append(l);
     }
   }
-  kap.scrollTop = kap.scrollHeight;
+  // KAYDIRMA KORUNUR: patron yukari kaydirmissa yeniden cizim onu
+  // en alta firlatmaz (canli durum tazelemesi birkac saniyede bir cizer).
+  if (kap.dataset.altta !== "0") kap.scrollTop = kap.scrollHeight;
+  else kap.scrollTop = Number(kap.dataset.kaydir || 0);
+  kap.onscroll = () => {
+    kap.dataset.altta = (kap.scrollHeight - kap.scrollTop - kap.clientHeight < 40) ? "1" : "0";
+    kap.dataset.kaydir = String(kap.scrollTop);
+  };
   if (kosuyor) sohbetAkisIzle();
 }
 

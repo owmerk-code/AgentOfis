@@ -233,6 +233,65 @@ def _kes(m: str) -> str:
     return m if len(m) <= AZAMI_METIN else m[:AZAMI_METIN] + "…"
 
 
+_KOD_ARACI = re.compile(r"tools\.(?:mcp__)?([A-Za-z0-9_]+?)(?:__([A-Za-z0-9_]+))?\s*\(\s*(\{[^}]{0,300})?")
+
+
+def adim_ozeti(govde: str) -> dict:
+    """Arac olayi -> {ad, ozet}: insanin okuyacagi tek satir.
+    `mcp__tarayici__browser_navigate` -> `browser_navigate`; Codex'in kod
+    kipindeki `Bash` sarmali acilir."""
+    satirlar = (govde or "").split("\n")
+    ad = satirlar[0].strip()
+    arg = " ".join(s.strip() for s in satirlar[1:] if s.strip())
+    if ad == "Bash" and "tools." in arg:
+        m = _KOD_ARACI.search(arg)
+        if m:
+            ad = m.group(2) or m.group(1)
+            arg = (m.group(3) or "").lstrip("{")
+    ad = ad.split("__")[-1]
+    return {"ad": ad[:40], "ozet": arg[:110]}
+
+
+def istek_durumlari(ofis, istek_idleri) -> dict:
+    """`{istek_id: {isler, aktif, son, adim}}` -- yalniz bagli isi olan istekler.
+
+    `son`: calisan isin son durum notu ya da ajanin son cumlesi (tek satir).
+    `adim`: bu istegin islerinde ajanlarin yaptigi islem (arac) sayisi.
+    Hepsi DEFTERDEN; uydurulmaz."""
+    out = {}
+    soru = ",".join("?" * len(istek_idleri))
+    with ofis.db.baglanti() as c:
+        isler = c.execute(
+            f"SELECT id, no, sahip, durum, istek_id, guncellendi FROM gorev WHERE proje_id = ? "
+            f"AND istek_id IN ({soru}) "
+            # DURUM SATIRI CALISANI gosterir (olculdu: incelemedeki is
+            # calisanin onune geciyordu): calisiyor > inceleme > hazir.
+            "ORDER BY CASE durum WHEN 'calisiyor' THEN 0 WHEN 'inceleme' THEN 1 "
+            "WHEN 'hazir' THEN 2 ELSE 3 END, no", (ofis.proje_id, *istek_idleri)).fetchall()
+        for g in isler:
+            d = out.setdefault(g["istek_id"], {"isler": [], "aktif": None, "son": "",
+                                               "adim": 0, "adimlar": []})
+            # ADIMLAR (Claude Code'daki islem satirlari gibi): ajanin son
+            # islemleri, kisa. Codex araclari kod kipinden cagirir
+            # (`tools.mcp__x__y(...)`); asil arac adi oradan okunur.
+            for r in c.execute("SELECT ajan_ad, govde FROM olay WHERE gorev_id = ? AND tur = 'arac' "
+                               "ORDER BY rowid DESC LIMIT 25", (g["id"],)).fetchall()[::-1]:
+                d["adimlar"].append({"ajan": r[0], **adim_ozeti(r[1] or "")})
+            d["isler"].append({"no": g["no"], "sahip": g["sahip"], "durum": g["durum"]})
+            d["adim"] += c.execute("SELECT COUNT(*) FROM olay WHERE gorev_id = ? AND tur = 'arac'",
+                                   (g["id"],)).fetchone()[0]
+            if d["aktif"] is None and g["durum"] in ("calisiyor", "inceleme", "hazir"):
+                bas = c.execute("SELECT olusturuldu FROM olay WHERE gorev_id = ? AND tur = 'sahiplenildi' "
+                                "ORDER BY rowid DESC LIMIT 1", (g["id"],)).fetchone()
+                son = c.execute("SELECT govde FROM olay WHERE gorev_id = ? AND tur IN ('durum_notu', 'cikti') "
+                                "ORDER BY rowid DESC LIMIT 1", (g["id"],)).fetchone()
+                d["aktif"] = {"no": g["no"], "sahip": g["sahip"], "durum": g["durum"],
+                              "basladi": bas[0] if bas else ""}
+                satir = next((s.strip() for s in (son[0] if son else "").splitlines() if s.strip()), "")
+                d["son"] = satir[:140]
+    return out
+
+
 def akis(ofis, *, kanat_id=None, adet: int = 80) -> list:
     """Takimin konusmasi -- yeni en altta. Her oge:
 
@@ -251,13 +310,13 @@ def akis(ofis, *, kanat_id=None, adet: int = 80) -> list:
     ogeler = []
     with ofis.db.baglanti() as conn:
         mesajlar = conn.execute(
-            "SELECT m.rowid AS sira, m.*, g.no AS gorev_no FROM mesaj m "
+            "SELECT m.rowid AS sira, m.*, g.no AS gorev_no, g.istek_id AS gorev_istek FROM mesaj m "
             "LEFT JOIN gorev g ON g.id = m.gorev_id WHERE m.proje_id = ? "
             "AND m.mod != 'sessiz' ORDER BY m.rowid DESC LIMIT ?",
             (ofis.proje_id, adet)).fetchall()
         olaylar = conn.execute(
             "SELECT o.rowid AS sira, o.*, g.no AS gorev_no, g.kanat_id AS gorev_kanat, "
-            "g.sahip AS gorev_sahip FROM olay o "
+            "g.sahip AS gorev_sahip, g.istek_id AS gorev_istek FROM olay o "
             "LEFT JOIN gorev g ON g.id = o.gorev_id WHERE o.proje_id = ? "
             "AND o.tur IN (%s) ORDER BY o.rowid DESC LIMIT ?"
             % ",".join("?" * len(AKIS_OLAYLARI)),
@@ -278,6 +337,7 @@ def akis(ofis, *, kanat_id=None, adet: int = 80) -> list:
                        "kimden": m["gonderen"], "kime": m["alici"],
                        "tur": tur, "metin": _kes(m["govde"]),
                        "gorev_no": m["gorev_no"], "id": m["id"],
+                       "istek": m["id"] if tur == "sohbet" else (m["gorev_istek"] or ""),
                        "bekliyor": (tur != "not" and not m["cevaplandi"]),
                        "ulasti": bool(m["okundu"]) if tur == "not" else None})
         if m["cevaplandi"] and tur != "not":
@@ -285,6 +345,7 @@ def akis(ofis, *, kanat_id=None, adet: int = 80) -> list:
                            "kimden": m["alici"], "kime": m["gonderen"],
                            "tur": "cevap", "metin": _kes(m["cevap"]),
                            "gorev_no": m["gorev_no"], "id": m["id"],
+                           "istek": m["id"] if tur == "sohbet" else "",
                            "bekliyor": False, "ulasti": None})
     tur_adi = {"rapor": "rapor", "gorev_acildi": "is", "kapandi": "kapandi",
                "ret": "ret", "onay_istendi": "onay",
@@ -310,6 +371,7 @@ def akis(ofis, *, kanat_id=None, adet: int = 80) -> list:
         ogeler.append({"an": o["olusturuldu"], "sira": (_bas, o["sira"]),
                        "kimden": ajan or "ofis", "kime": "", "tur": tur_adi[o["tur"]],
                        "metin": _kes(o["govde"]), "gorev_no": o["gorev_no"],
+                       "istek": o["gorev_istek"] or "",
                        "id": "", "bekliyor": False, "ulasti": None})
     # Zaman saniye cozunurluklu: ayni saniyedekiler kendi tablosundaki
     # sirayla kalir (karar tablosunda odenen beraberlik tuzagi).
@@ -340,6 +402,14 @@ def akis(ofis, *, kanat_id=None, adet: int = 80) -> list:
                     "SELECT no, durum FROM gorev WHERE proje_id = ? AND no IN (%s)"
                     % ",".join("?" * len(nolar)), (ofis.proje_id, *nolar)):
                 durumlar[r["no"]] = r["durum"]
+    # ISTEGIN CANLI DURUMU (02.10.2026, patron: "burada seninle konusur gibi"):
+    # Claude Code'da is surerken tek satir durum gorunur, islemler katlanir.
+    # Her patron istegi icin: bagli isler, calisani, son durum notu, adim sayisi.
+    _istekler = [x["id"] for x in ogeler if x["tur"] == "sohbet"]
+    _durum = istek_durumlari(ofis, _istekler) if _istekler else {}
+    for x in ogeler:
+        if x["tur"] == "sohbet" and x["id"] in _durum:
+            x["istek_durum"] = _durum[x["id"]]
     from . import ekler as _ek
     for x in ogeler:
         # EKLER mesaj satirindan cikarilir, balonda resim/baglanti olur.

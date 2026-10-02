@@ -1314,6 +1314,24 @@ body.surukleniyor .yigin-govde { pointer-events: none; }
    varsayilan dar olmali (`0.0.0.0` reddiyle ayni siniftan karar). */
 /* Kapaliyken pano yerlesime HIC konmaz (panel.js `panoGorunur`). */
 
+/* ISTEGIN ADIMLARI (02.10.2026) -- Claude Code'daki katli satirlar gibi. */
+.sohbet-adimlar { margin: -2px 0 8px 14px; }
+.sohbet-adim-bas { display: flex; align-items: baseline; gap: 4px; width: 100%;
+  text-align: left; padding: 3px 8px; border-radius: 6px; color: var(--metin-2);
+  font-size: var(--yz-kucuk); background: transparent; }
+.sohbet-adim-bas:hover { background: var(--zemin-2); }
+.sohbet-adimlar.suruyor .sohbet-adim-bas b { color: var(--vurgu); }
+.sohbet-adim-son { overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+  min-width: 0; flex: 1; }
+.sohbet-adim-ok { width: 12px; flex: none; }
+.sohbet-adim-govde { border-left: 2px solid var(--cizgi); margin: 4px 0 0 8px;
+  padding-left: 8px; }
+.sohbet-adim-liste { font-family: ui-monospace, Consolas, monospace;
+  font-size: var(--yz-mikro); color: var(--metin-2); margin-bottom: 6px; }
+.sohbet-adim-satir { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sohbet-adim-satir b { color: var(--metin); font-weight: 600; }
+.sohbet-adim-ajan { color: var(--vurgu); }
+
 /* SEKME SERIDI (02.10.2026) -- Chrome gibi. */
 .kabin-sekmeler {
   display: flex; align-items: flex-end; gap: 2px; flex: none;

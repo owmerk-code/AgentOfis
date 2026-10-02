@@ -839,11 +839,20 @@ class Sohbet:
                 tarayici_kabin=bool(web and tarayici_kabini),
                 atanan=atanan, patron_sozu=mesaj)
         except OrkestraHatasi as exc:
+            plan = None
             not_ = f"Plan alinamadi: {exc}"
             self.ofis.postane.cevapla(kayit["id"], not_, cevaplayan=lider["ad"])
             yield {"tur": "cevap", "govde": not_, "ek": {"hata": True}}
             yield {"tur": "bitti", "govde": "", "ek": {"yol": "plan_hatasi"}}
             return
+        # ISLER ISTEGE BAGLANIR: sohbet adimlari bu mesajin altinda toplar.
+        try:
+            with self.ofis.db.baglanti() as _c:
+                for _g in plan.get("gorevler") or []:
+                    _c.execute("UPDATE gorev SET istek_id = ? WHERE proje_id = ? AND no = ?",
+                               (kayit["id"], self.ofis.proje_id, _g["no"]))
+        except Exception:                # noqa: BLE001 -- gosterim icin; is durmaz
+            pass
 
         self._akis.not_yaz(_KARAR_ETIKET.get(karar["karar"], karar["karar"])
                            + " — ekip çalışıyor; bitince rapor buraya düşer. ("
@@ -978,7 +987,12 @@ class Sohbet:
             "Yukaridakileri patrona **tek bir cevap** olarak yaz.",
             "",
             "- Turkce, kisa, net. Madde madde yazabilirsin.",
-            "- Ne ISTENDI, ne YAPILDI, KANITI ne -- bu ucu gecir.",
+            # SADE CEVAP (02.10.2026, patron: "burada seninle konusur gibi").
+            # "Ne istendi / Ne yapildi" BASLIKLI rapor kalibi sohbette uzun ve
+            # yapay duruyordu.
+            "- Claude Code'un is bitince yazdigi gibi: ILK CUMLE SONUC; gerekirse",
+            "  en fazla 3-4 kisa madde; dosya/baglanti varsa adi. 'Ne istendi',",
+            "  'Ne yapildi', 'Kanit' gibi BASLIK yazma; istenen seyi tekrar anlatma.",
             "- Kapanmayan ya da beklemede kalan is varsa ACIKCA soyle.",
             "- KANIT UYDURMA: yukarida yazmayan bir sonucu yazma.",
             "- BASLIK ya da ara cumle YAZMA ('Patrona rapor', 'Once bakiyorum');",

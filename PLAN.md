@@ -106,7 +106,7 @@ Her eksik bir faza bağlı; hiçbiri sahipsiz değil.
 ### F. Şirket yapısı
 | No | Eksik | Faz |
 |---|---|---|
-| E39 | Genel müdür lider ve departmanlar yok | F6 |
+| E39 | ~~Genel müdür lider ve departmanlar~~ **KALDIRILDI (29.09, kullanıcı): genel müdür YOK.** Her takımın lideri ve sohbeti var; "Tüm ofis"ten `@TAKIM` o takımın liderine (BİTTİ). Rakipte de genel müdür yok; Agent X yalnız yönlendirici. Sesli orkestratör bu yönlendiricinin üstüne kurulur. | — |
 | E40 | Proje ve müşteri ayrımı yok (ayrı hafıza, bütçe, klasör) | F6 |
 | E41 | Görev başına git dalı yok | F6 |
 | E42 | Kimi, Qwen, API modelleri için ofisin kendi ajan döngüsü yok | F6 |
@@ -467,7 +467,7 @@ hiçbir çıktıda anahtar yok · denetim kaydı her onayı gösteriyor.
 ### F6 — Şirket yapısı (16–22 sa)
 
 **Görevler**
-1. Genel müdür lider → departman liderleri → ajanlar (E39).
+1. ~~Genel müdür lider → departman liderleri → ajanlar (E39)~~ — KALDIRILDI (29.09): genel müdür yok; takımlar ayrı, her takımın lideri; çok takım altyapısı 01.10'da kuruldu.
 2. Proje/müşteri ayrımı: ayrı hafıza, bütçe, klasör, erişim (E40).
 3. Görev başına git dalı (yazılım işlerinde) (E41).
 4. Beceri/yordam katmanı: tekrar eden işten öneri, insan onayı, yayın (E33).

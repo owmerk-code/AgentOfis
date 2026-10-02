@@ -795,6 +795,10 @@ class Veritabani:
         # isler ondan buyuktur. Zaman (saniye) yetmedi: onceki istegin isi
         # ayni saniyede acildiysa yanlis istege baglaniyordu (olculdu).
         ("kuyruk", "gorev_sinir", "INTEGER NOT NULL DEFAULT 0"),
+        # ISTEK (02.10.2026): isi doguran patron mesajinin kimligi. Takim
+        # sohbeti isin adimlarini o mesajin altinda toplar (Claude Code
+        # gibi tek konusma). Bos = eski is ya da istekten dogmayan is.
+        ("gorev", "istek_id", "TEXT NOT NULL DEFAULT ''"),
     )
 
     def _veri_goc(self, conn) -> None:

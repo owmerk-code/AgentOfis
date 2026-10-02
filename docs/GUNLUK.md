@@ -13786,3 +13786,29 @@ Sınama panelinde gerçekten kullanılarak ölçülen iki hata düzeltildi:
    `kabinKur` artık açılışın başında.
 Son ölçüm: Google ile açılış, + yeni sekme sağda, sekmede wikipedia açıldı,
 geçişler ve ✕ doğru; `duman_kabin_kullanim` 69/69.
+
+## 02.10.2026 04:30 — takım sohbeti Claude Code gibi
+
+Patron: "senle ya da codex'le konuşurken cevaplar nasıl ilerliyorsa aynı
+şekilde çalışsın". Önce ölçülen: claude işçisinin jeton/süre kaydı DOĞRU
+(boş görünen kayıtlar düşen turlar). Yapılan:
+- İstekten doğan iş isteğe bağlanır (`gorev.istek_id`, sütun göçü); akış her
+  öğeye `istek` koyar, isteğe `istek_durum` (çalışan ajan, son durum notu,
+  adım sayısı, son 25 adım) eklenir (`takim.istek_durumlari`).
+- Panelde sıra Claude Code gibi: önce liderin akan cümlesi, altında katlı
+  "▸ N işlem · ajan" bloğu (`ajan araç kısa_özet` satırları, Codex'in kod
+  kipi sarmalı açılır — `adim_ozeti`), sürerken "ajan çalışıyor · 7 sn — son
+  not", sonda sade cevap. Onay ve patrona soru blok DIŞINDA kalır.
+- Rapor yönergesi başlıklı kalıp yerine "ilk cümle sonuç, başlık yazma".
+- İstek sürerken sohbet 3 sn'de bir tazelenir; yukarı kaydırılmışsa yerinde
+  kalır.
+Sınama panelinde gerçek claude ajanıyla (bilge, tarayıcı işi) ekranda
+görüldü. Sınamada bulunan hata: durum satırı incelemedeki işi çalışan işin
+önüne koyuyordu → öncelik çalışıyor > inceleme > hazır (mutasyonla ölçüldü).
+`duman_sohbet_akis` 15/15.
+Tam takım 3869/3869 (57 dosya). `duman_tarayici` tam takımda BİR KEZ
+sonuç yazamadan çöktü (0 geçti, kod 1); tek başına 7 kez geçti. Sebep:
+gerçek Chrome bölümü Chrome'u en çok 20 sn bekleyip bağlanıyordu, bilgisayar
+uykudan yeni uyanmıştı. Bekleme 40 sn; bağlanamazsa test çökmez, sebebiyle
+KALDI der (mutasyonla ölçüldü: 148 geçti 8 kaldı, sonuç satırı yazıldı).
+PLAN.md'de E39 (genel müdür) 29.09 kararıyla KALDIRILDI olarak düzeltildi.

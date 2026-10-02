@@ -664,7 +664,9 @@ else:
                      env=dict(_os.environ, TEMP=_chrome_tmp, TMP=_chrome_tmp))
     _sonuc = {}
     try:
-        for _ in range(80):
+        # 40 sn: uykudan yeni uyanan ya da kendini guncelleyen Chrome 20 sn'yi
+        # asti (02.10, tam takimda bir kez: test sonuc yazamadan coktu).
+        for _ in range(160):
             if _KB.acik_mi(_kapi):
                 break
             _tm.sleep(0.25)
@@ -694,7 +696,12 @@ else:
                 sec = _sonuc["dugme"][1]["secici"]
                 _sonuc["bulunan"] = await ev(
                     "document.querySelector(%s).id" % json.dumps(sec))
-        _aio.run(_olc())
+        # Baglanamazsa test COKMEZ: sebebiyle KALDI der (coken test
+        # kalandan kotudur -- sonraki denetimler hic kosmuyordu).
+        try:
+            _aio.run(_olc())
+        except Exception as _e:  # noqa: BLE001
+            _sonuc["hata"] = f"{type(_e).__name__}: {_e}"
     finally:
         _sur.terminate()
         try:
@@ -707,6 +714,8 @@ else:
         _tm.sleep(0.5)
         _sh.rmtree(_prof, ignore_errors=True)
 
+    sina("gercek: Chrome acildi ve baglanildi", "hata" not in _sonuc,
+         _sonuc.get("hata", "")[:200])
     _d = (_sonuc.get("dugme") or (None, None))[1] or {}
     sina("gercek: dugme bulundu, secici tek", _d.get("secici") == "#al"
          and _d.get("essiz") is True, str(_d))
