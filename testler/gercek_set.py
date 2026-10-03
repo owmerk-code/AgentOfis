@@ -795,7 +795,17 @@ def is_kos(no: str, motor: str, *, kuru: str = "", zaman_asimi: int = 600,
                 bd = bedel.setdefault(yol, {"tur": 0, "jeton": 0, "maliyet_usd": 0.0})
                 bd["tur"] += 1
                 bd["jeton"] += int(v.get("jeton") or 0)
-                bd["maliyet_usd"] = round(bd["maliyet_usd"] + float(v.get("maliyet_usd") or 0), 4)
+                # Terminal turunun dolari OLCULEMEZ: olculmus birimle TAHMIN
+                # (ayri sayilir); birim de yoksa tur "bilinmiyor"a yazilir.
+                if v.get("maliyet_usd") is not None:
+                    bd["maliyet_usd"] = round(bd["maliyet_usd"] + float(v["maliyet_usd"]), 4)
+                elif v.get("maliyet_tahmini_usd") is not None:
+                    bd["maliyet_usd"] = round(bd["maliyet_usd"] + float(v["maliyet_tahmini_usd"]), 4)
+                    bd["tahmini_tur"] = bd.get("tahmini_tur", 0) + 1
+                else:
+                    bd["bilinmeyen_tur"] = bd.get("bilinmeyen_tur", 0) + 1
+                for alan, n in (v.get("jeton_dokumu") or {}).items():
+                    bd.setdefault("dokum", {})[alan] = bd.get("dokum", {}).get(alan, 0) + int(n or 0)
         sonuc["sureler"] = dagilim
         sonuc["bedel"] = bedel
     except Exception as exc:                    # noqa: BLE001 -- bir is digerini durdurmasin

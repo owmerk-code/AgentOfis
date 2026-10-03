@@ -178,7 +178,7 @@ class Orkestra:
 
     def plan_metni(self, hedef: str, kanat_id: str, hata: str = "",
                    *, ek_klasorler=None, atanan: str = "",
-                   patron_sozu: str = "") -> str:
+                   patron_sozu: str = "", ic_ice: bool = False) -> str:
         """Lidere verilen planlama istegi.
 
         Kadro ISIMLERIYLE verilir: lider kimin ne yaptigini bilmeden
@@ -265,7 +265,8 @@ class Orkestra:
         # Klasorde ayni dersi bir kez odedik: lider dosya duzenini
         # GORMEDEN yol yazmis ve var olmayan bir klasor uydurmustu.
         # Gormeden karar vermek tahmindir -- baglayicida da oyle.
-        satirlar += ["", baglayici.lider_blogu()]
+        if not ic_ice:                      # triyajda zaten var (tek tur, tek kopya)
+            satirlar += ["", baglayici.lider_blogu()]
 
         # AJANLARIN NE YAPABILDIGI LIDERE SOYLENIR.
         #
@@ -402,7 +403,8 @@ class Orkestra:
             "",
             "## CIKTI BICIMI",
             "",
-            "Yalnizca su JSON'u ver, baska hicbir sey yazma:",
+            ("Bu JSON'u cevabinin `plan` alanina koy:" if ic_ice else
+             "Yalnizca su JSON'u ver, baska hicbir sey yazma:"),
             "",
             "```json",
             "{",
@@ -656,11 +658,16 @@ class Orkestra:
                   tarayici_alani=None, tarayici_yazma: bool = True,
                   baglayicilar=None, tarayici_kabin: bool = False,
                   sartname_denetimi: bool = False, atanan: str = "",
-                  patron_sozu: str = "") -> dict:
+                  patron_sozu: str = "", hazir_plan=None) -> dict:
         """Lideri TEMIZ oturumda acar, bolme kararini ALDIRIR, gorevleri acar.
 
         Oturum kimligi verilmez: her planlama kendi temiz kafasiyla yapilir
         (Yasa 4). Liderin onceki islerden birikmis baglami plana tasinmaz.
+
+        `hazir_plan`: liderin TRIYAJ turunda verdigi plan (tek tur, bkz.
+        `Sohbet.triyaj_metni`). AYNI kapilardan gecer; gecerse plan turu
+        HIC kosmaz, gecmezse ret metniyle eski yola (plan turu) duser --
+        ret ogretir, plan sessizce kabul edilmez.
         """
         hedef = (hedef or "").strip()
         if not hedef:
@@ -670,7 +677,26 @@ class Orkestra:
         kanat_id = kanat_id if kanat_id is not None else lider["kanat_id"]
 
         hata = ""
-        for sira in range(max(1, deneme)):
+        plan = None
+        if hazir_plan is not None:
+            # TEK TUR (03.10.2026, "ofis carpani" olcumu): liderin her turu
+            # ~12-24 bin jetonluk on eki 1 saatlik onbellege BASTAN yaziyor
+            # (Claude Code'un kendi davranisi; duz `claude -p`de de olculdu).
+            # Triyaj + plan iki tur = bu bedelin iki kati. Sartname kapisi
+            # istenen iste hazir plan kullanilmaz (o kapi plan turuna bagli).
+            hata = ("Sartname kapisi acik; plan ayri turda yapilir." if sartname_denetimi
+                    else self._plani_dogrula(hazir_plan, kanat_id, ek_klasorler,
+                                             atanan=atanan, patron_sozu=patron_sozu))
+            if not hata:
+                plan = hazir_plan
+                self.db.olay_yaz(self.proje_id, "plan_triyajda",
+                                 "Plan triyaj turunda verildi; ayri plan turu kosmadi.",
+                                 ajan_ad=lider["ad"])
+            else:
+                self.db.olay_yaz(self.proje_id, "uyari",
+                                 f"Triyajdaki plan reddedildi, plan turu kosuyor: {hata}",
+                                 ajan_ad=lider["ad"])
+        for sira in range(max(1, deneme) if plan is None else 0):
             metin = self.plan_metni(hedef, kanat_id, hata,
                                     ek_klasorler=ek_klasorler, atanan=atanan,
                                     patron_sozu=patron_sozu)
@@ -714,7 +740,7 @@ class Orkestra:
                 self.proje_id, "uyari",
                 f"Plan reddedildi ({sira + 1}. deneme): {hata}",
                 ajan_ad=lider["ad"])
-        else:
+        if hata:
             raise OrkestraHatasi(
                 f"Lider gecerli bir plan veremedi. Son sebep: {hata}")
 

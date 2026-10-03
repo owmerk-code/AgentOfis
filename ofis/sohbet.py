@@ -83,6 +83,37 @@ YAPAMAM_CEVABI = re.compile(
     # 01.10 (G08, codex): "yazma izni yok ... gorevi yeniden baslatin"
     r"|(?:yazma |dosya |arac )?izn?[iı] yok|yetkim yok|yeniden ba[sş]lat[iı]n", re.I)
 
+#: "ANLATTI, YAPMADI" KORUMASI (03.10.2026, gercek set G05, claude, tek tur
+#: triyaj): "satislar.csv'deki ciroyu bul; rapor.md dosyasina YAZ, sonucu bana
+#: da soyle" -> lider CSV'yi okudu, sonucu `cevap` ile soyledi; rapor.md HIC
+#: yazilmadi. Istemde "anlatma, yaptir" kurali VARDI (30.09 G04'te de ayni
+#: sinif). Rica ile duran kural, kural degildir: mesaj YAZMA istiyor ve adi
+#: gecen dosya projede YOKSA cevap patrona gitmez, is ajana verilir.
+YAZMA_FIILI = re.compile(
+    r"\b(?:yaz|olu[sş]tur|kaydet|haz[iı]rla|[cç][iı]kar|d[uü]zenle|ekle|g[uü]ncelle"
+    r"|d[uü]zelt|kur|yap)", re.I)
+DOSYA_ADI = re.compile(
+    r"(?<![\w/\\.-])((?:[\w.-]+[/\\])*[\w-]+\.(?:md|txt|html?|css|js|ts|tsx|jsx|py|json"
+    r"|csv|xlsx?|docx?|pdf|pptx?|png|jpe?g|svg|yml|yaml|toml|ini|sql|sh|bat|ps1))\b", re.I)
+
+
+def yazilacak_dosyalar(mesaj: str, kok) -> list:
+    """Mesajin YAZILMASINI istedigi ve projede henuz OLMAYAN dosyalar.
+
+    Yazma fiili yoksa bos doner (soru: "rapor.md nerede?" cevap yoludur).
+    Var olan dosya sayilmaz: "satislar.csv'yi oku" girdi dosyasidir.
+    """
+    from pathlib import Path as _P
+    if not mesaj or not YAZMA_FIILI.search(mesaj):
+        return []
+    kok = _P(str(kok or "")).expanduser() if kok else None
+    eksik = []
+    for ad in dict.fromkeys(m.group(1) for m in DOSYA_ADI.finditer(mesaj)):
+        if kok is None or not (kok / ad).exists():
+            eksik.append(ad)
+    return eksik
+
+
 def _zaman_blogu(ofis) -> str:
     from datetime import datetime
     from . import zamanlayici as _z
@@ -455,7 +486,8 @@ class Sohbet:
             ).fetchall()
         return [dict(r) for r in rows][::-1]
 
-    def triyaj_metni(self, mesaj: str, *, ek_klasorler=(), kanat_id=None) -> str:
+    def triyaj_metni(self, mesaj: str, *, ek_klasorler=(), kanat_id=None,
+                     plan_bolumu: bool = True) -> str:
         satirlar = [
             "# PATRONUN MESAJI",
             "",
@@ -609,7 +641,8 @@ class Sohbet:
             '  "karar": "cevap",',
             '  "gerekce": "NEDEN bu yolu sectin -- zorunlu",',
             '  "cevap": "karar=cevap ise patrona yazacagin metin",',
-            '  "hedef": "karar=kendi, dagit ya da kadro ise isin tek cumlelik hedefi"',
+            '  "hedef": "karar=kendi, dagit ya da kadro ise isin tek cumlelik hedefi",',
+            '  "plan": "karar=kendi ya da dagit ise ZORUNLU -- asagidaki PLAN bolumundeki JSON"',
             "}",
             "```",
             "",
@@ -625,12 +658,31 @@ class Sohbet:
             "- `gerekce` bos olamaz. Ajan kosturmamak da bir karardir.",
             "- `karar=cevap` ise `cevap` dolu olmali; Turkce ve net yaz.",
             "- `karar=kendi`, `dagit` ya da `kadro` ise `hedef` dolu olmali.",
+            "- `karar=kendi` ya da `dagit` ise `plan` dolu olmali (ayni cevapta;",
+            "  ayri bir planlama turu YOK). Oteki kararlarda `plan` yazma.",
             "- `karar=kadro` yalnizca kadroda OLMAYAN bir rol gerektiginde.",
             "  Kadroyu SEN kuramazsin -- onerirsin, patron onaylar.",
             "- Bilmedigin bir seyi UYDURMA. Bilmiyorsan `cevap` ile soyle,",
             "  ya da ogrenmek icin `dagit` ile arastirma isi ac.",
             "- " + EK_KURALI,
         ]
+        if plan_bolumu:
+            # TEK TUR (03.10.2026, "ofis carpani" olcumu): triyaj ve plan
+            # ayri turdu; liderin her turu ~12-24 bin jetonluk on eki 1
+            # saatlik onbellege bastan yaziyor (Claude Code'un davranisi,
+            # duz `claude -p`de de olculdu). Plan ayni cevapta gelir; ayni
+            # kapilardan gecer, gecmezse eski yola (plan turu) duser.
+            satirlar += [
+                "",
+                "---",
+                "",
+                "# PLAN (yalniz karar=kendi ya da dagit ise)",
+                "",
+                self.orkestra.plan_metni(
+                    "Patronun mesaji (en ustte). `hedef` alanina yazdigin cumle.",
+                    kanat_id, ek_klasorler=ek_klasorler, patron_sozu=mesaj,
+                    ic_ice=True),
+            ]
         return "\n".join(satirlar)
 
     # -- ana akis ----------------------------------------------------------
@@ -738,6 +790,20 @@ class Sohbet:
             karar = {**karar, "karar": "dagit", "hedef": mesaj,
                      "gerekce": (karar.get("gerekce") or "")
                      + " [ofis: aracsiz triyaj 'yapamam' dedi -> ajana verildi]"}
+        if karar.get("karar") == "cevap":
+            with self.ofis.db.baglanti() as _c:
+                _r = _c.execute("SELECT kok_klasor FROM proje WHERE id = ?",
+                                (self.ofis.proje_id,)).fetchone()
+            _eksik = yazilacak_dosyalar(mesaj, (_r["kok_klasor"] or "").strip() if _r else "")
+            if _eksik:
+                self.ofis.db.olay_yaz(
+                    self.ofis.proje_id, "uyari",
+                    "Lider yazilmasi istenen dosyayi yazdirmadan cevapladi ("
+                    + ", ".join(_eksik) + "); ofis cevabi patrona gondermedi, "
+                    "isi ajana verdi.", ajan_ad=lider["ad"])
+                karar = {**karar, "karar": "dagit", "hedef": mesaj,
+                         "gerekce": (karar.get("gerekce") or "")
+                         + " [ofis: istenen dosya yazilmadi -> ajana verildi]"}
         yield {"tur": "triyaj", "govde": karar["karar"],
                "ek": {"gerekce": karar.get("gerekce", ""),
                       "hedef": karar.get("hedef", "")}}
@@ -849,7 +915,11 @@ class Sohbet:
                 zaman_asimi=zaman_asimi, ek_klasorler=ekler,
                 tarayici_alani=web or None,
                 tarayici_kabin=bool(web and tarayici_kabini),
-                atanan=atanan, patron_sozu=mesaj)
+                atanan=atanan, patron_sozu=mesaj,
+                # Plan yalniz kendi/dagit yoluna gelir (oteki yollar yukarida
+                # dondu); gecersizse plan turu ret metniyle kosar.
+                hazir_plan=(karar.get("plan") if isinstance(karar.get("plan"), dict)
+                            else None))
         except OrkestraHatasi as exc:
             plan = None
             not_ = f"Plan alinamadi: {exc}"

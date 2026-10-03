@@ -375,6 +375,26 @@ class Motor(ABC):
 PENCERE_DAKIKA_ADI = {300: "5s", 10080: "7g"}
 
 
+#: JETON DOKUMU (03.10.2026, "ofis carpani"): turun jetonu TURUNE gore.
+#: Toplam tek basina bedeli anlatmaz: onbellekten OKUNAN jeton girdinin
+#: ~onda biri, onbellege YAZILAN ~1,25 kati fiyatlanir. Olculdu: liderin
+#: her turu ~24 bin jetonluk on eki bastan yaziyordu. Anahtarlar saglayicinin
+#: kendi alan adlariyla eslenir; olcemeyen motor alani HIC koymaz (None).
+DOKUM_ALANLARI = {"girdi": "input_tokens", "cikti": "output_tokens",
+                  "onbellek_okuma": "cache_read_input_tokens",
+                  "onbellek_yazma": "cache_creation_input_tokens"}
+
+
+def dokum_ekle(dokum: dict, kullanim: dict) -> dict:
+    """Saglayicinin `usage` sozlugunu dokume EKLER (yerinde) ve doner."""
+    for ad, alan in DOKUM_ALANLARI.items():
+        dokum[ad] = int(dokum.get(ad) or 0) + int((kullanim or {}).get(alan) or 0)
+    # Onbellege yazimin 1 SAATLIK payi ayri fiyatlanir (5 dk: 1,25x, 1 sa: 2x).
+    saat = ((kullanim or {}).get("cache_creation") or {}).get("ephemeral_1h_input_tokens")
+    dokum["onbellek_yazma_1sa"] = int(dokum.get("onbellek_yazma_1sa") or 0) + int(saat or 0)
+    return dokum
+
+
 def limit_penceresi(pencereler: dict, *, kaynak: str, hal: str = "",
                     plan: str = "") -> dict | None:
     """Saglayicinin ham pencerelerini ortak bicime cevirir.

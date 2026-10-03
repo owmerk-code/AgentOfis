@@ -1,0 +1,260 @@
+[
+ {
+  "no": "G03",
+  "ad": "Kod + test yaz",
+  "ofis": {
+   "durum": "gecti",
+   "sure_sn": 76.8,
+   "jeton": 357377,
+   "maliyet_usd": 0.3318,
+   "yol": {
+    "lider": {
+     "tur": 1,
+     "jeton": 70671,
+     "maliyet_usd": 0.1562,
+     "dokum": {
+      "girdi": 4,
+      "cikti": 2328,
+      "onbellek_okuma": 39060,
+      "onbellek_yazma": 29279,
+      "onbellek_yazma_1sa": 29279
+     }
+    },
+    "isci": {
+     "tur": 1,
+     "jeton": 233481,
+     "maliyet_usd": 0.0701,
+     "tahmini_tur": 1,
+     "dokum": {
+      "girdi": 50,
+      "cikti": 2149,
+      "onbellek_okuma": 213203,
+      "onbellek_yazma": 18079,
+      "onbellek_yazma_1sa": 18079
+     }
+    },
+    "inceleme": {
+     "tur": 1,
+     "jeton": 53225,
+     "maliyet_usd": 0.1055,
+     "dokum": {
+      "girdi": 4,
+      "cikti": 659,
+      "onbellek_okuma": 30375,
+      "onbellek_yazma": 22187,
+      "onbellek_yazma_1sa": 22187
+     }
+    }
+   },
+   "kalan": [],
+   "hata": ""
+  },
+  "dogrudan": {
+   "durum": "gecti",
+   "olcut": [
+    [
+     "hesap.py calisiyor: topla(2,3)=5, carp(4,5)=20",
+     true,
+     "5 20"
+    ],
+    [
+     "pytest testi yazildi ve geciyor",
+     true,
+     "8 passed in 0.01s"
+    ]
+   ],
+   "jeton": 160681,
+   "maliyet_usd": 0.1462,
+   "sure_sn": 14.6,
+   "cevap": "`hesap.py` ve `test_hesap.py` dosyalarını yazdım. 8 testin hepsi geçti.\n\n- **`hesap.py`:** `topla(a, b)` ve `carp(a, b)` fonksiyonları burada.\n- **`test_hesap.py`:** Her fonksiyon için 4 test var. Bunlar pozitif, negatif, sıfır ve ondalıklı sayı durumlarını kapsıyor.\n\nTestleri `python -m pytest -v` "
+  }
+ },
+ {
+  "no": "G04",
+  "ad": "Hata duzelt (test degismeden)",
+  "ofis": {
+   "durum": "gecti",
+   "sure_sn": 81.8,
+   "jeton": 324335,
+   "maliyet_usd": 0.3054,
+   "yol": {
+    "lider": {
+     "tur": 1,
+     "jeton": 33761,
+     "maliyet_usd": 0.1261,
+     "dokum": {
+      "girdi": 2,
+      "cikti": 1365,
+      "onbellek_okuma": 6600,
+      "onbellek_yazma": 25794,
+      "onbellek_yazma_1sa": 25794
+     }
+    },
+    "isci": {
+     "tur": 1,
+     "jeton": 238387,
+     "maliyet_usd": 0.076,
+     "tahmini_tur": 1,
+     "dokum": {
+      "girdi": 50,
+      "cikti": 2794,
+      "onbellek_okuma": 216345,
+      "onbellek_yazma": 19198,
+      "onbellek_yazma_1sa": 19198
+     }
+    },
+    "inceleme": {
+     "tur": 1,
+     "jeton": 52187,
+     "maliyet_usd": 0.1033,
+     "dokum": {
+      "girdi": 4,
+      "cikti": 790,
+      "onbellek_okuma": 30002,
+      "onbellek_yazma": 21391,
+      "onbellek_yazma_1sa": 21391
+     }
+    }
+   },
+   "kalan": [],
+   "hata": ""
+  },
+  "dogrudan": {
+   "durum": "gecti",
+   "olcut": [
+    [
+     "testler YESIL",
+     true,
+     "2 passed in 0.01s"
+    ],
+    [
+     "test dosyasi DEGISTIRILMEDI",
+     true,
+     ""
+    ]
+   ],
+   "jeton": 155262,
+   "maliyet_usd": 0.1454,
+   "sure_sn": 15.8,
+   "cevap": "Hata `fiyat.py` içindeydi. `indirimli(fiyat, yuzde)` yüzdeyi oran gibi kullanıyordu. Yani `indirimli(200, 10)` için `200 - 200*10 = -1800` çıkıyordu, oysa beklenen 180'di.\n\nDüzeltme olarak `fiyat * yuzde` ifadesini `fiyat * yuzde / 100` yaptım. Test dosyasına dokunmadım. `pytest` çalıştırıldı ve 2 t"
+  }
+ },
+ {
+  "no": "G05",
+  "ad": "Veri oku, rapor yaz, sonucu soyle",
+  "ofis": {
+   "durum": "kaldi",
+   "sure_sn": 18.0,
+   "jeton": 100909,
+   "maliyet_usd": 0.1526,
+   "yol": {
+    "lider": {
+     "tur": 1,
+     "jeton": 100909,
+     "maliyet_usd": 0.1526,
+     "dokum": {
+      "girdi": 6,
+      "cikti": 1467,
+      "onbellek_okuma": 70464,
+      "onbellek_yazma": 28972,
+      "onbellek_yazma_1sa": 28972
+     }
+    }
+   },
+   "kalan": [
+    "rapor.md toplam ciroyu dogru yaziyor (11185)",
+    "rapor.md en cok satani dogru yaziyor (Cay)"
+   ],
+   "hata": ""
+  },
+  "dogrudan": {
+   "durum": "olculemedi",
+   "olcut": [
+    [
+     "dogrulayici ofis istiyor (dogrudanda olculemez)",
+     null,
+     "'NoneType' object has no attribute 'kadro'"
+    ]
+   ],
+   "jeton": 158086,
+   "maliyet_usd": 0.1449,
+   "sure_sn": 14.9,
+   "cevap": "`rapor.md` dosyasını yazdım.\n\n- **Toplam ciro:** 11.185. Ürün bazında Espresso 2.400, Latte 4.675, Çay 2.400, Mocha 1.710.\n- **En çok satılan ürün:** Çay, 120 adetle.\n\nCiroya göre en yüksek ürün Latte (4.675). Raporda bu farkı da not ettim."
+  }
+ },
+ {
+  "no": "G06",
+  "ad": "Tek sayfalik web sitesi",
+  "ofis": {
+   "durum": "gecti",
+   "sure_sn": 166.4,
+   "jeton": 1075313,
+   "maliyet_usd": 0.4654,
+   "yol": {
+    "lider": {
+     "tur": 1,
+     "jeton": 33743,
+     "maliyet_usd": 0.1256,
+     "dokum": {
+      "girdi": 2,
+      "cikti": 1290,
+      "onbellek_okuma": 6600,
+      "onbellek_yazma": 25851,
+      "onbellek_yazma_1sa": 25851
+     }
+    },
+    "isci": {
+     "tur": 1,
+     "jeton": 977667,
+     "maliyet_usd": 0.205,
+     "tahmini_tur": 1,
+     "dokum": {
+      "girdi": 170,
+      "cikti": 9578,
+      "onbellek_okuma": 939087,
+      "onbellek_yazma": 28832,
+      "onbellek_yazma_1sa": 28832
+     }
+    },
+    "inceleme": {
+     "tur": 1,
+     "jeton": 63903,
+     "maliyet_usd": 0.1348,
+     "dokum": {
+      "girdi": 4,
+      "cikti": 1432,
+      "onbellek_okuma": 35418,
+      "onbellek_yazma": 27049,
+      "onbellek_yazma_1sa": 27049
+     }
+    }
+   },
+   "kalan": [],
+   "hata": ""
+  },
+  "dogrudan": {
+   "durum": "gecti",
+   "olcut": [
+    [
+     "site/index.html var ve gecerli HTML",
+     true,
+     "5855 harf"
+    ],
+    [
+     "baslik 'Kahve Duragi'",
+     true,
+     ""
+    ],
+    [
+     "menu ve iletisim bolumleri var",
+     true,
+     ""
+    ]
+   ],
+   "jeton": 110344,
+   "maliyet_usd": 0.1668,
+   "sure_sn": 28.0,
+   "cevap": "`site/index.html` hazır. Tarayıcıda açmadım, o yüzden görünümünü kontrol etmedim.\n\n- **Üst kısım:** Sabit bir menü çubuğu, \"Menü\" ve \"İletişim\" bağlantılarını içeriyor. Altında \"Kahve Durağı\" başlıklı bir karşılama alanı var.\n- **Menü bölümü:** Sıcak kahveler, soğuk içecekler ve tatlılar kartlar hal"
+  }
+ }
+]

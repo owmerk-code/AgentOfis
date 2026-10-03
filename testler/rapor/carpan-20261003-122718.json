@@ -1,0 +1,72 @@
+[
+ {
+  "no": "G03",
+  "ad": "Kod + test yaz",
+  "ofis": {
+   "durum": "gecti",
+   "sure_sn": 121.7,
+   "jeton": 374139,
+   "maliyet_usd": 0.5663,
+   "yol": {
+    "lider": {
+     "tur": 2,
+     "jeton": 122393,
+     "maliyet_usd": 0.3961,
+     "dokum": {
+      "girdi": 8,
+      "cikti": 2530,
+      "onbellek_okuma": 72319,
+      "onbellek_yazma": 47536,
+      "onbellek_yazma_1sa": 47536
+     }
+    },
+    "isci": {
+     "tur": 1,
+     "jeton": 195904,
+     "maliyet_usd": 0.0677,
+     "tahmini_tur": 1,
+     "dokum": {
+      "girdi": 42,
+      "cikti": 2443,
+      "onbellek_okuma": 175348,
+      "onbellek_yazma": 18071,
+      "onbellek_yazma_1sa": 18071
+     }
+    },
+    "inceleme": {
+     "tur": 1,
+     "jeton": 55842,
+     "maliyet_usd": 0.1025,
+     "dokum": {
+      "girdi": 4,
+      "cikti": 554,
+      "onbellek_okuma": 33664,
+      "onbellek_yazma": 21620,
+      "onbellek_yazma_1sa": 21620
+     }
+    }
+   },
+   "kalan": [],
+   "hata": ""
+  },
+  "dogrudan": {
+   "durum": "gecti",
+   "olcut": [
+    [
+     "hesap.py calisiyor: topla(2,3)=5, carp(4,5)=20",
+     true,
+     "5 20"
+    ],
+    [
+     "pytest testi yazildi ve geciyor",
+     true,
+     "8 passed in 0.01s"
+    ]
+   ],
+   "jeton": 160772,
+   "maliyet_usd": 0.147,
+   "sure_sn": 14.4,
+   "cevap": "`hesap.py` ve `test_hesap.py` dosyalarını yazdım. `pytest` ile çalıştırdığımda 8 testin hepsi geçti.\n\n- **`hesap.py`:** `topla(a, b)` iki sayıyı toplar, `carp(a, b)` çarpar.\n- **`test_hesap.py`:** Her fonksiyon için dörder test var: pozitif, negatif, sıfır ve ondalıklı sayılar.\n\nDosyalar `C:\\Users\\p"
+  }
+ }
+]

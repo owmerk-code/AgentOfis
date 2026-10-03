@@ -61,7 +61,7 @@ from pathlib import Path
 from typing import Iterator
 
 from .. import motor_saglik
-from .tip import (ortam_hazirla, limit_penceresi, Motor, MotorOlayi,
+from .tip import (ortam_hazirla, limit_penceresi, dokum_ekle, Motor, MotorOlayi,
                   MotorHatasi, MotorYokHatasi, SurecKafesi)
 
 _PENCERE_YOK = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
@@ -659,13 +659,14 @@ class ClaudeMotoru(Motor):
         # `Bash(echo *)` var -- gecen her anahtar, terminal kaniti olarak
         # tahtaya dusebilir (bkz. tip.SIR_ONEKLERI).
         ortam = ortam_hazirla(os.environ, ek={**TUR_ORTAMI,
-                                              **(BAGLAYICISIZ if araclar_kapali else {}),
+                                              **self._baglayici_ortami(araclar_kapali),
                                               **(ek_ortam or {})},
                               izinli=tuple(ek_ortam or ()))
         # Safe mode acik kalirsa kendi MCP yapilandirmamiz da devre disi
         # kalir; turu yalitmanin yolu safe mode degil, acik bayraklar.
         ortam.pop("CLAUDE_CODE_SAFE_MODE", None)
         ortam.pop("CLAUDE_CODE_SIMPLE", None)
+
 
         basladi = time.monotonic()
         try:
@@ -707,6 +708,7 @@ class ClaudeMotoru(Motor):
             "oturum_id": oturum, "model": "", "metin": [],
             "hatali": False, "hata_notu": "", "limit": False, "sonuc": "",
             "maliyet": 0.0, "jeton": 0, "arac_sayisi": 0,
+            "jeton_dokumu": {},
             # Turun SON `rate_limit_event`i: hesabin pencereleri.
             "limit_bilgi": None,
             # cagri_id -> arac adi. Ret mesaji aracin ADINI tasimaz;
@@ -876,6 +878,7 @@ class ClaudeMotoru(Motor):
                 "sure_ms": sure_ms,
                 "maliyet_usd": durum["maliyet"],
                 "jeton": durum["jeton"],
+                "jeton_dokumu": durum.get("jeton_dokumu") or None,
                 "arac_sayisi": durum["arac_sayisi"],
                 "limit": durum["limit"],
                 "zaman_asimi": zaman_asti,
@@ -941,7 +944,9 @@ class ClaudeMotoru(Motor):
         ayar.write_text(json.dumps({"hooks": {"PreToolUse": kanca}}),
                         encoding="utf-8")
         argv += ["--settings", str(ayar)]
-        ortam = ortam_hazirla(os.environ, ek={**TUR_ORTAMI, **(ek_ortam or {})},
+        ortam = ortam_hazirla(os.environ, ek={**TUR_ORTAMI,
+                                              **self._baglayici_ortami(),
+                                              **(ek_ortam or {})},
                               izinli=tuple(ek_ortam or ()))
         # Ic ice oturum isareti dokum KAYDINI kapatir (olculdu).
         for ad in list(ortam):
@@ -989,6 +994,8 @@ class ClaudeMotoru(Motor):
                     (kul.get("input_tokens") or 0) + (kul.get("output_tokens") or 0)
                     + (kul.get("cache_read_input_tokens") or 0)
                     + (kul.get("cache_creation_input_tokens") or 0))
+                # Ayni `id` her blokla YINELENIR: dokumde de son deger.
+                durum.setdefault("dokum_mesaj", {})[mesaj["id"]] = dokum_ekle({}, kul)
             for blok in self._icerik_bloklari(kayit):
                 if isinstance(blok, dict) and blok.get("type") == "text":
                     parca = str(blok.get("text") or "")
@@ -1072,6 +1079,10 @@ class ClaudeMotoru(Motor):
                     break
 
     # -- komut -------------------------------------------------------------
+
+    def _baglayici_ortami(self, araclar_kapali: bool = False) -> dict:
+        """Hesabin claude.ai baglayicilari bu turda YUKLENMEZ mi (tek kural, iki kip)."""
+        return dict(BAGLAYICISIZ) if araclar_kapali else {}
 
     def _komut_kur(self, oturum: str, *, devam: bool, model: str, efor: str,
                    yazabilir: bool, ek_klasorler: tuple,
@@ -1342,6 +1353,7 @@ class ClaudeMotoru(Motor):
                 + (kullanim.get("cache_read_input_tokens") or 0)
                 + (kullanim.get("cache_creation_input_tokens") or 0)
             )
+            dokum_ekle(durum.setdefault("jeton_dokumu", {}), kullanim)
             dusuk = (durum["hata_notu"] + " " + durum["sonuc"]).lower()
             if "rate limit" in dusuk or "usage limit" in dusuk:
                 durum["limit"] = True

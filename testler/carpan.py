@@ -87,7 +87,9 @@ def ofiste(no: str) -> dict:
             "jeton": sum(b["jeton"] for b in bedel.values()),
             "maliyet_usd": round(sum(b["maliyet_usd"] for b in bedel.values()), 4),
             "yol": bedel, "kalan": [o["olcut"] for o in (s.get("olcutler", []) + s.get("kalite", []))
-                                    if not o["gecti"]], "hata": s.get("hata", "")}
+                                    if not o["gecti"]], "hata": s.get("hata", ""),
+            # Kalan isin sohbeti (ret gerekcesi) -- gecici klasor silinince kaybolmasin.
+            "sohbet": s.get("sohbet", []) if s.get("durum") != "gecti" else []}
 
 
 def main():
@@ -123,7 +125,13 @@ def main():
     satir += ["", "Ofis yol dagilimi (tur · jeton · $):", ""]
     for r in sonuc:
         satir.append(f"- {r['no']}: " + " · ".join(
-            f"{y} {b['tur']} tur/{b['jeton']:,}/${b['maliyet_usd']}" for y, b in r["ofis"]["yol"].items()))
+            f"{y} {b['tur']} tur/{b['jeton']:,}/${b['maliyet_usd']}"
+            + (f" ({b['tahmini_tur']} tur tahmini)" if b.get("tahmini_tur") else "")
+            + (f" ({b['bilinmeyen_tur']} tur BILINMIYOR)" if b.get("bilinmeyen_tur") else "")
+            + (" [okuma {onbellek_okuma:,} · yazma {onbellek_yazma:,} · girdi {girdi:,} · cikti {cikti:,}]"
+               .format(**{**{k: 0 for k in ("onbellek_okuma", "onbellek_yazma", "girdi", "cikti")},
+                          **b["dokum"]}) if b.get("dokum") else "")
+            for y, b in r["ofis"]["yol"].items()))
     ad.with_suffix(".md").write_text("\n".join(satir) + "\n", encoding="utf-8")
     print("\n".join(satir))
 

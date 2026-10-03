@@ -14262,3 +14262,60 @@ maliyet okunmuyor) — gerçek maliyet çarpanı bundan YÜKSEK; jeton çarpanı
 (~$0,09), işçi ~190–236k jeton. Süre 6–7× (lider triyaj + plan seri).
 Doğrudan G05 doğrulayıcısı ofis istediği için "ölçülemedi" yazdı; cevap doğru
 (11.185, Çay). `gercek_set` raporu artık her işin bedelini yola göre yazar.
+
+## 03.10.2026 — maliyet: tek tur, jeton dökümü, "anlattı yapmadı"; yalın ve çatal denendi, GERİ ALINDI
+
+**Ölçüm aracı düzeltildi.** İlk çarpan (1,9–2,3×) yanlıştı: gerçek terminal
+kipinde işçinin maliyeti $0 sayılıyordu. Artık her tur jetonu türüne göre
+yazar (`jeton_dokumu`: girdi · çıktı · önbellek okuma · önbellek yazma ·
+1 saatlik yazma). Terminal turunun doları ölçülemez; arka kipte motorun
+KENDİ bildirdiği maliyetten model başına birim öğrenilir (`ev/fiyat_olcumu.json`)
+ve terminal turu `maliyet_tahmini_usd` alır (ayrı alan, ölçüm sanılmaz;
+birim yoksa tahmin yok). Haiku birimi ~$1,02/M çıktı (gerçek fiyatla
+tutarlı). Doğru dökümle G03: **3,9×** (lider 2 tur $0,40 · inceleme $0,10 ·
+işçi $0,07).
+
+**Asıl bedel:** Claude her YENİ oturumda hesabın beceri/eklenti/bağlayıcı
+listelerini ilk mesaja ekler ve 1 saatlik önbelleğe BAŞTAN yazar (2× fiyat):
+Haiku ~12 bin, Sonnet ~23 bin jeton/tur. Düz `claude -p`'de de aynı (bizim
+hatamız değil). Bizim istemimiz yalnız ~5–6 bin jeton.
+
+**1. Triyaj + plan TEK TUR (KALDI).** Lider "kendi/dağıt" derse planı aynı
+cevapta verir (`plan` alanı, `plan_metni(ic_ice=True)`); `hedef_ver(hazir_plan=)`
+aynı kapılardan geçirir, geçmezse ret metniyle eski plan turuna düşer
+(`plan_triyajda` / "Triyajdaki plan reddedildi" olayları). Şartname kapısı
+açıkken hazır plan kullanılmaz. Liderin payı $0,40 → $0,13. Motora bağlı
+değil, her motorda geçerli.
+
+**2. "Anlattı, yapmadı" koruması (KALDI).** Gerçek set G05 bir koşuda kaldı:
+lider CSV'yi okuyup sonucu `cevap` ile söyledi, `rapor.md` yazılmadı (istemde
+"anlatma, yaptır" vardı — rica ile durmadı). Yapı: mesajda yazma fiili +
+projede OLMAYAN dosya adı varsa (`sohbet.yazilacak_dosyalar`) cevap patrona
+gitmez, iş ajana verilir. Soru ("rapor.md nerede?") ve var olan girdi
+dosyası etkilenmez.
+
+**3. Yalın lider turu (DENENDİ, KALDIRILDI).** Liderin yargı turları
+eklenti/beceri/bağlayıcı yüklemeden: Sonnet'te lider $0,13 → $0,077,
+inceleme $0,10 → $0,05; çarpan G03 1,3× · G04 1,6× · G05 2,1× · G06 2,0×.
+Patron reddetti: güç kısıyor (incelemede lider bağlayıcıyla yapılan işi
+doğrulayamaz) ve "ne varsa açık" kararına istisna.
+
+**4. Sıcak taban / çatal (DENENDİ, KALDIRILDI).** Isıtılmış boş oturumdan
+`--resume <taban> --fork-session` (+ `--session-id` ile kimliği ofis verir,
+sonra sürdürülebilir). Ölçüldü: kimlik ve onay kancası O TURUN (rm durdu,
+tabanın kancası çağrılmadı); Haiku'da tur ~4 kat ucuz ($0,026 → $0,0065).
+AMA **Sonnet'te önbellek kullanılmıyor** — düz `claude -p` ile de ölçüldü:
+çatal yine ~23 bin yazıyor. Liderin/incelemenin pahalı turları Sonnet'te;
+dört işlik ölçümde (her iş yeni geçici ofis) çarpan 3,1–3,4×'e ÇIKTI (taban
+bedeli). Ölçülmüş faydası olmayan parça tutulmaz. Not: çatal oturumun dosyası
+tabanın konuşmasının kopyasıyla (eski zaman damgalı) başlar.
+
+**Son durum (tam güç, tek tur):** çarpan **2,0–2,4×** (G03 2,0 · G04 2,3 ·
+G05 2,4; G06 tek koşuda bir boş retle 4,3, önceki koşularda temiz). Kalan
+fark liderin karar turu + inceleme turu: ofisin kanıt kapısının bedeli.
+Kalan güç kısmayan yol: BOŞA GİDEN TURLAR (gereksiz ret, tekrar, yanlış
+anlama) — ölçülüp sebebiyle kesilecek. `carpan.py` kalan işin sohbetini
+saklar (ret gerekçesi kaybolmasın).
+
+Sınama: `duman_tek_tur.py` (47). Mutasyon: tek tur + koruma 13/13, döküm/
+fiyat dahil.

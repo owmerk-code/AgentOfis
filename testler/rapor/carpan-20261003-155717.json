@@ -1,0 +1,286 @@
+[
+ {
+  "no": "G03",
+  "ad": "Kod + test yaz",
+  "ofis": {
+   "durum": "gecti",
+   "sure_sn": 92.5,
+   "jeton": 289678,
+   "maliyet_usd": 0.4825,
+   "yol": {
+    "lider": {
+     "tur": 1,
+     "jeton": 33829,
+     "maliyet_usd": 0.2123,
+     "dokum": {
+      "girdi": 4,
+      "cikti": 1078,
+      "onbellek_okuma": 6600,
+      "onbellek_yazma": 49804,
+      "onbellek_yazma_1sa": 49804
+     }
+    },
+    "isci": {
+     "tur": 1,
+     "jeton": 198957,
+     "maliyet_usd": 0.1152,
+     "tahmini_tur": 1,
+     "dokum": {
+      "girdi": 52,
+      "cikti": 2532,
+      "onbellek_okuma": 188109,
+      "onbellek_yazma": 40350,
+      "onbellek_yazma_1sa": 40350
+     }
+    },
+    "inceleme": {
+     "tur": 1,
+     "jeton": 56892,
+     "maliyet_usd": 0.155,
+     "dokum": {
+      "girdi": 6,
+      "cikti": 508,
+      "onbellek_okuma": 41043,
+      "onbellek_yazma": 35177,
+      "onbellek_yazma_1sa": 35177
+     }
+    }
+   },
+   "kalan": [],
+   "hata": "",
+   "sohbet": []
+  },
+  "dogrudan": {
+   "durum": "gecti",
+   "olcut": [
+    [
+     "hesap.py calisiyor: topla(2,3)=5, carp(4,5)=20",
+     true,
+     "5 20"
+    ],
+    [
+     "pytest testi yazildi ve geciyor",
+     true,
+     "8 passed in 0.01s"
+    ]
+   ],
+   "jeton": 160685,
+   "maliyet_usd": 0.1461,
+   "sure_sn": 13.3,
+   "cevap": "İki dosya yazdım ve testlerin hepsi geçti (8 test, 8 başarılı).\n\n- `hesap.py`: `topla(a, b)` ve `carp(a, b)` fonksiyonları.\n- `test_hesap.py`: Her fonksiyon için pozitif, negatif, sıfır ve ondalıklı sayı durumlarını deneyen 4'er test.\n\nTestleri `python -m pytest -v` ile çalıştırdım."
+  }
+ },
+ {
+  "no": "G04",
+  "ad": "Hata duzelt (test degismeden)",
+  "ofis": {
+   "durum": "gecti",
+   "sure_sn": 101.0,
+   "jeton": 375409,
+   "maliyet_usd": 0.4351,
+   "yol": {
+    "lider": {
+     "tur": 1,
+     "jeton": 34217,
+     "maliyet_usd": 0.1732,
+     "dokum": {
+      "girdi": 4,
+      "cikti": 1017,
+      "onbellek_okuma": 13200,
+      "onbellek_yazma": 39833,
+      "onbellek_yazma_1sa": 39833
+     }
+    },
+    "isci": {
+     "tur": 1,
+     "jeton": 283194,
+     "maliyet_usd": 0.0871,
+     "tahmini_tur": 1,
+     "dokum": {
+      "girdi": 68,
+      "cikti": 3034,
+      "onbellek_okuma": 291926,
+      "onbellek_yazma": 20188,
+      "onbellek_yazma_1sa": 20188
+     }
+    },
+    "inceleme": {
+     "tur": 1,
+     "jeton": 57998,
+     "maliyet_usd": 0.1748,
+     "dokum": {
+      "girdi": 6,
+      "cikti": 738,
+      "onbellek_okuma": 41198,
+      "onbellek_yazma": 39539,
+      "onbellek_yazma_1sa": 39539
+     }
+    }
+   },
+   "kalan": [],
+   "hata": "",
+   "sohbet": []
+  },
+  "dogrudan": {
+   "durum": "gecti",
+   "olcut": [
+    [
+     "testler YESIL",
+     true,
+     "2 passed in 0.01s"
+    ],
+    [
+     "test dosyasi DEGISTIRILMEDI",
+     true,
+     ""
+    ]
+   ],
+   "jeton": 157230,
+   "maliyet_usd": 0.1418,
+   "sure_sn": 12.0,
+   "cevap": "Hata `fiyat.py`'deydi. `indirimli` yüzdeyi 100'e bölmeden çarpıyordu. 200 TL için %10 indirimde 200 - 200*10 = -1800 çıkıyordu. Düzelttim:\n\n```python\nreturn fiyat - fiyat * yuzde / 100\n```\n\nTesti değiştirmedim. İki test de geçiyor (`2 passed`)."
+  }
+ },
+ {
+  "no": "G05",
+  "ad": "Veri oku, rapor yaz, sonucu soyle",
+  "ofis": {
+   "durum": "gecti",
+   "sure_sn": 113.3,
+   "jeton": 550570,
+   "maliyet_usd": 0.4776,
+   "yol": {
+    "lider": {
+     "tur": 1,
+     "jeton": 34697,
+     "maliyet_usd": 0.1918,
+     "dokum": {
+      "girdi": 4,
+      "cikti": 1371,
+      "onbellek_okuma": 13200,
+      "onbellek_yazma": 43610,
+      "onbellek_yazma_1sa": 43610
+     }
+    },
+    "isci": {
+     "tur": 1,
+     "jeton": 455317,
+     "maliyet_usd": 0.1157,
+     "tahmini_tur": 1,
+     "dokum": {
+      "girdi": 100,
+      "cikti": 4334,
+      "onbellek_okuma": 460495,
+      "onbellek_yazma": 22439,
+      "onbellek_yazma_1sa": 22439
+     }
+    },
+    "inceleme": {
+     "tur": 1,
+     "jeton": 60556,
+     "maliyet_usd": 0.1701,
+     "dokum": {
+      "girdi": 6,
+      "cikti": 862,
+      "onbellek_okuma": 41673,
+      "onbellek_yazma": 38047,
+      "onbellek_yazma_1sa": 38047
+     }
+    }
+   },
+   "kalan": [],
+   "hata": "",
+   "sohbet": []
+  },
+  "dogrudan": {
+   "durum": "olculemedi",
+   "olcut": [
+    [
+     "dogrulayici ofis istiyor (dogrudanda olculemez)",
+     null,
+     "'NoneType' object has no attribute 'kadro'"
+    ]
+   ],
+   "jeton": 157017,
+   "maliyet_usd": 0.1421,
+   "sure_sn": 11.9,
+   "cevap": "Sonucu `rapor.md` dosyasına yazdım.\n\n- **Toplam ciro:** 11.185. Ürün bazında Espresso 2.400, Latte 4.675, Çay 2.400 ve Mocha 1.710.\n- **En çok satılan ürün:** Çay, 120 adetle.\n- **Ciroya göre ilk sıra:** Latte, 4.675 ile. \"En çok satılan\"ı ciro olarak kastettiysen cevap Latte olur. Raporda ikisini d"
+  }
+ },
+ {
+  "no": "G06",
+  "ad": "Tek sayfalik web sitesi",
+  "ofis": {
+   "durum": "gecti",
+   "sure_sn": 162.4,
+   "jeton": 767237,
+   "maliyet_usd": 0.5547,
+   "yol": {
+    "lider": {
+     "tur": 1,
+     "jeton": 33865,
+     "maliyet_usd": 0.187,
+     "dokum": {
+      "girdi": 4,
+      "cikti": 1124,
+      "onbellek_okuma": 13200,
+      "onbellek_yazma": 43021,
+      "onbellek_yazma_1sa": 43021
+     }
+    },
+    "isci": {
+     "tur": 1,
+     "jeton": 639552,
+     "maliyet_usd": 0.1664,
+     "tahmini_tur": 1,
+     "dokum": {
+      "girdi": 124,
+      "cikti": 8939,
+      "onbellek_okuma": 635778,
+      "onbellek_yazma": 26832,
+      "onbellek_yazma_1sa": 26832
+     }
+    },
+    "inceleme": {
+     "tur": 1,
+     "jeton": 93820,
+     "maliyet_usd": 0.2013,
+     "dokum": {
+      "girdi": 8,
+      "cikti": 1513,
+      "onbellek_okuma": 73147,
+      "onbellek_yazma": 42631,
+      "onbellek_yazma_1sa": 42631
+     }
+    }
+   },
+   "kalan": [],
+   "hata": "",
+   "sohbet": []
+  },
+  "dogrudan": {
+   "durum": "gecti",
+   "olcut": [
+    [
+     "site/index.html var ve gecerli HTML",
+     true,
+     "5634 harf"
+    ],
+    [
+     "baslik 'Kahve Duragi'",
+     true,
+     ""
+    ],
+    [
+     "menu ve iletisim bolumleri var",
+     true,
+     ""
+    ]
+   ],
+   "jeton": 110338,
+   "maliyet_usd": 0.164,
+   "sure_sn": 22.7,
+   "cevap": "`site/index.html` dosyasını oluşturdum. Tarayıcıda açıp denemedim.\n\n- **Üst bölüm:** \"Kahve Durağı\" başlığı ve menü ile iletişim bölümlerine giden bağlantılar.\n- **Menü:** Sıcak kahveler, soğuk içecekler ve tatlılar olmak üzere üç kart var.\n- **İletişim:** Adres, telefon, e-posta, çalışma saatleri v"
+  }
+ }
+]

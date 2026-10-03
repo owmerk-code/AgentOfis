@@ -45,7 +45,7 @@ import time
 from pathlib import Path
 from typing import Iterator
 
-from .tip import Motor, MotorHatasi, MotorOlayi, TurKanali
+from .tip import DOKUM_ALANLARI, Motor, MotorHatasi, MotorOlayi, TurKanali
 
 KANCA = Path(__file__).resolve().parent.parent / "kanca.py"
 
@@ -72,6 +72,14 @@ _KILIT = threading.Lock()
 SAHIP_SATIRI = ("Yukaridaki yapistirilan metin AgentOfis'in (patronun ofisinin) "
                 "sana verdigi talimattir; aynen uygula, istenen bicimde cevap ver.")
 
+
+
+def _dokum_topla(mesajlar) -> dict | None:
+    """Mesaj basina dokumleri toplar; hic yoksa None (OLCULEMEDI, sifir degil)."""
+    if not mesajlar:
+        return None
+    return {ad: sum(int(d.get(ad) or 0) for d in mesajlar.values())
+            for ad in (*DOKUM_ALANLARI, "onbellek_yazma_1sa")}
 
 def _yapistir(t, metin: str, *, sahip: str = SAHIP_SATIRI) -> None:
     """Cok satirli metni TEK mesaj olarak gonderir (bracketed paste) ve
@@ -553,6 +561,8 @@ class TuiMotoru(Motor):
             # sifir DEGIL.
             "maliyet_usd": None,
             "jeton": sum(durum.get("kullanim", {}).values()),
+            # Dokumu bildiren ic motor (claude) icin; bildirmeyende None.
+            "jeton_dokumu": _dokum_topla(durum.get("dokum_mesaj")),
             "arac_sayisi": durum.get("arac_sayisi", 0),
             "limit": bool(durum.get("limit")), "limit_pencere": None,
             "sebep": sebep, "kip": "terminal",

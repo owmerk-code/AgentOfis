@@ -99,7 +99,7 @@ OTURUM_SAAT = 5
 #: Iki kopyadan biri duzeltilip oteki unutuluyor; bu projede bu desen
 #: alti kez odendi.
 OZET_ALANLARI = ("jeton", "maliyet_usd", "sure_ms", "model",
-                 "arac_sayisi", "basarili")
+                 "arac_sayisi", "basarili", "jeton_dokumu")
 
 
 def tur_ozeti_yaz(db, proje_id: str, ek: dict, *, ajan_ad: str = "",
@@ -120,9 +120,85 @@ def tur_ozeti_yaz(db, proje_id: str, ek: dict, *, ajan_ad: str = "",
         veri["yol"] = yol
     if isinstance(ek.get("limit_pencere"), dict):
         veri["limit_pencere"] = ek["limit_pencere"]
+    # BEDEL: olculen maliyet fiyat olcumunu BESLER; olculemeyen (gercek
+    # terminal) ondan TAHMIN alir -- ayri alanda, olcum sanilmasin.
+    try:
+        if veri.get("maliyet_usd"):
+            fiyat_ogren(veri.get("model"), veri.get("jeton_dokumu"), veri["maliyet_usd"])
+        elif veri.get("maliyet_usd") is None:
+            tahmin = tahmini_maliyet(veri.get("model"), veri.get("jeton_dokumu"))
+            if tahmin is not None:
+                veri["maliyet_tahmini_usd"] = tahmin
+    except OSError:                       # fiyat dosyasi yazilamadi: tur kaydi yine yazilir
+        pass
     db.olay_yaz(proje_id, "tur_ozeti", json.dumps(veri, ensure_ascii=False),
                 ajan_ad=ajan_ad, gorev_id=gorev_id)
 
+
+#: FIYAT OLCUMU (03.10.2026). Gercek terminal kipinde CLI dolar bildirmiyor;
+#: maliyet orada OLCULEMEDI (None) yaziliyordu ve ofis carpaninda isci $0
+#: gorunuyordu -- yanlis gosteren gosterge. Fiyat UYDURULMAZ: arka kipte
+#: motorun KENDI bildirdigi maliyetten model basina birim ogrenilir, terminal
+#: turu ondan tahmin alir. Hic olculmemis model icin tahmin YOK (None).
+#: Agirliklar saglayicinin fiyat ORANLARIDIR (birim fiyat degil): onbellek
+#: okuma 0,1 · 5 dk yazma 1,25 · 1 sa yazma 2 · cikti 5 kat girdi.
+_FIYAT_KILIDI = threading.Lock()
+FIYAT_AGIRLIK = {"girdi": 1.0, "cikti": 5.0, "onbellek_okuma": 0.1}
+
+
+def _agirlikli(dokum) -> float:
+    if not isinstance(dokum, dict):
+        return 0.0
+    yazma = float(dokum.get("onbellek_yazma") or 0)
+    saat = min(float(dokum.get("onbellek_yazma_1sa") or 0), yazma)
+    return (sum(float(dokum.get(k) or 0) * w for k, w in FIYAT_AGIRLIK.items())
+            + 1.25 * (yazma - saat) + 2.0 * saat)
+
+
+def _fiyat_dosyasi():
+    from .yollar import ofis_evi
+    return ofis_evi() / "fiyat_olcumu.json"
+
+
+def _model_anahtari(model) -> str:
+    """`claude-haiku-4-5-20251001` ile `haiku` ayni birimi paylasmaz: tam ad."""
+    return str(model or "").strip().lower()
+
+
+def fiyat_ogren(model, dokum, maliyet_usd) -> None:
+    """Olculen bir turdan modelin birim fiyatini ogrenir (birikimli ortalama)."""
+    ad, agir = _model_anahtari(model), _agirlikli(dokum)
+    if not ad or agir <= 0 or not maliyet_usd or maliyet_usd <= 0:
+        return
+    yol = _fiyat_dosyasi()
+    with _FIYAT_KILIDI:
+        try:
+            veri = json.loads(yol.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            veri = {}
+        k = veri.get(ad) or {"maliyet": 0.0, "agirlik": 0.0, "ornek": 0}
+        k = {"maliyet": float(k["maliyet"]) + float(maliyet_usd),
+             "agirlik": float(k["agirlik"]) + agir, "ornek": int(k["ornek"]) + 1,
+             "son": datetime.now(timezone.utc).isoformat(timespec="seconds")}
+        veri[ad] = k
+        yol.parent.mkdir(parents=True, exist_ok=True)
+        gecici = yol.with_suffix(".json.yeni")
+        gecici.write_text(json.dumps(veri, ensure_ascii=False, indent=1), encoding="utf-8")
+        gecici.replace(yol)
+
+
+def tahmini_maliyet(model, dokum):
+    """Olculmus birimle API karsiligi tahmin; birim ya da dokum yoksa None."""
+    ad, agir = _model_anahtari(model), _agirlikli(dokum)
+    if not ad or agir <= 0:
+        return None
+    try:
+        k = json.loads(_fiyat_dosyasi().read_text(encoding="utf-8")).get(ad)
+    except (OSError, ValueError):
+        return None
+    if not k or not k.get("agirlik"):
+        return None
+    return round(agir * float(k["maliyet"]) / float(k["agirlik"]), 4)
 
 def _ayar(db, proje_id: str, anahtar: str, varsayilan):
     try:
