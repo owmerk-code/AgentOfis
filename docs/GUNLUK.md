@@ -14243,3 +14243,22 @@ lider dolduruyor → kural işçiye rica değil, liderin incelemesine kondu.
   Gerçek ofisin 31 hafıza kaydında yanlış alarm 0 (ölçüldü). İnsanın yazdığı
   bildirilmez.
 `duman_hafiza_yanlis` 45/45, mutasyonlar yakalandı.
+
+## 03.10.2026 — OFİS ÇARPANI ölçüldü (`testler/carpan.py`)
+
+Aynı iş ofiste (lider sonnet, işçi haiku, gerçek terminal) ve doğrudan
+`claude -p` (sonnet, boş geçici klasör) — 4 iş, hepsi iki tarafta doğru:
+
+| İş | Ofis $ | Doğrudan $ | Maliyet × | Jeton × | Süre (ofis/doğrudan) |
+|---|---|---|---|---|---|
+| G03 kod+test | 0,284 | 0,147 | 1,9 | 2,1 | 97 / 13 sn |
+| G04 hata düzelt | 0,304 | 0,143 | 2,1 | 2,4 | 88 / 15 sn |
+| G05 veri→rapor | 0,276 | 0,145 | 1,9 | 2,2 | 93 / 13 sn |
+| G06 web sitesi | 0,392 | 0,170 | 2,3 | 3,4 | 153 / 28 sn |
+
+DİKKAT: ofis maliyetinde İŞÇİ turu $0 görünüyor (gerçek terminal kipinde
+maliyet okunmuyor) — gerçek maliyet çarpanı bundan YÜKSEK; jeton çarpanı
+(2,1–3,4×) daha güvenilir. Dağılım: lider 2 tur (~$0,19–0,29), inceleme 1 tur
+(~$0,09), işçi ~190–236k jeton. Süre 6–7× (lider triyaj + plan seri).
+Doğrudan G05 doğrulayıcısı ofis istediği için "ölçülemedi" yazdı; cevap doğru
+(11.185, Çay). `gercek_set` raporu artık her işin bedelini yola göre yazar.

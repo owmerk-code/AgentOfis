@@ -1,0 +1,194 @@
+[
+ {
+  "no": "G03",
+  "ad": "Kod + test yaz",
+  "ofis": {
+   "durum": "gecti",
+   "sure_sn": 97.3,
+   "jeton": 332299,
+   "maliyet_usd": 0.2838,
+   "yol": {
+    "lider": {
+     "tur": 2,
+     "jeton": 47670,
+     "maliyet_usd": 0.187
+    },
+    "isci": {
+     "tur": 1,
+     "jeton": 236578,
+     "maliyet_usd": 0.0
+    },
+    "inceleme": {
+     "tur": 1,
+     "jeton": 48051,
+     "maliyet_usd": 0.0968
+    }
+   },
+   "kalan": [],
+   "hata": ""
+  },
+  "dogrudan": {
+   "durum": "gecti",
+   "olcut": [
+    [
+     "hesap.py calisiyor: topla(2,3)=5, carp(4,5)=20",
+     true,
+     "5 20"
+    ],
+    [
+     "pytest testi yazildi ve geciyor",
+     true,
+     "8 passed in 0.01s"
+    ]
+   ],
+   "jeton": 160799,
+   "maliyet_usd": 0.147,
+   "sure_sn": 12.6,
+   "cevap": "`hesap.py` ve `test_hesap.py` dosyalarını yazdım. Çalıştırdığım 8 testin hepsi geçti.\n\n- **`hesap.py`:** `topla(a, b)` iki sayıyı toplar, `carp(a, b)` çarpar.\n- **`test_hesap.py`:** Her fonksiyon için dörder test var. Bunlar pozitif, negatif, sıfır ve ondalıklı sayı durumlarını kapsıyor.\n\nDosyalar `"
+  }
+ },
+ {
+  "no": "G04",
+  "ad": "Hata duzelt (test degismeden)",
+  "ofis": {
+   "durum": "gecti",
+   "sure_sn": 88.2,
+   "jeton": 372418,
+   "maliyet_usd": 0.3041,
+   "yol": {
+    "lider": {
+     "tur": 2,
+     "jeton": 133987,
+     "maliyet_usd": 0.2109
+    },
+    "isci": {
+     "tur": 1,
+     "jeton": 191835,
+     "maliyet_usd": 0.0
+    },
+    "inceleme": {
+     "tur": 1,
+     "jeton": 46596,
+     "maliyet_usd": 0.0932
+    }
+   },
+   "kalan": [],
+   "hata": ""
+  },
+  "dogrudan": {
+   "durum": "gecti",
+   "olcut": [
+    [
+     "testler YESIL",
+     true,
+     "2 passed in 0.01s"
+    ],
+    [
+     "test dosyasi DEGISTIRILMEDI",
+     true,
+     ""
+    ]
+   ],
+   "jeton": 155778,
+   "maliyet_usd": 0.1429,
+   "sure_sn": 14.6,
+   "cevap": "Hata `fiyat.py`'deki `indirimli` fonksiyonundaydı. Fonksiyon `yuzde`'yi 0–1 arası bir oran gibi kullanıyordu, oysa testler 10 gibi gerçek yüzde değeri veriyor. `indirimli(200, 10)` bu yüzden 200 − 2000 = −1800 döndürüyordu.\n\nDüzeltme: `return fiyat - fiyat * yuzde / 100`\n\nTestlere dokunmadım. `pytes"
+  }
+ },
+ {
+  "no": "G05",
+  "ad": "Veri oku, rapor yaz, sonucu soyle",
+  "ofis": {
+   "durum": "gecti",
+   "sure_sn": 93.0,
+   "jeton": 348557,
+   "maliyet_usd": 0.2756,
+   "yol": {
+    "lider": {
+     "tur": 2,
+     "jeton": 102537,
+     "maliyet_usd": 0.187
+    },
+    "isci": {
+     "tur": 1,
+     "jeton": 196884,
+     "maliyet_usd": 0.0
+    },
+    "inceleme": {
+     "tur": 1,
+     "jeton": 49136,
+     "maliyet_usd": 0.0886
+    }
+   },
+   "kalan": [],
+   "hata": ""
+  },
+  "dogrudan": {
+   "durum": "olculemedi",
+   "olcut": [
+    [
+     "dogrulayici ofis istiyor (dogrudanda olculemez)",
+     null,
+     "'NoneType' object has no attribute 'kadro'"
+    ]
+   ],
+   "jeton": 154931,
+   "maliyet_usd": 0.1448,
+   "sure_sn": 12.5,
+   "cevap": "Toplam ciro **11.185**, en çok satılan ürün **Çay** (120 adet). Sonuçları `rapor.md` dosyasına yazdım.\n\n| Ürün | Adet | Birim fiyat | Ciro |\n|---|---:|---:|---:|\n| Espresso | 40 | 60 | 2.400 |\n| Latte | 55 | 85 | 4.675 |\n| Çay | 120 | 20 | 2.400 |\n| Mocha | 18 | 95 | 1.710 |\n\n\"En çok satılan\"ı adet "
+  }
+ },
+ {
+  "no": "G06",
+  "ad": "Tek sayfalik web sitesi",
+  "ofis": {
+   "durum": "gecti",
+   "sure_sn": 153.4,
+   "jeton": 376823,
+   "maliyet_usd": 0.392,
+   "yol": {
+    "lider": {
+     "tur": 2,
+     "jeton": 107223,
+     "maliyet_usd": 0.2945
+    },
+    "isci": {
+     "tur": 1,
+     "jeton": 218133,
+     "maliyet_usd": 0.0
+    },
+    "inceleme": {
+     "tur": 1,
+     "jeton": 51467,
+     "maliyet_usd": 0.0975
+    }
+   },
+   "kalan": [],
+   "hata": ""
+  },
+  "dogrudan": {
+   "durum": "gecti",
+   "olcut": [
+    [
+     "site/index.html var ve gecerli HTML",
+     true,
+     "6355 harf"
+    ],
+    [
+     "baslik 'Kahve Duragi'",
+     true,
+     ""
+    ],
+    [
+     "menu ve iletisim bolumleri var",
+     true,
+     ""
+    ]
+   ],
+   "jeton": 111165,
+   "maliyet_usd": 0.17,
+   "sure_sn": 27.9,
+   "cevap": "`site/index.html` hazır. Tarayıcıda açmadım, o yüzden görünümünü kontrol etmedim.\n\n- **Menü:** Sıcak kahveler, soğuk içecekler ile tatlılar ve atıştırmalıklar kart olarak sıralı. Fiyatlar uydurma örnek değerler.\n- **İletişim:** Adres, telefon, e-posta ve çalışma saatleri var. Yanında bir mesaj formu"
+  }
+ }
+]

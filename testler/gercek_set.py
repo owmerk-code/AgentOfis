@@ -780,6 +780,7 @@ def is_kos(no: str, motor: str, *, kuru: str = "", zaman_asimi: int = 600,
         # triyaj/plan/rapor, inceleme, isci). Hiz iyilestirmesi olcumsuz
         # yapilmasin diye.
         dagilim: dict = {}
+        bedel: dict = {}
         with ofis.db.baglanti() as c:
             for r in c.execute("SELECT ajan_ad, govde FROM olay WHERE proje_id=? AND "
                                "tur='tur_ozeti' ORDER BY rowid", (ofis.proje_id,)):
@@ -789,7 +790,14 @@ def is_kos(no: str, motor: str, *, kuru: str = "", zaman_asimi: int = 600,
                     continue
                 yol = v.get("yol") or "isci"
                 dagilim.setdefault(yol, []).append(round((v.get("sure_ms") or 0) / 1000))
+                # BEDEL (03.10.2026, "ofis carpani"): jeton ve API karsiligi
+                # maliyet yola gore -- abonelikte kota agirligini bu tasir.
+                bd = bedel.setdefault(yol, {"tur": 0, "jeton": 0, "maliyet_usd": 0.0})
+                bd["tur"] += 1
+                bd["jeton"] += int(v.get("jeton") or 0)
+                bd["maliyet_usd"] = round(bd["maliyet_usd"] + float(v.get("maliyet_usd") or 0), 4)
         sonuc["sureler"] = dagilim
+        sonuc["bedel"] = bedel
     except Exception as exc:                    # noqa: BLE001 -- bir is digerini durdurmasin
         sonuc["durum"] = "hata"
         sonuc["hata"] = f"{exc.__class__.__name__}: {exc}"
