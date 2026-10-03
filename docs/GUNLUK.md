@@ -14391,3 +14391,33 @@ Sınamanın yakaladığı iki gerçek hata: eşik yüzünden tek aday kalınca `
 G06 yeniden koşuldu (karma, saklı): retsiz GEÇTİ, 324 sn. Codex incelemesi
 yavaş (G04 155 sn). Tam takım 4199/4199 (65 dosya); `duman_karne.py` 29,
 mutasyon 16/16 (+1 gereksiz kod silindi).
+
+## 03.10.2026 — karma 20 iş: ölçüm, dört düzeltme, yeniden ölçüm
+
+**İlk karma koşu** (20 iş): karma 16/20 · yalnız Claude 18/20 (aynı ayarlarla
+hemen ardından). Sonucu doğru biten iş ikisinde de 19/20 (karma G14 form
+gönderilmedi; Claude G17 Word sohbete gitmedi). "Gereksiz ret" kalite ölçütü
+HAKLI reti de sayıyor: karma G19'da Codex işçisinin PowerShell `` `n `` hatasını
+(liste tek satıra düştü) Claude incelemesi yakaladı — çapraz kontrolün işi.
+Claude payı karma $5,23 / Claude $6,27; karma 41 dk / 38 dk.
+
+**Düzeltmeler:**
+1. **G17:** `ekler.gonderilmemisler(..., ek_metinler=)` — patronun mesajında ve
+   liderin cevabında adı geçen, bu işte üretilmiş, diskte duran belge/medya da
+   sohbete eklenir (kanıtta geçmese de). Taslak ve uzun rapor yolu ikisi de.
+2. **G14:** tek turda lider `izinler`i planın DIŞINA yazınca ofis görmüyordu
+   (tahmin; ham cevap kayıtlı değil). `sohbet._hazir_plan` üstteki izni plana
+   taşır, kapı yine patron sözüne karşı ölçer; taşıma `uyari` olarak yazılır.
+3. **Codex dağınıklığı (G05, G09):** `degisim.yardimcilari_topla` — işçinin
+   proje KÖKÜNE bu turda YENİ bıraktığı beyan dışı yardımcı (betik → 
+   `.ofis/karalama/`, görsel → `.ofis/ekler/`) ofisçe taşınır, farktan düşer,
+   `yardimci_tasindi` olayı. Alt klasöre yazma, eski dosya ve çıktının ANDIĞI
+   dosya (uzantısız ad, `import yardimci`) taşınmaz — gerçek ihlal görünür kalır.
+   `duman_degisim`'deki beyan dışı sınaması alt klasör dosyasına alındı.
+4. **G16:** `lider._PATRONA` taslağı HAFIZA/KANIT/OLCUT/BOZULDU/DURUM
+   satırlarında da biter (Sürdür sonrası güncellemeye defter satırı karışmıştı).
+
+**Yeniden karma koşu: 19/20, gereksiz ret 0, 31,2 dk, Claude payı $3,78**
+(yalnız Claude'a göre %40 az); Codex 5 sa +26 puan, haftalık +4 puan (Plus).
+Kalan G16 → düzeltme 4 (sonra yapıldı). Tam takım 4219/4219 (65 dosya);
+mutasyon 8/8 (düzeltme 1–3).

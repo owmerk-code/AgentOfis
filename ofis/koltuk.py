@@ -1424,6 +1424,19 @@ class Koltuk:
             atif_belirsiz=belirsiz)
         if not kayitlar:
             return
+        # Yanlis yere birakilan YARDIMCI dosya ofisce dogru yere tasinir
+        # (bkz. `degisim.yardimcilari_topla`); tasinan farktan duser.
+        tasinan = degisim.yardimcilari_topla(kok_klasor, kayitlar,
+                                             gorev.get("yazma_alani") or ())
+        if tasinan:
+            _t = {e for e, _ in tasinan}
+            kayitlar = [k for k in kayitlar if k["yol"] not in _t]
+            yield self._olay("yardimci_tasindi",
+                             "Yardimci dosya dogru yere tasindi: "
+                             + ", ".join(f"{e} -> {y}" for e, y in tasinan),
+                             {"tasinan": tasinan}, ajan_ad=ajan_ad, gorev_id=gorev["id"])
+            if not kayitlar:
+                return
         degisim.yaz(self.db, self.proje_id, gorev["id"], ajan_ad, kayitlar)
         o = degisim.ozet(kayitlar)
         once_sha = self._golge_once.pop(gorev["id"], None)

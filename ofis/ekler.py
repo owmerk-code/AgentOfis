@@ -158,8 +158,15 @@ _KANITTA_BELGE = re.compile(
     r"[\w./\\:-]+\.(?:png|jpe?g|gif|webp|pdf|docx|xlsx|pptx|mp4|webm|mov|mp3|wav)\b", re.I)
 
 
-def gonderilmemisler(ofis, gorev_idleri) -> list:
+def gonderilmemisler(ofis, gorev_idleri, ek_metinler=()) -> list:
     """Islerin KANITINDA gecen ama patronun sohbetine HIC gitmemis ekler.
+
+    `ek_metinler`: kanit disinda bakilacak metinler -- patronun mesaji ve
+    liderin patrona yazdigi cevap. OLCULDU (03.10.2026, gercek set G17,
+    claude): `toplanti.docx` kanitta gecmedi, ama patron "toplanti.docx ...
+    bana gonder" demisti ve lider "Dosya: toplanti.docx" yazdi; dosya patrona
+    hic gitmedi. Bu metinlerde de yalniz BELGE/MEDYA turu ve diskte BU ISTE
+    uretilmis dosya sayilir (asagidaki iki kural aynen gecerli).
 
     OLCULDU (30.09.2026, gercek set G01, claude): ajan ekran goruntusunu
     `ekler/menu.png`ye kaydetti, kanitina yazdi, ama `sohbete_yaz`i
@@ -191,17 +198,7 @@ def gonderilmemisler(ofis, gorev_idleri) -> list:
             # icin sayilmadi, patrona hic gitmedi. Patrona gosterilecek TURDEN
             # (belge, gorsel, video, ses) dosya adi kanitta geciyorsa sayilir;
             # kod dosyasi sayilmaz.
-            for y in _KANITTA_BELGE.findall(f"{r['baslik'] or ''} {r['icerik'] or ''}"):
-                y = y.strip("`'\"<>()[]").replace("\\", "/")
-                p = Path(y) if Path(y).is_absolute() else kok / y
-                try:
-                    if p.is_file() and p.resolve().is_relative_to(kok) and not any(
-                            parca.startswith(".") for parca in p.resolve().relative_to(kok).parts):
-                        y = p.resolve().relative_to(kok).as_posix()
-                        if y not in adaylar:
-                            adaylar.append(y)
-                except (OSError, ValueError):
-                    pass
+            _belgeler(f"{r['baslik'] or ''} {r['icerik'] or ''}", kok, adaylar)
             # GORSEL KANIT: `gorsel_uret` dosyayi isin yazma alanina koyar,
             # `ekler/`e degil; kanitin icerigi dosyanin yoludur.
             if r["tur"] == "gorsel":
@@ -215,6 +212,8 @@ def gonderilmemisler(ofis, gorev_idleri) -> list:
                             adaylar.append(y)
                 except (OSError, ValueError):
                     pass
+        for _m in ek_metinler or ():
+            _belgeler(str(_m or ""), kok, adaylar)
         # YANLIS EK (01.10.2026 OLCULDU): #39'un kaniti stil ornegi olarak
         # `bilge-gorsel.png`yi andi; o dosya #38'de patrona ZATEN gitmisti
         # ama yalniz #39'un gonderdikleri sayildigi icin "gitmemis" sanildi
@@ -254,6 +253,21 @@ def gonderilmemisler(ofis, gorev_idleri) -> list:
     # hic gitmez.
     return [y for y in adaylar if not gitti(y) and (kok / y).is_file()
             and not y.startswith(_KARALAMA + "/")]
+
+
+def _belgeler(metin: str, kok: Path, adaylar: list) -> None:
+    """Metinde adi gecen, kokun icinde (gizli klasor disinda) DURAN belge/medya."""
+    for y in _KANITTA_BELGE.findall(metin or ""):
+        y = y.strip("`'\"<>()[]").replace("\\", "/")
+        p = Path(y) if Path(y).is_absolute() else kok / y
+        try:
+            if p.is_file() and p.resolve().is_relative_to(kok) and not any(
+                    parca.startswith(".") for parca in p.resolve().relative_to(kok).parts):
+                y = p.resolve().relative_to(kok).as_posix()
+                if y not in adaylar:
+                    adaylar.append(y)
+        except (OSError, ValueError):
+            pass
 
 
 def _oz(yol: Path) -> str:

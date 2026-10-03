@@ -767,7 +767,10 @@ _gb = _op.tahta.gorev_ac("B", neden="n", ana_hedef="h", kabul_olcutu="k",
 class _TekYazan(SahteMotor):
     def tur_kos(self, metin, **ayar):
         (_kp / "b.py").write_text("b = 1\n", encoding="utf-8")
-        (_kp / "kacak.py").write_text("k = 1\n", encoding="utf-8")
+        # Alt klasor: baska isin alani olabilir -> GERCEK ihlal (03.10'dan beri
+        # kokteki YENI yardimci betik ofisce `.ofis/karalama/`ye tasinir).
+        (_kp / "baska").mkdir(exist_ok=True)
+        (_kp / "baska" / "kacak.py").write_text("k = 1\n", encoding="utf-8")
         return super().tur_kos(metin, **ayar)
 
 
@@ -775,7 +778,41 @@ list(Koltuk(_op, motor_fabrikasi=lambda ad, **a: _TekYazan(
     cevap="ok\nKANIT dosya: b.py -> x")).akit(_gb["no"], "cinar"))
 _kb = {r["yol"]: r for r in degisim.oku(_op.db, _op.proje_id, gorev_id=_gb["id"])}
 sina("komsu YOKKEN beyan disi yazma YINE yakalaniyor",
-     bool(_kb.get("kacak.py", {}).get("beyan_disi")), str(_kb.get("kacak.py")))
+     bool(_kb.get("baska/kacak.py", {}).get("beyan_disi")), str(_kb.get("baska/kacak.py")))
+
+# --------------------------------------------------------------------------
+print("\nYARDIMCI DOSYA TOPLAMA -- kokteki YENI yardimci dogru yere tasinir")
+_gy = _op.tahta.gorev_ac("Y", neden="n", ana_hedef="h", kabul_olcutu="k",
+                         yazma_alani=["rapor.md", "app.py"], kanat_id=_knp)
+(_kp / "eski_betik.ps1").write_text("eski\n", encoding="utf-8")
+
+
+class _Daginik(SahteMotor):
+    def tur_kos(self, metin, **ayar):
+        (_kp / "rapor.md").write_text("ciro 11185\n", encoding="utf-8")
+        (_kp / "app.py").write_text("import yardimci\n", encoding="utf-8")
+        (_kp / "hesap.ps1").write_text("1+1\n", encoding="utf-8")       # yardimci
+        (_kp / "urun.png").write_bytes(b"\x89PNG")                      # ekran goruntusu
+        (_kp / "yardimci.py").write_text("x = 1\n", encoding="utf-8")    # app.py aniyor
+        (_kp / "eski_betik.ps1").write_text("degisti\n", encoding="utf-8")  # eski dosya
+        return super().tur_kos(metin, **ayar)
+
+
+_ak = list(Koltuk(_op, motor_fabrikasi=lambda ad, **a: _Daginik(
+    cevap="ok\nKANIT dosya: rapor.md -> x")).akit(_gy["no"], "cinar"))
+_ky = {r["yol"]: r for r in degisim.oku(_op.db, _op.proje_id, gorev_id=_gy["id"])}
+sina("kokteki yeni betik .ofis/karalama/'ya tasindi",
+     not (_kp / "hesap.ps1").exists() and (_kp / ".ofis" / "karalama" / "hesap.ps1").exists())
+sina("kokteki yeni gorsel .ofis/ekler/'e tasindi",
+     not (_kp / "urun.png").exists() and (_kp / ".ofis" / "ekler" / "urun.png").exists())
+sina("tasinan dosya beyan disi farkta YOK (ret sebebi kalmaz)",
+     "hesap.ps1" not in _ky and "urun.png" not in _ky, str(list(_ky)))
+sina("ciktinin ANDIGI dosya (import yardimci) TASINMAZ, ihlal olarak kalir",
+     (_kp / "yardimci.py").exists() and _ky.get("yardimci.py", {}).get("beyan_disi"))
+sina("ESKI dosya (degisti) tasinmaz", (_kp / "eski_betik.ps1").exists()
+     and _ky.get("eski_betik.ps1", {}).get("beyan_disi"))
+sina("tasima kayda gecti",
+     any(o["tur"] == "yardimci_tasindi" and "hesap.ps1" in o["govde"] for o in _ak))
 
 print(f"\n== sonuc: {GECEN} gecti, {KALAN} kaldi ==")
 print(f"klasor: {kok}")

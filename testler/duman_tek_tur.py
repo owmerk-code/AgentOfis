@@ -371,5 +371,58 @@ no = _inceleme_isi("rete")
 Lider(ofis, motor_fabrikasi=_hakem(["KARAR: kapat\nPATRONA: tamam"], q)).incele(no, lider_ad="demir")
 sina("kapatan inceleme tek tur", len(q) == 1)
 
+# --------------------------------------------------------------------------
+print("\n13. PATRONUN ISTEDIGI BELGE SOHBETE GIDER (G17)")
+import time as _t
+from ofis.ekler import gonderilmemisler
+(kok / "eski.docx").write_bytes(b"girdi")          # isten ONCE vardi: girdi
+_t.sleep(2.5)                                       # is saati saniye hassas + 1 sn pay
+gb = ofis.tahta.gorev_ac("belge", neden="n", ana_hedef="h", kabul_olcutu="docx var",
+                         yazma_alani=["toplanti.docx"], kanat_id=kanat)
+_t.sleep(1.2)
+(kok / "toplanti.docx").write_bytes(b"belge")
+ofis.tahta.kanit_ekle(gb["no"], "terminal", "yazildi", "python uret.py -> tamam", "cinar")
+sina("kanitta adi gecmeyen belge eskiden KACIYORDU", gonderilmemisler(ofis, [gb["id"]]) == [])
+sina("patronun mesajinda / liderin cevabinda adi gecen belge EKLENIR",
+     gonderilmemisler(ofis, [gb["id"]], ek_metinler=("Dosya: toplanti.docx", "")) == ["toplanti.docx"])
+sina("isten ONCE duran belge (girdi) eklenmez",
+     gonderilmemisler(ofis, [gb["id"]], ek_metinler=("eski.docx'u oku",)) == [])
+sina("diskte olmayan belge eklenmez",
+     gonderilmemisler(ofis, [gb["id"]], ek_metinler=("yok.docx",)) == [])
+sina("kod dosyasi eklenmez", gonderilmemisler(ofis, [gb["id"]], ek_metinler=("uret.py",)) == [])
+_ssrc = _ins.getsource(Sohbet._taslaktan_rapor) + _ins.getsource(Sohbet._rapor)
+sina("rapor patronun mesajini ve liderin cevabini da tarar (kablo)",
+     "ek_metinler=(metin, mesaj)" in _ssrc and "ek_metinler=(mesaj,)" in _ssrc
+     and "self._taslaktan_rapor(plan, mesaj)" in _ssrc)
+
+# --------------------------------------------------------------------------
+print("\n14. PLANIN DISINA YAZILAN IZIN PLANA TASINIR (G14)")
+from ofis.sohbet import _hazir_plan
+_iz = [{"eylem": "git push", "alinti": "pushla"}]
+sina("ustteki izin plana tasinir",
+     (_hazir_plan({"plan": {"kollar": []}, "izinler": _iz}) or {}).get("izinler") == _iz)
+sina("plandaki izin EZILMEZ",
+     (_hazir_plan({"plan": {"kollar": [], "izinler": ["p"]}, "izinler": _iz}) or {}).get("izinler") == ["p"])
+sina("plan yoksa None", _hazir_plan({"izinler": _iz}) is None)
+kutu["plan_turu"].clear()
+kutu["triyaj"] = triyaj("dagit", "uzmanlik", hedef="API yazilsin ve pushla", plan=PLAN, izinler=_iz)
+list(sohbet.konus("api yazilsin ve pushla", azami_tik=2))
+with db.baglanti() as c:
+    _izr = [tuple(r) for r in c.execute("SELECT desen, alinti FROM izin")]
+    _uy = [r[0] for r in c.execute("SELECT govde FROM olay WHERE tur='uyari'")]
+sina("izin gecerli ve ise yazildi (patronun sozune karsi olculdu)",
+     any("push" in d for d, _ in _izr), str(_izr))
+sina("tasima kayda gecti", any("planin DISINA" in u for u in _uy))
+sina("plan turu KOSMADI", kutu["plan_turu"] == [])
+
+# --------------------------------------------------------------------------
+print("\n15. PATRONA TASLAGI DEFTER SATIRLARINDA BITER (G16)")
+from ofis.lider import patrona_ayikla
+_t16 = patrona_ayikla("KARAR: kapat\nPATRONA: b1, b2, b3 yazildi.\nHAFIZA: yok\n"
+                      "KANIT terminal: python -c x\nOLCUT: \"a\"\nDURUM: bitti")
+sina("HAFIZA / KANIT / OLCUT / DURUM satiri patrona gitmez", _t16 == "b1, b2, b3 yazildi.", repr(_t16))
+sina("duz cumledeki 'kanit' kelimesi kesmez",
+     patrona_ayikla("KARAR: kapat\nPATRONA: Kanit terminal ciktisi temiz.") == "Kanit terminal ciktisi temiz.")
+
 print(f"\n{GECEN} gecti, {KALAN} kaldi")
 sys.exit(1 if KALAN else 0)

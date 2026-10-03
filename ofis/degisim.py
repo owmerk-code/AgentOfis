@@ -234,6 +234,69 @@ def beyan_disi_mi(yol: str, beyan) -> bool:
     return not any(yollar_cakisir(yol, a) for a in alanlar)
 
 
+#: YARDIMCI DOSYA TOPLAMA (03.10.2026, gercek set karma: G05, G09). Codex
+#: iscisi yardimci betigi (`hesap.ps1`) ve ekran goruntusunu (`urun-sayfasi.png`)
+#: KOKE birakti; brifingde ve sistem ekinde "`.ofis/karalama/`ye yaz" kurali
+#: VARDI. Lider kurala uyup isi IKI KEZ geri gonderdi -- sonuc dogruydu. Rica
+#: ile durmayan kural yapiya baglanir: ofis yeni ve beyan disi YARDIMCI
+#: dosyayi dogru yere TASIR ve bunu soyler. Dar kosullar asagida.
+YARDIMCI_BETIK = {".py", ".ps1", ".sh", ".bat", ".cmd", ".vbs"}
+YARDIMCI_GORSEL = {".png", ".jpg", ".jpeg", ".gif", ".webp"}
+
+
+def yardimcilari_topla(kok, kayitlar: list, beyan=()) -> list:
+    """Bu turda YENI olusan, beyan DISI, yardimci turden dosyalari tasir.
+
+    -> [(eski_yol, yeni_yol)]. Kosullar (hepsi): `eklendi`; `beyan_disi`
+    (paralel turda bastirilmis olur -> dokunulmaz); proje KOKUNDE (alt klasor
+    baska isin alani olabilir -- orasi gercek ihlal olarak kalir);
+    betik -> `.ofis/karalama/`, gorsel -> `.ofis/ekler/`; isin BEYAN ETTIGI
+    yeni/degisen dosyalarin hicbiri bu dosyanin ADINI (uzantisiz da: `import
+    yardimci`) anmiyor -- aniyorsa ciktinin parcasidir, tasinirsa cikti bozulur.
+    """
+    from .yollar import KARALAMA, EK_KLASORU
+    kok = Path(kok)
+    beyanli = [k for k in kayitlar if not k.get("beyan_disi")
+               and k.get("hal") in ("eklendi", "degisti")]
+    tasinan = []
+    for k in kayitlar:
+        yol = str(k.get("yol") or "")
+        if k.get("hal") != "eklendi" or not k.get("beyan_disi") or k.get("atif_belirsiz"):
+            continue
+        if len(Path(yol).parts) != 1:
+            continue                     # yalniz KOKTEKI dosya: alt klasor baska isin alani olabilir
+        uz = Path(yol).suffix.lower()
+        hedef_klasor = KARALAMA if uz in YARDIMCI_BETIK else EK_KLASORU if uz in YARDIMCI_GORSEL else ""
+        if not hedef_klasor:
+            continue
+        ad = Path(yol).name
+        anilan = False
+        for b in beyanli:
+            try:
+                bp = kok / b["yol"]
+                if bp.is_file() and bp.stat().st_size < 2_000_000 and \
+                        Path(ad).stem in bp.read_text(encoding="utf-8", errors="ignore"):
+                    anilan = True
+                    break
+            except OSError:
+                continue
+        if anilan:
+            continue
+        kaynak = kok / yol
+        hedef = kok / hedef_klasor / ad
+        n = 1
+        while hedef.exists():
+            hedef = kok / hedef_klasor / f"{Path(ad).stem}-{n}{Path(ad).suffix}"
+            n += 1
+        try:
+            hedef.parent.mkdir(parents=True, exist_ok=True)
+            kaynak.replace(hedef)
+        except OSError:
+            continue
+        tasinan.append((yol, hedef.relative_to(kok).as_posix()))
+    return tasinan
+
+
 def karsilastir(once: dict, sonra: dict, *, beyan=(),
                 atif_belirsiz: bool = False) -> list:
     """Iki anlik goruntunun farki. Ajanin sozu hic gecmez.

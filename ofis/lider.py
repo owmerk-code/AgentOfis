@@ -62,7 +62,10 @@ ARAC_SUSKUNLUGU = ("Kendi araclarindan, neyi calistiramadigindan SOZ ETME (bu tu
 #: ofis kopyasi): kural 7 "kapatirken kisaca not dus" diyor; lider notu
 #: PATRONA'nin ALTINA yazdi ve patrona "karalama/yazi_bas.py, georgia.ttf,
 #: cekirdek sayisi 5 degil 6" gibi inceleme ayrintisi gitti.
-_PATRONA = re.compile(r"^[ \t]*PATRONA:[ \t]*(.*?)(?=^[ \t]*(?:KARAR|DERS|BILGI|Not|NOT|[İI]nceleme notu):|^```|\Z)",
+#: Taslak, liderin DEFTER satirlarinda biter (03.10.2026, gercek set G16 karma:
+#: Surdur'den sonra giden guncellemeye "HAFIZA: yok" ve "KANIT terminal: ..."
+#: karismisti -- bu satirlar listede yoktu).
+_PATRONA = re.compile(r"^[ \t]*PATRONA:[ \t]*(.*?)(?=^[ \t]*(?:(?:KARAR|DERS|BILGI|HAFIZA|OLCUT|BOZULDU|DURUM|Not|NOT|[İI]nceleme notu):|KANIT[ \t]+\S+[ \t]*:)|^```|\Z)",
                       re.M | re.S)
 
 

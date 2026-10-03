@@ -114,6 +114,24 @@ def yazilacak_dosyalar(mesaj: str, kok) -> list:
     return eksik
 
 
+def _hazir_plan(karar: dict):
+    """Triyajdaki plan (tek tur). IZINLER ust duzeye yazildiysa plana tasinir.
+
+    OLCULDU (03.10.2026, gercek set G14, karma, iki kosu): lider gerekcede
+    "gonderme adimi patronun acik izni" yazdi ama izin plana girmedi -- tek
+    turda plan ic ice bir alan; `izinler` cevabin USTUNE yazilinca ofis
+    gormuyordu ve form gonderilmeden is patrona soruldu. Tasinan izin yine
+    ayni kapidan (patronun sozune karsi alinti) gecer.
+    """
+    plan = karar.get("plan") if isinstance(karar.get("plan"), dict) else None
+    if plan is None:
+        return None
+    ust = karar.get("izinler")
+    if ust and not plan.get("izinler"):
+        plan = dict(plan, izinler=ust)
+    return plan
+
+
 def _zaman_blogu(ofis) -> str:
     from datetime import datetime
     from . import zamanlayici as _z
@@ -909,6 +927,12 @@ class Sohbet:
             yield {"tur": "bitti", "govde": "", "ek": {"yol": "kadro"}}
             return
 
+        _hp = _hazir_plan(karar)
+        if _hp is not None and karar.get("izinler") and _hp.get("izinler") is karar.get("izinler"):
+            self.ofis.db.olay_yaz(self.ofis.proje_id, "uyari",
+                                  "Lider izinleri planin DISINA yazdi; ofis plana tasidi "
+                                  "(gecerliligi patronun sozune karsi yine olculur).",
+                                  ajan_ad=lider["ad"])
         try:
             plan = self.orkestra.hedef_ver(
                 hedef, lider_ad=lider["ad"], butce_usd=butce_usd,
@@ -918,8 +942,7 @@ class Sohbet:
                 atanan=atanan, patron_sozu=mesaj,
                 # Plan yalniz kendi/dagit yoluna gelir (oteki yollar yukarida
                 # dondu); gecersizse plan turu ret metniyle kosar.
-                hazir_plan=(karar.get("plan") if isinstance(karar.get("plan"), dict)
-                            else None))
+                hazir_plan=_hp)
         except OrkestraHatasi as exc:
             plan = None
             not_ = f"Plan alinamadi: {exc}"
@@ -1026,7 +1049,7 @@ class Sohbet:
         yapilan isin INCELENMESI degildir -- inceleme zaten kanit kapisinda
         yapildi; bu yalnizca anlatmadir.
         """
-        kisa = self._taslaktan_rapor(plan)
+        kisa = self._taslaktan_rapor(plan, mesaj)
         if kisa:
             return kisa + self._gercek_durum(plan)
 
@@ -1044,7 +1067,8 @@ class Sohbet:
         from .ekler import gonderilmemisler
         try:
             _gitmemis = gonderilmemisler(self.ofis, [
-                self.ofis.tahta.gorev(g0["no"])["id"] for g0 in plan["gorevler"]])
+                self.ofis.tahta.gorev(g0["no"])["id"] for g0 in plan["gorevler"]],
+                ek_metinler=(mesaj,))
         except Exception:                        # noqa: BLE001 -- rapor yine yazilir
             _gitmemis = []
         if _gitmemis:
@@ -1090,7 +1114,7 @@ class Sohbet:
         metin = (ham or "").strip()[:CEVAP_SINIRI] or "(Lider rapor yazmadi.)"
         return self._ekleri_hazirla(metin, lider["ad"]) + self._gercek_durum(plan)
 
-    def _taslaktan_rapor(self, plan: dict) -> str:
+    def _taslaktan_rapor(self, plan: dict, mesaj: str = "") -> str:
         """Tek isli planda, isi KAPATAN incelemenin `PATRONA:` taslagi rapor
         olur -- ayri rapor turu kosmaz (bkz. `lider._hukmu_uygula`).
 
@@ -1119,7 +1143,7 @@ class Sohbet:
         metin = r["govde"].strip()
         from .ekler import gonderilmemisler, satirlar as ek_satirlari
         try:
-            gitmemis = gonderilmemisler(self.ofis, [g["id"]])
+            gitmemis = gonderilmemisler(self.ofis, [g["id"]], ek_metinler=(metin, mesaj))
         except Exception:                        # noqa: BLE001
             gitmemis = []
         if gitmemis:
