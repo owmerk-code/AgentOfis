@@ -486,6 +486,13 @@ async function ayarCalisma(kap, v) {
       try { await yolla("/api/efor", { mod: m }); } catch (e) { bildir(String(e.message || e), "kotu"); }
       ayarlarCiz(); try { cizEfor(); } catch (_) {}
     }));
+  ayarSatir(kap, "İşin motorunu kim seçsin",
+    "Karneye göre: ofis her işi, o tür işte daha iyi sonuç veren ve limiti daha boş olan motora (Claude ya da Codex) verir; yeni bir model gelince ona da deneme payı tanır. Ajanın kendi motoru: her ajan işe alınırken seçilen motorla çalışır.",
+    ayarSecim([["karne", "karneye göre"], ["ajan", "ajanın kendi motoru"]], c.motor_secimi,
+              (k) => ayarYaz("motor_secimi", k)));
+  ayarSatir(kap, "Çapraz kontrol",
+    "Açıkken işi Claude yaptıysa Codex, Codex yaptıysa Claude inceler: farklı model farklı hatayı yakalar. Ek tur yok.",
+    ayarAnahtar(c.capraz_inceleme, (a) => ayarYaz("capraz_inceleme", a)));
   ayarSatir(kap, "Gömülü tarayıcıyı ajanlar kendiliğinden kullansın",
     "Açıkken tarayıcı gereken iş panelin tarayıcısında canlı koşar (girdiğin hesaplarla); riskli tıklama yine sana sorulur.",
     ayarAnahtar(c.kabin_izle, (a) => ayarYaz("kabin_izle", a)));

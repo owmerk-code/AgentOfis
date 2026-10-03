@@ -59,6 +59,7 @@ def oku(ofis) -> dict:
     from .koltuk import Koltuk
     from .motor import tui
     from .orkestra import kabin_izle_acik_mi
+    from . import karne
     db, pid = ofis.db, ofis.proje_id
     hatalar = []
     kapali = bildirim_kapalilar(db, pid)
@@ -69,6 +70,10 @@ def oku(ofis) -> dict:
             "efor": roller.efor_modu(db, pid),
             "efor_modlari": list(roller.EFOR_MODLARI),
             "kabin_izle": kabin_izle_acik_mi(db, pid),
+            # KARNE (03.10.2026): isin motorunu ofis tecrubesiyle secer.
+            "motor_secimi": "karne" if karne.secim_acik_mi(db, pid) else "ajan",
+            "capraz_inceleme": karne.capraz_acik_mi(db, pid),
+            "karne": karne.ozet()["motorlar"],
         },
         "bildirim": {
             "turler": [{"anahtar": k, "etiket": e, "kapatilabilir": kp, "acik": k not in kapali}
@@ -143,6 +148,7 @@ def yaz(ofis, anahtar: str, deger) -> None:
     from .koltuk import Koltuk
     from .motor import tui
     from .orkestra import KABIN_IZLE_ANAHTARI
+    from . import karne
     db, pid = ofis.db, ofis.proje_id
     if anahtar in ("ajan_kipi", "lider_kipi"):
         if deger not in ("arka", "gercek"):
@@ -158,6 +164,12 @@ def yaz(ofis, anahtar: str, deger) -> None:
             roller.efor_modu_yaz(db, pid, str(deger))
         except roller.RolHatasi as exc:
             raise AyarHatasi(str(exc))
+    elif anahtar == "motor_secimi":
+        if deger not in ("karne", "ajan"):
+            raise AyarHatasi("Motor secimi 'karne' ya da 'ajan' olmali.")
+        db.ayar_yaz(pid, karne.AYAR, deger)
+    elif anahtar == "capraz_inceleme":
+        db.ayar_yaz(pid, karne.CAPRAZ_AYAR, "acik" if deger else "kapali")
     elif anahtar == "kabin_izle":
         db.ayar_yaz(pid, KABIN_IZLE_ANAHTARI, "acik" if deger else "kapali")
     elif anahtar == "bildirim_turu":

@@ -168,6 +168,29 @@ class Koltuk:
     #: gecer; gercek kip olculup esitlenene kadar varsayilan degismez.
     from .motor.tui import KIP_AYARI as TERMINAL_KIPI  # tek yerde
 
+    def _motoru_sec(self, gorev: dict, ajan: dict, harita: dict, zorluk: str):
+        """Isin motoru: once kaydedilen (is boyunca ayni), yoksa karneyle secilir.
+
+        `None` = ajanin kendi motoru kalir (secim kapali, sahte ajan, tek motor).
+        Secim kayda gecer (`motor_secimi`) ve isin satirina yazilir.
+        """
+        from . import karne
+        kayitli = (gorev.get("motor_secimi") or "").strip()
+        if kayitli:
+            return kayitli
+        if not karne.secim_acik_mi(self.db, self.proje_id):
+            return None
+        motor, gerekce = karne.sec(self.db, self.proje_id, ajan_motoru=ajan.get("motor") or "",
+                                   meslek=ajan.get("meslek") or "", zorluk=zorluk,
+                                   fabrika=self.motor_fabrikasi, harita=harita)
+        if not motor:
+            return None
+        with self.db.baglanti() as c:
+            c.execute("UPDATE gorev SET motor_secimi = ? WHERE id = ?", (motor, gorev["id"]))
+        self.db.olay_yaz(self.proje_id, "motor_secimi", f"#{gorev['no']} -> {motor}: {gerekce}",
+                         ajan_ad=ajan.get("ad") or "", gorev_id=gorev["id"])
+        return motor
+
     def _motor_ac(self, ad: str):
         """Motoru acar; gercek terminal kipi aciksa ve motor destekliyorsa
         sarmalar. Desteklemeyen motor SESSIZCE arka plana dusmez: gorunur
@@ -376,16 +399,28 @@ class Koltuk:
         kosan_ajan = ajan
         harita = roller.kademe_haritasi(self.db, self.proje_id)
         zorluk = (gorev.get("zorluk") or "").strip()
+        # MOTOR SECIMI (03.10.2026, `karne`): isin motoru ofisin KENDI
+        # tecrubesine ve iki aboneligin limit doluluguna gore secilir; is
+        # boyunca ayni kalir. Model, secilen motorun kademesinden gelir.
+        secilen = self._motoru_sec(gorev, ajan, harita, zorluk)
+        if secilen and secilen != ajan["motor"]:
+            try:
+                _rol_kademe = roller.rol(ajan.get("meslek") or "").kademe
+            except roller.RolHatasi:
+                _rol_kademe = "standart"
+            # Model rolun kademesinden; zorluk varsa asagidaki blok duzeltir.
+            kosan_ajan = dict(ajan, motor=secilen,
+                              model=roller.model_sec(secilen, _rol_kademe, harita))
         if zorluk:
             zorluk_modeli = roller.model_sec(
-                ajan["motor"], roller.ZORLUK_KADEME[zorluk], harita)
-            if zorluk_modeli and zorluk_modeli != ajan["model"]:
-                kosan_ajan = dict(ajan, model=zorluk_modeli)
+                kosan_ajan["motor"], roller.ZORLUK_KADEME[zorluk], harita)
+            if zorluk_modeli and zorluk_modeli != kosan_ajan["model"]:
+                kosan_ajan = dict(kosan_ajan, model=zorluk_modeli)
                 # Sessizce degismez: hangi modelin NEDEN kostugunu
                 # sonradan sorabilmek gerek.
                 self.db.olay_yaz(
                     self.proje_id, "zorluk_modeli",
-                    f"#{no} zorluk={zorluk} -> {ajan['motor']}/{zorluk_modeli} "
+                    f"#{no} zorluk={zorluk} -> {kosan_ajan['motor']}/{zorluk_modeli} "
                     f"(ajanin kendi modeli: {ajan['model'] or '(yok)'})",
                     ajan_ad=ajan_ad, gorev_id=gorev["id"])
 

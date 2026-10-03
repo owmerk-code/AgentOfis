@@ -1,0 +1,125 @@
+{
+ "ayar": {
+  "motor": "karma",
+  "kip": "gercek terminal",
+  "modeller": {
+   "lider": "sonnet",
+   "isci": "haiku"
+  },
+  "basla": "2026-10-03 19:22",
+  "sure_dk": 5.4,
+  "kota_farki": {
+   "claude": {
+    "5s": "yenilendi",
+    "7g": "yenilendi",
+    "7g_kapi": "yenilendi"
+   },
+   "codex": {
+    "5s": 0.0,
+    "7g": 0.0
+   }
+  }
+ },
+ "sonuclar": [
+  {
+   "no": "G06",
+   "ad": "Tek sayfalik web sitesi",
+   "motor": "karma",
+   "kip": "gercek",
+   "mesaj": "'Kahve Duragi' adinda tek sayfalik bir kafe sitesi yap: site/index.html. Menu bolumu ve iletisim bolumu olsun.",
+   "olcutler": [
+    {
+     "olcut": "site/index.html var ve gecerli HTML",
+     "gecti": true,
+     "not": "9395 harf"
+    },
+    {
+     "olcut": "baslik 'Kahve Duragi'",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "menu ve iletisim bolumleri var",
+     "gecti": true,
+     "not": ""
+    }
+   ],
+   "kalite": [
+    {
+     "olcut": "lider patrona cevap verdi",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "lider 'yapamam / sen yap' DEMEDI",
+     "gecti": true,
+     "not": "Kahve Durağı tek sayfa sitesi hazır: `site/index.html`. Satır içi CSS'li tek dosya, dış bağımlılığı "
+    },
+    {
+     "olcut": "rapor ic konusma / KANIT satiri tasimiyor",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "gereksiz ret yok",
+     "gecti": true,
+     "not": "0 ret"
+    },
+    {
+     "olcut": "sohbet temiz (en fazla 4 mesaj)",
+     "gecti": true,
+     "not": "2 mesaj: insan/sohbet, lale/cevap"
+    }
+   ],
+   "durum": "gecti",
+   "sohbet": [
+    "insan/sohbet: 'Kahve Duragi' adinda tek sayfalik bir kafe sitesi yap: site/index.html. Menu bolumu ve iletisim bolumu olsun.",
+    "lale/cevap: Kahve Durağı tek sayfa sitesi hazır: `site/index.html`. Satır içi CSS'li tek dosya, dış bağımlılığı yok, kahve/krem tonlarında ve mobil uyumlu. Üstte Menü ve İletişim bağlantıları var. Menüde 3 grupta"
+   ],
+   "sureler": {
+    "lider": [
+     17
+    ],
+    "isci": [
+     283
+    ],
+    "inceleme": [
+     13
+    ]
+   },
+   "bedel": {
+    "lider": {
+     "tur": 1,
+     "jeton": 30292,
+     "maliyet_usd": 0.0948,
+     "dokum": {
+      "girdi": 2,
+      "cikti": 1481,
+      "onbellek_okuma": 0,
+      "onbellek_yazma": 28809,
+      "onbellek_yazma_1sa": 0
+     }
+    },
+    "isci": {
+     "tur": 1,
+     "jeton": 292669,
+     "maliyet_usd": 0.0,
+     "bilinmeyen_tur": 1
+    },
+    "inceleme": {
+     "tur": 1,
+     "jeton": 61878,
+     "maliyet_usd": 0.0873,
+     "dokum": {
+      "girdi": 4,
+      "cikti": 1055,
+      "onbellek_okuma": 34699,
+      "onbellek_yazma": 26120,
+      "onbellek_yazma_1sa": 0
+     }
+    }
+   },
+   "sure_sn": 324.0
+  }
+ ]
+}

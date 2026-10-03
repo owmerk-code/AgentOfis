@@ -779,6 +779,25 @@ class Lider:
         for u in uyarilar:
             self.db.olay_yaz(self.proje_id, "uyari", u, ajan_ad=lider["ad"],
                              gorev_id=gorev["id"])
+        # CAPRAZ KONTROL (03.10.2026): isi yapan motorun TERSI inceler --
+        # farkli sirketin modeli farkli hatayi yakalar; inceleme turu zaten
+        # var, ek tur yok. Kapi modeline yukseltilen inceleme dokunulmaz.
+        from . import karne
+        if model == lider["model"] and karne.capraz_acik_mi(self.db, self.proje_id):
+            # Yalniz IKI GERCEK motor arasinda: sahte isin incelemesi
+            # baska motora kaymaz.
+            gercek = karne.gercek_motorlar(roller.kademe_haritasi(self.db, self.proje_id))
+            yapan = karne.isin_motoru(self.db, self.proje_id, gorev)[0]
+            if yapan in gercek and basamaklar and basamaklar[0]["motor"] == yapan:
+                diger = next((i for i, b in enumerate(basamaklar)
+                              if b["motor"] != yapan and b["motor"] in gercek), None)
+                if diger is not None:
+                    basamaklar.insert(0, basamaklar.pop(diger))
+                    self.db.olay_yaz(
+                        self.proje_id, "capraz_inceleme",
+                        f"#{no} isi {yapan} yapti; inceleme {basamaklar[0]['motor']}"
+                        + (f"/{basamaklar[0]['model']}" if basamaklar[0].get("model") else ""),
+                        ajan_ad=lider["ad"], gorev_id=gorev["id"])
 
         def kostur(b):
             from .motor.tui import kipe_gore
@@ -913,6 +932,19 @@ class Lider:
                                  ajan_ad=lider["ad"], gorev_id=gorev["id"])
         return self._hukmu_uygula(no, hukum, lider["ad"], isci_ad)
 
+    def _karneye_yaz(self, gorev: dict, isci_ad: str, *, gecti: bool) -> None:
+        """Kapanan isin karne satiri (bkz. `karne`). Gosterge: hatasi isi durdurmaz."""
+        from . import karne
+        try:
+            motor, model, sure = karne.isin_motoru(self.db, self.proje_id, gorev)
+            meslek = (self.ofis.kadro.ajan(isci_ad).get("meslek") or "") if isci_ad else ""
+            karne.kaydet(meslek=meslek, zorluk=gorev.get("zorluk") or "", motor=motor,
+                         model=model, gecti=gecti, ret=self.ofis.tahta.ret_sayisi(gorev["no"]),
+                         sure_sn=sure)
+        except Exception as exc:               # noqa: BLE001 -- karne isi durdurmaz
+            self.db.olay_yaz(self.proje_id, "uyari", f"Karne yazilamadi: {exc}",
+                             gorev_id=gorev["id"])
+
     def _olcut_metinleri(self, gorev: dict) -> list:
         """Retin alintilayabilecegi metinler: kabul olcutu, ust hedef, patronun sozu."""
         metinler = [gorev.get("kabul_olcutu") or "", gorev.get("ana_hedef") or ""]
@@ -966,6 +998,7 @@ class Lider:
                 lider_ad, tur="genel", gorev_id=guncel["id"],
             )
             yazilan, reddedilen = self._bilgileri_yaz(no, hukum, lider_ad)
+            self._karneye_yaz(guncel, isci_ad, gecti=True)
             # HAFIZA ADIMI OLCULUR (03.10.2026): her kapanista ne oldu --
             # bilgi yazildi / 'yok' dendi / hic soylenmedi. Iscilerin bilgi_yaz'i
             # 20 iste 3 kez cagirdigi olculdu; adimin kendisi gorunur olmali.

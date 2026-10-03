@@ -1,0 +1,265 @@
+[
+ {
+  "no": "G03",
+  "ad": "Kod + test yaz",
+  "ofis": {
+   "durum": "gecti",
+   "sure_sn": 65.1,
+   "jeton": 185417,
+   "maliyet_usd": 0.178,
+   "yol": {
+    "lider": {
+     "tur": 1,
+     "jeton": 33753,
+     "maliyet_usd": 0.102,
+     "dokum": {
+      "girdi": 2,
+      "cikti": 1290,
+      "onbellek_okuma": 0,
+      "onbellek_yazma": 32461,
+      "onbellek_yazma_1sa": 0
+     }
+    },
+    "isci": {
+     "tur": 1,
+     "jeton": 93422,
+     "maliyet_usd": 0.0,
+     "bilinmeyen_tur": 1
+    },
+    "inceleme": {
+     "tur": 1,
+     "jeton": 58242,
+     "maliyet_usd": 0.076,
+     "dokum": {
+      "girdi": 4,
+      "cikti": 610,
+      "onbellek_okuma": 33989,
+      "onbellek_yazma": 23639,
+      "onbellek_yazma_1sa": 0
+     }
+    }
+   },
+   "kalan": [],
+   "hata": "",
+   "sohbet": []
+  },
+  "dogrudan": {
+   "durum": "gecti",
+   "olcut": [
+    [
+     "hesap.py calisiyor: topla(2,3)=5, carp(4,5)=20",
+     true,
+     "5 20"
+    ],
+    [
+     "pytest testi yazildi ve geciyor",
+     true,
+     "8 passed in 0.01s"
+    ]
+   ],
+   "jeton": 214961,
+   "maliyet_usd": 0.1595,
+   "sure_sn": 18.1,
+   "cevap": "`hesap.py` ve `test_hesap.py` dosyalarını yazdım. Çalıştırınca 8 testin hepsi geçti.\n\n- **`hesap.py`:** `topla(a, b)` iki sayıyı toplar, `carp(a, b)` çarpar.\n- **`test_hesap.py`:** Her fonksiyon için 4 test var. Bunlar pozitif, negatif, sıfır ve ondalıklı sayı durumlarını kapsıyor.\n\nTestleri tekrar "
+  }
+ },
+ {
+  "no": "G04",
+  "ad": "Hata duzelt (test degismeden)",
+  "ofis": {
+   "durum": "gecti",
+   "sure_sn": 155.3,
+   "jeton": 565502,
+   "maliyet_usd": 0.1602,
+   "yol": {
+    "lider": {
+     "tur": 1,
+     "jeton": 29630,
+     "maliyet_usd": 0.0734,
+     "dokum": {
+      "girdi": 2,
+      "cikti": 875,
+      "onbellek_okuma": 6600,
+      "onbellek_yazma": 22153,
+      "onbellek_yazma_1sa": 0
+     }
+    },
+    "isci": {
+     "tur": 1,
+     "jeton": 235229,
+     "maliyet_usd": 0.0868,
+     "tahmini_tur": 1,
+     "dokum": {
+      "girdi": 50,
+      "cikti": 2920,
+      "onbellek_okuma": 191646,
+      "onbellek_yazma": 40613,
+      "onbellek_yazma_1sa": 0
+     }
+    },
+    "inceleme": {
+     "tur": 1,
+     "jeton": 300643,
+     "maliyet_usd": 0.0,
+     "bilinmeyen_tur": 1
+    }
+   },
+   "kalan": [],
+   "hata": "",
+   "sohbet": []
+  },
+  "dogrudan": {
+   "durum": "gecti",
+   "olcut": [
+    [
+     "testler YESIL",
+     true,
+     "2 passed in 0.01s"
+    ],
+    [
+     "test dosyasi DEGISTIRILMEDI",
+     true,
+     ""
+    ]
+   ],
+   "jeton": 157224,
+   "maliyet_usd": 0.1418,
+   "sure_sn": 10.8,
+   "cevap": "`fiyat.py` içindeki `indirimli` fonksiyonu yüzdeyi 100'e bölmüyordu. `indirimli(200, 10)` bu yüzden 200 − 2000 = −1800 döndürüyordu. Satırı `fiyat - fiyat * yuzde / 100` olarak düzelttim. Testlere dokunmadım, ikisi de geçiyor."
+  }
+ },
+ {
+  "no": "G05",
+  "ad": "Veri oku, rapor yaz, sonucu soyle",
+  "ofis": {
+   "durum": "gecti",
+   "sure_sn": 104.0,
+   "jeton": 304891,
+   "maliyet_usd": 0.1661,
+   "yol": {
+    "lider": {
+     "tur": 1,
+     "jeton": 33922,
+     "maliyet_usd": 0.0886,
+     "dokum": {
+      "girdi": 2,
+      "cikti": 1461,
+      "onbellek_okuma": 6600,
+      "onbellek_yazma": 25859,
+      "onbellek_yazma_1sa": 0
+     }
+    },
+    "isci": {
+     "tur": 1,
+     "jeton": 212158,
+     "maliyet_usd": 0.0,
+     "bilinmeyen_tur": 1
+    },
+    "inceleme": {
+     "tur": 1,
+     "jeton": 58811,
+     "maliyet_usd": 0.0775,
+     "dokum": {
+      "girdi": 4,
+      "cikti": 679,
+      "onbellek_okuma": 34351,
+      "onbellek_yazma": 23777,
+      "onbellek_yazma_1sa": 0
+     }
+    }
+   },
+   "kalan": [],
+   "hata": "",
+   "sohbet": []
+  },
+  "dogrudan": {
+   "durum": "olculemedi",
+   "olcut": [
+    [
+     "dogrulayici ofis istiyor (dogrudanda olculemez)",
+     null,
+     "'NoneType' object has no attribute 'kadro'"
+    ]
+   ],
+   "jeton": 156980,
+   "maliyet_usd": 0.1419,
+   "sure_sn": 10.3,
+   "cevap": "Rapor `rapor.md` dosyasına yazıldı.\n\n- **Toplam ciro:** 11.185 (Espresso 2.400, Latte 4.675, Çay 2.400, Mocha 1.710)\n- **En çok satılan ürün (adet):** Çay, 120 adet\n- **Ciroya göre en çok kazandıran ürün:** Latte, 4.675\n\n\"En çok satılan\" adet olarak yorumlandı. Ciroya göre bakılırsa Latte önde. İkis"
+  }
+ },
+ {
+  "no": "G06",
+  "ad": "Tek sayfalik web sitesi",
+  "ofis": {
+   "durum": "kaldi",
+   "sure_sn": 344.4,
+   "jeton": 2226221,
+   "maliyet_usd": 0.4091,
+   "yol": {
+    "lider": {
+     "tur": 1,
+     "jeton": 34042,
+     "maliyet_usd": 0.0898,
+     "dokum": {
+      "girdi": 2,
+      "cikti": 1588,
+      "onbellek_okuma": 6600,
+      "onbellek_yazma": 25852,
+      "onbellek_yazma_1sa": 0
+     }
+    },
+    "isci": {
+     "tur": 2,
+     "jeton": 1838998,
+     "maliyet_usd": 0.3193,
+     "tahmini_tur": 2,
+     "dokum": {
+      "girdi": 292,
+      "cikti": 16732,
+      "onbellek_okuma": 1782980,
+      "onbellek_yazma": 38994,
+      "onbellek_yazma_1sa": 0
+     }
+    },
+    "inceleme": {
+     "tur": 2,
+     "jeton": 353181,
+     "maliyet_usd": 0.0,
+     "bilinmeyen_tur": 2
+    }
+   },
+   "kalan": [
+    "gereksiz ret yok"
+   ],
+   "hata": "",
+   "sohbet": [
+    "insan/sohbet: 'Kahve Duragi' adinda tek sayfalik bir kafe sitesi yap: site/index.html. Menu bolumu ve iletisim bolumu olsun.",
+    "lale/cevap: Kahve Durağı tek sayfa sitesi site/index.html dosyasında hazır. Menüde üç grupta açıklamalı ve TL fiyatlı 9 ürün, iletişim bölümünde örnek adres, telefon, e-posta ve çalışma saatleri bulunuyor. Sayfa "
+   ]
+  },
+  "dogrudan": {
+   "durum": "gecti",
+   "olcut": [
+    [
+     "site/index.html var ve gecerli HTML",
+     true,
+     "6534 harf"
+    ],
+    [
+     "baslik 'Kahve Duragi'",
+     true,
+     ""
+    ],
+    [
+     "menu ve iletisim bolumleri var",
+     true,
+     ""
+    ]
+   ],
+   "jeton": 111172,
+   "maliyet_usd": 0.1702,
+   "sure_sn": 27.9,
+   "cevap": "`site/index.html` hazır. Tarayıcıda açmadım, o yüzden görünümü kontrol etmedim.\n\n- **Üst kısım:** \"Kahve Durağı\" başlığı, kısa bir tanıtım cümlesi ve menüye giden bir buton var. Üstteki menü çubuğu sayfayla birlikte kayıyor.\n- **Menü bölümü:** Sıcak Kahveler, Soğuk İçecekler ve Tatlılar & Atıştırmal"
+  }
+ }
+]

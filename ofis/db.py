@@ -807,6 +807,9 @@ class Veritabani:
         ("ders", "kaldirildi", "TEXT NOT NULL DEFAULT ''"),
         # KABUL (02.10.2026): patron teslimi kabul etti (an).
         ("mesaj", "kabul", "TEXT NOT NULL DEFAULT ''"),
+        # MOTOR SECIMI (03.10.2026, `karne`): isin ilk turunda secilen motor;
+        # is boyunca ayni motorda kalir (oturum kopmasin). Bos = ajanin motoru.
+        ("gorev", "motor_secimi", "TEXT NOT NULL DEFAULT ''"),
     )
 
     def _veri_goc(self, conn) -> None:

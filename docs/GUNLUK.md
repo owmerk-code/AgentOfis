@@ -14352,3 +14352,42 @@ işte reti ne kadar azalttığı henüz ölçülmedi (son dört işte ret yoktu)
 
 Sınama: `duman_tek_tur.py` 64; tam takım 4170/4170 (64 dosya). Mutasyon:
 ret kuralı 9/9.
+
+## 03.10.2026 — KARNE: işin motorunu ofis kendi tecrübesiyle seçer; çapraz kontrol
+
+Patron: "Claude mu GPT mi hangisi neyde iyi? İkisi de sürekli yeni model
+çıkarıyor." → kural koda SABİTLENMEZ; ofis kendi sonuçlarından öğrenir.
+
+- `ofis/karne.py`: kapanan her iş `ev/karne.jsonl`'a bir satır (rol, zorluk,
+  motor, model, ret, süre). Seçim (`sec`): aday = kademe ayarında GERÇEK modeli
+  olan ve çalışan motorlar (sahte'nin modelleri boş → sahte ajan hiç
+  değişmez); limit eşiğindeki aday düşer; bu tür işte 3'ten az kaydı olana
+  DENEME PAYI; yoksa temiz geçme oranı (retsiz kapanış) yüksek olan; fark
+  <0,10 ise limiti boş olan. Dolar karşılaştırması YOK (Codex dolar
+  bildirmiyor; bedel = limit doluluğu).
+- Koltuk: işin İLK turunda seçer, `gorev.motor_secimi`ne yazar (göç), iş
+  boyunca aynı motor; `motor_secimi` olayı gerekçesiyle. Model seçilen motorun
+  rol kademesinden, zorluk varsa zorluk bloğu düzeltir.
+- Lider: kapanışta karneye yazar; ÇAPRAZ KONTROL — işi yapan gerçek motorun
+  tersi inceler (yalnız iki gerçek motor arasında; kapı modeline yükseltilen
+  incelemeye dokunulmaz); `capraz_inceleme` olayı.
+- Ayarlar: "İşin motorunu kim seçsin" (karne/ajan) · "Çapraz kontrol".
+- `gercek_set.py --motor karma` (kadro Claude ayarlı, seçim + çapraz açık);
+  tek motorlu koşularda ikisi KAPALI. `carpan.py --ofis karma`.
+
+Sınamanın yakaladığı iki gerçek hata: eşik yüzünden tek aday kalınca `sec`
+çöküyordu; çapraz kontrol sahte işin incelemesini gerçek motora kaydırıyordu.
+
+**Karma ölçüm** (G03–G06, Claude limitinden giden API karşılığı, Codex turları
+"bilinmiyor" = ChatGPT limitinden):
+
+| İş | Yalnız Claude | Karma (Claude payı) | Kim yaptı / inceledi |
+|---|---|---|---|
+| G03 | $0,256 | **$0,178** (1,1×) | codex / claude |
+| G04 | $0,238 | **$0,160** (1,1×) | claude / codex |
+| G05 | $0,374 | **$0,166** (1,2×) | codex / claude |
+| G06 | $0,309 | $0,409 (boş ret, kaldı) | claude ×2 / codex ×2 |
+
+G06 yeniden koşuldu (karma, saklı): retsiz GEÇTİ, 324 sn. Codex incelemesi
+yavaş (G04 155 sn). Tam takım 4199/4199 (65 dosya); `duman_karne.py` 29,
+mutasyon 16/16 (+1 gereksiz kod silindi).

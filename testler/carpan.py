@@ -80,8 +80,8 @@ def dogrudan(no: str, model: str) -> dict:
             "sure_sn": sure, "cevap": str(j.get("result") or "")[:300]}
 
 
-def ofiste(no: str) -> dict:
-    s = G.is_kos(no, "claude")
+def ofiste(no: str, motor: str = "claude") -> dict:
+    s = G.is_kos(no, motor)
     bedel = s.get("bedel") or {}
     return {"durum": s.get("durum"), "sure_sn": s.get("sure_sn"),
             "jeton": sum(b["jeton"] for b in bedel.values()),
@@ -95,13 +95,15 @@ def ofiste(no: str) -> dict:
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("isler", nargs="+")
+    ap.add_argument("--ofis", default="claude", choices=("claude", "karma"),
+                    help="ofisin kurulusu: yalniz claude ya da karma (karne + capraz kontrol)")
     ap.add_argument("--model", default=G.MODELLER["claude"]["lider"],
                     help="dogrudan kosunun modeli (ofisin lider modeliyle ayni olmali)")
     a = ap.parse_args()
     sonuc = []
     for no in a.isler:
         print(f"== {no} {G.ISLER[no]['ad']}", flush=True)
-        o = ofiste(no)
+        o = ofiste(no, a.ofis)
         print(f"   ofis    : {o['durum']} · {o['jeton']:,} jeton · ${o['maliyet_usd']} · {o['sure_sn']} sn",
               flush=True)
         d = dogrudan(no, a.model)

@@ -76,6 +76,9 @@ RAPOR = Path(__file__).resolve().parent / "rapor"
 #: plan onun isi, ucuz liderin hatasi butun seti yaniltir.
 MODELLER = {"claude": {"lider": "sonnet", "isci": "haiku"},
             "codex": {"lider": "gpt-6-luna", "isci": "gpt-6-luna"}}
+#: KARMA (03.10.2026, `ofis/karne`): kadro Claude ayariyla kurulur; isin
+#: motorunu karne secer (Claude ya da Codex), inceleme CAPRAZ kosar.
+MODELLER["karma"] = dict(MODELLER["claude"])
 
 #: Kadro -- genel amacli bir ofisin cekirdegi.
 KADRO = (("cem", "backend"), ("ada", "arayuz"), ("su", "arastirma"))
@@ -717,6 +720,10 @@ def _ofis_kur(ana: Path, no: str, motor: str, kuru: bool):
     ofis = Ofis.proje_ac(db, f"Gercek {no}", amac="gercek set",
                          basari_olcutu="dogrulayici gecer", kok_klasor=str(kok))
     db.ayar_yaz(ofis.proje_id, "terminal_kipi", "gercek")
+    # Tek motorlu kosu O MOTORU olcer: secim ve capraz kontrol KAPALI. Karma
+    # kosu ikisini de acar (karsilastirma bunun icin).
+    db.ayar_yaz(ofis.proje_id, "motor_secimi", "karne" if motor == "karma" else "ajan")
+    db.ayar_yaz(ofis.proje_id, "capraz_inceleme", "acik" if motor == "karma" else "kapali")
     # KOTA ESIGI (01.10.2026): isci %85 haftalik esikte hesabi sona alir;
     # codex %86 iken "codex kosusu" isleri Claude'a kaydiriyordu, codex
     # sinanmiyordu. Yalniz BU gecici ofiste gevsetilir; gercek ofis ayni kalir.
@@ -724,11 +731,12 @@ def _ofis_kur(ana: Path, no: str, motor: str, kuru: bool):
         db.ayar_yaz(ofis.proje_id, "gecis_esigi:isci:7g", str(KOTA_ESIGI))
     kanat = ofis.kanat_ac("GENEL", "GN")
     m = MODELLER.get(motor, {})
+    kurulus = "claude" if motor == "karma" else motor
     ofis.kadro.ise_al("lale", "lider", lider_mi=True, kanat_id=kanat, klasor=str(kok),
-                      motor="sahte" if kuru else motor, model="" if kuru else m.get("lider", ""))
+                      motor="sahte" if kuru else kurulus, model="" if kuru else m.get("lider", ""))
     for ad, rol in KADRO:
         ofis.kadro.ise_al(ad, rol, kanat_id=kanat, klasor=str(kok),
-                          motor="sahte" if kuru else motor, model="" if kuru else m.get("isci", ""))
+                          motor="sahte" if kuru else kurulus, model="" if kuru else m.get("isci", ""))
     return kok, ofis
 
 
@@ -868,7 +876,7 @@ def rapor_yaz(sonuclar: list, ayar: dict) -> Path:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--motor", default="claude", choices=("claude", "codex"))
+    ap.add_argument("--motor", default="claude", choices=("claude", "codex", "karma"))
     ap.add_argument("--is", dest="isler", action="append", default=[])
     ap.add_argument("--kuru", action="store_true", help="$0: dogrulayicilarin kendisini sina")
     ap.add_argument("--sakla", action="store_true", help="kalan isin klasorunu birak")
@@ -894,7 +902,8 @@ def main() -> int:
                   + (f" | {iyi.get('hata') or kotu.get('hata')}" if 'hata' in (iyi['durum'], kotu['durum']) else ""))
         return 1 if bozuk else 0
     basla = _dt.datetime.now()
-    once = kota_oku([a.motor])
+    _kota_motorlari = ["claude", "codex"] if a.motor == "karma" else [a.motor]
+    once = kota_oku(_kota_motorlari)
     sonuclar = []
     for no in isler:
         r = is_kos(no, a.motor, zaman_asimi=a.zaman_asimi, sakla=a.sakla)
@@ -903,7 +912,7 @@ def main() -> int:
     ayar = {"motor": a.motor, "kip": "gercek terminal", "modeller": MODELLER[a.motor],
             "basla": basla.strftime("%Y-%m-%d %H:%M"),
             "sure_dk": round((_dt.datetime.now() - basla).total_seconds() / 60, 1),
-            "kota_farki": kota_farki(once, kota_oku([a.motor]))}
+            "kota_farki": kota_farki(once, kota_oku(_kota_motorlari))}
     yol = rapor_yaz(sonuclar, ayar)
     gecen = sum(1 for s in sonuclar if s["durum"] == "gecti")
     print(f"\n{gecen}/{len(sonuclar)} gecti · rapor: {yol}")
