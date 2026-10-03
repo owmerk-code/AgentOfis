@@ -98,7 +98,7 @@ def tur_anahtari(baslik: str) -> str:
         return "cevap"
     return {"Sıradaki işler bitti": "donus", "Bir iş takıldı": "takildi",
             "Bir iş düştü": "dustu", "Ofis bir hafıza yazısını durdurdu": "hafiza",
-            "Ajan bir beceri önerdi": "beceri",
+            "Ajan bir beceri önerdi": "beceri", "Hafızada bir hata dolanması": "hafiza",
             "Zamanlanmış iş başladı": "zamanli",
             "Ofis kaldığı yerden sürüyor": "kesinti"}.get(baslik, "")
 
@@ -107,7 +107,7 @@ class Izleyici:
     """Defterdeki YENI olaylari bildirime cevirir. `tik()` bir tarama yapar."""
 
     OLAYLAR = ("onay_istendi", "donus_raporu", "kesinti_toparlandi", "hata",
-               "zamanli_calisti", "takildi", "hafiza_reddi", "beceri_taslagi")
+               "zamanli_calisti", "takildi", "hafiza_reddi", "beceri_taslagi", "hata_suphesi")
 
     def __init__(self, ofis, adres: str = ""):
         self.ofis, self.adres = ofis, adres
@@ -133,6 +133,8 @@ class Izleyici:
                     ogeler.append(("Onay bekliyor", g))
                 elif r["tur"] == "donus_raporu":
                     ogeler.append(("Sıradaki işler bitti", "Dönüş raporu hazır."))
+                elif r["tur"] == "hata_suphesi":
+                    ogeler.append(("Hafızada bir hata dolanması", g))
                 elif r["tur"] == "beceri_taslagi":
                     ogeler.append(("Ajan bir beceri önerdi", g))
                 elif r["tur"] == "hafiza_reddi":

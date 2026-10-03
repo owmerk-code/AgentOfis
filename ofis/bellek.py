@@ -357,6 +357,8 @@ class Bellek:
                 f"'{konu}' bilgisini INSAN yazdi ({mevcut['icerik'][:120]}). "
                 "Ajan insanin yazdigi bilgiyi sessizce devremez. Farkli bir "
                 "sey gorduysen `soru_sor` ile insana sor; o degistirir.")
+        if yazan != KAYNAK_INSAN:
+            self.hata_gomme_bildir(yazan, "bilgi", f"{konu}: {icerik}", gorev_no)
         if yazan == KAYNAK_INSAN:
             kaynak = KAYNAK_INSAN
         else:
@@ -449,6 +451,19 @@ class Bellek:
         sira = {"kural": 0, "bilgi": 1, "ders": 2, "karar": 3}
         out.sort(key=lambda x: (x["durum"] != "gecerli", sira[x["tur"]]))
         return out[:azami]
+
+    def hata_gomme_bildir(self, yazan: str, tur: str, metin: str, gorev_no=None) -> bool:
+        """Yazi KAYDEDILIR; ama bir hatayi dolanmayi anlatiyorsa patrona soylenir."""
+        from .riskli import hata_gomme
+        bulunan = hata_gomme(metin)
+        if not bulunan:
+            return False
+        self.db.olay_yaz(
+            self.proje_id, "hata_suphesi",
+            f"{yazan} hafizaya bir DOLANMA YOLU yazdi" + (f" (#{gorev_no})" if gorev_no else "")
+            + f" -- altinda duzeltilecek bir hata olabilir ('{bulunan}'): "
+            f"{' '.join(metin.split())[:300]}", ajan_ad=yazan)
+        return True
 
     def koruma_kapisi(self, yazan: str, tur: str, metin: str) -> None:
         """Ajanin/liderin hafiza yazisi korumayi asmayi anlatiyorsa DURUR.

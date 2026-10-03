@@ -113,6 +113,59 @@ sina("kaldirilan ders 'yanlis' durumuyla bulunur", any(x["tur"] == "ders" and x[
                                                      for x in bel.ara("commit")))
 sina("bos sorgu bos sonuc", bel.ara("  ") == [])
 
+print("\n4b. hata gomme bildirimi (03.10.2026)")
+from ofis.riskli import hata_gomme  # noqa: E402
+for _m in ("CLI bayragi calismiyor; yerine elle config yaz", "Gecici cozum: once cache'i sil",
+           "Panelde bug var, sayfayi iki kez yenile", "Build coktu, tekrar kosunca geciyor",
+           "Workaround: run the build twice"):
+    sina(f"yakalandi: {_m[:40]}", bool(hata_gomme(_m)))
+for _m in ("Servis portu 8123 (ayar.txt)", "Belle ve Brave 1.490 TL", "git status ciktisini ozetleme",
+           "Kisa metinlerde dil bilgisini yeniden oku", "gemini kotasi doluydu"):
+    sina(f"gecti (yanlis alarm yok): {_m[:40]}", not hata_gomme(_m), hata_gomme(_m))
+with db.baglanti() as c:
+    _once = c.execute("SELECT COUNT(*) FROM olay WHERE tur='hata_suphesi'").fetchone()[0]
+r = bel.bilgi_ekle("pdf disa aktarma", "Kutuphane Turkce harfte coktu; gecici cozum: once ASCII'ye cevir",
+                   yazan="cinar", gorev_no=g["no"])
+sina("dolanma yolu yine YAZILDI (engellenmez)", r["durum"] == "yeni")
+ofis.kadro.ders_yaz("bilge", "Panel bug'i yuzunden sayfayi iki kez yenile")
+bel.bilgi_ekle("pdf notu", "Turkce harfte coktu", yazan="insan")
+with db.baglanti() as c:
+    _sonra = c.execute("SELECT COUNT(*) FROM olay WHERE tur='hata_suphesi'").fetchone()[0]
+sina("ajan bilgisi + ders icin patrona HATA SUPHESI (insaninki icin degil)", _sonra - _once == 2,
+     str(_sonra - _once))
+from ofis.bildirim import tur_anahtari  # noqa: E402
+sina("bildirim turu taniniyor (hafiza)", tur_anahtari("Hafızada bir hata dolanması") == "hafiza")
+
+print("\n4c. liderin inceleme yonergesi ve hafiza adimi olcumu")
+from ofis import Koltuk  # noqa: E402
+from ofis.motor.sahte import SahteMotor  # noqa: E402
+_kt = Koltuk(ofis, motor_fabrikasi=lambda ad, **a: SahteMotor(
+    senaryo="basarili", cevap="Bitti.\nKANIT dosya: r.md -> yazildi"))
+
+
+def _incelemeye(b):
+    _g = ofis.tahta.gorev_ac(b, neden="n", ana_hedef="h", kabul_olcutu="k", kanat_id=kn)
+    list(_kt.akit(_g["no"], "cinar"))
+    return _g
+
+
+_ist = ofis.lider.inceleme_metni(_incelemeye("yonerge")["no"]) if hasattr(ofis.lider, "inceleme_metni") else ""
+from ofis import lider as _L  # noqa: E402
+_src = Path(_L.__file__).read_text(encoding="utf-8")
+sina("yonerge TUZAK / KOK SEBEP / TERCIH ve 'HAFIZA: yok' istiyor",
+     all(x in _src for x in ("TUZAK", "KOK SEBEP", "TERCIHI", "HAFIZA: yok")))
+_a, _b2, _c2 = _incelemeye("bilgili"), _incelemeye("bossuz"), _incelemeye("sessiz")
+ofis.lider._hukmu_uygula(_a["no"], "KARAR: kapat\nBILGI: derleme tuzagi -> src/ altina gecici dosya koyma",
+                         "demir", "cinar")
+ofis.lider._hukmu_uygula(_b2["no"], "KARAR: kapat\nHAFIZA: yok", "demir", "cinar")
+ofis.lider._hukmu_uygula(_c2["no"], "KARAR: kapat", "demir", "cinar")
+with db.baglanti() as c:
+    _ad = {r[0]: r[1] for r in c.execute(
+        "SELECT g.no, o.govde FROM olay o JOIN gorev g ON g.id=o.gorev_id WHERE o.tur='hafiza_adimi'")}
+sina("hafiza adimi uc durumla sayildi (yazildi / yok / atlandi)",
+     "yazildi" in _ad.get(_a["no"], "") and "yok" in _ad.get(_b2["no"], "")
+     and "atlandi" in _ad.get(_c2["no"], ""), str(_ad))
+
 print("\n5. panel")
 from fastapi.testclient import TestClient  # noqa: E402
 from ofis import panel  # noqa: E402

@@ -558,13 +558,21 @@ class Lider:
             "```",
             "DERS: <ajanin bir daha yapmamasi gereken sey>",
             "```",
-            "KAPATIYORSAN ve bu is projeye dair KALICI bir deger ortaya",
-            "cikardiysa (port, surum, adres, fiyat, hesap adi, klasor yolu) --",
-            "baska bir ajanin da bilmesi gereken -- her biri icin bir satir",
+            "KAPATIYORSAN ve bu is projeye dair KALICI bir sey ortaya",
+            "cikardiysa -- bir DEGER (port, surum, adres, fiyat, klasor yolu), bir",
+            "TUZAK (bir sonraki ajani yakacak sey: 'derleme surerken src/'ye gecici",
+            "dosya koyma'), bir KOK SEBEP ya da patronun bir TERCIHI -- baska bir",
+            "ajanin da bilmesi gereken, her biri icin bir satir",
             f"(en fazla {AZAMI_INCELEME_BILGI}); yalniz KANITLA dogruladigini yaz:",
             "```",
             "BILGI: <kisa konu> -> <deger (nereden)>",
             "```",
+            "Kalici yeni bir sey YOKSA bunu acikca yaz (ofis hafiza adimini sayar):",
+            "```",
+            "HAFIZA: yok",
+            "```",
+            "Bir aracin ya da urunun HATASINI dolanmak zorunda kaldiysan onu bilgi diye",
+            "gommek yerine PATRONA satirinda hata olarak da soyle.",
             "Asagidaki HAFIZA bolumunde zaten dogru duran bir bilgiyi TEKRAR",
             "YAZMA. Ayni seyi duzeltiyorsan listedeki konu adini AYNEN kullan:",
             "baska bir adla yazmak ayni olguyu iki konuya boler.",
@@ -856,6 +864,14 @@ class Lider:
                 lider_ad, tur="genel", gorev_id=guncel["id"],
             )
             yazilan, reddedilen = self._bilgileri_yaz(no, hukum, lider_ad)
+            # HAFIZA ADIMI OLCULUR (03.10.2026): her kapanista ne oldu --
+            # bilgi yazildi / 'yok' dendi / hic soylenmedi. Iscilerin bilgi_yaz'i
+            # 20 iste 3 kez cagirdigi olculdu; adimin kendisi gorunur olmali.
+            _hy = re.search(r"^\s*HAFIZA\s*:\s*yok\b", hukum or "", re.I | re.M)
+            _durum = ("yazildi" if (yazilan or ders) else "yok" if _hy else "atlandi")
+            self.db.olay_yaz(self.proje_id, "hafiza_adimi",
+                             f"#{no}: {_durum}" + (f" ({', '.join(yazilan)})" if yazilan else ""),
+                             ajan_ad=lider_ad, gorev_id=guncel["id"])
             return {"hukum": "kapat", "gerekce": gerekce, "gorev_no": no,
                     "ders": bool(ders), "bilgi": yazilan,
                     "bilgi_ret": reddedilen}

@@ -383,6 +383,13 @@ class Kadro:
                     "tekrar, olusturuldu, guncellendi) VALUES (?, ?, ?, ?, ?, 1, ?, ?)",
                     (ders_id, self.proje_id, ajan_ad, ders, gorev_id, an, an),
                 )
+        from .riskli import hata_gomme
+        _hg = hata_gomme(ders)
+        if _hg:
+            self.db.olay_yaz(self.proje_id, "hata_suphesi",
+                             f"{ajan_ad} icin bir DOLANMA YOLU ders olarak yazildi -- altinda "
+                             f"duzeltilecek bir hata olabilir ('{_hg}'): {' '.join(ders.split())[:300]}",
+                             ajan_ad=ajan_ad, gorev_id=gorev_id)
         # TEKRAR SAYISI OLAYA YAZILIR. Olculdu (21.09): sayac defterde dogru
         # artiyordu ama olay govdesi her seferinde AYNI cumleydi -- panel
         # ayni satiri iki kez basiyor, anlamli sinyal ("bu ajan ayni hatayi

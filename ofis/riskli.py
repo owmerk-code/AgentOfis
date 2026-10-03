@@ -179,6 +179,24 @@ KORUMA_ASMA = re.compile(
     rf"|\b{_KORUMA_FIIL}\w*(?:\W+\w+){{0,6}}?\W+{_KORUMA_AD}\w*")
 
 
+#: HATA GOMME (03.10.2026). Rakipte olculdu (video IgkwSECTjfI, k47): lider
+#: bir URUN hatasini hata diye bildirmek yerine "uygulama yolu" diye
+#: hafizaya yazdi -- hata hic duzelmez, her ajan dolanmayi ogrenir. Bizde
+#: yazi ENGELLENMEZ (dolanma yolu o an gercekten ise yarar), ama patron
+#: gorur: altinda duzeltilecek bir hata olabilir. Gercek ofisin 31 hafiza
+#: kaydinda yanlis alarm VERMEDI (olculdu).
+HATA_GOMME = re.compile(
+    r"\b(?:workaround|gecici (?:cozum|yol)|dolanma yolu|etrafindan dolan|bug\b|"
+    r"hatasi (?:var|yuzunden)|hata veriyor|calismiyor|calismadi|bozuk|kirik|"
+    r"patliyor|patladi|cokuyor|coktu|crash|yerine elle|elle duzelt)")
+
+
+def hata_gomme(metin: str) -> str:
+    """Hafiza yazisi bir aracin/urunun hatasini dolanmayi mi anlatiyor? Eslesen ya da ''."""
+    m = HATA_GOMME.search(sadelestir(metin))
+    return m.group(0) if m else ""
+
+
 def koruma_asma(metin: str) -> str:
     """Hafizaya girecek yazi bir korumayi asmayi anlatiyor mu?
     Eslesen parcayi dondurur; '' = temiz."""

@@ -14225,3 +14225,21 @@ whisper small, geçici klasörde) döküldü — YouTube altyazısı değil, hat
 Sınama panelinde ofis kopyasıyla ekranda denendi (arama 3 sonuç, yanlış
 kapatıldı ve üstü çizili göründü, "← 2 bağlı"). `duman_hafiza_yanlis` 30/30,
 7 mutasyonun 7'si yakalandı.
+
+## 03.10.2026 — hafıza 4–5: inceleme tuzak/kök sebep/tercih yazar, hata gömme bildirimi
+
+**Ölçüm (gerçek ofis, salt okuma):** 12 geçerli bilgi — 9'u lider incelemesinden
+(`ajan:demir`), 3'ü patron düzeltmesi, işçinin kendi yazdığı 1; 20 bitmiş işte
+işçiler `bilgi_yaz`ı 3 kez çağırmış; 19 dersin hepsi liderden. Yani hafızayı
+lider dolduruyor → kural işçiye rica değil, liderin incelemesine kondu.
+- **4:** inceleme yönergesi DEĞER'in yanında TUZAK, KÖK SEBEP, patron TERCİHİ
+  ister; yeni bir şey yoksa `HAFIZA: yok`. Her kapanışta `hafiza_adimi` olayı:
+  yazildi / yok / atlandi (sayılabilir). Gerçek koşu (aynı iş, ayar.ini'de tuzak
+  notu): haiku lider yalnız DEĞERİ yazdı; sonnet lider değeri VE tuzağı yazdı
+  ("ayar.ini port yorum tuzağı"). Patronun lideri Opus.
+- **5:** `riskli.hata_gomme` (tek kalıp): ajanın/liderin bilgisi ya da dersi bir
+  aracın/ürünün hatasını dolanmayı anlatıyorsa YAZILIR ama `hata_suphesi`
+  olayı sohbet + bildirime düşer ("altında düzeltilecek hata olabilir").
+  Gerçek ofisin 31 hafıza kaydında yanlış alarm 0 (ölçüldü). İnsanın yazdığı
+  bildirilmez.
+`duman_hafiza_yanlis` 45/45, mutasyonlar yakalandı.
