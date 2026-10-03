@@ -79,6 +79,43 @@ def patrona_ayikla(hukum: str) -> str:
 #: anlamsizlastirir. Sayacin degeri, yalnizca GERCEK deseni saymasindadir.
 DERS_DESENI = re.compile(r"^\s*DERS\s*:\s*(.+)$", re.IGNORECASE | re.MULTILINE)
 
+#: RET OLCUTE BAGLIDIR (03.10.2026). Olculdu: gercek setin 246 is kosusunun
+#: 23'unde gereksiz ret (bazilari 4-5 kez); gerekcesi yazilan ucunde de ret
+#: OLCUTE degil "surecin kaniti yok" gibi seylere dayaniyordu ("dosya icerikleri
+#: dogru, ama bekleme komutunun zaman damgasi yok"). Istemde buna karsi DOKUZ
+#: kural vardi; rica ile durmadi. Yapi: geri gonderen lider ya karsilanmayan
+#: olcut maddesini KELIMESI KELIMESINE alintilar ya da neyin BOZULDUGUNU
+#: soyler; ikisi de yoksa bir kez sorulur (izin alintisiyla ayni kalip).
+OLCUT_DESENI = re.compile(r"^\s*OLCUT\s*:\s*(.+)$", re.IGNORECASE | re.MULTILINE)
+BOZULDU_DESENI = re.compile(r"^\s*BOZULDU\s*:\s*(\S.*)$", re.IGNORECASE | re.MULTILINE)
+_TR_DUZ = str.maketrans("çğıöşüâîûÇĞİÖŞÜÂÎÛ", "cgiosuaiuCGIOSUAIU")
+#: Alintinin en az uzunlugu (normallestirilmis): "test" gibi tek kelime her
+#: olcutte gecer ve kapiyi bos birakir.
+ALINTI_AZAMI_KISA = 8
+
+
+def _olcu_norm(metin) -> str:
+    duz = str(metin or "").translate(_TR_DUZ).lower()
+    return " ".join(re.sub(r"[^0-9a-z]+", " ", duz).split())
+
+
+def ret_dayanagi(hukum: str, olcut_metinleri) -> str:
+    """Geri gondermenin DAYANAGI: alintilanan olcut maddesi ya da BOZULDU.
+
+    Alinti, isin kabul olcutunde / ust hedefinde / patronun sozunde
+    (harf, buyuk-kucuk, noktalama farki gozetmeden) GECMELI. Dayanak yoksa ''.
+    """
+    b = BOZULDU_DESENI.search(hukum or "")
+    if b:
+        return "BOZULDU: " + b.group(1).strip()
+    havuz = " | ".join(_olcu_norm(t) for t in olcut_metinleri if t)
+    for m in OLCUT_DESENI.finditer(hukum or ""):
+        alinti = m.group(1).strip().strip('"\'`\u201c\u201d')
+        n = _olcu_norm(alinti)
+        if len(n) >= ALINTI_AZAMI_KISA and n in havuz:
+            return "OLCUT: " + alinti
+    return ""
+
 #: Liderin incelemede cikardigi KALICI BILGI: `BILGI: konu -> icerik`.
 #:
 #: OLCULDU (24.09.2026): iki gercek haiku turunda isci, brifingde ZORUNLU
@@ -550,9 +587,19 @@ class Lider:
             "`PATRONA:` metni patrona DOGRUDAN gider: baslik, KANIT/DURUM satiri,",
             "ic konusma YAZMA; ilk cumle sonuc olsun. Is numarasi anlatma.",
             ARAC_SUSKUNLUGU,
-            "Geri gonderiyorsan (gerekce zorunlu -- ajan neyi duzeltecegini bilmeli):",
+            "Geri gonderiyorsan (gerekce zorunlu -- ajan neyi duzeltecegini bilmeli)",
+            "DAYANAK DA ZORUNLU: ya karsilanmayan kabul olcutu maddesini KELIMESI",
+            "KELIMESINE alintila, ya da olcut disinda neyin BOZULDUGUNU yaz. Ikisi",
+            "de yoksa olcut karsilaniyordur -- KAPAT (surec belgelenmedi, kanit",
+            "eksik anlatildi, ust hedef baska bir kolun isi: bunlar dayanak DEGIL):",
             "```",
             "KARAR: geri -- <ne eksik, somut olarak>",
+            'OLCUT: "<kabul olcutunden karsilanmayan kisim, aynen>"',
+            "```",
+            "ya da",
+            "```",
+            "KARAR: geri -- <ne bozuldu>",
+            "BOZULDU: <neyi bozdu, hangi dosya / davranis>",
             "```",
             "Ajanin tekrarlayan bir hatasi varsa ayrica:",
             "```",
@@ -821,7 +868,62 @@ class Lider:
                                      ajan_ad=lider["ad"], gorev_id=gorev["id"])
             except (ZincirBitti, MotorHatasi):
                 pass
+        # RET OLCUTE BAGLIDIR (bkz. `ret_dayanagi`). Dayanaksiz ret BIR KEZ
+        # sorulur: liderin kendi metni + kabul olcutu gosterilir, "hangi
+        # madde?" Yine dayanak yoksa ret GECER ama kayda duser -- kapi isi
+        # kendiliginden kapatmaz (kanit kapisi insandan once gevsemez).
+        eslesme = KARAR_DESENI.search(hukum or "")
+        if eslesme and eslesme.group(1).lower() == "geri" \
+                and not ret_dayanagi(hukum, self._olcut_metinleri(gorev)):
+            metin = ("Az once bu isi GERI GONDERDIN ama DAYANAK yazmadin: hangi kabul "
+                     "olcutu maddesinin karsilanmadigini alintilamadin, bir sey "
+                     "bozuldugunu da soylemedin.\n\n---\n" + hukum[-3000:]
+                     + "\n---\n\n### Kabul olcutu\n\n" + (gorev.get("kabul_olcutu") or "")
+                     + "\n\nGeri gondermek YALNIZ su iki durumda gecerli:\n"
+                     "1. Olcutun bir maddesi karsilanmiyor: `KARAR: geri -- <ne eksik>` ve "
+                     "altinda `OLCUT: \"<yukaridaki olcutten KELIMESI KELIMESINE alinti>\"`\n"
+                     "2. Olcut disinda bir sey BOZULDU: `KARAR: geri -- <ne>` ve altinda "
+                     "`BOZULDU: <ne bozuldu, nerede>`\n\n"
+                     "Olcut karsilaniyorsa (yalniz surec belgelenmediyse ya da kanit eksik "
+                     "anlatildiysa) KAPAT: `KARAR: kapat` ve altinda `PATRONA: <1-4 cumle "
+                     "sonuc>`.\n\nYalnizca hukmunu yaz, baska hicbir sey yazma.")
+            try:
+                _b3, _ek3, parcalar3 = limitte_devret(
+                    basamaklar, kostur,
+                    devir=lambda eski, yeni: lider_devri(
+                        self.ofis, lider, eski, yeni, gorev_id=gorev["id"]))
+                ikinci = "".join(parcalar3)
+            except (ZincirBitti, MotorHatasi):
+                ikinci = ""
+            e2 = KARAR_DESENI.search(ikinci)
+            if e2 and e2.group(1).lower() == "kapat":
+                self.db.olay_yaz(self.proje_id, "ret_dayanaksiz",
+                                 f"#{no} dayanaksiz ret soruldu; lider KAPATTI.",
+                                 ajan_ad=lider["ad"], gorev_id=gorev["id"])
+                hukum = ikinci
+            elif e2 and ret_dayanagi(ikinci, self._olcut_metinleri(gorev)):
+                self.db.olay_yaz(self.proje_id, "ret_dayanaksiz",
+                                 f"#{no} dayanaksiz ret soruldu; lider dayanak yazdi.",
+                                 ajan_ad=lider["ad"], gorev_id=gorev["id"])
+                hukum = ikinci
+            else:
+                self.db.olay_yaz(self.proje_id, "ret_dayanaksiz",
+                                 f"#{no} ret olcute BAGLANAMADI; yine de geri gonderildi "
+                                 "(kapi isi kendiliginden kapatmaz).",
+                                 ajan_ad=lider["ad"], gorev_id=gorev["id"])
         return self._hukmu_uygula(no, hukum, lider["ad"], isci_ad)
+
+    def _olcut_metinleri(self, gorev: dict) -> list:
+        """Retin alintilayabilecegi metinler: kabul olcutu, ust hedef, patronun sozu."""
+        metinler = [gorev.get("kabul_olcutu") or "", gorev.get("ana_hedef") or ""]
+        try:
+            with self.db.baglanti() as c:
+                metinler += [r["govde"] or "" for r in c.execute(
+                    "SELECT govde FROM olay WHERE proje_id = ? AND gorev_id = ? "
+                    "AND tur = 'patron_sozu'", (self.proje_id, gorev["id"]))]
+        except sqlite3.Error:
+            pass
+        return metinler
 
     # -- ic isleyis --------------------------------------------------------
 
@@ -880,6 +982,10 @@ class Lider:
             return self._belirsiz(
                 no, "Geri gonderme gerekcesiz yazildi; ajan neyi "
                     "duzeltecegini bilemez.")
+        # Ajan HANGI olcut maddesinin karsilanmadigini da gorur.
+        dayanak = ret_dayanagi(hukum, self._olcut_metinleri(guncel))
+        if dayanak:
+            gerekce = f"{gerekce} [{dayanak}]"
         self.ofis.tahta.geri_gonder(guncel["no"], guncel["revizyon"],
                                     gerekce=gerekce, gonderen=lider_ad)
         return {"hukum": "geri", "gerekce": gerekce, "gorev_no": no,

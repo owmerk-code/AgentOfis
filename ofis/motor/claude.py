@@ -229,6 +229,14 @@ TUR_ORTAMI = {
     "ENABLE_TOOL_SEARCH": "true",
     "ENABLE_CLAUDEAI_MCP_SERVERS": "true",
     "CLAUDE_CODE_DISABLE_BACKGROUND_TASKS": "1",  # tur bitince arka is kalmasin
+    # ONBELLEK 5 DAKIKA (03.10.2026, resmi ayar, CLI 2.1.242+). Abonelikte
+    # varsayilan 1 SAAT ve yazma 2x fiyat; 5 dakikada 1,25x. Ofis her turu
+    # yeni oturumla acar ve Claude hesabin listelerini her yeni oturumda
+    # bastan yazar (12-23 bin jeton) -- bu yazma ucuzlar. OLCULDU (bos
+    # klasor, sicak): haiku $0,027-0,035 -> $0,015-0,023; sonnet $0,094 ->
+    # $0,061 (~%35). Bedeli: 5 dakikadan uzun aradan sonraki ilk tur
+    # (sonnet $0,100 -> $0,128). Hicbir sey kapanmaz; Codex'e dokunmaz.
+    "CLAUDE_CODE_PROMPT_CACHE_TTL": "5m",
 }
 #: Saf yargi turu (araclar kapali) ve limit okuma baglayici TASIMAZ.
 BAGLAYICISIZ = {"ENABLE_CLAUDEAI_MCP_SERVERS": "false"}

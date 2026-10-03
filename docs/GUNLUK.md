@@ -14319,3 +14319,36 @@ saklar (ret gerekçesi kaybolmasın).
 
 Sınama: `duman_tek_tur.py` (47). Mutasyon: tek tur + koruma 13/13, döküm/
 fiyat dahil.
+
+## 03.10.2026 — önbellek 5 dakika + RET ÖLÇÜTE BAĞLI; token tasarrufu araştırması
+
+**Araştırma** (iki ajan, `docs/arastirma/token-claude-code.md`,
+`token-codex-ve-genel.md`). Oturum başı sabit yazma Claude Code'un bilinen
+açık kusuru (anthropics/claude-code #98513, #93499, #94815): beceri/araç
+listeleri ilk mesajdan SONRA gider, ilk mesaj her oturumda farklı olduğundan
+yeniden yazılır; bayrakla kapanmaz. Caveman (109k★): çıktıyı kısar — bizim
+bedelimiz girdide; Ponytail'in kendi ölçümünde Caveman maliyeti %3 ARTIRDI.
+Ponytail (152k★, MIT): "en az kod" basamakları, yazarın ölçümü Haiku'da %20
+ucuz — ölçmeye değer. RTK (82k★): kabuk çıktısını kırpar, işçi için aday.
+
+**1. `CLAUDE_CODE_PROMPT_CACHE_TTL=5m` (claude `TUR_ORTAMI`).** Abonelikte
+varsayılan 1 saat ve yazma 2×; 5 dakikada 1,25×. Ölçüldü (boş klasör,
+sıcak): Haiku $0,027–0,035 → $0,015–0,023; Sonnet $0,094 → $0,061. Soğuk
+ilk tur (5 dk'dan uzun ara) Sonnet $0,100 → $0,128. 1 saatlik önbellek 5
+dakikalık istekte kullanılmıyor (ayrı giriş). Dört işlik çarpan: G03 1,8× ·
+G04 1,6× · G05 2,6× (lider 2 tur) · G06 1,8× — hepsi geçti. Lider turu
+$0,13–0,15 → $0,09–0,10; inceleme $0,10 → $0,074–0,095.
+
+**2. RET ÖLÇÜTE BAĞLI (`lider.ret_dayanagi`).** Gerçek setin 246 iş
+koşusunun 23'ünde gereksiz ret (bazıları 4–5 kez). Gerekçesi kayıtlı üçünde
+ret ölçüte değil "sürecin kanıtı yok"a dayanıyordu; istemde buna karşı 9
+kural vardı. Yapı: `KARAR: geri` ya `OLCUT: "<kabul ölçütünden aynen>"` ya da
+`BOZULDU: <ne>` taşır; alıntı ölçüt/üst hedef/patron sözünde (harf ve
+noktalama farkı gözetmeden, en az 8 harf) geçmeli. Yoksa lidere BİR KEZ
+"hangi madde?" sorulur (kendi metni + ölçüt). Kapatırsa iş kapanır; yine
+dayanak yoksa ret geçer ama `ret_dayanaksiz` olayı yazılır — kapı işi
+kendiliğinden kapatmaz. Ajanın gerekçesine ölçüt maddesi eklenir. Gerçek
+işte reti ne kadar azalttığı henüz ölçülmedi (son dört işte ret yoktu).
+
+Sınama: `duman_tek_tur.py` 64; tam takım 4170/4170 (64 dosya). Mutasyon:
+ret kuralı 9/9.

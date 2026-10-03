@@ -276,5 +276,100 @@ from ofis import ayarlar
 sina("yalin kip ayari yok", "lider_yalin" not in ayarlar.oku(ofis)["calisma"])
 sina("motor sozlesmesinde yalin alani yok", not hasattr(SahteMotor, "yalin"))
 
+# --------------------------------------------------------------------------
+print("\n11. ONBELLEK 5 DAKIKA")
+import inspect as _ins
+from ofis.motor import claude as _cl
+sina("Claude tur ortami 5 dakikalik onbellek ister",
+     _cl.TUR_ORTAMI.get("CLAUDE_CODE_PROMPT_CACHE_TTL") == "5m")
+_src = _ins.getsource(_cl)
+sina("her ortam kurulumu TUR_ORTAMI'ni tasir (arka, terminal, limit okuma)",
+     _src.count("ek={**TUR_ORTAMI") == 4, f"({_src.count('ek={**TUR_ORTAMI')})")
+
+# --------------------------------------------------------------------------
+print("\n12. RET OLCUTE BAGLIDIR")
+from ofis.lider import Lider, ret_dayanagi
+OLC = ["sayfada menu ve iletisim bolumleri var; baslik 'Kahve Duragi'"]
+sina("olcutten alinti (Turkce harf/buyuk-kucuk farkiyla) dayanaktir",
+     ret_dayanagi('KARAR: geri -- x\nOLCUT: "Menü ve İletişim bölümleri var"', OLC).startswith("OLCUT"))
+sina("olcutte OLMAYAN alinti dayanak degil",
+     ret_dayanagi('KARAR: geri -- x\nOLCUT: "zaman damgasi gosterilmeli"', OLC) == "")
+sina("tek kelimelik alinti dayanak degil (her olcutte gecer)",
+     ret_dayanagi('KARAR: geri -- x\nOLCUT: "menu"', OLC) == "")
+sina("BOZULDU dayanaktir", ret_dayanagi("KARAR: geri -- x\nBOZULDU: a.py silindi", OLC) != "")
+sina("dayanaksiz ret dayanaksizdir", ret_dayanagi("KARAR: geri -- surec kaniti yok", OLC) == "")
+sina("inceleme istemi dayanagi sart kosuyor",
+     'OLCUT: "<kabul olcutunden karsilanmayan kisim, aynen>"' in _ins.getsource(Lider.inceleme_metni))
+
+
+def _inceleme_isi(ad):
+    g = ofis.tahta.gorev_ac(ad, neden="n", ana_hedef="kafe sitesi", kabul_olcutu=OLC[0],
+                            yazma_alani=[f"{ad}/"], kanat_id=kanat, sahip="cinar")
+    g = ofis.tahta.gorev(g["no"])
+    if g["durum"] == "hazir":
+        ofis.tahta.sahiplen(g["no"], "cinar", g["revizyon"])
+    ofis.tahta.kanit_ekle(g["no"], "terminal", "yazildi", "ok", "cinar")
+    ofis.tahta.incelemeye_ver(g["no"], ofis.tahta.gorev(g["no"])["revizyon"])
+    return g["no"]
+
+
+def _hakem(cevaplar, sorular):
+    class H(SahteMotor):
+        def tur_kos(self, metin, **ayar):
+            sorular.append(metin)
+            self.cevap = cevaplar[min(len(sorular), len(cevaplar)) - 1]
+            return super().tur_kos(metin, **ayar)
+    return lambda ad, **a: H(cevap="")
+
+
+def _olaylar(tur):
+    with db.baglanti() as c:
+        return [r[0] for r in c.execute("SELECT govde FROM olay WHERE proje_id=? AND tur=?",
+                                        (ofis.proje_id, tur))]
+
+
+# a) dayanaksiz ret -> sorulur -> lider KAPATIR
+q = []
+no = _inceleme_isi("reta")
+s = Lider(ofis, motor_fabrikasi=_hakem(
+    ["Dosyalar dogru.\nKARAR: geri -- surecin kaniti yok",
+     "KARAR: kapat\nPATRONA: Site hazir."], q)).incele(no, lider_ad="demir")
+sina("dayanaksiz retten sonra DAYANAK soruldu",
+     len(q) == 2 and "DAYANAK yazmadin" in q[1] and OLC[0] in q[1], str(len(q)))
+sina("  lider kapatinca is KAPANDI", s["hukum"] == "kapat" and ofis.tahta.gorev(no)["durum"] == "bitti")
+sina("  kayda gecti", any("KAPATTI" in o for o in _olaylar("ret_dayanaksiz")))
+
+# b) dayanakli ret -> sorulmaz, ajan maddeyi gorur
+q = []
+no = _inceleme_isi("retb")
+s = Lider(ofis, motor_fabrikasi=_hakem(
+    ['KARAR: geri -- iletisim bolumu yok\nOLCUT: "menu ve iletisim bolumleri var"'], q)).incele(
+    no, lider_ad="demir")
+sina("dayanakli ret ek tur ISTEMEZ", len(q) == 1, str(len(q)))
+sina("  is geri gitti, gerekcede olcut maddesi var",
+     s["hukum"] == "geri" and "OLCUT: menu ve iletisim bolumleri var" in s["gerekce"], s.get("gerekce", ""))
+
+# c) BOZULDU -> sorulmaz
+q = []
+no = _inceleme_isi("retc")
+s = Lider(ofis, motor_fabrikasi=_hakem(
+    ["KARAR: geri -- baska dosya bozuldu\nBOZULDU: index.css silindi"], q)).incele(no, lider_ad="demir")
+sina("BOZULDU'lu ret ek tur istemez ve gecer", len(q) == 1 and s["hukum"] == "geri")
+
+# d) ikinci kez de dayanaksiz -> ret gecer (kapi kendiliginden kapatmaz), kayda duser
+q = []
+no = _inceleme_isi("retd")
+s = Lider(ofis, motor_fabrikasi=_hakem(
+    ["KARAR: geri -- belgelenmedi", "KARAR: geri -- yine belgelenmedi"], q)).incele(no, lider_ad="demir")
+sina("iki kez dayanaksiz: is KENDILIGINDEN KAPANMAZ, geri gider",
+     len(q) == 2 and s["hukum"] == "geri" and ofis.tahta.gorev(no)["durum"] != "bitti")
+sina("  'baglanamadi' kayda gecti", any("BAGLANAMADI" in o for o in _olaylar("ret_dayanaksiz")))
+
+# e) kapatan inceleme ek tur istemez
+q = []
+no = _inceleme_isi("rete")
+Lider(ofis, motor_fabrikasi=_hakem(["KARAR: kapat\nPATRONA: tamam"], q)).incele(no, lider_ad="demir")
+sina("kapatan inceleme tek tur", len(q) == 1)
+
 print(f"\n{GECEN} gecti, {KALAN} kaldi")
 sys.exit(1 if KALAN else 0)
