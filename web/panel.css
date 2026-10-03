@@ -1817,3 +1817,9 @@ details > summary.hf-bas { cursor: pointer; }
 .takim-izin-oge { font-size: var(--yz-kucuk); white-space: nowrap; cursor: pointer; }
 .takim-izin-oge.uyari { color: var(--uyari); }
 .ayar-girdi.kisa-ad { min-width: 0; width: 230px; }
+.hf-ara { flex: 1; min-width: 140px; margin-left: 8px; }
+.hf-ara-sonuc { margin-bottom: 8px; }
+.hf-ara-sonuc:empty { display: none; }
+.hf-rozet.uyari { color: var(--kotu); border-color: var(--kotu); }
+.hf-mini.olumsuz:hover { color: var(--kotu); border-color: var(--kotu); }
+.hf-geri { cursor: help; }

@@ -3770,7 +3770,42 @@ async function cizHafiza(kap) {
     kip.append(b);
   }
   ust.append(kip);
-  kap.append(ust);
+  // HAFIZADA ARA (03.10.2026): bilgi, ders, kural, karar -- kelimeyle.
+  const ara = el("input", "ara-kutu hf-ara");
+  ara.type = "search"; ara.placeholder = "hafızada ara…";
+  ara.value = D.hafizaAra || "";
+  const sonuc = el("div", "hf-ara-sonuc");
+  let zaman = null;
+  const aramaYap = async () => {
+    D.hafizaAra = ara.value;
+    if (!ara.value.trim()) { sonuc.replaceChildren(); return; }
+    let r;
+    try { r = await al("/api/hafiza/ara?q=" + encodeURIComponent(ara.value)); }
+    catch (e) { sonuc.replaceChildren(el("div", "hf-not", "aranamadı: " + e.message)); return; }
+    sonuc.replaceChildren(el("div", "hf-bas", `ARAMA · ${r.sonuc.length} sonuç`));
+    const TUR = { bilgi: "bilgi", ders: "ders", kural: "kural", karar: "karar" };
+    const DUR = { eski: "eski sürüm", yanlis: "yanlış işaretli" };
+    for (const x of r.sonuc) {
+      const o = el("div", "oge" + (x.durum !== "gecerli" ? " eski" : ""));
+      const b = el("div", "oge-bas");
+      b.append(el("span", "hf-rozet", TUR[x.tur]), el("span", "hf-konu", " " + x.baslik));
+      if (DUR[x.durum]) b.append(el("span", "hf-rozet", DUR[x.durum]));
+      o.append(b, el("div", "oge-govde", x.metin));
+      if (x.tur === "bilgi" && x.durum === "gecerli") {
+        o.style.cursor = "pointer";
+        o.onclick = () => { const h2 = [...document.querySelectorAll(".hf-bilgi")]
+          .find((n) => n.querySelector(".hf-konu")?.textContent === x.baslik);
+          if (h2) { h2.scrollIntoView({ block: "center" }); h2.classList.add("vurgu");
+                    setTimeout(() => h2.classList.remove("vurgu"), 1400); } };
+      }
+      sonuc.append(o);
+    }
+    if (!r.sonuc.length) sonuc.append(el("div", "hf-not", "Bulunamadı."));
+  };
+  ara.oninput = () => { clearTimeout(zaman); zaman = setTimeout(aramaYap, 250); };
+  ust.append(ara);
+  kap.append(ust, sonuc);
+  if (ara.value.trim()) aramaYap();
 
   kap.append(hafizaKurallar(h));
   kap.append(hafizaBilgiFormu());
@@ -3786,7 +3821,9 @@ async function cizHafiza(kap) {
     d.append(el("summary", "hf-bas", `DEVRİLMİŞ · ${h.eski.length} — ajanlara gitmiyor, geçmiş için duruyor`));
     for (const f of h.eski) {
       const o = el("div", "oge eski");
-      o.append(el("div", "oge-bas", f.konu), el("div", "oge-govde", f.icerik));
+      const ob = el("div", "oge-bas", f.konu);
+      if (f.yanlis) ob.append(el("span", "hf-rozet uyari", "yanlış: " + f.yanlis));
+      o.append(ob, el("div", "oge-govde", f.icerik));
       d.append(o);
     }
     kap.append(d);
@@ -3878,9 +3915,28 @@ function hafizaBilgiler(h) {
     ob.append(el("span", "hf-konu", f.konu));
     ob.append(el("span", "hf-rozet", f.kaynak || "-"));
     if (f.surum > 1) ob.append(el("span", "hf-rozet", `${f.surum}. sürüm`));
+    // GERI BAG: bu bilgiye baglanan bilgiler (rakipte "Bagli hafizalar").
+    if ((f.geri || []).length) {
+      const g = el("span", "hf-rozet hf-geri", `← ${f.geri.length} bağlı`);
+      g.title = "Bu bilgiye bağlananlar: " + f.geri.join(", ");
+      ob.append(g);
+    }
     o.append(ob);
     o.append(hafizaIcerik(f));
     const ey = el("div", "hf-eylem");
+    const dz = el("button", "hf-mini", "düzelt");
+    dz.title = "Doğrusunu yaz: eskisi geçmişe gider; senin yazdığını ajan değiştiremez.";
+    dz.onclick = () => {
+      const [k, i] = document.querySelectorAll(".hf-bilgi-form input");
+      if (!k || !i) return;
+      k.value = f.konu; i.value = f.icerik;
+      k.scrollIntoView({ block: "center" }); i.focus();
+    };
+    const yn = el("button", "hf-mini olumsuz", "yanlış");
+    yn.title = "Bilgiyi kapat: ajanlara artık gitmez, ajan aynısını yeniden yazamaz. Geçmişte durur.";
+    yn.onclick = () => satirSor(o, "Neden yanlış? (zorunlu)", "kapat",
+      (sebep) => eylem("/api/hafiza/yanlis", { konu: f.konu, sebep }, `${f.konu} yanlış diye kapatıldı`));
+    ey.append(dz, yn);
     if (f.surum > 1) {
       const gb = el("button", "hf-mini", "geçmiş");
       gb.onclick = () => hafizaGecmis(o, f.konu, gb);
@@ -3963,7 +4019,11 @@ function hafizaDersler(h) {
     const yk = el("button", "hf-mini", "kurala yükselt");
     yk.onclick = () => satirSor(o, "Neden herkese açılmalı? (zorunlu)", "yükselt",
       (gerekce) => eylem("/api/kural", { ders_id: x.id, gerekce }, "ders kurala yükseltildi"));
-    o.append(yk);
+    const yn = el("button", "hf-mini olumsuz", "yanlış");
+    yn.title = "Dersi kaldır: o ajanın brifingine artık girmez, lider yeniden yazsa da geri gelmez.";
+    yn.onclick = () => satirSor(o, "Neden yanlış? (zorunlu)", "kaldır",
+      (sebep) => eylem("/api/hafiza/yanlis", { ders_id: x.id, sebep }, "ders kaldırıldı"));
+    o.append(yk, yn);
     d.append(o);
   }
   return d;

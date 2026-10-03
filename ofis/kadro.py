@@ -361,9 +361,13 @@ class Kadro:
         an = simdi()
         with self.db.baglanti() as conn:
             row = conn.execute(
-                "SELECT id, tekrar FROM ders WHERE proje_id = ? AND ajan_ad = ? AND ders = ?",
+                "SELECT id, tekrar, kaldirildi FROM ders WHERE proje_id = ? AND ajan_ad = ? AND ders = ?",
                 (self.proje_id, ajan_ad, ders),
             ).fetchone()
+            if row and row["kaldirildi"]:
+                # Patron bu dersi YANLIS dedi: lider yeniden yazsa da geri gelmez.
+                return {"id": row["id"], "ders": ders, "tekrar": 0, "reddedildi": True,
+                        "sebep": "patron yanlis dedi"}
             if row:
                 conn.execute(
                     "UPDATE ders SET tekrar = tekrar + 1, guncellendi = ? WHERE id = ?",
@@ -388,10 +392,26 @@ class Kadro:
                          ajan_ad=ajan_ad)
         return {"id": ders_id, "ders": ders, "tekrar": tekrar}
 
+    def ders_yanlis(self, ders_id: str, sebep: str) -> dict:
+        """Patron dersi YANLIS diye kaldirir: brifinge girmez, geri gelmez."""
+        sebep = " ".join((sebep or "").split())
+        if not sebep:
+            raise KadroHatasi("Sebep zorunlu: bu ders neden yanlis?")
+        with self.db.baglanti() as conn:
+            r = conn.execute("SELECT ajan_ad, ders FROM ders WHERE id = ? AND proje_id = ?",
+                             (ders_id, self.proje_id)).fetchone()
+            if not r:
+                raise KadroHatasi("Boyle bir ders yok.")
+            conn.execute("UPDATE ders SET kaldirildi = ? WHERE id = ?", (sebep[:400], ders_id))
+        self.db.olay_yaz(self.proje_id, "ders_yanlis",
+                         f"{r['ajan_ad']}: '{r['ders'][:200]}' YANLIS diye kaldirildi -- {sebep[:200]}",
+                         ajan_ad="insan")
+        return {"ajan": r["ajan_ad"], "ders": r["ders"]}
+
     def dersler(self, ajan_ad: str) -> list:
         with self.db.baglanti() as conn:
             rows = conn.execute(
-                "SELECT ders, tekrar FROM ders WHERE proje_id = ? AND ajan_ad = ? "
+                "SELECT ders, tekrar FROM ders WHERE proje_id = ? AND ajan_ad = ? AND kaldirildi = '' "
                 "ORDER BY tekrar DESC, guncellendi DESC, rowid DESC",
                 (self.proje_id, ajan_ad),
             ).fetchall()

@@ -801,6 +801,10 @@ class Veritabani:
         ("gorev", "istek_id", "TEXT NOT NULL DEFAULT ''"),
         # DURAKLATILDI (02.10.2026): patronun is basina beklemesi (an).
         ("gorev", "duraklatildi", "TEXT NOT NULL DEFAULT ''"),
+        # YANLIS (03.10.2026; rakipte hafiza notunda "Yanlis / Duzelt"):
+        # patron bir bilgiyi ya da dersi yanlis diye kapatti -- sebebi burada.
+        ("olgu", "yanlis", "TEXT NOT NULL DEFAULT ''"),
+        ("ders", "kaldirildi", "TEXT NOT NULL DEFAULT ''"),
         # KABUL (02.10.2026): patron teslimi kabul etti (an).
         ("mesaj", "kabul", "TEXT NOT NULL DEFAULT ''"),
     )

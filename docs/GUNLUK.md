@@ -14208,3 +14208,20 @@ whisper small, geçici klasörde) döküldü — YouTube altyazısı değil, hat
    yakalar; "araç hatası → geçici yol" yazısı geçer. Öneri: araç/ofis hatası
    içeren bilgi yazımı patrona ayrıca bildirilsin (ölçülmeli). YOK.
 9. **İlk 10 dakika kontrol listesi** — YOK (F8/F9 sırası).
+
+## 03.10.2026 — hafıza: Yanlış / Düzelt, arama, geri bağ (rakip videosundan 1-2-3)
+
+- **Yanlış:** patron bilgiyi (`bellek.olgu_yanlis`) ya da dersi (`kadro.ders_yanlis`)
+  sebebiyle kapatır; brifinge girmez, silinmez (`olgu.yanlis`, `ders.kaldirildi`
+  sütunları, geçmişte "yanlış: sebep"). Yalnız insan. Ajan AYNI yanlışı geri
+  yazamaz (kelime kelime karşılaştırma; ölçülen açık: çift boşlukla kaçıyordu),
+  farklı içeriği yazabilir; lider kaldırılan dersi yeniden yazsa geri gelmez,
+  kural adayı olmaz. **Düzelt:** formu doldurur, insanın yazdığı eskisini
+  geçmişe atar (var olan yol).
+- **Arama** (`bellek.ara`, `/api/hafiza/ara`): bilgi (geçerli/eski/yanlış), ders,
+  kural, karar; Türkçe harf farkı yok, bütün kelimeler; geçerli önce. Anlamsal
+  arama bilerek yok (ölçmeden eklenmez).
+- **Geri bağ:** her bilgide "← N bağlı" (bu bilgiye bağlananlar).
+Sınama panelinde ofis kopyasıyla ekranda denendi (arama 3 sonuç, yanlış
+kapatıldı ve üstü çizili göründü, "← 2 bağlı"). `duman_hafiza_yanlis` 30/30,
+7 mutasyonun 7'si yakalandı.

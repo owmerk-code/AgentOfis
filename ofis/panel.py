@@ -1232,11 +1232,11 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
         ofis = ofis_ac()
         with db.baglanti() as conn:
             rows = conn.execute(
-                "SELECT konu, icerik, kaynak, gecerli_baslangic, gecerli_bitis "
+                "SELECT konu, icerik, kaynak, gecerli_baslangic, gecerli_bitis, yanlis "
                 "FROM olgu WHERE proje_id = ? ORDER BY konu, gecerli_baslangic DESC",
                 (ofis.proje_id,)).fetchall()
             dersler = conn.execute(
-                "SELECT id, ajan_ad, ders, tekrar FROM ders WHERE proje_id = ? "
+                "SELECT id, ajan_ad, ders, tekrar FROM ders WHERE proje_id = ? AND kaldirildi = '' "
                 "ORDER BY tekrar DESC, guncellendi DESC", (ofis.proje_id,)
             ).fetchall()
         hepsi = [dict(r) for r in rows]
@@ -1253,6 +1253,15 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
             o["baglar"] = [{"konu": b, "anahtar": _bellek.konu_anahtari(b),
                             "kirik": _bellek.konu_anahtari(b) not in var}
                            for b in _bellek.baglar(o["icerik"])]
+        # GERI BAG SAYISI (03.10.2026; rakipte "Bagli hafizalar 17"): bu
+        # bilgiye BASKA kac bilgi bagliyor, hangileri. Bag cok olan merkezdir.
+        geri = {}
+        for o in gecerli:
+            for b in o["baglar"]:
+                if not b["kirik"]:
+                    geri.setdefault(b["anahtar"], []).append(o["konu"])
+        for o in gecerli:
+            o["geri"] = sorted(set(geri.get(o["anahtar"], [])))
         adaylar = {d["id"] for d in ofis.bellek.kural_adaylari()}
         # Eski olgu SILINMEZ, gosterilir -- ama 'gecersiz' olarak. Ajana
         # gitmez, insana gider: "eskiden ne kadardi" sorusu icin.
@@ -1262,6 +1271,23 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
                 "kural_maliyeti": ofis.bellek.kural_maliyeti(),
                 "dersler": [dict(d, aday=d["id"] in adaylar) for d in dersler],
                 "secim_esigi": _bellek.OLGU_SECIM_ESIGI}
+
+    @uygulama.get("/api/hafiza/ara")
+    def api_hafiza_ara(q: str = ""):
+        """Hafizada kelime aramasi: bilgi, ders, kural, karar."""
+        return {"sorgu": q, "sonuc": ofis_ac().bellek.ara(q)}
+
+    @uygulama.post("/api/hafiza/yanlis")
+    def api_hafiza_yanlis(govde: dict):
+        """Yanlis: bilgiyi (konu) ya da dersi (ders_id) kapatir; sebep zorunlu."""
+        from .kadro import KadroHatasi
+        o = ofis_ac()
+        try:
+            if govde.get("ders_id"):
+                return o.kadro.ders_yanlis(str(govde["ders_id"]), str(govde.get("sebep") or ""))
+            return o.bellek.olgu_yanlis(str(govde.get("konu") or ""), str(govde.get("sebep") or ""))
+        except (BellekHatasi, KadroHatasi) as exc:
+            raise HTTPException(400, str(exc))
 
     @uygulama.get("/api/hafiza/gecmis")
     def api_hafiza_gecmis(konu: str):

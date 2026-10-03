@@ -340,6 +340,12 @@ class Bellek:
         if yazan != KAYNAK_INSAN:
             self.koruma_kapisi(yazan, "bilgi", f"{konu}: {icerik}")
         konu = self._konu_bul(konu) or konu
+        if yazan != KAYNAK_INSAN:
+            _y = self._yanlis_mi(konu, icerik)
+            if _y:
+                raise BellekHatasi(
+                    f"'{konu}' icin bu bilgiyi PATRON YANLIS diye kapatti ({_y[:160]}). "
+                    "Ayni seyi yeniden yazamazsin; farkli bir sey bulduysan soru_sor ile sor.")
         simdiki = [o for o in self.gecerli_olgular([konu])]
         mevcut = simdiki[0] if simdiki else None
         if mevcut and mevcut["icerik"].strip() == icerik:
@@ -359,6 +365,90 @@ class Bellek:
         r["durum"] = "guncellendi" if mevcut else "yeni"
         r["kaynak"] = kaynak
         return r
+
+    # -- yanlis / arama / geri bag (03.10.2026) ------------------------------
+
+    def olgu_yanlis(self, konu: str, sebep: str, *, kim: str = KAYNAK_INSAN) -> dict:
+        """Patron gecerli bilgiyi YANLIS diye kapatir: brifinge artik girmez.
+
+        Silinmez (gecmiste 'yanlis' etiketiyle durur). Ajan AYNI icerigi
+        yeniden yazamaz (`bilgi_ekle`): yanlisi ogrenen ajan onu tekrar
+        ogrenip geri getirirdi. Yalniz insan kapatir -- yetki insandan.
+        """
+        sebep = " ".join((sebep or "").split())
+        if not sebep:
+            raise BellekHatasi("Sebep zorunlu: neden yanlis? (ajanlar bunu okuyamaz ama "
+                               "alti ay sonra sen okursun.)")
+        if kim != KAYNAK_INSAN:
+            raise BellekHatasi("Bilgiyi yalniz insan yanlis diye kapatir.")
+        k = self._konu_bul(konu) or konu
+        an = simdi()
+        with self.db.baglanti() as conn:
+            r = conn.execute("SELECT id, icerik FROM olgu WHERE proje_id = ? AND konu = ? "
+                             "AND gecerli_bitis IS NULL", (self.proje_id, k)).fetchone()
+            if not r:
+                raise BellekHatasi(f"'{konu}' diye gecerli bir bilgi yok.")
+            conn.execute("UPDATE olgu SET gecerli_bitis = ?, yanlis = ? WHERE id = ?",
+                         (an, sebep[:400], r["id"]))
+        self.db.olay_yaz(self.proje_id, "olgu_yanlis",
+                         f"{k}: '{r['icerik'][:200]}' YANLIS diye kapatildi -- {sebep[:200]}",
+                         ajan_ad=kim)
+        return {"konu": k, "icerik": r["icerik"], "sebep": sebep}
+
+    def _yanlis_mi(self, konu: str, icerik: str) -> str:
+        """Bu konu+icerik daha once insanca YANLIS diye kapatildi mi? (sebep)"""
+        with self.db.baglanti() as conn:
+            for r in conn.execute("SELECT icerik, yanlis FROM olgu WHERE proje_id = ? AND konu = ? "
+                                  "AND yanlis != ''", (self.proje_id, konu)):
+                # Bosluk/noktalama farki ayni bilgi sayilir (olculdu: cift bosluk kaciyordu).
+                if _sadelestir(r["icerik"]).split() == _sadelestir(icerik).split():
+                    return r["yanlis"]
+        return ""
+
+    def ara(self, sorgu: str, *, azami: int = 40) -> list:
+        """Hafizada ARAMA: bilgi (gecerli + eski), ders, kural, karar.
+
+        Kelime aramasi (Turkce harf farki yok, butun kelimeler gecmeli).
+        Anlamsal arama BILEREK yok: kazandirdigi olculmeden eklenmez
+        (rakipte parcalarin %18'i 'anlamla aranamiyor' gorundu).
+        """
+        kelimeler = [k for k in _sadelestir(sorgu).split() if k]
+        if not kelimeler:
+            return []
+
+        def uyar(*metin):
+            t = _sadelestir(" ".join(str(m or "") for m in metin))
+            return all(k in t for k in kelimeler)
+
+        out = []
+        with self.db.baglanti() as conn:
+            for r in conn.execute("SELECT konu, icerik, kaynak, gecerli_bitis, yanlis, kaydedildi "
+                                  "FROM olgu WHERE proje_id = ? ORDER BY kaydedildi DESC",
+                                  (self.proje_id,)):
+                if uyar(r["konu"], r["icerik"]):
+                    durum = ("yanlis" if r["yanlis"] else "eski") if r["gecerli_bitis"] else "gecerli"
+                    out.append({"tur": "bilgi", "baslik": r["konu"], "metin": r["icerik"],
+                                "kaynak": r["kaynak"], "durum": durum, "an": r["kaydedildi"]})
+            for r in conn.execute("SELECT id, ajan_ad, ders, tekrar, kaldirildi, guncellendi FROM ders "
+                                  "WHERE proje_id = ? ORDER BY guncellendi DESC", (self.proje_id,)):
+                if uyar(r["ajan_ad"], r["ders"]):
+                    out.append({"tur": "ders", "baslik": f"{r['ajan_ad']} x{r['tekrar']}",
+                                "metin": r["ders"], "kaynak": r["ajan_ad"], "id": r["id"],
+                                "durum": "yanlis" if r["kaldirildi"] else "gecerli",
+                                "an": r["guncellendi"]})
+            for r in conn.execute("SELECT karar, gerekce, veren, olusturuldu FROM karar WHERE proje_id = ? "
+                                  "ORDER BY olusturuldu DESC LIMIT 500", (self.proje_id,)):
+                if uyar(r["karar"], r["gerekce"]):
+                    out.append({"tur": "karar", "baslik": r["veren"], "metin": r["karar"],
+                                "kaynak": r["gerekce"][:200], "durum": "gecerli", "an": r["olusturuldu"]})
+        for k in self.kurallar():
+            if uyar(k["metin"], k.get("gerekce")):
+                out.insert(0, {"tur": "kural", "baslik": "kural", "metin": k["metin"],
+                               "kaynak": k.get("veren", ""), "durum": "gecerli",
+                               "an": k.get("olusturuldu", "")})
+        sira = {"kural": 0, "bilgi": 1, "ders": 2, "karar": 3}
+        out.sort(key=lambda x: (x["durum"] != "gecerli", sira[x["tur"]]))
+        return out[:azami]
 
     def koruma_kapisi(self, yazan: str, tur: str, metin: str) -> None:
         """Ajanin/liderin hafiza yazisi korumayi asmayi anlatiyorsa DURUR.
@@ -516,7 +606,7 @@ class Bellek:
         with self.db.baglanti() as conn:
             rows = conn.execute(
                 "SELECT id, ajan_ad, ders, tekrar, guncellendi FROM ders "
-                "WHERE proje_id = ? AND tekrar >= ? "
+                "WHERE proje_id = ? AND tekrar >= ? AND kaldirildi = '' "
                 "ORDER BY tekrar DESC, guncellendi DESC",
                 (self.proje_id, KURAL_ADAY_TEKRAR)).fetchall()
         return [dict(r) for r in rows

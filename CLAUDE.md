@@ -206,7 +206,7 @@ matrisin ölçümüyle karşılaştırır.
 - **Genel kanal:** çok takımlı ofiste "Tüm ofis"ten `@TAKIM` o takımın liderine; adres yoksa ofis takım ÖNERİR (model yok), insan seçer.
 - **Takım sohbeti:** adres yok → lider; `@ajan` → işi varsa not, boşsa soru;
   `@ajan iş:` → lider planlar ama sahip o ajan.
-- **Hafıza:** bilgi kapısı (insanın yazdığını ajan devremez), `[[bağ]]`,
+- **Hafıza:** patron bilgiyi/dersi **Yanlış** diye kapatır (geri gelmez), panelde arama ve geri bağ sayısı; bilgi kapısı (insanın yazdığını ajan devremez), `[[bağ]]`,
   kurallar her brifinge; lider incelemede `BILGI:` yazar (yalnız kapanan işte).
 - **Yedek:** günlük ZIP (bilgisayar + Drive), gizli GitHub (defter metin
   olarak); gölge depoyla tur geri alma.
@@ -233,7 +233,7 @@ matrisin ölçümüyle karşılaştırır.
 - **F5 "ben yokken" altyapısı (01.10):** kuyruk + dönüş raporu, kesintiden devam, masaüstü bildirimi, zamanlayıcı — dördü canlı (8911, gerçek motor) ölçüldü. Kalan F5: telefon, onay yorgunluğu (E80), bağlam göstergesi, ses (en son).
 - **Güncelleme hemen:** 30 dakikada bir ölçer, uyguladıktan sonra yeniden
   ölçer (`olc_ve_ilerle`). CLI güncellemesinin deneme turu, ofis gerçek terminal kipindeyse terminalde de koşar (30.09).
-- **Sınamalar:** **4061/4061** (03.10; 62 dosya; tam takım ÇIKIŞ KODUYLA koşulur — kod 3 = artık klasör) + gerçek set (`gercek_set.py`, her gece 03:30). Deneme seti 15/15
+- **Sınamalar:** **4091/4091** (03.10; 63 dosya; tam takım ÇIKIŞ KODUYLA koşulur — kod 3 = artık klasör) + gerçek set (`gercek_set.py`, her gece 03:30). Deneme seti 15/15
   (Claude ve Codex, işçi+lider).
 - **Kullanıcının belirttiği eksikler (29.09):** her panoda her zaman açık
   yazma yeri; sesli orkestratör;
