@@ -159,7 +159,14 @@ class AntigravityMotoru(Motor):
     mcp_konusur = True
     butce_destegi = False
     izin_kancasi = True
-    tur_ici_mesaj = False
+    #: OLCULDU (04.10.2026, gercek agy): `--input-format stream-json` ile tur
+    #: surerken yazilan mesaj KAYBOLMAZ ama turun ortasina da girmez -- eldeki
+    #: is bitince AYNI oturumda ayri bir tur olarak kosar (her mesaja bir
+    #: `result`). Not boylece is incelemeye gitmeden uygulanir (G15: once
+    #: ertesi tura kaliyordu, lider eksik isi geri cevirdi). Durdurma olayi
+    #: yok ("event %q is not supported yet"): surec kesilir; `--conversation`
+    #: ile surdurulen oturum kaldigi yerden devam etti, biten adimi tekrarlamadi.
+    tur_ici_mesaj = True
     araclar_kapatilabilir = False
     baglayici_tasir = False
     tui_destegi = False
@@ -279,7 +286,8 @@ class AntigravityMotoru(Motor):
             komut += ["--add-dir", str(ek)]
         if oturum_id:
             komut += ["--conversation", str(oturum_id)]
-        komut += ["-p", SISTEM_EKI + metin]
+        # Istem stdin'den (tur ici not ayni kanaldan gelir; bkz. `tur_ici_mesaj`).
+        komut += ["--input-format", "stream-json"]
 
         ortam = ortam_hazirla(os.environ, ek={"USERPROFILE": str(ev), "HOME": str(ev),
                                               **mcp_ortam, **(ek_ortam or {})},
@@ -288,7 +296,7 @@ class AntigravityMotoru(Motor):
         basladi = time.monotonic()
         baslangic_an = time.time()
         try:
-            surec = subprocess.Popen(komut, cwd=str(kok), env=ortam, stdin=subprocess.DEVNULL,
+            surec = subprocess.Popen(komut, cwd=str(kok), env=ortam, stdin=subprocess.PIPE,
                                      stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
                                      encoding="utf-8", errors="replace", bufsize=1,
                                      creationflags=_PENCERE_YOK)
@@ -314,24 +322,74 @@ class AntigravityMotoru(Motor):
         threading.Thread(target=_hata, daemon=True, name="agy-stderr").start()
 
         durum = {"oturum_id": oturum_id, "model": str(model or ""), "metin": [], "jeton": 0,
-                 "dokum": {}, "arac_sayisi": 0, "sonuc": None, "reddedilen": []}
+                 "dokum": {}, "arac_sayisi": 0, "sonuc": None, "reddedilen": [],
+                 "girdi_sayisi": 0, "sonuc_sayisi": 0}
+        # Gonderilen ama sonucu gelmemis mesaj sayisi; sifira inince stdin
+        # kapanir ve agy cikar. `notlar`: gonderilmis, modele ULASMAMIS notlar
+        # (ulasti = o notun `user_input` adimi bitti).
+        kanal_durum = {"acik": True, "bekleyen": 0, "notlar": [], "ulasan": 0,
+                       "durduruldu": False}
+
+        def _yolla(icerik: str) -> bool:
+            try:
+                surec.stdin.write(json.dumps({"event": "user", "message": {"content": icerik}},
+                                             ensure_ascii=False) + "\n")
+                surec.stdin.flush()
+            except (OSError, ValueError):
+                return False
+            kanal_durum["bekleyen"] += 1
+            return True
+
+        def _kapat_girdi():
+            if kanal_durum["acik"]:
+                kanal_durum["acik"] = False
+                try:
+                    surec.stdin.close()
+                except (OSError, ValueError):
+                    pass
+
+        if not _yolla(SISTEM_EKI + metin):
+            _kapat_girdi()
         zaman_asti = False
+        son_nabiz = time.monotonic()
         try:
             while True:
                 kalan = sinir - (time.monotonic() - basladi)
                 if kalan <= 0:
                     zaman_asti = True
                     break
+                # KANAL: durdurma surecin kesilmesidir; not stdin'e yazilir.
+                # Kanal yalniz stdin aciktayken bosaltilir -- kapandiktan sonra
+                # gelen not kanalda kalir, koltuk onu sonraki turda verir.
+                if kanal is not None and kanal_durum["acik"]:
+                    if kanal.durdurulsun:
+                        kanal_durum["durduruldu"] = True
+                        break
+                    for kimlik, not_metni in kanal.al():
+                        if _yolla(not_metni):
+                            kanal_durum["notlar"].append((kimlik, not_metni))
                 try:
-                    s = satirlar.get(timeout=min(NABIZ_ARALIGI, kalan))
+                    s = satirlar.get(timeout=min(0.5, kalan))
                 except queue.Empty:
-                    yield MotorOlayi("nabiz", "", {})
+                    if time.monotonic() - son_nabiz >= NABIZ_ARALIGI:
+                        son_nabiz = time.monotonic()
+                        yield MotorOlayi("nabiz", "", {})
                     continue
                 if s is _SON:
                     break
                 for olay in self._satir_cevir(s, durum):
                     yield olay
+                # Ilk `user_input` istemin kendisi; sonrakiler sirayla notlar.
+                while kanal_durum["notlar"] and durum["girdi_sayisi"] - 1 > kanal_durum["ulasan"]:
+                    kanal_durum["ulasan"] += 1
+                    kimlik, not_metni = kanal_durum["notlar"].pop(0)
+                    yield MotorOlayi("mesaj", not_metni[:200], {"kimlik": kimlik, "yol": "tur_ici"})
+                if durum["sonuc_sayisi"] >= kanal_durum["bekleyen"] and kanal_durum["acik"]:
+                    hata_sonucu = str((durum["sonuc"] or {}).get("status") or "") != "SUCCESS"
+                    if hata_sonucu or kanal is None or kanal.bos_mu():
+                        _kapat_girdi()
         finally:
+            _kapat_girdi()
             if zaman_asti or surec.poll() is None:
                 kafes.kes() if hasattr(kafes, "kes") else surec.kill()
             try:
@@ -356,11 +414,17 @@ class AntigravityMotoru(Motor):
         dusuk = (durum_str + " " + stderr + " " + str(sonuc.get("response") or "")).lower()
         limit = any(k in dusuk for k in ("quota", "resource_exhausted", "rate limit",
                                          "rate_limit", "429", "usage limit"))
-        basarili = (not zaman_asti and surec.returncode == 0 and durum_str == "SUCCESS")
+        durduruldu = kanal_durum["durduruldu"]
+        basarili = (not zaman_asti and not durduruldu and surec.returncode == 0
+                    and durum_str == "SUCCESS")
         cevap = "".join(durum["metin"]).strip() or str(sonuc.get("response") or "").strip()
         if teslim:
             cevap += "\n\nURETILEN GORSEL: " + ", ".join(teslim)
-        if not basarili and not zaman_asti:
+        if durduruldu:
+            # Insanin istegi: ARIZA degil; koltuk ayni oturumdan surdurur.
+            yield MotorOlayi("hata", "Tur insanin istegiyle DURDURULDU.",
+                             {"sebep": "durduruldu", "cikis": surec.returncode})
+        elif not basarili and not zaman_asti:
             yield MotorOlayi("hata", (stderr.strip() or durum_str or "agy turu basarisiz")[-600:],
                              {"sebep": "limit" if limit else "cikis"})
         yield MotorOlayi("bitti", cevap if basarili else "", {
@@ -373,6 +437,7 @@ class AntigravityMotoru(Motor):
             "zaman_asimi": zaman_asti, "limit_pencere": None,
             "uretilen_gorseller": teslim,
             "sebep": ("" if basarili else "zaman_asimi" if zaman_asti
+                      else "durduruldu" if durduruldu
                       else "limit" if limit else "cikis"),
         })
 
@@ -395,6 +460,8 @@ class AntigravityMotoru(Motor):
         elif olay == "step_update":
             su = j.get("step_update") or {}
             tur, hal = su.get("step_type"), su.get("state")
+            if tur == "user_input" and hal == "DONE":
+                durum["girdi_sayisi"] = durum.get("girdi_sayisi", 0) + 1
             u = su.get("usage") or {}
             if u and hal == "DONE":
                 durum["jeton"] += int(u.get("total_tokens") or 0)
@@ -424,6 +491,7 @@ class AntigravityMotoru(Motor):
         elif olay == "result":
             r = j.get("result") or {}
             durum["sonuc"] = r
+            durum["sonuc_sayisi"] = durum.get("sonuc_sayisi", 0) + 1
             durum["oturum_id"] = durum["oturum_id"] or str(r.get("conversation_id") or "")
             for d in r.get("denied_actions") or []:
                 out.append(MotorOlayi("izin", f"{d.get('display_name') or d.get('action')} reddedildi",

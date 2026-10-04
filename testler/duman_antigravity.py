@@ -76,7 +76,11 @@ ol = kos(model="gemini-3.8-flash-low", mcp_yapilandirma=MCP, yazabilir=True)
 g = json.loads(gunluk.read_text(encoding="utf-8"))
 argv = g["argv"]
 sina("stream-json + model", "stream-json" in argv and argv[argv.index("--model") + 1] == "gemini-3.8-flash-low")
-sina("istem -p ile, sistem eki basta", argv[-2] == "-p" and argv[-1].startswith("AgentOfis agent sisteminde"))
+sina("istem stdin kanalindan (stream-json), -p YOK, sistem eki basta",
+     "-p" not in argv and argv[argv.index("--input-format") + 1] == "stream-json"
+     and g["mesajlar"] and g["mesajlar"][0].startswith("AgentOfis agent sisteminde"))
+sina("tek mesajli tur: kanal kapanir, agy cikar (asili kalmaz)",
+     len(g["mesajlar"]) == 1 and ol[-1].ek["cikis"] == 0)
 sina("yeni turda --conversation YOK", "--conversation" not in argv)
 sina("modelin efor eki varken --effort verilmez", "--effort" not in argv)
 ev = ev_koku / "nova"
@@ -144,6 +148,46 @@ sina("kota hatasi: basarisiz + limit isareti",
      not ol[-1].ek["basarili"] and ol[-1].ek["limit"] and ol[-1].ek["sebep"] == "limit")
 yok = AntigravityMotoru(calistirilabilir=str(d / "yok.exe"))
 sina("kurulu degilse musait degil + kurulum notu", not yok.musait_mi() and "irm" in yok.durum_notu())
+
+# --------------------------------------------------------------------------
+print("\n5b. TUR ICI NOT VE DURDURMA (kanal)")
+from ofis.motor.tip import TurKanali                                 # noqa: E402
+import time                                                          # noqa: E402
+sina("bayrak: tur_ici_mesaj", AntigravityMotoru.tur_ici_mesaj is True)
+os.environ["SAHTE_AGY_SENARYO"] = "yavas"
+k = TurKanali()
+ol = []
+for o in m.tur_kos("isi yap", klasor=str(is_k), mcp_yapilandirma=MCP, kanal=k):
+    ol.append(o)
+    if o.tur == "arac":
+        k.gonder("not-1", "EK: z.txt de yaz")
+os.environ["SAHTE_AGY_SENARYO"] = "basarili"
+g = json.loads(gunluk.read_text(encoding="utf-8"))
+sina("not tur surerken AYNI surece gitti", g["mesajlar"][1:] == ["EK: z.txt de yaz"], str(g["mesajlar"]))
+ms = [o for o in ol if o.tur == "mesaj"]
+sina("ulasan not 'mesaj' olayi (kimlik, tur_ici)",
+     len(ms) == 1 and ms[0].ek == {"kimlik": "not-1", "yol": "tur_ici"}, str([o.ek for o in ms]))
+sina("not, bitti'den ONCE ulasti", ms and ol.index(ms[0]) < len(ol) - 1)
+sina("notlu tur basarili, cevapta notun isi da var",
+     ol[-1].ek["basarili"] and "Not uygulandi" in ol[-1].govde, ol[-1].govde)
+
+os.environ["SAHTE_AGY_SENARYO"] = "uzun"
+k = TurKanali()
+ol = []
+t0 = time.monotonic()
+for o in m.tur_kos("isi yap", klasor=str(is_k), mcp_yapilandirma=MCP, kanal=k):
+    ol.append(o)
+    if o.tur == "arac":
+        k.durdur()
+sure = time.monotonic() - t0
+os.environ["SAHTE_AGY_SENARYO"] = "basarili"
+b = ol[-1]
+sina("durdur: tur KESILDI (60 sn beklemedi)", sure < 20, f"{sure:.1f} sn")
+sina("durdur: sebep 'durduruldu', basarisiz, oturum korunur",
+     not b.ek["basarili"] and b.ek["sebep"] == "durduruldu" and b.ek["oturum_id"].startswith("11111111"),
+     str(b.ek.get("sebep")))
+sina("durdur: ariza diye degil, 'durduruldu' hata olayi",
+     any(o.tur == "hata" and o.ek.get("sebep") == "durduruldu" for o in ol))
 
 # --------------------------------------------------------------------------
 print("\n6. KANCA: ANTIGRAVITY ARAC CEVIRISI")

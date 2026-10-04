@@ -1,0 +1,950 @@
+{
+ "ayar": {
+  "motor": "gemini",
+  "kip": "gercek terminal",
+  "modeller": {
+   "lider": "gemini-3.8-flash-medium",
+   "isci": "gemini-3.8-flash-low"
+  },
+  "basla": "2026-10-04 22:55",
+  "sure_dk": 15.3,
+  "kota_farki": {
+   "gemini": null
+  }
+ },
+ "sonuclar": [
+  {
+   "no": "G06",
+   "ad": "Tek sayfalik web sitesi",
+   "motor": "gemini",
+   "kip": "gercek",
+   "mesaj": "'Kahve Duragi' adinda tek sayfalik bir kafe sitesi yap: site/index.html. Menu bolumu ve iletisim bolumu olsun.",
+   "olcutler": [
+    {
+     "olcut": "site/index.html var ve gecerli HTML",
+     "gecti": true,
+     "not": "22195 harf"
+    },
+    {
+     "olcut": "baslik 'Kahve Duragi'",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "menu ve iletisim bolumleri var",
+     "gecti": true,
+     "not": ""
+    }
+   ],
+   "kalite": [
+    {
+     "olcut": "lider patrona cevap verdi",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "lider 'yapamam / sen yap' DEMEDI",
+     "gecti": true,
+     "not": "Kahve Durağı kafe web sitesi, modern ve duyarlı bir tasarımla `site/index.html` dosyası olarak hazır"
+    },
+    {
+     "olcut": "rapor ic konusma / KANIT satiri tasimiyor",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "gereksiz ret yok",
+     "gecti": true,
+     "not": "0 ret"
+    },
+    {
+     "olcut": "sohbet temiz (en fazla 4 mesaj)",
+     "gecti": true,
+     "not": "3 mesaj: insan/sohbet, ada/bildirim, lale/cevap"
+    }
+   ],
+   "durum": "gecti",
+   "sohbet": [
+    "insan/sohbet: 'Kahve Duragi' adinda tek sayfalik bir kafe sitesi yap: site/index.html. Menu bolumu ve iletisim bolumu olsun.",
+    "ada/bildirim: Kahve Durağı kafe web sitesi tasarımı ve sayfa ekran görüntüsü hazırlandı.",
+    "lale/cevap: Kahve Durağı kafe web sitesi, modern ve duyarlı bir tasarımla `site/index.html` dosyası olarak hazırlandı. Sayfa içerisinde fiyatlı sıcak/soğuk kahve ve tatlı menüsü ile adres, telefon, e-posta ve çal"
+   ],
+   "sureler": {
+    "lider": [
+     15
+    ],
+    "isci": [
+     114
+    ],
+    "inceleme": [
+     14
+    ]
+   },
+   "bedel": {
+    "lider": {
+     "tur": 1,
+     "jeton": 22635,
+     "maliyet_usd": 0.0,
+     "bilinmeyen_tur": 1,
+     "dokum": {
+      "girdi": 18855,
+      "cikti": 7101,
+      "onbellek_okuma": 0,
+      "onbellek_yazma": 0,
+      "onbellek_yazma_1sa": 0
+     }
+    },
+    "isci": {
+     "tur": 1,
+     "jeton": 271053,
+     "maliyet_usd": 0.0,
+     "bilinmeyen_tur": 1,
+     "dokum": {
+      "girdi": 257008,
+      "cikti": 17922,
+      "onbellek_okuma": 715719,
+      "onbellek_yazma": 0,
+      "onbellek_yazma_1sa": 0
+     }
+    },
+    "inceleme": {
+     "tur": 1,
+     "jeton": 50608,
+     "maliyet_usd": 0.0,
+     "bilinmeyen_tur": 1,
+     "dokum": {
+      "girdi": 48537,
+      "cikti": 3785,
+      "onbellek_okuma": 36702,
+      "onbellek_yazma": 0,
+      "onbellek_yazma_1sa": 0
+     }
+    }
+   },
+   "sure_sn": 149.5
+  },
+  {
+   "no": "G07",
+   "ad": "Tarayici oyunu",
+   "motor": "gemini",
+   "kip": "gercek",
+   "mesaj": "oyun/index.html icinde tarayicida oynanan basit bir yilan oyunu yap (klavye oklariyla).",
+   "olcutler": [
+    {
+     "olcut": "oyun/index.html var",
+     "gecti": true,
+     "not": "11391 harf"
+    },
+    {
+     "olcut": "canvas ve klavye oklari kullaniliyor",
+     "gecti": true,
+     "not": ""
+    }
+   ],
+   "kalite": [
+    {
+     "olcut": "lider patrona cevap verdi",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "lider 'yapamam / sen yap' DEMEDI",
+     "gecti": true,
+     "not": "oyun/index.html dosyasında klavye ok tuşlarıyla yönlendirilen, yem yedikçe uzayan, skor takibi ve ye"
+    },
+    {
+     "olcut": "rapor ic konusma / KANIT satiri tasimiyor",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "gereksiz ret yok",
+     "gecti": true,
+     "not": "0 ret"
+    },
+    {
+     "olcut": "sohbet temiz (en fazla 4 mesaj)",
+     "gecti": true,
+     "not": "3 mesaj: insan/sohbet, ada/bildirim, lale/cevap"
+    }
+   ],
+   "durum": "gecti",
+   "sohbet": [
+    "insan/sohbet: oyun/index.html icinde tarayicida oynanan basit bir yilan oyunu yap (klavye oklariyla).",
+    "ada/bildirim: Yılan oyunu arayüzü ve oynanış ekran görüntüsü ektedir.",
+    "lale/cevap: oyun/index.html dosyasında klavye ok tuşlarıyla yönlendirilen, yem yedikçe uzayan, skor takibi ve yeniden başlama seçenekleri bulunan tek parça yılan oyunu başarıyla tamamlandı."
+   ],
+   "sureler": {
+    "lider": [
+     28
+    ],
+    "isci": [
+     64
+    ],
+    "inceleme": [
+     12
+    ]
+   },
+   "bedel": {
+    "lider": {
+     "tur": 1,
+     "jeton": 27582,
+     "maliyet_usd": 0.0,
+     "bilinmeyen_tur": 1,
+     "dokum": {
+      "girdi": 18833,
+      "cikti": 16977,
+      "onbellek_okuma": 0,
+      "onbellek_yazma": 0,
+      "onbellek_yazma_1sa": 0
+     }
+    },
+    "isci": {
+     "tur": 1,
+     "jeton": 147822,
+     "maliyet_usd": 0.0,
+     "bilinmeyen_tur": 1,
+     "dokum": {
+      "girdi": 139065,
+      "cikti": 11679,
+      "onbellek_okuma": 345519,
+      "onbellek_yazma": 0,
+      "onbellek_yazma_1sa": 0
+     }
+    },
+    "inceleme": {
+     "tur": 1,
+     "jeton": 40738,
+     "maliyet_usd": 0.0,
+     "bilinmeyen_tur": 1,
+     "dokum": {
+      "girdi": 39010,
+      "cikti": 3209,
+      "onbellek_okuma": 16304,
+      "onbellek_yazma": 0,
+      "onbellek_yazma_1sa": 0
+     }
+    }
+   },
+   "sure_sn": 109.8
+  },
+  {
+   "no": "G09",
+   "ad": "Sayfadan bilgi oku, soyle",
+   "motor": "gemini",
+   "kip": "gercek",
+   "mesaj": "http://127.0.0.1:59640/urun sayfasindaki urunun fiyati ne?",
+   "olcutler": [
+    {
+     "olcut": "lider fiyati dogru soyledi (1.249,90)",
+     "gecti": true,
+     "not": "http://127.0.0.1:59640/urun sayfasındaki Kavrulmuş Kahve 1 kg ürününün fiyatı 1.249,90 TL olarak tespit edilmiştir. İlgili bağlantı üzerinden ürün adı ve fiyat "
+    }
+   ],
+   "kalite": [
+    {
+     "olcut": "lider patrona cevap verdi",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "lider 'yapamam / sen yap' DEMEDI",
+     "gecti": true,
+     "not": "http://127.0.0.1:59640/urun sayfasındaki Kavrulmuş Kahve 1 kg ürününün fiyatı 1.249,90 TL olarak tes"
+    },
+    {
+     "olcut": "rapor ic konusma / KANIT satiri tasimiyor",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "gereksiz ret yok",
+     "gecti": true,
+     "not": "0 ret"
+    },
+    {
+     "olcut": "sohbet temiz (en fazla 4 mesaj)",
+     "gecti": true,
+     "not": "2 mesaj: insan/sohbet, lale/cevap"
+    }
+   ],
+   "durum": "gecti",
+   "sohbet": [
+    "insan/sohbet: http://127.0.0.1:59640/urun sayfasindaki urunun fiyati ne?",
+    "lale/cevap: http://127.0.0.1:59640/urun sayfasındaki Kavrulmuş Kahve 1 kg ürününün fiyatı 1.249,90 TL olarak tespit edilmiştir. İlgili bağlantı üzerinden ürün adı ve fiyat bilgisi teyit edilmiştir."
+   ],
+   "sureler": {
+    "lider": [
+     19
+    ],
+    "isci": [
+     35
+    ],
+    "inceleme": [
+     7
+    ]
+   },
+   "bedel": {
+    "lider": {
+     "tur": 1,
+     "jeton": 24339,
+     "maliyet_usd": 0.0,
+     "bilinmeyen_tur": 1,
+     "dokum": {
+      "girdi": 18823,
+      "cikti": 10641,
+      "onbellek_okuma": 0,
+      "onbellek_yazma": 0,
+      "onbellek_yazma_1sa": 0
+     }
+    },
+    "isci": {
+     "tur": 1,
+     "jeton": 58823,
+     "maliyet_usd": 0.0,
+     "bilinmeyen_tur": 1,
+     "dokum": {
+      "girdi": 57810,
+      "cikti": 1013,
+      "onbellek_okuma": 138057,
+      "onbellek_yazma": 0,
+      "onbellek_yazma_1sa": 0
+     }
+    },
+    "inceleme": {
+     "tur": 1,
+     "jeton": 16182,
+     "maliyet_usd": 0.0,
+     "bilinmeyen_tur": 1,
+     "dokum": {
+      "girdi": 15129,
+      "cikti": 2024,
+      "onbellek_okuma": 0,
+      "onbellek_yazma": 0,
+      "onbellek_yazma_1sa": 0
+     }
+    }
+   },
+   "sure_sn": 67.6
+  },
+  {
+   "no": "G12",
+   "ad": "Web arastirmasi, kaynakli cevap",
+   "motor": "gemini",
+   "kip": "gercek",
+   "mesaj": "Ankara'nin guncel nufusu kac? Internetten arastir, kaynagini da yaz; kisa cevap ver.",
+   "olcutler": [
+    {
+     "olcut": "Ankara'nin nufusu soylendi (4-7 milyon arasi sayi)",
+     "gecti": true,
+     "not": "TÜİK verilerine göre Ankara'nın güncel nüfusu 5.910.320 kişidir. Bilgi, TÜİK Adrese Dayalı Nüfus Kayıt Sistemi (ADNKS) resmi sonuçları (https://data.tuik.gov.tr"
+    },
+    {
+     "olcut": "kaynak verildi (adres ya da kurum adi)",
+     "gecti": true,
+     "not": ""
+    }
+   ],
+   "kalite": [
+    {
+     "olcut": "lider patrona cevap verdi",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "lider 'yapamam / sen yap' DEMEDI",
+     "gecti": true,
+     "not": "TÜİK verilerine göre Ankara'nın güncel nüfusu 5.910.320 kişidir. Bilgi, TÜİK Adrese Dayalı Nüfus Kay"
+    },
+    {
+     "olcut": "rapor ic konusma / KANIT satiri tasimiyor",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "gereksiz ret yok",
+     "gecti": true,
+     "not": "0 ret"
+    },
+    {
+     "olcut": "sohbet temiz (en fazla 4 mesaj)",
+     "gecti": true,
+     "not": "2 mesaj: insan/sohbet, lale/cevap"
+    }
+   ],
+   "durum": "gecti",
+   "sohbet": [
+    "insan/sohbet: Ankara'nin guncel nufusu kac? Internetten arastir, kaynagini da yaz; kisa cevap ver.",
+    "lale/cevap: TÜİK verilerine göre Ankara'nın güncel nüfusu 5.910.320 kişidir. Bilgi, TÜİK Adrese Dayalı Nüfus Kayıt Sistemi (ADNKS) resmi sonuçları (https://data.tuik.gov.tr) üzerinden doğrulanmıştır."
+   ],
+   "sureler": {
+    "lider": [
+     17
+    ],
+    "isci": [
+     40
+    ],
+    "inceleme": [
+     14
+    ]
+   },
+   "bedel": {
+    "lider": {
+     "tur": 1,
+     "jeton": 23659,
+     "maliyet_usd": 0.0,
+     "bilinmeyen_tur": 1,
+     "dokum": {
+      "girdi": 18827,
+      "cikti": 9306,
+      "onbellek_okuma": 0,
+      "onbellek_yazma": 0,
+      "onbellek_yazma_1sa": 0
+     }
+    },
+    "isci": {
+     "tur": 1,
+     "jeton": 68145,
+     "maliyet_usd": 0.0,
+     "bilinmeyen_tur": 1,
+     "dokum": {
+      "girdi": 67187,
+      "cikti": 958,
+      "onbellek_okuma": 130079,
+      "onbellek_yazma": 0,
+      "onbellek_yazma_1sa": 0
+     }
+    },
+    "inceleme": {
+     "tur": 1,
+     "jeton": 49852,
+     "maliyet_usd": 0.0,
+     "bilinmeyen_tur": 1,
+     "dokum": {
+      "girdi": 47951,
+      "cikti": 3541,
+      "onbellek_okuma": 0,
+      "onbellek_yazma": 0,
+      "onbellek_yazma_1sa": 0
+     }
+    }
+   },
+   "sure_sn": 76.6
+  },
+  {
+   "no": "G14",
+   "ad": "Tarayicida form doldur ve gonder (patron izni)",
+   "motor": "gemini",
+   "kip": "gercek",
+   "mesaj": "http://127.0.0.1:59833/form sayfasindaki bulten formunu Ad: Deneme, E-posta: deneme@ornek.com ile doldur ve gonder.",
+   "olcutler": [
+    {
+     "olcut": "form GONDERILDI (sunucu POST aldi)",
+     "gecti": true,
+     "not": "['/kayit']"
+    },
+    {
+     "olcut": "patron acikca istedigi icin SORULMADI (onay karti yok)",
+     "gecti": true,
+     "not": "0 kart"
+    }
+   ],
+   "kalite": [
+    {
+     "olcut": "lider patrona cevap verdi",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "lider 'yapamam / sen yap' DEMEDI",
+     "gecti": true,
+     "not": "Bulten formu Ad: Deneme ve E-posta: deneme@ornek.com bilgileriyle doldurularak iletildi ve kayit bas"
+    },
+    {
+     "olcut": "rapor ic konusma / KANIT satiri tasimiyor",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "gereksiz ret yok",
+     "gecti": true,
+     "not": "0 ret"
+    }
+   ],
+   "durum": "gecti",
+   "sohbet": [
+    "insan/sohbet: http://127.0.0.1:59833/form sayfasindaki bulten formunu Ad: Deneme, E-posta: deneme@ornek.com ile doldur ve gonder.",
+    "ada/bildirim: Bulten formu basariyla doldurularak iletildi; sonuc ekraninin goruntusu ektedir.",
+    "lale/cevap: Bulten formu Ad: Deneme ve E-posta: deneme@ornek.com bilgileriyle doldurularak iletildi ve kayit basariyla tamamlandi. Gonderim sonrasi olusan 'YAYINLANDI' sonuc ekraninin goruntusu .ofis/ekler/form_s"
+   ],
+   "sureler": {
+    "lider": [
+     16
+    ],
+    "isci": [
+     56
+    ],
+    "inceleme": [
+     29
+    ]
+   },
+   "bedel": {
+    "lider": {
+     "tur": 1,
+     "jeton": 23440,
+     "maliyet_usd": 0.0,
+     "bilinmeyen_tur": 1,
+     "dokum": {
+      "girdi": 18896,
+      "cikti": 8680,
+      "onbellek_okuma": 0,
+      "onbellek_yazma": 0,
+      "onbellek_yazma_1sa": 0
+     }
+    },
+    "isci": {
+     "tur": 1,
+     "jeton": 104571,
+     "maliyet_usd": 0.0,
+     "bilinmeyen_tur": 1,
+     "dokum": {
+      "girdi": 103163,
+      "cikti": 1408,
+      "onbellek_okuma": 219077,
+      "onbellek_yazma": 0,
+      "onbellek_yazma_1sa": 0
+     }
+    },
+    "inceleme": {
+     "tur": 1,
+     "jeton": 72789,
+     "maliyet_usd": 0.0,
+     "bilinmeyen_tur": 1,
+     "dokum": {
+      "girdi": 69844,
+      "cikti": 5149,
+      "onbellek_okuma": 89643,
+      "onbellek_yazma": 0,
+      "onbellek_yazma_1sa": 0
+     }
+    }
+   },
+   "sure_sn": 107.3
+  },
+  {
+   "no": "G17",
+   "ad": "Word belgesi olustur, gonder",
+   "motor": "gemini",
+   "kip": "gercek",
+   "mesaj": "toplanti.docx adinda bir Word belgesi olustur: baslik 'Haftalik Toplanti', altinda uc madde: Butce, Takvim, Ekip. Dosyayi bana gonder.",
+   "olcutler": [
+    {
+     "olcut": "gecerli bir .docx var",
+     "gecti": true,
+     "not": "['toplanti.docx']"
+    },
+    {
+     "olcut": "baslik ve uc madde icinde",
+     "gecti": true,
+     "not": " \n        haftalik toplanti         butce         takvim         ekip           "
+    },
+    {
+     "olcut": "Word dosyasi sohbete gonderildi",
+     "gecti": true,
+     "not": "['.ofis/ekler/20261004-230443-toplanti.docx']"
+    }
+   ],
+   "kalite": [
+    {
+     "olcut": "lider patrona cevap verdi",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "lider 'yapamam / sen yap' DEMEDI",
+     "gecti": true,
+     "not": "'Haftalik Toplanti' başlıklı; Bütçe, Takvim ve Ekip maddelerini içeren toplanti.docx belgesi başarıy"
+    },
+    {
+     "olcut": "rapor ic konusma / KANIT satiri tasimiyor",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "gereksiz ret yok",
+     "gecti": true,
+     "not": "0 ret"
+    },
+    {
+     "olcut": "sohbet temiz (en fazla 4 mesaj)",
+     "gecti": true,
+     "not": "3 mesaj: insan/sohbet, cem/bildirim, lale/cevap"
+    }
+   ],
+   "durum": "gecti",
+   "sohbet": [
+    "insan/sohbet: toplanti.docx adinda bir Word belgesi olustur: baslik 'Haftalik Toplanti', altinda uc madde: Butce, Takvim, Ekip. Dosyayi bana gonder.",
+    "cem/bildirim: Talep ettiğiniz 'Haftalik Toplanti' başlıklı ve Bütçe, Takvim, Ekip maddelerini içeren toplanti.docx belgesi ekte sunulmuştur.",
+    "lale/cevap: 'Haftalik Toplanti' başlıklı; Bütçe, Takvim ve Ekip maddelerini içeren toplanti.docx belgesi başarıyla oluşturuldu ve tarafınıza iletildi."
+   ],
+   "sureler": {
+    "lider": [
+     17
+    ],
+    "isci": [
+     34
+    ],
+    "inceleme": [
+     13
+    ]
+   },
+   "bedel": {
+    "lider": {
+     "tur": 1,
+     "jeton": 16013,
+     "maliyet_usd": 0.0,
+     "bilinmeyen_tur": 1,
+     "dokum": {
+      "girdi": 10728,
+      "cikti": 10084,
+      "onbellek_okuma": 8153,
+      "onbellek_yazma": 0,
+      "onbellek_yazma_1sa": 0
+     }
+    },
+    "isci": {
+     "tur": 1,
+     "jeton": 71549,
+     "maliyet_usd": 0.0,
+     "bilinmeyen_tur": 1,
+     "dokum": {
+      "girdi": 70238,
+      "cikti": 1311,
+      "onbellek_okuma": 125850,
+      "onbellek_yazma": 0,
+      "onbellek_yazma_1sa": 0
+     }
+    },
+    "inceleme": {
+     "tur": 1,
+     "jeton": 49215,
+     "maliyet_usd": 0.0,
+     "bilinmeyen_tur": 1,
+     "dokum": {
+      "girdi": 47588,
+      "cikti": 2989,
+      "onbellek_okuma": 0,
+      "onbellek_yazma": 0,
+      "onbellek_yazma_1sa": 0
+     }
+    }
+   },
+   "sure_sn": 70.3
+  },
+  {
+   "no": "G18",
+   "ad": "Cok adimli proje: plan + uygulama",
+   "motor": "gemini",
+   "kip": "gercek",
+   "mesaj": "Basit bir yapilacaklar (todo) web uygulamasi yap: todo/index.html ve todo/app.js. Madde ekle, tamamlandi isaretle ve sil calissin; veriler localStorage'da kalsin. Once todo/PLAN.md dosyasina 3-5 adimlik plan yaz, sonra uygula.",
+   "olcutler": [
+    {
+     "olcut": "todo/PLAN.md 3+ adimli plan",
+     "gecti": true,
+     "not": "14 adim"
+    },
+    {
+     "olcut": "index.html app.js'i yukluyor",
+     "gecti": true,
+     "not": "3924 harf"
+    },
+    {
+     "olcut": "app.js: localStorage + olay dinleyici",
+     "gecti": true,
+     "not": "3076 harf"
+    },
+    {
+     "olcut": "ekle / tamamla / sil var",
+     "gecti": true,
+     "not": ""
+    }
+   ],
+   "kalite": [
+    {
+     "olcut": "lider patrona cevap verdi",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "lider 'yapamam / sen yap' DEMEDI",
+     "gecti": true,
+     "not": "todo/PLAN.md dosyasında 4 adımlık geliştirme planı hazırlandı; todo/index.html ve todo/app.js ile ma"
+    },
+    {
+     "olcut": "rapor ic konusma / KANIT satiri tasimiyor",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "gereksiz ret yok",
+     "gecti": true,
+     "not": "0 ret"
+    },
+    {
+     "olcut": "sohbet temiz (en fazla 4 mesaj)",
+     "gecti": true,
+     "not": "3 mesaj: insan/sohbet, ada/bildirim, lale/cevap"
+    }
+   ],
+   "durum": "gecti",
+   "sohbet": [
+    "insan/sohbet: Basit bir yapilacaklar (todo) web uygulamasi yap: todo/index.html ve todo/app.js. Madde ekle, tamamlandi isaretle ve sil calissin; veriler localStorage'da kalsin. Once todo/PLAN.md dosyasina 3-5 adiml",
+    "ada/bildirim: Gelistirilen Todo uygulamasinin calisma durumuna ait ekran goruntusu ektedir.",
+    "lale/cevap: todo/PLAN.md dosyasında 4 adımlık geliştirme planı hazırlandı; todo/index.html ve todo/app.js ile madde ekleme, tamamlandı olarak işaretleme ve silme özelliklerine sahip, verileri localStorage üzerind"
+   ],
+   "sureler": {
+    "lider": [
+     17
+    ],
+    "isci": [
+     97
+    ],
+    "inceleme": [
+     15
+    ]
+   },
+   "bedel": {
+    "lider": {
+     "tur": 1,
+     "jeton": 23904,
+     "maliyet_usd": 0.0,
+     "bilinmeyen_tur": 1,
+     "dokum": {
+      "girdi": 18960,
+      "cikti": 9406,
+      "onbellek_okuma": 0,
+      "onbellek_yazma": 0,
+      "onbellek_yazma_1sa": 0
+     }
+    },
+    "isci": {
+     "tur": 1,
+     "jeton": 195560,
+     "maliyet_usd": 0.0,
+     "bilinmeyen_tur": 1,
+     "dokum": {
+      "girdi": 186917,
+      "cikti": 11842,
+      "onbellek_okuma": 645143,
+      "onbellek_yazma": 0,
+      "onbellek_yazma_1sa": 0
+     }
+    },
+    "inceleme": {
+     "tur": 1,
+     "jeton": 56320,
+     "maliyet_usd": 0.0,
+     "bilinmeyen_tur": 1,
+     "dokum": {
+      "girdi": 54903,
+      "cikti": 2536,
+      "onbellek_okuma": 16290,
+      "onbellek_yazma": 0,
+      "onbellek_yazma_1sa": 0
+     }
+    }
+   },
+   "sure_sn": 135.7
+  },
+  {
+   "no": "G19",
+   "ad": "Takip istekleri: 'onu da ekle', 'sirala'",
+   "motor": "gemini",
+   "kip": "gercek",
+   "mesaj": "notlar/alisveris.md dosyasina madde madde sut, ekmek ve yumurta yaz.",
+   "olcutler": [
+    {
+     "olcut": "takip: 5 madde de dosyada (ilk 3 + 'de ekle' 2)",
+     "gecti": false,
+     "not": "['ekmek', 'sut', 'yumurta']"
+    },
+    {
+     "olcut": "takip: 'alfabetik sirala' uygulandi",
+     "gecti": false,
+     "not": "['ekmek', 'sut', 'yumurta']"
+    },
+    {
+     "olcut": "takip: ayni dosya, yeni dosya acilmadi",
+     "gecti": true,
+     "not": "['alisveris.md']"
+    }
+   ],
+   "kalite": [
+    {
+     "olcut": "lider patrona cevap verdi",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "lider 'yapamam / sen yap' DEMEDI",
+     "gecti": true,
+     "not": "Alışveriş listesindeki maddeler alfabetik olarak sıralandı (ekmek, süt, yumurta). Güncel liste notla"
+    },
+    {
+     "olcut": "rapor ic konusma / KANIT satiri tasimiyor",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "gereksiz ret yok",
+     "gecti": true,
+     "not": "0 ret"
+    }
+   ],
+   "durum": "kaldi",
+   "sohbet": [
+    "insan/sohbet: notlar/alisveris.md dosyasina madde madde sut, ekmek ve yumurta yaz.",
+    "lale/cevap: Alisveris listeniz notlar/alisveris.md dosyasina sut, ekmek ve yumurta maddeleri eklenerek hazirlandi.",
+    "insan/sohbet: peynir ve zeytini de ekle",
+    "lale/cevap: (Lider bir sey yazmadi.)",
+    "insan/sohbet: simdi listeyi alfabetik sirala",
+    "lale/cevap: Alışveriş listesindeki maddeler alfabetik olarak sıralandı (ekmek, süt, yumurta). Güncel liste notlar/alisveris.md dosyasına kaydedildi."
+   ],
+   "sureler": {
+    "lider": [
+     18,
+     16,
+     56,
+     18
+    ],
+    "isci": [
+     29,
+     22
+    ],
+    "inceleme": [
+     10,
+     10
+    ]
+   },
+   "bedel": {
+    "lider": {
+     "tur": 4,
+     "jeton": 157081,
+     "maliyet_usd": 0.0,
+     "bilinmeyen_tur": 4,
+     "dokum": {
+      "girdi": 143118,
+      "cikti": 25845,
+      "onbellek_okuma": 207596,
+      "onbellek_yazma": 0,
+      "onbellek_yazma_1sa": 0
+     }
+    },
+    "isci": {
+     "tur": 2,
+     "jeton": 106340,
+     "maliyet_usd": 0.0,
+     "bilinmeyen_tur": 2,
+     "dokum": {
+      "girdi": 104916,
+      "cikti": 1424,
+      "onbellek_okuma": 126021,
+      "onbellek_yazma": 0,
+      "onbellek_yazma_1sa": 0
+     }
+    },
+    "inceleme": {
+     "tur": 2,
+     "jeton": 64594,
+     "maliyet_usd": 0.0,
+     "bilinmeyen_tur": 2,
+     "dokum": {
+      "girdi": 61773,
+      "cikti": 5392,
+      "onbellek_okuma": 0,
+      "onbellek_yazma": 0,
+      "onbellek_yazma_1sa": 0
+     }
+    }
+   },
+   "sure_sn": 192.9
+  },
+  {
+   "no": "G20",
+   "ad": "Sohbetten zamanlama (yarin 09:30)",
+   "motor": "gemini",
+   "kip": "gercek",
+   "mesaj": "yarin sabah 09:30'da bana gunaydin de ve o gunun tarihini soyle.",
+   "olcutler": [
+    {
+     "olcut": "tek zamanli is kaydedildi",
+     "gecti": true,
+     "not": "[{'id': '242f1bc3907b4abcb9cfc04677ef2a3e', 'proje_id': '514202e1b1414c1d9572a70c937c9a57', 'no': 1, 'metin': 'bana gunaydin de ve o gunun tarihini soyle', 'lider_ad': 'lale', 'kural': {'tur': 'bir_kez', 'tarih': '2026-10-05', 'saat': '09:30'}, 'sonraki': '2026-10-05T06:30:00+00:00', 'etkin': 1, 'son_calisma': None, 'kaynak': 'insan', 'olusturuldu': '2026-10-04T20:10:40+00:00', 'ne_zaman': '5 Ekim 09:30 (bir kez)', 'sonraki_metin': 'yarın 09:30'}]"
+    },
+    {
+     "olcut": "vakit dogru: yarin 09:30, bir kez",
+     "gecti": true,
+     "not": "{'tur': 'bir_kez', 'tarih': '2026-10-05', 'saat': '09:30'}"
+    },
+    {
+     "olcut": "is SIMDI acilmadi",
+     "gecti": true,
+     "not": "0"
+    }
+   ],
+   "kalite": [
+    {
+     "olcut": "lider patrona cevap verdi",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "lider 'yapamam / sen yap' DEMEDI",
+     "gecti": true,
+     "not": "Tamam, zamanladım (Z1): 5 Ekim 09:30 (bir kez) — «bana gunaydin de ve o gunun tarihini soyle». İlk ç"
+    },
+    {
+     "olcut": "rapor ic konusma / KANIT satiri tasimiyor",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "gereksiz ret yok",
+     "gecti": true,
+     "not": "0 ret"
+    },
+    {
+     "olcut": "sohbet temiz (en fazla 4 mesaj)",
+     "gecti": true,
+     "not": "2 mesaj: insan/sohbet, lale/cevap"
+    }
+   ],
+   "durum": "gecti",
+   "sohbet": [
+    "insan/sohbet: yarin sabah 09:30'da bana gunaydin de ve o gunun tarihini soyle.",
+    "lale/cevap: Tamam, zamanladım (Z1): 5 Ekim 09:30 (bir kez) — «bana gunaydin de ve o gunun tarihini soyle». İlk çalışma: yarın 09:30. Vakti gelince sıraya girer, sonucu buraya yazarım. İptal için 'Z1'yi iptal et' "
+   ],
+   "sureler": {
+    "lider": [
+     10
+    ]
+   },
+   "bedel": {
+    "lider": {
+     "tur": 1,
+     "jeton": 21451,
+     "maliyet_usd": 0.0,
+     "bilinmeyen_tur": 1,
+     "dokum": {
+      "girdi": 18820,
+      "cikti": 5131,
+      "onbellek_okuma": 0,
+      "onbellek_yazma": 0,
+      "onbellek_yazma_1sa": 0
+     }
+    }
+   },
+   "sure_sn": 11.1
+  }
+ ]
+}
