@@ -230,7 +230,12 @@ class Orkestra:
             yetki = ("dosya YAZAMAZ, yalnizca dusunur ve metin uretir"
                      if a["tur"] == "kafa" else "dosya yazar, komut kosturur")
             dersler = self.ofis.kadro.dersler(a["ad"])
-            satir = f"- **{a['ad']}** ({a['meslek']}) — {yetki}"
+            # MOTOR GORUNUR (04.10.2026, patron karari: her ajanin sabit
+            # motoru var, lider isi dogru AJANA verir) -- lider kimin hangi
+            # motor/modelle calistigini bilmeden dagitamaz.
+            _mm = "/".join(x for x in (a.get("motor") or "", a.get("model") or "") if x)
+            satir = (f"- **{a['ad']}** ({a['meslek']}"
+                     + (f", {_mm}" if _mm else "") + f") — {yetki}")
             if dersler:
                 satir += f" · gecmis notu: {dersler[0]['ders']}"
             satirlar.append(satir)

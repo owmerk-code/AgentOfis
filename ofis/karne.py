@@ -33,7 +33,13 @@ import json
 import threading
 from datetime import datetime, timezone
 
-#: Ayar anahtari: "karne" (varsayilan) ya da "ajan" (eski hal: ajanin kendi motoru).
+#: Ayar anahtari: "ajan" (VARSAYILAN: ajanin kendi motoru) ya da "karne".
+#:
+#: PATRON KARARI (04.10.2026): "Murat gibi yapalim, artik tartismayalim."
+#: Her ajanin sabit motoru/modeli var; lider isi dogru AJANA verir; motor
+#: kendiliginden DEGISMEZ (sistem stabil, surpriz yok). Karne olcmeye ve
+#: kapanan isi yazmaya devam eder; otomatik secim yalniz bilerek acilirsa
+#: (Ayarlar / gercek set `--motor karma`).
 AYAR = "motor_secimi"
 #: Capraz kontrol ayari: isi yapan motorun TERSI inceler ("acik"/"kapali").
 CAPRAZ_AYAR = "capraz_inceleme"
@@ -53,7 +59,7 @@ def _dosya():
 
 
 def secim_acik_mi(db, proje_id: str) -> bool:
-    return (db.ayar_oku(proje_id, AYAR, "karne") or "karne") != "ajan"
+    return (db.ayar_oku(proje_id, AYAR, "ajan") or "ajan") == "karne"
 
 
 def capraz_acik_mi(db, proje_id: str) -> bool:

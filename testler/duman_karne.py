@@ -144,6 +144,9 @@ def is_ac(ad, zorluk="kolay"):
 
 
 koltuk = Koltuk(ofis, motor_fabrikasi=sahte_fab)
+sina("VARSAYILAN: otomatik secim KAPALI (patron karari 04.10)",
+     not karne.secim_acik_mi(db, pid) and ayarlar.oku(ofis)["calisma"]["motor_secimi"] == "ajan")
+ayarlar.yaz(ofis, "motor_secimi", "karne")                  # bu bolum bilerek acar
 g = is_ac("k1")
 acilan.clear()
 koltuk.kos(g["no"], "cinar")

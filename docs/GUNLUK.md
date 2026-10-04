@@ -14421,3 +14421,7 @@ Claude payı karma $5,23 / Claude $6,27; karma 41 dk / 38 dk.
 (yalnız Claude'a göre %40 az); Codex 5 sa +26 puan, haftalık +4 puan (Plus).
 Kalan G16 → düzeltme 4 (sonra yapıldı). Tam takım 4219/4219 (65 dosya);
 mutasyon 8/8 (düzeltme 1–3).
+
+## 04.10.2026 — motor kararı: ajanın sabit motoru (patron: "Murat gibi yapalım")
+
+Her ajanın işe alınırken seçilen motoru/modeli var; motor kendiliğinden DEĞİŞMEZ (`karne.AYAR` varsayılanı artık "ajan"; karne ölçmeye ve kapanan işi yazmaya devam eder, otomatik seçim yalnız Ayarlar ya da `gercek_set --motor karma` ile). Lider planlamada her ajanın motor/modelini görür (`plan_metni`). Görsel/video sistem aracıdır (motora bağlı değil). Çapraz kontrol açık kalır. Gemini: Gemini CLI 18.06.2026dan beri Pro aboneliğe kapalı; yerine Antigravity CLI (`agy`) ölçüldü: Pro tanınıyor, `-p --output-format json` çalışıyor, izinsiz komut kendiliğinden reddediliyor, ayrı ev (USERPROFILE) çalışıyor, PreToolUse kancası var ama headless `allow` yok sayılıyor (Google hata #1053). Bağlantı büyük iş setinden sonra. Araştırma `docs/arastirma/google-gemini-antigravity.md`. Tam takım 4220/4220.
