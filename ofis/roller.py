@@ -86,6 +86,9 @@ KADEME_MODEL = {
     # yalniz defteri yazar; bu tablo yeni ofisin baslangicidir.
     "codex": {"hizli": "gpt-6-luna", "standart": "gpt-6.1-sol",
               "guclu": "gpt-6.1-sol"},
+    # 04.10.2026: Antigravity (`agy models` ciktisi). Modelin efor eki adinda.
+    "gemini": {"hizli": "gemini-3.8-flash-low", "standart": "gemini-3.8-flash-medium",
+               "guclu": "gemini-3.1-pro-high"},
     # Sahte motor jeton yakmaz; kademe ayrimi anlamsiz ama SESSIZ
     # kalmamali -- eksik anahtar KeyError verirdi, testte gurultu olur.
     "sahte": {"hizli": "", "standart": "", "guclu": ""},

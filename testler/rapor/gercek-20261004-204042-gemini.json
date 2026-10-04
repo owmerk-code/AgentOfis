@@ -1,0 +1,332 @@
+{
+ "ayar": {
+  "motor": "gemini",
+  "kip": "gercek terminal",
+  "modeller": {
+   "lider": "gemini-3.8-flash-medium",
+   "isci": "gemini-3.8-flash-low"
+  },
+  "basla": "2026-10-04 20:33",
+  "sure_dk": 7.5,
+  "kota_farki": {
+   "gemini": null
+  }
+ },
+ "sonuclar": [
+  {
+   "no": "G03",
+   "ad": "Kod + test yaz",
+   "motor": "gemini",
+   "kip": "gercek",
+   "mesaj": "hesap.py adinda bir dosya yaz: topla(a, b) ve carp(a, b) fonksiyonlari olsun. pytest testlerini de yaz ve calistir.",
+   "olcutler": [
+    {
+     "olcut": "hesap.py calisiyor: topla(2,3)=5, carp(4,5)=20",
+     "gecti": true,
+     "not": "5 20"
+    },
+    {
+     "olcut": "pytest testi yazildi ve geciyor",
+     "gecti": true,
+     "not": "2 passed in 0.02s"
+    }
+   ],
+   "kalite": [
+    {
+     "olcut": "lider patrona cevap verdi",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "lider 'yapamam / sen yap' DEMEDI",
+     "gecti": true,
+     "not": "hesap.py dosyasında topla ve carp fonksiyonları oluşturuldu; test_hesap.py dosyasındaki testler pyte"
+    },
+    {
+     "olcut": "rapor ic konusma / KANIT satiri tasimiyor",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "gereksiz ret yok",
+     "gecti": true,
+     "not": "0 ret"
+    },
+    {
+     "olcut": "sohbet temiz (en fazla 4 mesaj)",
+     "gecti": true,
+     "not": "2 mesaj: insan/sohbet, lale/cevap"
+    }
+   ],
+   "durum": "gecti",
+   "sohbet": [
+    "insan/sohbet: hesap.py adinda bir dosya yaz: topla(a, b) ve carp(a, b) fonksiyonlari olsun. pytest testlerini de yaz ve calistir.",
+    "lale/cevap: hesap.py dosyasında topla ve carp fonksiyonları oluşturuldu; test_hesap.py dosyasındaki testler pytest ile başarıyla çalıştırıldı ve tüm testler geçti."
+   ],
+   "sureler": {
+    "lider": [
+     15
+    ],
+    "isci": [
+     27
+    ],
+    "inceleme": [
+     14
+    ]
+   },
+   "bedel": {
+    "lider": {
+     "tur": 1,
+     "jeton": 21968,
+     "maliyet_usd": 0.0,
+     "bilinmeyen_tur": 1,
+     "dokum": {
+      "girdi": 18847,
+      "cikti": 5768,
+      "onbellek_okuma": 0,
+      "onbellek_yazma": 0,
+      "onbellek_yazma_1sa": 0
+     }
+    },
+    "isci": {
+     "tur": 1,
+     "jeton": 40018,
+     "maliyet_usd": 0.0,
+     "bilinmeyen_tur": 1,
+     "dokum": {
+      "girdi": 39031,
+      "cikti": 987,
+      "onbellek_okuma": 65049,
+      "onbellek_yazma": 0,
+      "onbellek_yazma_1sa": 0
+     }
+    },
+    "inceleme": {
+     "tur": 1,
+     "jeton": 49785,
+     "maliyet_usd": 0.0,
+     "bilinmeyen_tur": 1,
+     "dokum": {
+      "girdi": 48336,
+      "cikti": 2694,
+      "onbellek_okuma": 0,
+      "onbellek_yazma": 0,
+      "onbellek_yazma_1sa": 0
+     }
+    }
+   },
+   "sure_sn": 66.4
+  },
+  {
+   "no": "G05",
+   "ad": "Veri oku, rapor yaz, sonucu soyle",
+   "motor": "gemini",
+   "kip": "gercek",
+   "mesaj": "satislar.csv dosyasindaki toplam ciroyu (adet x birim fiyat) ve en cok satilan urunu bul; rapor.md dosyasina yaz, sonucu bana da soyle.",
+   "olcutler": [
+    {
+     "olcut": "rapor.md toplam ciroyu dogru yaziyor (11185)",
+     "gecti": true,
+     "not": "# Satış Analiz Raporu\n\nBu rapor `satislar.csv` dosyasındaki verilerin analizi sonucu oluşturulmuştur.\n\n## Özet Sonuçlar\n\n- **Toplam Ciro:** 11.185 TL\n- **En Çok"
+    },
+    {
+     "olcut": "rapor.md en cok satani dogru yaziyor (Cay)",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "lider sonucu patrona da soyledi",
+     "gecti": true,
+     "not": "satislar.csv verilerine gore toplam ciro 11.185 tl ve adet bazinda en cok satilan urun 120 adet ile cay'dir. detayli analiz rapor.md dosyasina yazilmistir."
+    }
+   ],
+   "kalite": [
+    {
+     "olcut": "lider patrona cevap verdi",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "lider 'yapamam / sen yap' DEMEDI",
+     "gecti": true,
+     "not": "satislar.csv verilerine göre toplam ciro 11.185 TL ve adet bazında en çok satılan ürün 120 adet ile "
+    },
+    {
+     "olcut": "rapor ic konusma / KANIT satiri tasimiyor",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "gereksiz ret yok",
+     "gecti": true,
+     "not": "0 ret"
+    },
+    {
+     "olcut": "sohbet temiz (en fazla 4 mesaj)",
+     "gecti": true,
+     "not": "3 mesaj: insan/sohbet, cem/bildirim, lale/cevap"
+    }
+   ],
+   "durum": "gecti",
+   "sohbet": [
+    "insan/sohbet: satislar.csv dosyasindaki toplam ciroyu (adet x birim fiyat) ve en cok satilan urunu bul; rapor.md dosyasina yaz, sonucu bana da soyle.",
+    "cem/bildirim: satislar.csv analiz edildi: Toplam ciro 11.185 TL, en cok satilan urun 120 adet ile Cay olarak tespit edildi ve rapor.md dosyasina yazildi.",
+    "lale/cevap: satislar.csv verilerine göre toplam ciro 11.185 TL ve adet bazında en çok satılan ürün 120 adet ile Çay'dır. Detaylı analiz rapor.md dosyasına yazılmıştır."
+   ],
+   "sureler": {
+    "lider": [
+     37,
+     23
+    ],
+    "isci": [
+     48
+    ],
+    "inceleme": [
+     12
+    ]
+   },
+   "bedel": {
+    "lider": {
+     "tur": 2,
+     "jeton": 117964,
+     "maliyet_usd": 0.0,
+     "bilinmeyen_tur": 2,
+     "dokum": {
+      "girdi": 109713,
+      "cikti": 15180,
+      "onbellek_okuma": 93671,
+      "onbellek_yazma": 0,
+      "onbellek_yazma_1sa": 0
+     }
+    },
+    "isci": {
+     "tur": 1,
+     "jeton": 58464,
+     "maliyet_usd": 0.0,
+     "bilinmeyen_tur": 1,
+     "dokum": {
+      "girdi": 56670,
+      "cikti": 1794,
+      "onbellek_okuma": 146228,
+      "onbellek_yazma": 0,
+      "onbellek_yazma_1sa": 0
+     }
+    },
+    "inceleme": {
+     "tur": 1,
+     "jeton": 37703,
+     "maliyet_usd": 0.0,
+     "bilinmeyen_tur": 1,
+     "dokum": {
+      "girdi": 36158,
+      "cikti": 2884,
+      "onbellek_okuma": 12208,
+      "onbellek_yazma": 0,
+      "onbellek_yazma_1sa": 0
+     }
+    }
+   },
+   "sure_sn": 130.3
+  },
+  {
+   "no": "G11",
+   "ad": "Gorsel uret, sohbete gonder",
+   "motor": "gemini",
+   "kip": "gercek",
+   "mesaj": "Kahve Duragi adli kafe icin sade bir logo gorseli uret ve bana gonder.",
+   "olcutler": [
+    {
+     "olcut": "sohbete uretilmis gorsel geldi",
+     "gecti": true,
+     "not": "['.ofis/ekler/kahve_duragi_logo.png']"
+    }
+   ],
+   "kalite": [
+    {
+     "olcut": "lider patrona cevap verdi",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "lider 'yapamam / sen yap' DEMEDI",
+     "gecti": true,
+     "not": "Kahve Durağı kafe için sade ve şık logo tasarımı tamamlanarak görsel hazırlandı ve ekte iletildi (.o"
+    },
+    {
+     "olcut": "rapor ic konusma / KANIT satiri tasimiyor",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "gereksiz ret yok",
+     "gecti": true,
+     "not": "0 ret"
+    },
+    {
+     "olcut": "sohbet temiz (en fazla 4 mesaj)",
+     "gecti": true,
+     "not": "3 mesaj: insan/sohbet, ada/bildirim, lale/cevap"
+    }
+   ],
+   "durum": "gecti",
+   "sohbet": [
+    "insan/sohbet: Kahve Duragi adli kafe icin sade bir logo gorseli uret ve bana gonder.",
+    "ada/bildirim: Kahve Durağı kafe için sade ve şık logo görseli hazırlandı, ekte iletiyorum.",
+    "lale/cevap: Kahve Durağı kafe için sade ve şık logo tasarımı tamamlanarak görsel hazırlandı ve ekte iletildi (.ofis/ekler/kahve_duragi_logo.png)."
+   ],
+   "sureler": {
+    "lider": [
+     40
+    ],
+    "isci": [
+     179
+    ],
+    "inceleme": [
+     21
+    ]
+   },
+   "bedel": {
+    "lider": {
+     "tur": 1,
+     "jeton": 23770,
+     "maliyet_usd": 0.0,
+     "bilinmeyen_tur": 1,
+     "dokum": {
+      "girdi": 18804,
+      "cikti": 9554,
+      "onbellek_okuma": 0,
+      "onbellek_yazma": 0,
+      "onbellek_yazma_1sa": 0
+     }
+    },
+    "isci": {
+     "tur": 1,
+     "jeton": 90831,
+     "maliyet_usd": 0.0,
+     "bilinmeyen_tur": 1,
+     "dokum": {
+      "girdi": 88177,
+      "cikti": 4401,
+      "onbellek_okuma": 60970,
+      "onbellek_yazma": 0,
+      "onbellek_yazma_1sa": 0
+     }
+    },
+    "inceleme": {
+     "tur": 1,
+     "jeton": 39274,
+     "maliyet_usd": 0.0,
+     "bilinmeyen_tur": 1,
+     "dokum": {
+      "girdi": 36536,
+      "cikti": 5235,
+      "onbellek_okuma": 12210,
+      "onbellek_yazma": 0,
+      "onbellek_yazma_1sa": 0
+     }
+    }
+   },
+   "sure_sn": 252.7
+  }
+ ]
+}

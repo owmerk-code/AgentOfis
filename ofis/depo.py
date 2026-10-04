@@ -35,6 +35,8 @@ import os
 import re
 import sqlite3
 import subprocess
+
+from .surec import PENCERE_YOK
 import tempfile
 from pathlib import Path
 from .yollar import OFIS_EVI
@@ -81,8 +83,12 @@ def ayar_yaz(a: dict) -> None:
 
 
 def _git(kok: Path, *arg, zaman_asimi: float = 120) -> subprocess.CompletedProcess:
+    # stdin kapali + GIT_TERMINAL_PROMPT=0: sifre isteyen push pencerede
+    # BEKLEMEZ, hata verip biter.
     return subprocess.run(["git", *arg], cwd=kok, capture_output=True, text=True,
-                          encoding="utf-8", errors="replace", timeout=zaman_asimi)
+                          encoding="utf-8", errors="replace", timeout=zaman_asimi,
+                          stdin=subprocess.DEVNULL, creationflags=PENCERE_YOK,
+                          env=dict(os.environ, GIT_TERMINAL_PROMPT="0"))
 
 
 # ------------------------------------------------------------ defter -> metin
@@ -261,7 +267,8 @@ def gorunurluk_gh(uzak: str) -> str:
         return ""
     try:
         r = subprocess.run(["gh", "repo", "view", m.group(1), "--json", "visibility"],
-                           capture_output=True, text=True, timeout=60)
+                           capture_output=True, text=True, timeout=60,
+                           stdin=subprocess.DEVNULL, creationflags=PENCERE_YOK)
         return json.loads(r.stdout).get("visibility", "") if r.returncode == 0 else ""
     except (OSError, ValueError, subprocess.TimeoutExpired):
         return ""

@@ -1155,7 +1155,7 @@ class CodexMotoru(Motor):
             p = subprocess.Popen([self.calistirilabilir, "app-server"],
                                  stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                                  stderr=subprocess.DEVNULL, text=True, encoding="utf-8",
-                                 errors="replace", env=ortam)
+                                 errors="replace", env=ortam, creationflags=_PENCERE_YOK)
         except OSError:
             return None
         sonuc = None

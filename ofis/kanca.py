@@ -38,6 +38,62 @@ def _cevap(karar: str, sebep: str) -> str:
         "permissionDecisionReason": sebep}}, ensure_ascii=False)
 
 
+#: ANTIGRAVITY (04.10.2026, `agy` 1.x, olculdu). Kanca girdisi
+#: `{"toolCall": {"name", "args"}, "conversationId", ...}`; `allow` headless
+#: kipte YOK SAYILIYOR (Google hatasi #1053), yalniz RED calisiyor: cikis 2 +
+#: gerekce STDERR'e (olculdu: model gerekceyi kelimesi kelimesine goruyor;
+#: cikis 0 + JSON "failed to unmarshal" verdi). Izin = sessiz cikis 0, komut
+#: `permissions.allow` ile gecer.
+#:
+#: Agy'nin KENDI tarayicisi KAPALI: tarayici tek, gomulu (patron karari).
+AGY_KAPALI_ONEK = ("browser_",)
+AGY_KAPALI = {
+    "open_browser_url", "read_browser_page", "list_browser_pages",
+    "click_browser_pixel", "capture_browser_screenshot",
+    "capture_browser_console_logs", "execute_browser_javascript",
+    # Agy'nin kendi zamanlayicisi / is akisi / bilgi silme / magaza: sistemin
+    # kendi zamanlayicisi ve hafizasi var; insana soran araclar headless'ta asili kalir.
+    "schedule", "run_workflow", "delete_knowledge", "search_marketplace",
+    "list_plugin_accounts", "manage_inbox", "ask_permission", "ask_custom_permission",
+}
+#: Zararsiz: okuma, arama, gorsel uretimi, alt ajan, bekleme.
+AGY_SERBEST = {
+    "view_file", "list_dir", "find_by_name", "grep_search", "search_web",
+    "read_url_content", "read_resource", "list_resources", "list_permissions",
+    "command_status", "wait", "wait_5_seconds", "finish", "generate_image",
+    "invoke_subagent", "define_subagent", "manage_subagents", "send_message",
+    "manage_task", "ask_question",
+}
+#: Yerlesik dosya yazma araclari (Claude'da Write/Edit gibi: serbest, disk olculur).
+AGY_YAZMA = {"write_to_file", "replace_file_content", "multi_replace_file_content",
+             "notebook_edit", "sed_file"}
+#: Kabuk: kapinin kabuk kurallarindan gecer.
+AGY_KABUK = {"run_command": "CommandLine", "send_command_input": "Input",
+             "notebook_execution": "Code"}
+
+
+def agy_cevir(girdi: dict):
+    """Agy kanca girdisi -> (karar, sebep) ya da ofisin kapisina sorulacak
+    (arac_adi, arac_girdisi). Karar: 'izin' | 'ret' | None (kapiya sor)."""
+    tc = girdi.get("toolCall") if isinstance(girdi.get("toolCall"), dict) else {}
+    ad = str(tc.get("name") or "")
+    arg = tc.get("args") if isinstance(tc.get("args"), dict) else {}
+    if ad in AGY_KAPALI or ad.startswith(AGY_KAPALI_ONEK):
+        return ("ret", f"'{ad}' bu sistemde KAPALI. Tarayici icin yalniz `tarayici` "
+                       "MCP araclarini (gomulu tarayici) kullan; zamanlama, bilgi ve "
+                       "onay icin sistemin `ofis` araclarini kullan."), None
+    if ad in AGY_SERBEST:
+        return ("izin", ""), None
+    if ad in AGY_YAZMA:
+        return None, ("Write", {"file_path": str(arg.get("TargetFile") or arg.get("AbsolutePath") or "")})
+    if ad in AGY_KABUK:
+        return None, ("Bash", {"command": str(arg.get(AGY_KABUK[ad]) or "")})
+    if ad == "call_mcp_tool":
+        args = arg.get("Arguments") if isinstance(arg.get("Arguments"), dict) else {}
+        return None, (f"mcp__{arg.get('ServerName') or ''}__{arg.get('ToolName') or ''}", args)
+    return None, (ad, arg)
+
+
 def karar_ver(girdi: dict) -> str:
     """Kanca girdisi -> CLI cevabi (JSON metni). Hic istisna atmaz."""
     try:
@@ -81,6 +137,21 @@ def main() -> None:
         girdi = {}
     if not isinstance(girdi, dict):
         girdi = {}
+    if "--agy" in sys.argv:
+        try:
+            hazir, sor = agy_cevir(girdi)
+            if hazir is None:
+                c = json.loads(karar_ver({"tool_name": sor[0], "tool_input": sor[1]}))
+                o = c["hookSpecificOutput"]
+                hazir = (("izin", "") if o["permissionDecision"] == "allow"
+                         else ("ret", o.get("permissionDecisionReason") or "ofis kapisi durdurdu"))
+        except Exception as exc:                 # noqa: BLE001 -- kapali kal
+            hazir = ("ret", f"Ofis kapisi karar veremedi ({exc}). Bu eylem YAPILMADI.")
+        if hazir[0] != "izin":
+            sys.stderr.write(hazir[1])
+            sys.stderr.flush()
+            sys.exit(2)
+        return
     cevap = karar_ver(girdi)
     # CODEX `allow` TANIMIYOR. OLCULDU (29.09): "PreToolUse hook returned
     # unsupported permissionDecision:allow" -> kanca BASARISIZ sayilir ve

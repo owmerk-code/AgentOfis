@@ -44,7 +44,8 @@ def sina(baslik: str, kosul: bool, not_: str = "") -> None:
 
 print("== karne duman testi ==\n")
 
-HARITA = roller.kademe_haritasi()
+# Secim KURALI iki motorla sinanir (gemini 04.10'da eklendi; kural motor sayisindan bagimsiz).
+HARITA = {m: v for m, v in roller.kademe_haritasi().items() if m != "gemini"}
 
 
 class _M:
@@ -127,6 +128,9 @@ acilan = []          # KOSAN turlar: (motor, model) -- fabrika musaitlik icin de
 
 def _kayitli(ad, cevap, liste):
     class K(SahteMotor):
+        def musait_mi(self):              # koltuk bolumu iki motorla belirli kalsin
+            return ad != "gemini"
+
         def tur_kos(self, metin, **ayar):
             liste.append((ad, ayar.get("model") or ""))
             return super().tur_kos(metin, **ayar)

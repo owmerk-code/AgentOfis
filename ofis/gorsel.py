@@ -951,5 +951,11 @@ def lider_blogu() -> str:
         "- `codex` gorseli ABONELIKTEN uretir (fatura yok) ama Codex",
         "  kotasini gorselsiz bir turdan ~3-5 kat hizli yer ve o kota",
         "  codex'li ajanlarla ORTAK. Toplu gorsel isini buna gore planla.",
+        "",
+        # FLOW (04.10.2026, patron karari): abonelikte VIDEO icin programatik
+        # yol yok (Antigravity'de video araci yok, olculdu); patron gomulu
+        # tarayiciya Flow hesabiyla girdi ve videonun ajanca uretilmesini istedi.
+        "VIDEO: gomulu tarayicida Google Flow (abonelik kredisi). Isi `video`",
+        "  rolune ya da tarayicili ajana ver; `flow-video` becerisi. Flow yoksa `video_iste`.",
     ]
     return "\n".join(satir)

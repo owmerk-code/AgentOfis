@@ -25,10 +25,11 @@ from .tip import (
 from .claude import ClaudeMotoru
 from .codex import CodexMotoru
 from .sahte import SahteMotor
+from .antigravity import AntigravityMotoru
 
 __all__ = [
     "Motor", "MotorOlayi", "MotorHatasi", "MotorYokHatasi", "MotorLimitHatasi",
-    "OLAY_TURLERI", "ClaudeMotoru", "CodexMotoru", "SahteMotor",
+    "OLAY_TURLERI", "ClaudeMotoru", "CodexMotoru", "SahteMotor", "AntigravityMotoru",
     "motor_ac", "motor_kaydet", "musait_motorlar", "kayitli_motorlar",
 ]
 
@@ -51,6 +52,10 @@ _DEFTER = {
     # kullanilmayacak bir motoru "hazir" gostermek yanlis gosteren
     # gostergedir.
     SahteMotor.ad: SahteMotor,
+    # GEMINI GERI TAKILDI (04.10.2026) -- ama Gemini CLI DEGIL: o arac
+    # 18.06.2026'dan beri Google AI Pro'ya kapali. Yerine Antigravity CLI
+    # (`agy`); olculdu: Pro taniniyor, akis, kanca (yalniz red), MCP, ayri ev.
+    AntigravityMotoru.ad: AntigravityMotoru,
 }
 
 

@@ -61,6 +61,8 @@ Ve aciklik **ISIN** ozelligidir, ajanin degil: is biter, aciklik biter.
 from __future__ import annotations
 
 import subprocess
+
+from .surec import PENCERE_YOK
 import threading
 import os
 import json
@@ -209,7 +211,8 @@ def _olc(zaman_asimi: int = 90) -> dict:
     try:
         p = subprocess.run(["claude", "mcp", "list"], capture_output=True,
                            text=True, encoding="utf-8", errors="replace",
-                           timeout=zaman_asimi, shell=True)
+                           timeout=zaman_asimi, shell=True, stdin=subprocess.DEVNULL,
+                           creationflags=PENCERE_YOK)
     except Exception:
         return {}
     sonuc = {}

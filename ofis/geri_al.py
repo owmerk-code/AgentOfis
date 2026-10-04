@@ -43,6 +43,8 @@ import hashlib
 import os
 import shutil
 import subprocess
+
+from .surec import PENCERE_YOK
 import tempfile
 import threading
 import uuid
@@ -117,8 +119,11 @@ class Golge:
                  if not k.startswith("GIT_")}
         ortam["GIT_DIR"] = str(self.git_dir)
         ortam["GIT_WORK_TREE"] = str(self.kok)
+        ortam["GIT_TERMINAL_PROMPT"] = "0"
         r = subprocess.run(["git", *arg], cwd=self.kok, input=girdi,
-                           capture_output=True, env=ortam, timeout=300)
+                           stdin=None if girdi is not None else subprocess.DEVNULL,
+                           capture_output=True, env=ortam, timeout=300,
+                           creationflags=PENCERE_YOK)
         if metin:
             r.stdout = r.stdout.decode("utf-8", "replace")
         r.stderr = r.stderr.decode("utf-8", "replace")
@@ -134,7 +139,8 @@ class Golge:
         except OSError:
             pass              # temizlik isi DURDURMAZ
         r = subprocess.run(["git", "init", "-q", "--bare", str(self.git_dir)],
-                           capture_output=True, text=True)
+                           capture_output=True, text=True, stdin=subprocess.DEVNULL,
+                           creationflags=PENCERE_YOK)
         if r.returncode != 0:
             raise GeriAlHatasi(f"golge depo kurulamadi: {r.stderr.strip()}")
         for k, v in (("core.bare", "false"), ("core.autocrlf", "false"),

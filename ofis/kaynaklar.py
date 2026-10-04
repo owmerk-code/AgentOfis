@@ -41,6 +41,8 @@ import json
 import re
 import shutil
 import subprocess
+
+from .surec import PENCERE_YOK
 import time
 from pathlib import Path
 
@@ -197,7 +199,8 @@ def codex_eklentileri(codex_evi: str = "", *, taze: bool = False) -> list:
         ortam = dict(os.environ, CODEX_HOME=str(codex_evi))
     try:
         p = subprocess.run([yol, "plugin", "list"], capture_output=True, timeout=60, env=ortam,
-                           encoding="utf-8", errors="replace")
+                           encoding="utf-8", errors="replace", stdin=subprocess.DEVNULL,
+                           creationflags=PENCERE_YOK)
     except (OSError, subprocess.SubprocessError):
         return []
     out = []
@@ -220,7 +223,8 @@ def codex_kur(ad: str, codex_evi: str, *, kaldir: bool = False) -> str:
     import os
     p = subprocess.run([yol, "plugin", "remove" if kaldir else "add", f"{ad}@{CODEX_PAZAR}"],
                        capture_output=True, timeout=180, encoding="utf-8", errors="replace",
-                       env=dict(os.environ, CODEX_HOME=str(codex_evi)), stdin=subprocess.DEVNULL)
+                       env=dict(os.environ, CODEX_HOME=str(codex_evi)), stdin=subprocess.DEVNULL,
+                       creationflags=PENCERE_YOK)
     _CODEX_ONBELLEK["an"] = 0.0
     if p.returncode != 0:
         raise KaynakHatasi((p.stderr or p.stdout or "codex hata verdi").strip()[-300:])

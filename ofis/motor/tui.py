@@ -37,6 +37,8 @@ from __future__ import annotations
 
 import json
 import subprocess
+
+from ..surec import PENCERE_YOK
 import sys
 import tempfile
 import threading
@@ -190,7 +192,8 @@ def kanca_oz_sinama(ortam: dict) -> str:
     try:
         r = subprocess.run([sys.executable, str(KANCA), "--oz-sinama"],
                            capture_output=True, text=True, encoding="utf-8",
-                           errors="replace", env=ortam, timeout=60)
+                           errors="replace", env=ortam, timeout=60,
+                           stdin=subprocess.DEVNULL, creationflags=PENCERE_YOK)
     except Exception as exc:                     # noqa: BLE001
         return f"kanca calistirilamadi: {exc}"
     if r.stdout.strip() != "TAMAM":

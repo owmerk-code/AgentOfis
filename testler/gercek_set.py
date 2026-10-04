@@ -79,6 +79,8 @@ MODELLER = {"claude": {"lider": "sonnet", "isci": "haiku"},
 #: KARMA (03.10.2026, `ofis/karne`): kadro Claude ayariyla kurulur; isin
 #: motorunu karne secer (Claude ya da Codex), inceleme CAPRAZ kosar.
 MODELLER["karma"] = dict(MODELLER["claude"])
+#: GEMINI (04.10.2026): Antigravity uzerinden, Google AI Pro limiti.
+MODELLER["gemini"] = {"lider": "gemini-3.8-flash-medium", "isci": "gemini-3.8-flash-low"}
 
 #: Kadro -- genel amacli bir ofisin cekirdegi.
 KADRO = (("cem", "backend"), ("ada", "arayuz"), ("su", "arastirma"))
@@ -876,7 +878,7 @@ def rapor_yaz(sonuclar: list, ayar: dict) -> Path:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--motor", default="claude", choices=("claude", "codex", "karma"))
+    ap.add_argument("--motor", default="claude", choices=("claude", "codex", "karma", "gemini"))
     ap.add_argument("--is", dest="isler", action="append", default=[])
     ap.add_argument("--kuru", action="store_true", help="$0: dogrulayicilarin kendisini sina")
     ap.add_argument("--sakla", action="store_true", help="kalan isin klasorunu birak")

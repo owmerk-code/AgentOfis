@@ -31,6 +31,8 @@ from __future__ import annotations
 import re
 import shutil
 import subprocess
+
+from .surec import PENCERE_YOK
 import time
 
 #: claude.ai baglayicilari icin TEK cumle -- kapinin OLCULEN kurali
@@ -69,7 +71,8 @@ CLI_ONBELLEK_SN = 300
 
 def _kos(argv, zaman_asimi=20):
     try:
-        p = subprocess.run(argv, capture_output=True, timeout=zaman_asimi)
+        p = subprocess.run(argv, capture_output=True, timeout=zaman_asimi,
+                           stdin=subprocess.DEVNULL, creationflags=PENCERE_YOK)
     except (OSError, subprocess.SubprocessError) as exc:
         return None, str(exc)
     cikti = (p.stdout or b"") + b"\n" + (p.stderr or b"")

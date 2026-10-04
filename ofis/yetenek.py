@@ -49,6 +49,8 @@ from __future__ import annotations
 import shutil
 import subprocess
 
+from .surec import PENCERE_YOK
+
 #: Durumlar. Uc hal + "olculemedi" -- dorduncusu olmadan, calismayan
 #: bir olcum "yok" gibi gorunur ve insan var olmayan bir sorunu kovalar.
 HAZIR = "hazir"
@@ -88,6 +90,7 @@ def _cliler() -> list:
             try:
                 p = subprocess.run([ad, "--version"], capture_output=True,
                                    text=True, timeout=15, shell=True,
+                                   stdin=subprocess.DEVNULL, creationflags=PENCERE_YOK,
                                    encoding="utf-8", errors="replace")
                 surum = (p.stdout or p.stderr or "").strip().splitlines()[:1]
                 surum = surum[0][:40] if surum else ""

@@ -19,7 +19,15 @@ ayri tutulur; cagiran bilmedigi sureci OLU SAYMAZ.
 from __future__ import annotations
 
 import os
+import subprocess
 import sys
+
+#: Alt surec KONSOL PENCERESI acmasin. Neden: agent sistemi konsolsuz kosarsa
+#: (gizli acilis, ileride masaustu uygulamasi; ajanin motoru da konsolsuz)
+#: her `git`/`npm`/`claude --version` cagrisi ekrana bos bir pencere acar --
+#: patron oyun oynarken `git.exe` penceresi one geldi (04.10). Kural TEK yerde;
+#: `duman_pencere.py` ayarsiz cagriyi yakalar.
+PENCERE_YOK = getattr(subprocess, "CREATE_NO_WINDOW", 0)
 
 _STILL_ACTIVE = 259
 

@@ -70,6 +70,8 @@ import json
 import os
 import re
 import subprocess
+
+from .surec import PENCERE_YOK
 import tempfile
 from pathlib import Path
 
@@ -134,7 +136,8 @@ def _komut(argv: list, zaman_asimi: float = 60) -> tuple:
         p = subprocess.run(argv, capture_output=True, text=True,
                            encoding="utf-8", errors="replace",
                            timeout=zaman_asimi,
-                           shell=(os.name == "nt"))
+                           shell=(os.name == "nt"), stdin=subprocess.DEVNULL,
+                           creationflags=PENCERE_YOK)
         return p.returncode, (p.stdout or "") + (p.stderr or "")
     except (OSError, subprocess.TimeoutExpired) as exc:
         return -1, str(exc)

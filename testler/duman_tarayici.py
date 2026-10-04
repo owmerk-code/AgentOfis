@@ -275,11 +275,14 @@ sina("claude tarayici surebilir", motor_ac("claude").mcp_konusur is True)
 # SANDBOX KALKMADAN asiyor (gercek turla olculdu).
 sina("codex de tarayici surebilir (--approve-for-me)",
      motor_ac("codex").mcp_konusur is True)
-# Gemini 24.09.2026'da defterden cikti: artik ADIYLA acilamaz, yani
-# hicbir ajan ona dusup tarayicisiz kalamaz.
+# Gemini 24.09.2026'da defterden cikti (Gemini CLI tarayicisizdi); 04.10'da
+# Antigravity (`agy`) olarak geri geldi -- MCP konusur, yani ona dusen ajan
+# gomulu tarayiciyi surer, tarayicisiz kalmaz.
 from ofis.motor import kayitli_motorlar                             # noqa: E402
-sina("gemini motor defterinde YOK (cikarildi)",
-     "gemini" not in kayitli_motorlar())
+from ofis.motor.antigravity import AntigravityMotoru               # noqa: E402
+sina("gemini = Antigravity ve MCP konusur (tarayicisiz kalmaz)",
+     "gemini" in kayitli_motorlar() and type(motor_ac("gemini")) is AntigravityMotoru
+     and AntigravityMotoru.mcp_konusur is True)
 
 # ------------------------------------- 7. KABIN: ajan PANELDEKI tarayicida
 print("\n7. KABIN -- ajan panelde gorunen tarayiciya baglaniyor mu")

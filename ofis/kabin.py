@@ -40,6 +40,8 @@ import math
 import os
 import shutil
 import subprocess
+
+from .surec import PENCERE_YOK
 import time
 import urllib.error
 import urllib.request
@@ -346,7 +348,7 @@ class Kabin:
             g.write(f"\n--- kabin aciliyor {time.strftime('%Y-%m-%d %H:%M:%S')}"
                     f" kapi={self.kapi}\n".encode("utf-8"))
             self.surec = subprocess.Popen(
-                komut, stdout=subprocess.DEVNULL, stderr=g)
+                komut, stdout=subprocess.DEVNULL, stderr=g, creationflags=PENCERE_YOK)
         self.gorunur = bool(gorunur)
         self._olum_bildirildi = False
         bitis = time.time() + bekle_sn
