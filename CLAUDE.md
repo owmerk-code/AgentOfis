@@ -89,7 +89,10 @@ motor matrisinden geçmeden deftere girmez.
 - Kullanıcının panelini (8900) ellemem; sınama paneli **8911**, geçici
   defter kopyasıyla. Paneli kullanıcı kendisi yeniden başlatır.
 - Kullanıcının kendi Chrome'u ve tüketici AI arayüzleri sürülmez; canlı
-  masaüstü onaysız sürülmez. Gizli (stealth) modellere yalnız herkese açık
+  masaüstü onaysız sürülmez. **İSTİSNA (04.10 patron kararı):** gömülü
+  tarayıcıda (kabin) patronun KENDİ girdiği Google Flow / Gemini uygulaması
+  hesabıyla ajan görsel/video üretebilir; kredi harcayan üretim kapıda
+  sorulur (patronun açık sözü o iş için izindir). Gizli (stealth) modellere yalnız herkese açık
   içerik gider.
 - **GitHub:** yalnız gizli `owmerk-code/AgentOfis`, yalnız
   `python -m ofis.kabuk yedek github` ile. Yeni depo/uzak/hesap sormadan yok,
