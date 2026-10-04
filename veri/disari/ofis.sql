@@ -44,8 +44,8 @@ CREATE TABLE ayar (
 INSERT INTO "ayar" VALUES('915d303e41ee4cb59fa908401d277926','guncelleme:takma_ad:opus','claude-opus-5-5','2026-09-22T23:02:36+00:00');
 INSERT INTO "ayar" VALUES('915d303e41ee4cb59fa908401d277926','guncelleme:takma_ad:sonnet','claude-sonnet-5-5','2026-09-28T22:15:42+00:00');
 INSERT INTO "ayar" VALUES('915d303e41ee4cb59fa908401d277926','guncelleme:takma_ad:haiku','claude-haiku-4-5-20251001','2026-09-22T23:02:36+00:00');
-INSERT INTO "ayar" VALUES('915d303e41ee4cb59fa908401d277926','guncelleme:bekleyen','[]','2026-10-02T00:41:07+00:00');
-INSERT INTO "ayar" VALUES('915d303e41ee4cb59fa908401d277926','guncelleme:son_kontrol','2026-10-02T00:41:07.943566+00:00','2026-10-02T00:41:07+00:00');
+INSERT INTO "ayar" VALUES('915d303e41ee4cb59fa908401d277926','guncelleme:bekleyen','[{"tur": "cli", "motor": "claude", "paket": "@anthropic-ai/claude-code", "eski": "2.1.287", "yeni": "2.1.289", "anahtar": "cli:claude:2.1.289", "ozet": "claude CLI 2.1.287 -> 2.1.289", "no": 1}]','2026-10-04T16:41:01+00:00');
+INSERT INTO "ayar" VALUES('915d303e41ee4cb59fa908401d277926','guncelleme:son_kontrol','2026-10-04T16:41:01.199232+00:00','2026-10-04T16:41:01+00:00');
 INSERT INTO "ayar" VALUES('915d303e41ee4cb59fa908401d277926','efor_modu','normal','2026-09-24T02:07:37+00:00');
 INSERT INTO "ayar" VALUES('915d303e41ee4cb59fa908401d277926','guncelleme:karar:cli:codex:0.156.0','onay','2026-09-23T00:13:11+00:00');
 INSERT INTO "ayar" VALUES('915d303e41ee4cb59fa908401d277926','kademe:codex:guclu','gpt-6.1-sol','2026-09-29T22:16:32+00:00');
@@ -54,9 +54,9 @@ INSERT INTO "ayar" VALUES('915d303e41ee4cb59fa908401d277926','kademe:codex:hizli
 INSERT INTO "ayar" VALUES('915d303e41ee4cb59fa908401d277926','guncelleme:karar:model:codex:gpt-5.6-luna->gpt-6-luna','onay','2026-09-23T00:21:44+00:00');
 INSERT INTO "ayar" VALUES('915d303e41ee4cb59fa908401d277926','kademe:codex:standart','gpt-6.1-sol','2026-09-29T22:16:32+00:00');
 INSERT INTO "ayar" VALUES('915d303e41ee4cb59fa908401d277926','guncelleme:karar:cli:gemini:0.60.0','onay','2026-09-24T01:36:44+00:00');
-INSERT INTO "ayar" VALUES('915d303e41ee4cb59fa908401d277926','limit_canli_son','1791128334.6110833','2026-10-04T15:38:54+00:00');
-INSERT INTO "ayar" VALUES('915d303e41ee4cb59fa908401d277926','limit_canli:claude:','{"motor": "claude", "hesap": "", "olculdu": "2026-10-04T15:38:56+00:00", "limit_pencere": {"kaynak": "claude CLI (get_usage, tur yok)", "hal": "", "plan": "max", "pencereler": {"5s": {"kullanim": 0.16, "yenilenme": 1791134400}, "7g": {"kullanim": 0.47, "yenilenme": 1791342000}, "7g_kapi": {"kullanim": 0.04, "yenilenme": 1791342000}}}}','2026-10-04T15:38:56+00:00');
-INSERT INTO "ayar" VALUES('915d303e41ee4cb59fa908401d277926','limit_canli:codex:','{"motor": "codex", "hesap": "", "olculdu": "2026-10-04T15:38:58+00:00", "limit_pencere": {"kaynak": "codex app-server (account/rateLimits)", "hal": "", "plan": "plus", "pencereler": {"5s": {"kullanim": 0.03, "yenilenme": 1791133835}, "7g": {"kullanim": 0.21, "yenilenme": 1791592564}}}}','2026-10-04T15:38:58+00:00');
+INSERT INTO "ayar" VALUES('915d303e41ee4cb59fa908401d277926','limit_canli_son','1791133516.7685668','2026-10-04T17:05:16+00:00');
+INSERT INTO "ayar" VALUES('915d303e41ee4cb59fa908401d277926','limit_canli:claude:','{"motor": "claude", "hesap": "", "olculdu": "2026-10-04T17:05:19+00:00", "limit_pencere": {"kaynak": "claude CLI (get_usage, tur yok)", "hal": "", "plan": "max", "pencereler": {"5s": {"kullanim": 0.17, "yenilenme": 1791134400}, "7g": {"kullanim": 0.47, "yenilenme": 1791342000}, "7g_kapi": {"kullanim": 0.04, "yenilenme": 1791342000}}}}','2026-10-04T17:05:19+00:00');
+INSERT INTO "ayar" VALUES('915d303e41ee4cb59fa908401d277926','limit_canli:codex:','{"motor": "codex", "hesap": "", "olculdu": "2026-10-04T17:05:21+00:00", "limit_pencere": {"kaynak": "codex app-server (account/rateLimits)", "hal": "", "plan": "plus", "pencereler": {"5s": {"kullanim": 0.03, "yenilenme": 1791133835}, "7g": {"kullanim": 0.21, "yenilenme": 1791592564}}}}','2026-10-04T17:05:21+00:00');
 INSERT INTO "ayar" VALUES('915d303e41ee4cb59fa908401d277926','guncelleme:karar:cli:claude:2.1.284','otomatik','2026-09-28T22:15:11+00:00');
 INSERT INTO "ayar" VALUES('915d303e41ee4cb59fa908401d277926','guncelleme:gecmis','[{"tur": "cli", "motor": "claude", "paket": "@anthropic-ai/claude-code", "eski": "2.1.282", "yeni": "2.1.284", "anahtar": "cli:claude:2.1.284", "veren": "ofis", "deneme": "OK", "sira": 1, "zaman": "2026-09-28T22:15:11.610387+00:00", "durum": "uygulandi", "goruldu": true}, {"tur": "cli", "motor": "codex", "paket": "@openai/codex", "eski": "0.156.0", "yeni": "0.158.0", "anahtar": "cli:codex:0.158.0", "veren": "ofis", "deneme": "OK", "sira": 2, "zaman": "2026-09-28T22:15:29.639707+00:00", "durum": "uygulandi", "goruldu": true}, {"tur": "takma_ad", "motor": "claude", "ad": "sonnet", "eski": "claude-sonnet-5", "yeni": "claude-sonnet-5-5", "anahtar": "takma_ad:sonnet:claude-sonnet-5-5", "veren": "ofis", "deneme": "OK", "sira": 3, "zaman": "2026-09-28T22:15:43.569258+00:00", "durum": "uygulandi", "goruldu": true}, {"tur": "cli", "motor": "codex", "paket": "@openai/codex", "eski": "0.156.0", "yeni": "0.158.0", "anahtar": "cli:codex:0.158.0", "veren": "ofis", "deneme": "OK", "sira": 4, "zaman": "2026-09-28T22:15:47.019645+00:00", "durum": "uygulandi", "goruldu": true}, {"tur": "cli", "motor": "claude", "paket": "@anthropic-ai/claude-code", "eski": "2.1.284", "yeni": "2.1.285", "anahtar": "cli:claude:2.1.285", "veren": "ofis", "deneme": "OK", "sira": 5, "zaman": "2026-09-29T22:14:37.706093+00:00", "durum": "uygulandi", "goruldu": true}, {"tur": "cli", "motor": "codex", "paket": "@openai/codex", "eski": "0.158.0", "yeni": "0.159.1", "anahtar": "cli:codex:0.159.1", "veren": "ofis", "deneme": "OK", "sira": 6, "zaman": "2026-09-29T22:14:48.183813+00:00", "durum": "uygulandi", "goruldu": true}, {"tur": "model", "motor": "codex", "eski": "gpt-6-sol", "yeni": "gpt-6.1-sol", "eski_kademe": {"standart": "gpt-6-sol", "guclu": "gpt-6-sol"}, "ajanlar": ["cinar"], "anahtar": "model:codex:gpt-6-sol->gpt-6.1-sol", "veren": "ofis", "deneme": "OK", "sira": 7, "zaman": "2026-09-29T22:16:32.169169+00:00", "durum": "uygulandi", "goruldu": true}, {"tur": "cli", "motor": "codex", "paket": "@openai/codex", "eski": "0.159.1", "yeni": "0.159.2", "anahtar": "cli:codex:0.159.2", "veren": "ofis", "deneme": "OK", "sira": 8, "zaman": "2026-09-30T00:19:22.541637+00:00", "durum": "uygulandi", "goruldu": true}, {"tur": "cli", "motor": "codex", "paket": "@openai/codex", "eski": "0.159.2", "yeni": "0.159.3", "anahtar": "cli:codex:0.159.3", "veren": "ofis", "deneme": "OK", "sira": 9, "zaman": "2026-10-01T12:21:12.536851+00:00", "durum": "uygulandi", "goruldu": true}, {"tur": "cli", "motor": "claude", "paket": "@anthropic-ai/claude-code", "eski": "2.1.285", "yeni": "2.1.286", "anahtar": "cli:claude:2.1.286", "veren": "insan", "deneme": "OK", "sira": 10, "zaman": "2026-10-01T13:22:58.133009+00:00", "durum": "uygulandi", "goruldu": true}, {"tur": "cli", "motor": "claude", "paket": "@anthropic-ai/claude-code", "eski": "2.1.286", "yeni": "2.1.287", "anahtar": "cli:claude:2.1.287", "veren": "ofis", "deneme": "OK", "sira": 11, "zaman": "2026-10-01T18:28:27.369238+00:00", "durum": "uygulandi", "goruldu": true}, {"tur": "cli", "motor": "codex", "paket": "@openai/codex", "eski": "0.159.3", "yeni": "0.160.0", "anahtar": "cli:codex:0.160.0", "veren": "ofis", "deneme": "OK", "sira": 12, "zaman": "2026-10-01T21:09:54.666021+00:00", "durum": "uygulandi", "goruldu": true}]','2026-10-02T00:12:22+00:00');
 INSERT INTO "ayar" VALUES('915d303e41ee4cb59fa908401d277926','guncelleme:karar:cli:codex:0.158.0','otomatik','2026-09-28T22:15:46+00:00');
@@ -74,6 +74,8 @@ INSERT INTO "ayar" VALUES('915d303e41ee4cb59fa908401d277926','guncelleme:karar:c
 INSERT INTO "ayar" VALUES('915d303e41ee4cb59fa908401d277926','guncelleme:karar:cli:claude:2.1.286','onay','2026-10-01T13:22:58+00:00');
 INSERT INTO "ayar" VALUES('915d303e41ee4cb59fa908401d277926','guncelleme:karar:cli:claude:2.1.287','otomatik','2026-10-01T18:28:27+00:00');
 INSERT INTO "ayar" VALUES('915d303e41ee4cb59fa908401d277926','guncelleme:karar:cli:codex:0.160.0','otomatik','2026-10-01T21:09:54+00:00');
+INSERT INTO "ayar" VALUES('915d303e41ee4cb59fa908401d277926','guncelleme:otomatik_dustu:cli:claude:2.1.289','2.1.289 denemeyi gecemedi, 2.1.287 surumune geri donuldu (olculen: 2.1.287). Sebep: GERCEK TERMINAL denemesi dustu: Brifing terminale yapistirildi ama GONDERILMEDI (oturum dosyasi buyumedi). Ekranin sonu: 
+──────────────────────────────────────────────────────────────────────────────────────────────','2026-10-04T15:40:54+00:00');
 CREATE TABLE brifing (
     id              TEXT PRIMARY KEY,
     gorev_id        TEXT NOT NULL REFERENCES gorev(id),
@@ -25768,6 +25770,45 @@ INSERT INTO "olay" VALUES(4470,'915d303e41ee4cb59fa908401d277926','',NULL,'kabin
 INSERT INTO "olay" VALUES(4471,'915d303e41ee4cb59fa908401d277926','',NULL,'kabin_kapandi','Kabin panelden kapatildi -- ama baska bir surec hala acik tutuyor','2026-10-02T00:06:30+00:00');
 INSERT INTO "olay" VALUES(4472,'915d303e41ee4cb59fa908401d277926','',NULL,'kabin_acildi','Kabin acildi (panel acti)','2026-10-02T00:11:37+00:00');
 INSERT INTO "olay" VALUES(4473,'915d303e41ee4cb59fa908401d277926','',NULL,'kabin_acildi','Kabin acildi (panel acti)','2026-10-04T15:39:07+00:00');
+INSERT INTO "olay" VALUES(4474,'915d303e41ee4cb59fa908401d277926','',NULL,'depo_gonderildi','GitHub: gonderildi edd02bf','2026-10-04T15:39:19+00:00');
+INSERT INTO "olay" VALUES(4475,'915d303e41ee4cb59fa908401d277926','',NULL,'yedek_alindi','AgentOfis-yedek-20261004-183854-gunluk.zip · 1108 dosya','2026-10-04T15:39:19+00:00');
+INSERT INTO "olay" VALUES(4476,'915d303e41ee4cb59fa908401d277926','',NULL,'guncelleme_var','claude CLI 2.1.287 -> 2.1.289','2026-10-04T15:40:03+00:00');
+INSERT INTO "olay" VALUES(4477,'915d303e41ee4cb59fa908401d277926','',NULL,'guncelleme_basladi','OTOMATIK: claude CLI 2.1.287 -> 2.1.289 -- deneme turu kosuyor','2026-10-04T15:40:03+00:00');
+INSERT INTO "olay" VALUES(4478,'915d303e41ee4cb59fa908401d277926','',NULL,'tur_ozeti','{"jeton": 19871, "maliyet_usd": 0.02522625, "sure_ms": 11047.0, "model": "claude-haiku-4-5-20251001", "arac_sayisi": 0, "basarili": true, "jeton_dokumu": {"girdi": 10, "cikti": 104, "onbellek_okuma": 0, "onbellek_yazma": 19757, "onbellek_yazma_1sa": 0}, "motor": "claude", "hesap": "", "yol": "guncelleme-deneme", "limit_pencere": {"kaynak": "claude CLI (rate_limit_event)", "hal": "allowed", "plan": "", "pencereler": {"5s": {"kullanim": 0.16, "yenilenme": 1791134400}, "7g": {"kullanim": 0.46, "yenilenme": 1791342000}}}}','2026-10-04T15:40:45+00:00');
+INSERT INTO "olay" VALUES(4479,'915d303e41ee4cb59fa908401d277926','',NULL,'guncelleme_dustu','claude 2.1.289 deneme turunu gecemedi (GERCEK TERMINAL denemesi dustu: Brifing terminale yapistirildi ama GONDERILMEDI (oturum dosyasi buyumedi). Ekranin sonu: 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+Accessingworkspace:
+
+C:\Users\pc\AppData\Local\Temp\ofis-deneme-tui-f_3lkicj
+
+Quicksafetycheck:Isthisaprojectyoucreatedoroneyoutrust?(Likeyourowncode,awell-knownopensourceproject,orworkfrom
+yourteam).Ifnot,takeamomenttoreviewwhat''sinthisfolderfirst.
+
+ClaudeCode''llbeabletoread,edit,andexecutefileshere.
+
+Securityguide
+
+>No,exit
+Yes,Itrustthisfolder
+
+Entertoconfirm·Esctocancel
+>0q>4m<uB | ilk deneme: Brifing terminale yapistirildi ama GONDERILMEDI (oturum dosyasi buyumedi). Ekranin sonu: 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+Accessingworkspace:
+
+C:\Users\pc\AppData\Local\Temp\ofis-deneme-tui-lpe2isbt
+
+Quicksafetycheck:Isthisaprojectyoucreatedoroneyoutrust?(Likeyourowncode,awell-knownopensourceproject,orworkfrom
+yourteam).Ifnot,takeamomenttoreviewwhat''sinthisfolderfirst.
+
+ClaudeCode''llbeabletoread,edit,andexecutefileshere.
+
+Securityguide
+
+>No,exit
+Yes,Itrustthisfolder
+
+Entertoconfirm·Esct); GERI ALINDI -> 2.1.287','2026-10-04T15:40:54+00:00');
 CREATE TABLE olgu (
     id                  TEXT PRIMARY KEY,
     proje_id            TEXT NOT NULL REFERENCES proje(id),
@@ -25906,6 +25947,6 @@ CREATE INDEX ix_tur_anlik_proje
     ON tur_anlik (proje_id, olusturuldu DESC);
 CREATE INDEX ix_kuyruk_durum ON kuyruk (proje_id, durum);
 DELETE FROM "sqlite_sequence";
-INSERT INTO "sqlite_sequence" VALUES('olay',4473);
+INSERT INTO "sqlite_sequence" VALUES('olay',4479);
 COMMIT;
 PRAGMA user_version=2;
