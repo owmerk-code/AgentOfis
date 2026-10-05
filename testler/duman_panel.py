@@ -783,7 +783,8 @@ sina("panel yetenek panosunu bagliyor", '"/api/yetenek' in _js6)
 sina("panel aramayi bagliyor", '"/api/ara?q="' in _js6)
 sina("panel TAKIM SOHBETINI gosteriyor (lider + ajanlar tek akis)",
      '"/api/takim' in _js6)
-sina("panel takim kurmayi bagliyor", '"/api/kanat"' in _js6)
+# 05.10.2026: takim + ajanlari tek seferde (`/api/takim/kur`).
+sina("panel takim kurmayi bagliyor", '"/api/takim/kur"' in _js6)
 sina("panel ajana sormayi bagliyor", '"/api/ajana-sor"' in _js6)
 _ara_js = _js6[_js6.index("async function araAc"):_js6.index("async function araAc") + 2500]
 sina("arama sonucu METIN olarak basiliyor (innerHTML yok)",
@@ -1255,8 +1256,9 @@ sina("  oneri SENDEN BEKLENIYOR kuyrugunda",
 _r = istemci.post("/api/sablon", json={"ad": "yok-boyle", "kanat": kanat})
 sina("bilinmeyen sablon 400", _r.status_code == 400)
 _jss = _web.joinpath("panel.js").read_text(encoding="utf-8")
-sina("ise alma cekmecesi sablonlari gosteriyor",
-     'al("/api/sablonlar")' in _jss and 'eylem("/api/sablon"' in _jss)
+# 05.10.2026: sablon "+ Takim" penceresinde ONIZLENIR ve takimla birlikte kurulur.
+sina("yeni takim penceresi sablonlari gosteriyor ve onizliyor",
+     'al("/api/sablonlar")' in _jss and '/api/sablon/${encodeURIComponent(anahtar)}/onizleme' in _jss)
 
 
 print("")
