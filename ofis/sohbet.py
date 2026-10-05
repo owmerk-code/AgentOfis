@@ -675,6 +675,12 @@ class Sohbet:
             "Kurallar:",
             "- `gerekce` bos olamaz. Ajan kosturmamak da bir karardir.",
             "- `karar=cevap` ise `cevap` dolu olmali; Turkce ve net yaz.",
+            # 05.10.2026, patron: "ortada hicbir sey yokken neden bu kadar uzun
+            # cevap yazdi" -- "naber"e baglayicilari, para kilidini, ofis
+            # durumunu saydi. Ozeti GORMEK onu SAYMAK icin degil.
+            "- `cevap` KISA olsun: selamlasma ve kucuk sohbete 1-2 cumle. Patron",
+            "  sormadikca baglayici, para kilidi, kadro ya da ofis durumu SAYMA;",
+            "  ayrintiyi ancak patron isterse ya da isin icin gerekliyse yaz.",
             "- `karar=kendi`, `dagit` ya da `kadro` ise `hedef` dolu olmali.",
             "- `karar=kendi` ya da `dagit` ise `plan` dolu olmali (ayni cevapta;",
             "  ayri bir planlama turu YOK). Oteki kararlarda `plan` yazma.",

@@ -341,6 +341,13 @@ def akis(ofis, *, kanat_id=None, adet: int = 80) -> list:
 
     ogeler = []
     with ofis.db.baglanti() as conn:
+        # TAKIMIN DOGUMU (05.10.2026, patron: "yeni takim kurdum, bu mesaj ne?"):
+        # ise baglanmayan ofis olayi (donus raporu, kesinti...) her takimda
+        # gorunuyordu -- takim kurulmadan ONCEKILER de. Takim kendinden eski
+        # ofis olayini gormez.
+        _k = conn.execute("SELECT olusturuldu FROM kanat WHERE id = ?",
+                          (kanat_id,)).fetchone() if kanat_id else None
+        kanat_dogum = _k["olusturuldu"] if _k else ""
         mesajlar = conn.execute(
             "SELECT m.rowid AS sira, m.*, g.no AS gorev_no, g.istek_id AS gorev_istek FROM mesaj m "
             "LEFT JOIN gorev g ON g.id = m.gorev_id WHERE m.proje_id = ? "
@@ -399,6 +406,8 @@ def akis(ofis, *, kanat_id=None, adet: int = 80) -> list:
         if ajan in ("", "ofis") and kanat_id is not None:
             if o["gorev_id"] and not ofis.orkestra.takimin_isi(
                     {"kanat_id": o["gorev_kanat"], "sahip": o["gorev_sahip"]}, kanat_id):
+                continue
+            if not o["gorev_id"] and kanat_dogum and (o["olusturuldu"] or "") < kanat_dogum:
                 continue
         elif not takimda(ajan):
             continue

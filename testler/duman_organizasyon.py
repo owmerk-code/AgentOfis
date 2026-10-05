@@ -144,8 +144,10 @@ sina("bozuk karakter reddedilir", reddedilir(lambda: ofis.kadro.karakter_yaz("ay
 print("\n4. SABLON: KATALOG MOTORU + PATRONUN SABLONU")
 sina("sablonlar lider haric en fazla 5 uye",
      all(len(s.uyeler) <= 5 for s in S.liste()))
-sina("istenen sablonlar var (magaza, mobil, saas, bot, icerik, studyo, tarayici)",
-     {"ticaret", "mobil", "urun", "bot", "icerik", "studyo", "bilgisayar"} <= set(S.SABLONLAR))
+sina("istenen sablonlar var (magaza, mobil, saas, bot, icerik, studyo)",
+     {"ticaret", "mobil", "urun", "bot", "icerik", "studyo"} <= set(S.SABLONLAR))
+sina("bilgisayar/tarayici SABLON degil (meslek)", "bilgisayar" not in S.SABLONLAR
+     and "bilgisayar" in R.ROLLER)
 bos = ofis.kanat_ac("MOBIL", "MB")
 o1 = Ekip(ofis).sablondan("mobil", kanat_id=bos)
 motor_rol = {u["rol"]: (u["motor"], u["model"]) for u in o1["uyeler"]}
@@ -255,6 +257,20 @@ r = ist.post("/api/takim/kur", json={"ad": "Yeni", "renk": "#123456", "uyeler": 
 _k = next((k_ for k_ in ist.get("/api/organizasyon").json()["kanatlar"] if k_["ad"] == "YENI"), None)
 sina("takim ve 5 ajani TEK SEFERDE kuruldu, lider dogru",
      r.status_code == 200 and _k and len(_k["ajanlar"]) == 5 and _k["lider"] == o[0]["ad"], r.text[:200])
+
+print("\n7. YENI TAKIM ESKI OFIS OLAYINI GORMEZ")
+import time as _time
+from ofis import takim as _takim
+db.olay_yaz(pid, "donus_raporu", "ESKI-RAPOR takim kurulmadan once", ajan_ad="ofis")
+_time.sleep(1.2)
+_yk = ofis.kanat_ac("TAZE", "TZ")
+_time.sleep(1.2)
+db.olay_yaz(pid, "donus_raporu", "YENI-RAPOR takim kurulduktan sonra", ajan_ad="ofis")
+_metin = " ".join(x["metin"] for x in _takim.akis(ofis, kanat_id=_yk))
+sina("takim kendinden ESKI ofis olayini gormuyor, yenisini goruyor",
+     "ESKI-RAPOR" not in _metin and "YENI-RAPOR" in _metin, _metin[-200:])
+sina("tum ofis gorunumu ikisini de goruyor",
+     all(x in " ".join(o["metin"] for o in _takim.akis(ofis)) for x in ("ESKI-RAPOR", "YENI-RAPOR")))
 
 print(f"\n{GECEN} gecti, {KALAN} kaldi")
 sys.exit(1 if KALAN else 0)

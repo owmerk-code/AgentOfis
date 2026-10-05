@@ -97,11 +97,6 @@ SABLONLAR = {
         "Kaynaklı araştırma ve ölçülü analiz.",
         (("arastirma", "Kaynakli tarama, her iddia icin baglanti."),
          ("analiz", "Sayilar ve karsilastirma."))),
-    "bilgisayar": Sablon(
-        "bilgisayar", "Bilgisayar ve tarayıcı işleri",
-        "Sitelerde işlem, form, yönetim paneli; gerektiğinde araştırma.",
-        (("bilgisayar", "Gomulu tarayicida sitelerde islem yapar."),
-         ("arastirma", "Gereken bilgiyi kaynagiyla bulur."))),
 }
 
 #: Ad havuzu -- kararli: ayni kadroda ayni sablon ayni adlari onerir.
