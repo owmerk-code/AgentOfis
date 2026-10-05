@@ -1999,3 +1999,20 @@ details > summary.hf-bas { cursor: pointer; }
 .org-menu.kart-menu summary { width: 26px; height: 24px; font-size: 15px; opacity: .45; }
 .org-kart:hover .kart-menu summary, .kart-menu[open] summary { opacity: 1; }
 .org-menu.kart-menu .org-menu-liste { top: 28px; min-width: 150px; }
+
+/* Üstte bildirim: açık pencere/çekmece varken de görünür (05.10.2026). */
+.ust-bildirim { position: fixed; top: 14px; left: 50%; transform: translate(-50%, -12px);
+  z-index: 60; max-width: min(720px, 90vw); padding: 10px 16px; border-radius: 10px;
+  background: var(--zemin-3); border: 1px solid var(--cizgi-acik); color: var(--metin);
+  font-size: var(--yz-govde); box-shadow: 0 12px 30px rgba(0,0,0,.5);
+  opacity: 0; pointer-events: none; transition: opacity .15s, transform .15s; }
+.ust-bildirim.gorun { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
+.ust-bildirim.iyi { border-color: rgba(95,185,138,.55); }
+.ust-bildirim.kotu { border-color: rgba(212,103,79,.7); color: #f2c4b8; }
+.cek-hata { margin-top: 14px; padding: 10px 12px; border-radius: 8px; font-size: var(--yz-govde);
+  background: rgba(212,103,79,.12); border: 1px solid rgba(212,103,79,.55); color: #f2c4b8; }
+.cek-hata.gizli { display: none; }
+.cek-uyari { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 14px;
+  padding: 11px 13px; border-radius: 9px; font-size: var(--yz-govde);
+  background: rgba(217,164,65,.10); border: 1px solid rgba(217,164,65,.45); }
+.cek-uyari .dugme { margin-left: auto; }

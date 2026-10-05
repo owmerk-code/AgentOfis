@@ -207,6 +207,17 @@ const yolla = (yol, govde) => al(yol, {
    hicbir sey gostermez ve eylemin gittigini sandirir -- komut cubugunda
    bir kez odendi. */
 function bildir(metin, tur) {
+  // ÜSTTE BİLDİRİM (05.10.2026): alt çubuktaki not açık çekmece/pencere
+  // altında kalıyordu; patron "Ekle'ye basıyorum eklemiyor" dedi — sebep
+  // yazıyordu ama görünmüyordu. Her eylem sonucu üstte de gösterilir.
+  if (metin) {
+    let t = document.getElementById("ust-bildirim");
+    if (!t) { t = el("div", "ust-bildirim"); t.id = "ust-bildirim"; document.body.append(t); }
+    t.textContent = metin;
+    t.className = "ust-bildirim gorun" + (tur ? " " + tur : "");
+    clearTimeout(bildir._u);
+    bildir._u = setTimeout(() => t.classList.remove("gorun"), tur === "kotu" ? 12000 : 5000);
+  }
   const n = $("#eylem-notu");
   if (!n) return;
   n.textContent = metin || "";
@@ -5164,6 +5175,14 @@ async function ajanEkleAc(kanatId) {
   cekmeceAc((c) => {
     c.classList.add("genis");
     cekBas(c, "organizasyon", "Yeni ajan");
+    if (!sec.kanatlar.length) {
+      const u = el("div", "cek-uyari");
+      u.append(el("b", null, "Henüz takımın yok. "),
+               "Ajanlar bir takımda çalışır ve her takımın bir lideri olur — önce takımı kur.");
+      const tk = el("button", "dugme olumlu", "+ Takım kur"); tk.onclick = takimEkleAc;
+      u.append(tk);
+      c.append(u);
+    }
     const takim = secim([["", "takımsız"]].concat(sec.kanatlar.map((k) => [k.id, k.ad])), kanatId);
     const bosMu = () => !!takim.value && !D.ofis.ajanlar.some((x) => x.kanat_id === takim.value);
     formAlan(c, "Takım", takim);
@@ -5192,9 +5211,24 @@ async function ajanEkleAc(kanatId) {
       c.append(d);
     }
 
-    const ad = el("input"); ad.placeholder = "küçük harf, tire (ör. ayna)";
-    formAlan(c, "Ajan adı", ad, el("div", "form-ipucu",
-      "Ad bir kimliktir ve geri dönmez: sicil ve dersler bu adda birikir."));
+    const ad = el("input"); ad.placeholder = "ajanın adı (ör. ayna, Ömer Can)";
+    // AD → ADRES: sistem adı adres olarak kullanır (küçük harf, tire). Türkçe
+    // harf ve boşluk kendiliğinden çevrilir; sonuç yazılır.
+    const adresYap = (x) => x.toLocaleLowerCase("tr").replace(/ç/g, "c").replace(/ğ/g, "g")
+      .replace(/ı/g, "i").replace(/ö/g, "o").replace(/ş/g, "s").replace(/ü/g, "u")
+      .replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+    const adIpucu = el("div", "form-ipucu");
+    const kullanilan = new Set((D.ofis.ajanlar || []).map((x) => x.ad));
+    ad.oninput = () => {
+      const a_ = adresYap(ad.value);
+      adIpucu.className = "form-ipucu" + (kullanilan.has(a_) ? " uyari" : "");
+      adIpucu.textContent = !ad.value.trim() ? ""
+        : kullanilan.has(a_) ? `“${a_}” zaten kullanılıyor — başka ad seç.`
+        : a_ !== ad.value.trim() ? `Adresi: ${a_}` : "";
+    };
+    formAlan(c, "Ajan adı", ad, adIpucu);
+    c.append(el("div", "form-ipucu",
+      "Ad bir kimliktir ve geri dönmez: sicil ve dersler bu adda birikir (arşivdeki adlar da kullanılamaz)."));
 
     let meslek = "", motor = "", karakter = "";
     const mesKap = el("div", "meslek-liste");
@@ -5262,19 +5296,29 @@ async function ajanEkleAc(kanatId) {
     meslekSec(bosMu() ? "lider" : "arayuz");
     takim.onchange = () => { if (bosMu()) { meslekSec("lider"); lider.checked = true; } };
 
+    const hata = el("div", "cek-hata gizli");
+    const goster = (m) => { hata.textContent = m; hata.classList.remove("gizli"); hata.scrollIntoView({ block: "nearest" }); };
     const ekle = el("button", "dugme olumlu", "Ekle");
     ekle.onclick = async () => {
-      if (!ad.value.trim()) { ad.placeholder = "Ad zorunlu"; return ad.focus(); }
+      hata.classList.add("gizli");
+      const adres = adresYap(ad.value);
+      if (!adres) { goster("Ajan adı boş — bir ad yaz."); ad.scrollIntoView({ block: "center" }); return ad.focus(); }
+      if (!meslek) return goster("Bir meslek seç.");
       if (!model.kapiOnayi()) return;
-      const r = await eylem("/api/ajan", {
-        ad: ad.value, meslek, motor, model: model.value, efor: efor.value,
-        kanat: takim.value, lider: lider.checked, karakter },
-        (x) => `${x.ad} eklendi: ${x.meslek} · ${MOTOR_ETIKET[x.motor] || x.motor} · ${modelAdi(sec, x.model)}`);
-      if (r) { D.kadroSec = null; await yenile(); organizasyonAc(takim.value || ""); }
+      ekle.disabled = true; ekle.textContent = "Ekleniyor…";
+      try {
+        const x = await yolla("/api/ajan", {
+          ad: adres, meslek, motor, model: model.value, efor: efor.value,
+          kanat: takim.value, lider: lider.checked, karakter });
+        bildir(`${x.ad} eklendi: ${x.meslek} · ${MOTOR_ETIKET[x.motor] || x.motor} · ${modelAdi(sec, x.model)}`, "iyi");
+        D.kadroSec = null; await yenile(); organizasyonAc(takim.value || "");
+      } catch (e) {
+        goster("Eklenmedi: " + String(e.message || e));
+      } finally { ekle.disabled = false; ekle.textContent = "Ekle"; }
     };
     const vazgec = el("button", "dugme", "Vazgeç"); vazgec.onclick = cekmeceKapat;
     const sat = el("div", "cek-eylem"); sat.append(vazgec, ekle);
-    c.append(sat);
+    c.append(hata, sat);
   });
 }
 
