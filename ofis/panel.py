@@ -723,6 +723,10 @@ class KanatDuzenGovdesi(BaseModel):
     renk: str | None = None
 
 
+class TakimSilGovdesi(BaseModel):
+    ajanlarla: bool = False
+
+
 class KatalogGovdesi(BaseModel):
     rol: str
     motor: str = ""
@@ -767,16 +771,21 @@ def _motor_durumlari(musait: dict) -> dict:
     return out
 
 
-def _model_secenekleri(harita: dict, katalog: dict) -> dict:
-    """Motor -> secilebilir modeller: kademe haritasi + meslek katalogu.
-    Uydurma liste degil; sistemin BUGUN kullandigi adlar."""
-    out = {}
-    for m, k in harita.items():
-        out.setdefault(m, set()).update(v for v in k.values() if v)
-    for k in katalog.values():
-        if k["model"]:
-            out.setdefault(k["motor"], set()).add(k["model"])
-    return {m: sorted(v) for m, v in out.items() if m != "sahte"}
+_MODEL_ONBELLEK: dict = {}
+
+
+def _model_secenekleri(ofis) -> dict:
+    """Motor -> [{id, ad}]: motorlarin kendi listeleri (gercek adlar) +
+    sistemin kullandigi adlar. 5 dakika onbellek (`agy models` her
+    istekte kosmasin)."""
+    import time as _t
+    from . import guncelleme as _g
+    o = _MODEL_ONBELLEK
+    if not o or _t.time() - o.get("an", 0) > 300 or o.get("db") != str(ofis.db.yol):
+        o.clear()
+        o.update(an=_t.time(), db=str(ofis.db.yol),
+                 liste=_g.model_listesi(ofis.db, ofis.proje_id))
+    return o["liste"]
 
 
 def _oda(ofis, ajan: dict) -> dict:
@@ -2561,7 +2570,8 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
             "kategori_baslik": R.KATEGORI_BASLIK,
             "motorlar": musait,
             "motor_durum": _motor_durumlari(musait),
-            "model_secenek": _model_secenekleri(harita, katalog),
+            "model_secenek": _model_secenekleri(ofis),
+            "model_ad": {x["id"]: x["ad"] for v in _model_secenekleri(ofis).values() for x in v},
             "katalog": katalog,
             "kanatlar": kanatlar,
             "eforlar": list(EFORLAR),
@@ -2723,7 +2733,7 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
         return {"id": kid, "ad": ad, "renk": renk}
 
     @uygulama.post("/api/kanat/{kid}/sil")
-    def api_kanat_sil(kid: str):
+    def api_kanat_sil(kid: str, govde: TakimSilGovdesi = None):
         """Takimi siler -- yalniz BOSSA: icinde ajan ya da acik is varsa
         reddedilir (ajanlar once tasinir ya da cikarilir). Yalniz takim
         satiri silinir; kapanmis islerin kaydi `kanat_id`siyle durur."""
@@ -2735,15 +2745,29 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
                 raise HTTPException(404, "Takim yok.")
             ajan = conn.execute("SELECT COUNT(*) AS n FROM ajan WHERE proje_id = ? AND "
                                 "kanat_id = ? AND arsiv = 0", (ofis.proje_id, kid)).fetchone()["n"]
-            if ajan:
-                raise HTTPException(400, f"{k['ad']} takiminda {ajan} ajan var; once "
-                                         "ajanlari tasi ya da cikar.")
+            # Acik is kontrolu ARSIVDEN ONCE: yoksa ajanlar arsive gider ama
+            # takim silinmez (yarim islem).
             is_ = conn.execute("SELECT COUNT(*) AS n FROM gorev WHERE proje_id = ? AND "
                                "kanat_id = ? AND durum NOT IN ('bitti', 'iptal')",
                                (ofis.proje_id, kid)).fetchone()["n"]
-            if is_:
-                raise HTTPException(400, f"{k['ad']} takiminin {is_} acik isi var; "
-                                         "once bitsin ya da iptal edilsin.")
+        if is_:
+            raise HTTPException(400, f"{k['ad']} takiminin {is_} acik isi var; "
+                                     "once bitsin ya da iptal edilsin.")
+        # AJANLARIYLA (05.10.2026, patron "ANA'yi silemedim"): once ajanlar
+        # arsive -- ayni kural kapisindan (`cikar`: acik isi olan durur,
+        # lider en son). Biri durursa takim silinmez ve sebebi soylenir.
+        if ajan and govde and govde.ajanlarla:
+            from .kadro import KadroHatasi
+            for a in sorted(ofis.kadro.liste(kid), key=lambda a: a["lider_mi"]):
+                try:
+                    ofis.kadro.cikar(a["ad"])
+                except KadroHatasi as exc:
+                    raise HTTPException(400, f"{a['ad']} arsive alinamadi: {exc}")
+            ajan = 0
+        with ofis.db.baglanti() as conn:
+            if ajan:
+                raise HTTPException(400, f"{k['ad']} takiminda {ajan} ajan var; once "
+                                         "ajanlari tasi ya da cikar.")
             # Kayit yabanci anahtarla bagli: kapanmis islerin ve eski ekip
             # onerilerinin bagi cozulur (kayit durur), bekleyen oneri kapanir.
             conn.execute("UPDATE gorev SET kanat_id = NULL WHERE proje_id = ? AND "

@@ -4486,7 +4486,12 @@ function cekmeceAc(doldur) {
   doldur(c);
   $("#perde").classList.remove("gizli");
 }
-const cekmeceKapat = () => { $("#perde").classList.add("gizli"); D.acikCekmece = null; };
+const cekmeceKapat = () => {
+  $("#perde").classList.add("gizli"); D.acikCekmece = null;
+  // Organizasyon panosu açıksa, üstündeki çekmece kapanınca pano TAZELENİR
+  // (Düzenle'de yapılan değişiklik panoda hemen görünsün).
+  if (typeof ORG !== "undefined" && ORG.acik) organizasyonYenile();
+};
 
 function cekBas(kap, ust, baslik) {
   const bas = el("div", "cek-bas");
@@ -4672,9 +4677,11 @@ async function ajanAyarlari(c, a) {
   const tazele = () => modelIpucu(sec, rol.value, motor.value, ip);
   rol.onchange = tazele;
   motor.onchange = () => { model.motorYap(motor.value); tazele(); };
+  model.motorYap(a.motor, a.model || "");
   tazele();
   const kaydet = el("button", "dugme olumlu", "Kaydet");
   kaydet.onclick = async () => {
+    if (!model.kapiOnayi()) return;
     const r = await eylem(`/api/ajan/${a.ad}/ayar`, {
       meslek: rol.value, motor: motor.value, model: model.value, efor: efor.value, karakter },
       (r) => `${r.ad}: ${r.meslek} · ${r.tur} · ${r.motor}/${r.model || "varsayılan"} · ${r.efor}`);
@@ -4755,126 +4762,268 @@ function karakterSecici(secili, renk, onSec) {
   return kap;
 }
 
-/* Model seçimi: sunucunun söylediği adlar (kademe + katalog) + elle yazılabilir. */
+/* Model seçimi (05.10.2026, patron: "opus yazıyor ama hangi opus belli
+   değil"): motorların KENDİ listelerinden GERÇEK adlarla seçim kutusu.
+   Listede olmayan mevcut değer gizlenmez, "(şu anki)" diye eklenir. */
+const modelAdi = (sec, id) => ((sec && sec.model_ad) || {})[id] || id || "varsayılan";
+
 function modelGirdisi(sec, motor, deger) {
-  const g = el("input"); g.value = deger || "";
-  const liste = el("datalist");
-  liste.id = "model-liste-" + Math.random().toString(36).slice(2, 8);
-  g.setAttribute("list", liste.id);
-  g.motorYap = (m) => {
-    liste.innerHTML = "";
-    for (const x of ((sec.model_secenek || {})[m] || [])) { const o = el("option"); o.value = x; liste.append(o); }
+  const g = el("select");
+  g.motorYap = (m, secili) => {
+    g.innerHTML = "";
+    const liste = ((sec.model_secenek || {})[m] || []);
+    for (const x of liste) {
+      const o = el("option", null, x.ad + (x.not ? `  —  ${x.not}` : ""));
+      o.value = x.id; if (x.kapi) o.dataset.kapi = "1"; g.append(o);
+    }
+    if (secili && !liste.some((x) => x.id === secili)) {
+      const o = el("option", null, `${secili} (şu anki)`); o.value = secili; g.prepend(o);
+    }
+    if (secili) g.value = secili;
   };
-  g.motorYap(motor);
-  g.liste = liste;
+  /* Kapı modeli (Astra/Fable) seçilebilir ama bir kez sorulur. */
+  g.kapiOnayi = () => {
+    const o = g.selectedOptions && g.selectedOptions[0];
+    return !(o && o.dataset.kapi) || confirm(
+      `${o.textContent.split("  —  ")[0]} pahalı bir kapı modeli: her turda kullanılır ve ` +
+      "limiti hızlı bitirir. Yine de bu ajana atansın mı?");
+  };
+  g.motorYap(motor, deger);
+  g.liste = el("span");
   return g;
 }
 
-async function organizasyonAc(odak) {
-  let org, sec;
-  D.kadroSec = null;
-  try { [org, sec] = await Promise.all([al("/api/organizasyon"), kadroSecenek()]); }
-  catch (e) { return bildir("organizasyon okunamadı: " + e.message, "kotu"); }
-  D.acikCekmece = { tur: "org", odak: odak || "" };
-  cekmeceAc((c) => {
-    c.classList.add("genis");
-    const tk = odak ? org.kanatlar.find((k) => k.id === odak) : null;
-    cekBas(c, tk ? "takımı yönet" : "organizasyon · şirket ağacı",
-           tk ? tk.ad : "Takımlar ve ajanlar");
-    const ust = el("div", "cek-eylem");
-    if (tk) {
-      const hepsi = el("button", "dugme", "Bütün şirket");
-      hepsi.onclick = () => organizasyonAc("");
-      ust.append(hepsi);
-    } else {
-      const yeni = el("button", "dugme olumlu", "+ Takım");
-      yeni.onclick = takimEkleAc;
-      ust.append(yeni);
-    }
-    const kat = el("button", "dugme", "Meslek kataloğu");
-    kat.title = "Hangi meslek hangi motor ve modelle çalışır (yeni ajanlar buradan alır)";
-    kat.onclick = katalogAc;
-    ust.append(kat);
-    c.append(ust);
-    const liste = tk ? [tk] : org.kanatlar;
-    if (!liste.length) c.append(el("div", "form-ipucu", "Henüz takım yok. “+ Takım” ile kur."));
-    for (const k of liste) c.append(orgTakim(k, org, sec));
-    if (!tk && org.takimsiz.length) {
-      const g = el("div", "org-takim");
-      g.append(el("div", "cek-etiket", "TAKIMSIZ AJANLAR — bir takıma taşı"));
-      for (const a of org.takimsiz) g.append(orgSatir(a, org, sec, null, false));
-      c.append(g);
-    }
-    if (org.arsiv.length) {
-      const d = el("details", "org-arsiv");
-      d.append(el("summary", null,
-        `Arşiv (${org.arsiv.length}) — çıkarılan ajanlar; adları geri dönmez, geçmişleri okunur`));
-      for (const a of org.arsiv) d.append(orgSatir(a, org, sec, null, true));
-      c.append(d);
-    }
-  });
+/* ORGANİZASYON PANOSU (05.10.2026, ikinci sürüm). Patron: "tasarım göze
+   hitap etmiyor … güzel bir şey ortaya çıkar". Yan çekmece değil TAM EKRAN
+   pano: takımlar renkli kartlar, ajanlar avatarlı kartlar (motor rengi,
+   durum ışığı, gerçek model adı), düğmeler üstüne gelince; ajan sürüklenip
+   başka takıma bırakılarak taşınır. Çekmeceler (Düzenle, Yeni ajan…) bu
+   panonun ÜSTÜNDE açılır; kapanınca pano tazelenir. */
+
+const MOTOR_RENK = { claude: "var(--turuncu)", codex: "var(--mavi)", gemini: "var(--yesil)" };
+const ORG = { acik: false, odak: "", veri: null, sec: null };
+
+/* PENCERE (05.10.2026, patron: "Murat gibi agent sisteminin İÇİNDE açılsın"):
+   panel arkada karartılmış görünür; ✕, Esc, dışarı tıklama ve tarayıcının
+   GERİ tuşu kapatır; "Tam sayfa" isteğe bağlı. */
+function orgEkrani() {
+  let e = document.getElementById("org-ekran");
+  if (!e) {
+    e = el("div", "org-ekran gizli"); e.id = "org-ekran";
+    e.addEventListener("mousedown", (ev) => { if (ev.target === e) orgKapat(); });
+    document.body.append(e);
+    document.addEventListener("keydown", (ev) => {
+      if (ev.key === "Escape" && ORG.acik && $("#perde").classList.contains("gizli")) orgKapat();
+    });
+    window.addEventListener("popstate", () => { if (ORG.acik) orgKapat(true); });
+  }
+  return e;
 }
-const organizasyonYenile = () => organizasyonAc((D.acikCekmece || {}).odak || "");
+function orgKapat(geriTusuyla) {
+  if (!ORG.acik) return;
+  ORG.acik = false;
+  orgEkrani().classList.add("gizli");
+  if (!geriTusuyla && history.state && history.state.org) history.back();
+}
+
+async function organizasyonAc(odak) {
+  ORG.odak = odak || "";
+  D.kadroSec = null;
+  try {
+    [ORG.veri, ORG.sec] = await Promise.all([al("/api/organizasyon"), kadroSecenek()]);
+  } catch (e) { return bildir("organizasyon okunamadı: " + e.message, "kotu"); }
+  if (!ORG.acik) history.pushState({ org: 1 }, "");
+  ORG.acik = true;
+  $("#perde").classList.add("gizli"); D.acikCekmece = null;
+  orgCiz();
+}
+const organizasyonYenile = () => organizasyonAc(ORG.odak);
+
+function orgCiz() {
+  const org = ORG.veri, sec = ORG.sec;
+  const ekran = orgEkrani();
+  ekran.innerHTML = "";
+  ekran.classList.remove("gizli");
+  ekran.classList.toggle("tam", !!ORG.tam);
+  const e = el("div", "org-pencere");
+  ekran.append(e);
+
+  const bas = el("div", "org-bas");
+  const sol = el("div", "org-bas-sol");
+  const hepsi = org.kanatlar.flatMap((k) => k.ajanlar).concat(org.takimsiz);
+  sol.append(el("div", "org-ust", "ORGANİZASYON"),
+             el("div", "org-baslik", "Takım ve ajan yönetimi — ofisten ayrılmadan"),
+             el("div", "org-alt", `${org.kanatlar.length} takım · ${hepsi.length} ajan` +
+                (hepsi.some((a) => a.calisiyor) ? ` · ${hepsi.filter((a) => a.calisiyor).length} çalışıyor` : "")));
+  // MOTOR DAĞILIMI: limit üç aboneliğe nasıl bölünüyor, tek bakışta.
+  const say = {};
+  hepsi.forEach((a) => { say[a.motor] = (say[a.motor] || 0) + 1; });
+  const cubuk = el("div", "org-dagilim");
+  for (const [m, n] of Object.entries(say)) {
+    const p = el("div", "org-dagilim-parca");
+    p.style.flex = n; p.style.background = MOTOR_RENK[m] || "var(--metin-3)";
+    p.title = `${MOTOR_ETIKET[m] || m}: ${n} ajan`;
+    cubuk.append(p);
+  }
+  const lejant = el("div", "org-lejant");
+  for (const [m, n] of Object.entries(say)) {
+    const l = el("span", "org-lejant-oge");
+    const nokta = el("i"); nokta.style.background = MOTOR_RENK[m] || "var(--metin-3)";
+    l.append(nokta, `${MOTOR_ETIKET[m] || m} ${n}`);
+    lejant.append(l);
+  }
+  if (hepsi.length) sol.append(cubuk, lejant);
+  const sag = el("div", "org-bas-sag");
+  const katB = el("button", "org-dugme", "Meslek kataloğu");
+  katB.onclick = katalogAc;
+  const takB = el("button", "org-dugme ana", "+ Takım");
+  takB.onclick = takimEkleAc;
+  const tamB = el("button", "org-dugme", ORG.tam ? "Pencere" : "Tam sayfa");
+  tamB.onclick = () => { ORG.tam = !ORG.tam; orgCiz(); };
+  const kapB = el("button", "org-kapat", "✕"); kapB.title = "Kapat (Esc ya da Geri)";
+  kapB.onclick = () => orgKapat();
+  sag.append(katB, takB, tamB, kapB);
+  bas.append(sol, sag);
+  e.append(bas);
+
+  const govde = el("div", "org-govde");
+  if (!org.kanatlar.length) {
+    const bos = el("div", "org-bos");
+    bos.append(el("div", "org-bos-baslik", "Henüz takım yok"),
+               el("div", "org-bos-metin",
+                 "Bir takım kur: adını ver, şablondan bütün ekibi seç ya da ajanları tek tek ekle. " +
+                 "Her ajan motorunu ve modelini mesleğinden alır."));
+    const b = el("button", "org-dugme ana", "+ İlk takımı kur"); b.onclick = takimEkleAc;
+    bos.append(b);
+    govde.append(bos);
+  }
+  const izgara = el("div", "org-izgara");
+  for (const k of org.kanatlar) izgara.append(orgTakim(k, org, sec));
+  govde.append(izgara);
+  if (org.takimsiz.length) {
+    const t = el("div", "org-takim takimsiz");
+    t.append(el("div", "org-takim-bas", "TAKIMSIZ AJANLAR — bir takıma sürükle"));
+    const kartlar = el("div", "org-kartlar");
+    org.takimsiz.forEach((a) => kartlar.append(orgKart(a, null, sec)));
+    t.append(kartlar);
+    govde.append(t);
+  }
+  if (org.arsiv.length) {
+    const d = el("details", "org-arsiv");
+    d.append(el("summary", null,
+      `Arşiv · ${org.arsiv.length} ajan — çıkarılanlar; adları geri dönmez, geçmişleri okunur`));
+    const kartlar = el("div", "org-kartlar");
+    org.arsiv.forEach((a) => kartlar.append(orgKart(a, null, sec, true)));
+    d.append(kartlar);
+    govde.append(d);
+  }
+  e.append(govde);
+  if (ORG.odak) {
+    const h = e.querySelector(`[data-kanat="${ORG.odak}"]`);
+    if (h) { h.classList.add("odak"); h.scrollIntoView({ block: "nearest" }); }
+  }
+}
 
 function orgTakim(k, org, sec) {
   const kutu = el("div", "org-takim");
+  kutu.dataset.kanat = k.id;
   kutu.style.setProperty("--kanat-renk", k.renk);
   const bas = el("div", "org-takim-bas");
-  const sol = el("div");
-  sol.append(el("div", "org-takim-ad", k.ad));
+  const ad = el("div", "org-takim-ad");
+  const nokta = el("i", "org-takim-nokta");
+  ad.append(nokta, el("span", null, k.ad));
+  const calisan = k.ajanlar.filter((a) => a.calisiyor).length;
   const bilgi = el("div", "org-takim-bilgi" + (k.lider ? "" : " uyari"),
-    `${k.ajanlar.length} ajan · lider: ${k.lider || "YOK — önce lider ekle"}`);
-  sol.append(bilgi);
-  const e = el("div", "org-eylem");
-  const b = (metin, f, sinif) => {
-    const x = el("button", "dugme" + (sinif ? " " + sinif : ""), metin);
-    x.onclick = f; e.append(x);
+    (k.lider ? `lider ${k.lider}` : "lider yok") + ` · ${k.ajanlar.length} ajan` +
+    (calisan ? ` · ${calisan} çalışıyor` : ""));
+  const solB = el("div"); solB.append(ad, bilgi);
+  const menu = el("details", "org-menu");
+  menu.append(el("summary", null, "⋯"));
+  const liste = el("div", "org-menu-liste");
+  const oge = (metin, f, sinif) => {
+    const b = el("button", "org-menu-oge" + (sinif ? " " + sinif : ""), metin);
+    b.onclick = () => { menu.open = false; f(); };
+    liste.append(b);
   };
-  b("+ Ajan ekle", () => ajanEkleAc(k.id), "olumlu");
-  b("Düzenle", () => takimDuzenleAc(k));
-  b("Şablon olarak kaydet", () => sablonKaydetAc(k));
-  b("Sil", () => takimSil(k), "olumsuz");
-  bas.append(sol, e);
+  oge("Düzenle (ad, renk)", () => takimDuzenleAc(k));
+  oge("Şablon olarak kaydet", () => sablonKaydetAc(k));
+  oge("Takımı sil", () => takimSil(k), "tehlike");
+  menu.append(liste);
+  bas.append(solB, menu);
   kutu.append(bas);
-  if (!k.ajanlar.length)
-    kutu.append(el("div", "form-ipucu", "Takım boş. İlk ajan LİDER olmalı: işi o böler ve inceler."));
-  for (const a of k.ajanlar) kutu.append(orgSatir(a, org, sec, k, false));
+
+  const kartlar = el("div", "org-kartlar");
+  const sirali = [...k.ajanlar].sort((a, b) => (b.lider_mi - a.lider_mi));
+  for (const a of sirali) kartlar.append(orgKart(a, k, sec));
+  const ekle = el("button", "org-kart org-ekle");
+  ekle.append(el("span", "org-ekle-arti", "+"),
+              el("span", null, k.ajanlar.length ? "Ajan ekle" : "İlk ajan: lider"));
+  ekle.onclick = () => ajanEkleAc(k.id);
+  kartlar.append(ekle);
+  kutu.append(kartlar);
+
+  // SÜRÜKLE-BIRAK ile taşıma: kural sunucuda (açık işi olan, lider taşınmaz).
+  kutu.addEventListener("dragover", (ev) => { ev.preventDefault(); kutu.classList.add("birak"); });
+  kutu.addEventListener("dragleave", () => kutu.classList.remove("birak"));
+  kutu.addEventListener("drop", async (ev) => {
+    ev.preventDefault(); kutu.classList.remove("birak");
+    const ad_ = ev.dataTransfer.getData("text/ajan");
+    if (!ad_ || k.ajanlar.some((x) => x.ad === ad_)) return;
+    if (await eylem(`/api/ajan/${encodeURIComponent(ad_)}/tasi`, { kanat: k.id },
+                    `${ad_} → ${k.ad}`)) organizasyonYenile();
+  });
   return kutu;
 }
 
-function orgSatir(a, org, sec, k, arsiv) {
-  const s = el("div", "org-satir" + (arsiv ? " arsiv" : ""));
-  s.append(pikselCiz(FIGUR, karakterRenk(a, (k && k.renk) || "#6b7480"), 2, "org-sprite"));
-  const ad = el("div", "org-ad");
-  const ust = el("div", "org-ad-ust");
-  ust.append(el("b", null, a.ad));
-  if (a.lider_mi) ust.append(el("span", "etiket lider", "LİDER"));
-  if (a.calisiyor) ust.append(el("span", "etiket org-calisiyor", "çalışıyor"));
-  else if (a.acik_is) ust.append(el("span", "etiket", a.acik_is + " açık iş"));
-  ad.append(ust, el("div", "org-meslek", a.meslek_baslik));
-  const md = (sec.motor_durum || {})[a.motor] || {};
-  const motor = el("div", "org-motor");
-  motor.append(el("span", "org-rozet motor-" + a.motor, MOTOR_ETIKET[a.motor] || a.motor),
-               el("span", "org-model", `${a.model || "varsayılan"} · ${a.efor}`));
-  if (md.notlar && md.notlar.length) motor.title = md.notlar.join(" · ");
-  s.append(ad, motor);
+function orgKart(a, k, sec, arsiv) {
+  const kart = el("div", "org-kart" + (a.lider_mi ? " lider" : "") + (arsiv ? " arsiv" : ""));
+  kart.style.setProperty("--motor-renk", MOTOR_RENK[a.motor] || "var(--metin-3)");
   if (!arsiv) {
-    const e = el("div", "org-eylem");
-    const b = (metin, f, sinif, ipucu) => {
-      const x = el("button", "dugme kucuk" + (sinif ? " " + sinif : ""), metin);
-      x.onclick = f; if (ipucu) x.title = ipucu; e.append(x);
+    kart.draggable = true;
+    kart.addEventListener("dragstart", (ev) => ev.dataTransfer.setData("text/ajan", a.ad));
+  }
+  const avatar = el("div", "org-avatar");
+  avatar.append(pikselCiz(FIGUR, karakterRenk(a, (k && k.renk) || "#6b7480"), 4, "org-sprite"));
+  const durum = a.calisiyor ? ["calisiyor", "çalışıyor"]
+              : a.acik_is ? ["acik", `${a.acik_is} açık iş`] : ["bos", "boşta"];
+  if (!arsiv) {
+    const isik = el("i", "org-isik " + durum[0]); isik.title = durum[1];
+    avatar.append(isik);
+  }
+  const bilgi = el("div", "org-kart-bilgi");
+  const ust = el("div", "org-kart-ust");
+  ust.append(el("span", "org-kart-ad", a.ad));
+  if (a.lider_mi) ust.append(el("span", "org-lider", "LİDER"));
+  const md = (sec.motor_durum || {})[a.motor] || {};
+  const motor = el("div", "org-kart-motor");
+  const nokta = el("i"); motor.append(nokta, MOTOR_ETIKET[a.motor] || a.motor);
+  if (md.notlar && md.notlar.length) motor.title = md.notlar.join(" · ");
+  bilgi.append(ust, el("div", "org-kart-meslek", a.meslek_baslik), motor,
+               el("div", "org-kart-model", modelAdi(sec, a.model) + (a.efor !== "normal" ? ` · ${a.efor}` : "")));
+  kart.append(avatar, bilgi);
+  if (!arsiv) {
+    // Kartın "⋯" menüsü: yazıların üstüne binmez (05.10.2026 gözle denendi).
+    const menu = el("details", "org-menu kart-menu");
+    menu.append(el("summary", null, "⋯"));
+    const e = el("div", "org-menu-liste");
+    menu.append(e);
+    const b = (metin, ipucu, f, sinif) => {
+      const x = el("button", "org-menu-oge" + (sinif ? " " + sinif : ""), metin); x.title = ipucu;
+      x.onclick = (ev) => { ev.stopPropagation(); menu.open = false; f(); }; e.append(x);
     };
-    b("Düzenle", () => ajanAc(a.ad), "", "Meslek, motor, model, efor, karakter");
-    b("Taşı", () => tasiAc(a, org), "", "Başka takıma — hafızası onunla gider");
+    b("Düzenle", "Meslek, motor, model, efor, karakter", () => ajanAc(a.ad));
+    b("Taşı", "Başka takıma — ya da kartı sürükle", () => tasiAc(a, ORG.veri));
     if (!a.lider_mi && k)
-      b("Lider yap", async () => {
+      b("Lider yap", `${k.ad} takımının lideri olsun`, async () => {
         if (await eylem(`/api/ajan/${encodeURIComponent(a.ad)}/lider`, {},
                         `${a.ad} artık ${k.ad} takımının lideri`)) organizasyonYenile();
       });
-    b("Çıkar", () => ajanCikar(a), "olumsuz", "Arşive gider; adı geri dönmez");
-    s.append(e);
+    b("Çıkar", "Arşive gider; adı geri dönmez", () => ajanCikar(a), "tehlike");
+    kart.append(menu);
+    kart.ondblclick = () => ajanAc(a.ad);
+    kart.title = "Çift tıkla: düzenle · sürükle: başka takıma taşı";
   }
-  return s;
+  return kart;
 }
 
 function tasiAc(a, org) {
@@ -4921,9 +5070,13 @@ function takimDuzenleAc(k) {
 }
 
 async function takimSil(k) {
-  if (!confirm(`${k.ad} takımı silinsin mi?\n\nYalnız BOŞ takım silinir: içinde ajan ya da ` +
-               "açık iş varsa önce taşı/çıkar. Kapanmış işlerin kaydı durur.")) return;
-  if (await eylem(`/api/kanat/${k.id}/sil`, {}, (x) => `takım silindi: ${x.silindi}`)) {
+  const n = k.ajanlar.length;
+  if (!confirm(`${k.ad} takımı silinsin mi?\n\n` +
+               (n ? `İçindeki ${n} ajan ARŞİVE alınır (adları geri dönmez, geçmişleri okunur). `
+                  : "") +
+               "Açık işi olan takım silinmez. Kapanmış işlerin kaydı durur.")) return;
+  if (await eylem(`/api/kanat/${k.id}/sil`, { ajanlarla: true },
+                  (x) => `takım silindi: ${x.silindi}`)) {
     if (D.kanat === k.id) D.kanat = "";
     organizasyonAc("");
   }
@@ -4972,18 +5125,19 @@ async function katalogAc() {
         const sat = el("div", "katalog-satir");
         const motor = secim(kurulu.map((m) => [m, MOTOR_ETIKET[m] || m]), r.motor);
         const model = modelGirdisi(sec, r.motor, r.model);
-        motor.onchange = () => { model.motorYap(motor.value); model.value = ""; };
+        motor.onchange = () => model.motorYap(motor.value);
         const kaydet = el("button", "dugme kucuk olumlu", "Kaydet");
         kaydet.onclick = async () => {
+          if (!model.kapiOnayi()) return;
           if (await eylem("/api/katalog", { rol: r.rol, motor: motor.value, model: model.value },
-                          (x) => `${r.baslik}: ${MOTOR_ETIKET[x.motor] || x.motor} · ${x.model}`)) katalogAc();
+                          (x) => `${r.baslik}: ${MOTOR_ETIKET[x.motor] || x.motor} · ${modelAdi(sec, x.model)}`)) katalogAc();
         };
         const ad = el("div", "katalog-ad", r.baslik);
         if (r.ayar) ad.append(el("span", "etiket", "değiştirildi"));
         sat.append(ad, motor, model, model.liste, kaydet);
         if (r.ayar) {
           const v = el("button", "dugme kucuk", "Varsayılan");
-          v.title = `Varsayılan: ${MOTOR_ETIKET[r.varsayilan.motor] || r.varsayilan.motor} · ${r.varsayilan.model}`;
+          v.title = `Varsayılan: ${MOTOR_ETIKET[r.varsayilan.motor] || r.varsayilan.motor} · ${modelAdi(sec, r.varsayilan.model)}`;
           v.onclick = async () => {
             if (await eylem("/api/katalog", { rol: r.rol, motor: "", model: "" },
                             `${r.baslik}: varsayılana döndü`)) katalogAc();
@@ -5054,8 +5208,7 @@ async function ajanEkleAc(kanatId) {
     const motorSec = (m, mdl) => {
       motor = m;
       Object.entries(motDug).forEach(([x, d]) => d.classList.toggle("secili", x === m));
-      model.motorYap(m);
-      model.value = mdl !== undefined ? mdl : "";
+      model.motorYap(m, mdl || "");
     };
     for (const [m, d] of Object.entries(sec.motor_durum || {})) {
       const b = el("button", "motor-kart" + (d.kurulu ? "" : " kapali")); b.type = "button";
@@ -5074,7 +5227,7 @@ async function ajanEkleAc(kanatId) {
       const baslik = (sec.roller.find((x) => x.ad === r) || {}).baslik || r;
       if (md.kurulu) {
         motorSec(k.motor, k.model);
-        oneri.textContent = `Meslekten önerildi: ${baslik} → ${MOTOR_ETIKET[k.motor] || k.motor} · ${k.model}`;
+        oneri.textContent = `Meslekten önerildi: ${baslik} → ${MOTOR_ETIKET[k.motor] || k.motor} · ${modelAdi(sec, k.model)}`;
         oneri.className = "form-ipucu";
       } else {
         const ilk = Object.keys(motDug).find((x) => !motDug[x].disabled) || "";
@@ -5112,10 +5265,11 @@ async function ajanEkleAc(kanatId) {
     const ekle = el("button", "dugme olumlu", "Ekle");
     ekle.onclick = async () => {
       if (!ad.value.trim()) { ad.placeholder = "Ad zorunlu"; return ad.focus(); }
+      if (!model.kapiOnayi()) return;
       const r = await eylem("/api/ajan", {
         ad: ad.value, meslek, motor, model: model.value, efor: efor.value,
         kanat: takim.value, lider: lider.checked, karakter },
-        (x) => `${x.ad} eklendi: ${x.meslek} · ${MOTOR_ETIKET[x.motor] || x.motor} · ${x.model || "varsayılan"}`);
+        (x) => `${x.ad} eklendi: ${x.meslek} · ${MOTOR_ETIKET[x.motor] || x.motor} · ${modelAdi(sec, x.model)}`);
       if (r) { D.kadroSec = null; await yenile(); organizasyonAc(takim.value || ""); }
     };
     const vazgec = el("button", "dugme", "Vazgeç"); vazgec.onclick = cekmeceKapat;

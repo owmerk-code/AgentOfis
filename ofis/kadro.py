@@ -54,6 +54,14 @@ class KadroHatasi(RuntimeError):
     pass
 
 
+def kapi_modeli_mi(model) -> str:
+    """Kapi modeli (fable/astra) adi ya da bos. Patron karari (05.10.2026):
+    ajana ELLE atanabilir ("genelde tercih etmiyorum"); otomatik hicbir
+    yolda (kademe) yer almaz. Atama uyari olarak kayda gecer."""
+    m = (model or "").lower()
+    return next((k for k in roller.KAPI_MODELLERI if k in m), "")
+
+
 def _ad_dogrula(ad: str) -> str:
     ad = (ad or "").strip().lower()
     if not AD_DESENI.match(ad):
@@ -172,7 +180,14 @@ class Kadro:
             )
         self.db.olay_yaz(self.proje_id, "ise_alindi",
                          f"{ad} ({meslek}) ise alindi -- {motor}", ajan_ad=ad)
+        self._kapi_uyarisi(ad, model)
         return self.ajan(ad)
+
+    def _kapi_uyarisi(self, ad: str, model) -> None:
+        if kapi_modeli_mi(model):
+            self.db.olay_yaz(self.proje_id, "uyari",
+                             f"{ad} KAPI modeliyle ({model}) calisacak: her tur pahali, "
+                             "limiti hizli bitirir (patronun elle secimi).", ajan_ad="insan")
 
     def katalogdan_al(self, ad: str, meslek: str, *, motor: str = "",
                       model: str = "", **kw) -> dict:
@@ -396,6 +411,8 @@ class Kadro:
                  yeni_meslek, yeni_tur, yeni_klasor,
                  simdi(), self.proje_id, ad),
             )
+        if model is not None and model != mevcut["model"]:
+            self._kapi_uyarisi(ad, model)
         if klasor is not None and yeni_klasor != mevcut["klasor"]:
             self.db.olay_yaz(
                 self.proje_id, "klasor_acildi",

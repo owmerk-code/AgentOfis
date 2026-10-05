@@ -314,6 +314,74 @@ def _karar(db, proje_id: str, anahtar: str) -> str:
     return db.ayar_oku(proje_id, KARAR_ONEKI + anahtar, "")
 
 
+_GEMINI_LISTE: list = []
+
+
+def _gemini_modelleri() -> list:
+    """`agy models` ciktisi (kota harcamaz) -- surec basina bir kez."""
+    if _GEMINI_LISTE:
+        return _GEMINI_LISTE
+    try:
+        from .motor.antigravity import _calistirilabilir_bul
+        exe = _calistirilabilir_bul()
+    except Exception:                            # noqa: BLE001 -- liste opsiyonel
+        exe = ""
+    if exe:
+        rc, cikti = _komut([exe, "models"], 30)
+        if rc == 0:
+            for satir in cikti.splitlines():
+                parca = satir.split("\t")
+                if len(parca) == 2 and parca[0].strip():
+                    _GEMINI_LISTE.append({"id": parca[0].strip(), "ad": parca[1].strip()})
+    return _GEMINI_LISTE
+
+
+def model_listesi(db, proje_id: str) -> dict:
+    """Secilebilir modeller, motorlarin KENDI listelerinden ve GERCEK adlariyla.
+
+    Patron (05.10.2026): "opus yaziyor ama hangi opus belli degil". Claude'da
+    takma ad (`opus`) deger olarak kalir -- ajanlar onu kullaniyor, sabitleme
+    `model_coz`da -- ama yanina katalogdaki gercek adi yazilir. Kapi ve
+    dislanan modeller listede YOK; katalogda/kademede kullanilan ama listede
+    olmayan bir ad varsa oldugu gibi eklenir (gizlenmez).
+    Donus: {motor: [{"id", "ad"}]}.
+    """
+    # Patron (05.10.2026): "butun secilebilir modeller gozuksun". HEPSI
+    # listede; onerilmeyenin yaninda gerekcesi (`not`), kapi modeli
+    # (fable/astra) gorunur ama ajana VERILEMEZ (`kapali`, kadro da reddeder).
+    out = {"claude": [], "codex": [], "gemini": []}
+
+    def _ekle(motor, mid, ad, ek=""):
+        if any(x["id"] == mid for x in out[motor]):
+            return
+        kapi = next((k for k in roller.KAPI_MODELLERI if k in mid), "")
+        dis = roller.dislanan_mi(mid, motor)
+        not_ = ("pahali kapi modeli: limiti hizli bitirir, genelde tercih edilmez" if kapi
+                else ("onerilmez: " + dis) if dis else ek)
+        out[motor].append({"id": mid, "ad": ad, "not": not_, "kapi": bool(kapi)})
+
+    for m in claude_katalogu()["modeller"]:
+        if m["ana"] and m["kisa"] and not roller.dislanan_mi(m["id"], "claude"):
+            _ekle("claude", m["kisa"], f"Claude {m['ad']}")      # takma ad: guncel olan
+        else:
+            _ekle("claude", m["id"], f"Claude {m['ad']}", "" if m["ana"] else "eski surum")
+    for m in codex_katalogu(codex_evleri(db, proje_id))["modeller"]:
+        _ekle("codex", m["id"], m["ad"].replace("-", " "),
+              "emekliye ayriliyor" if m.get("emeklilik") else "")
+    for m in _gemini_modelleri():
+        _ekle("gemini", m["id"], m["ad"],
+              "" if m["id"].startswith("gemini") else "Antigravity icindeki baska firma modeli")
+    # Sistemin bugun kullandigi her ad listede olmali (yoksa secim kayardi).
+    harita = roller.kademe_haritasi(db, proje_id)
+    kullanilan = [(mo, v) for mo, k in harita.items() for v in k.values() if v]
+    kullanilan += [(v["motor"], v["model"])
+                   for v in roller.meslek_katalogu(db, proje_id).values() if v["model"]]
+    for mo, mid in kullanilan:
+        if mo in out:
+            _ekle(mo, mid, mid)
+    return out
+
+
 def model_coz(db, proje_id: str, motor: str, model: str) -> str:
     """Takma adi ofisin SABITLEDIGI gercek kimlige cevirir.
 
@@ -463,6 +531,8 @@ def oneriler(db, proje_id: str, *, npm: bool = True) -> dict:
                 continue
             if any(k in m["id"] for k in roller.KAPI_MODELLERI):
                 continue   # kapi modelleri kademeye girmez (roller.py)
+            if roller.dislanan_mi(m["id"], motor):
+                continue   # patron bilerek kullanmiyor (05.10.2026)
             if _eski_ya_da_ayni(motor, m["id"]):
                 continue   # kullanilandan ESKI ya da ayni nesil
             liste.append({

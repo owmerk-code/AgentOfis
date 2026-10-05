@@ -623,6 +623,30 @@ MESLEK_MOTORU = {
     "bilgisayar": ("codex", "gpt-5.6-sol"),
 }
 MESLEK_AYAR_ONEKI = "meslek:"
+
+#: BILEREK KULLANILMAYAN modeller (patron karari 05.10.2026). Guncelleme
+#: bunlari "yeni model" diye SORMAZ, model secim listesinde cikmazlar.
+#: Alt dize eslesmesi; gerekce yaninda.
+#: Anahtar (motor, alt dize); motor "" = her motorda. Motor ayrimi sart:
+#: `claude-opus-4-6` hem Anthropic'in eski surumu hem Antigravity'nin
+#: gecici modeli -- ad ayni, karar farkli.
+DISLANAN_MODELLER = {
+    ("", "claude-haiku-4"): "Haiku 4.5 kodlamada 19,5 (BenchLM); Sonnet dusuk eforla kosar",
+    ("gemini", "gemini-3.1-pro"): "3.8 Flash'tan zayif (65,1 / 74,0)",
+    ("gemini", "claude-"): "Antigravity'nin gecici Claude'u (patron: kapaniyor)",
+    ("gemini", "gpt-oss"): "Antigravity'nin GPT-OSS'u, zayif (38,4)",
+}
+
+
+def dislanan_mi(model: str, motor: str = "") -> str:
+    """Bos degilse model bilerek kullanilmiyor; deger gerekcedir. `motor`
+    verilmezse yalniz her motorda gecerli kurallar VE adi motoru belli
+    eden kurallar (gemini-*) bakilir."""
+    m = (model or "").lower()
+    for (mo, k), g in DISLANAN_MODELLER.items():
+        if k in m and (not mo or mo == motor or (not motor and m.startswith(mo))):
+            return g
+    return ""
 #: Motor kurulu degilse yedek sirasi (model kademeden gelir).
 MOTOR_YEDEK_SIRASI = ("claude", "codex", "gemini")
 
@@ -652,8 +676,8 @@ def meslek_yaz(db, proje_id: str, rol_ad: str, motor: str, model: str) -> dict:
     from .motor import kayitli_motorlar
     if motor not in kayitli_motorlar():
         raise RolHatasi(f"Bilinmeyen motor: {motor!r}")
-    if any(k in model for k in KAPI_MODELLERI):
-        raise RolHatasi(f"{model!r} bir KAPI modeli; kataloga konmaz.")
+    # Kapi modeli kataloga da yazilabilir (patron 05.10.2026: "atanabilirler
+    # ama genelde tercih etmiyorum") -- insanin elle karari; kademe degil.
     db.ayar_yaz(proje_id, f"{MESLEK_AYAR_ONEKI}{ad}", f"{motor}|{model}")
     return meslek_katalogu(db, proje_id)[ad]
 

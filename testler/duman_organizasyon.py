@@ -86,8 +86,11 @@ sina("ayar koddaki varsayilani EZER (ve isaretlenir)",
      R.meslek_katalogu(db, pid)["metin"] == {"motor": "claude", "model": "sonnet", "ayar": True})
 R.meslek_yaz(db, pid, "metin", "", "")
 sina("bos motor varsayilana DONER", R.meslek_katalogu(db, pid)["metin"]["motor"] == "gemini")
-sina("kapi modeli kataloga konmaz",
-     reddedilir(lambda: R.meslek_yaz(db, pid, "lider", "claude", "fable"), "KAPI"))
+sina("kapi modeli kataloga ELLE yazilabilir (patron karari)",
+     R.meslek_yaz(db, pid, "analiz", "codex", "gpt-6-astra")["model"] == "gpt-6-astra")
+R.meslek_yaz(db, pid, "analiz", "", "")
+sina("kapi modeli KADEMEYE yine yazilamaz (otomatik yol yok)",
+     reddedilir(lambda: R.kademe_yaz(db, pid, "claude", "guclu", "claude-fable-5-1"), "KAPI"))
 sina("bilinmeyen motor reddedilir",
      reddedilir(lambda: R.meslek_yaz(db, pid, "lider", "yok-motor", "x"), "motor"))
 m, mo, not_ = R.meslek_motoru("arastirma", db, pid, {"claude": True, "codex": True})
@@ -178,8 +181,17 @@ sec = ist.get("/api/kadro/secenek").json()
 sina("secenekler: katalog + motor durumu + model secenekleri",
      sec["katalog"]["video"]["motor"] == "gemini"
      and set(sec["motor_durum"]) >= {"claude", "codex", "gemini"}
-     and "gpt-5.6-sol" in sec["model_secenek"]["codex"]
-     and "gemini-3.8-flash-high" in sec["model_secenek"]["gemini"])
+     and any(x["id"] == "gpt-5.6-sol" for x in sec["model_secenek"]["codex"])
+     and any(x["id"] == "gemini-3.8-flash-high" for x in sec["model_secenek"]["gemini"]))
+_hepsi = [x for v in sec["model_secenek"].values() for x in v]
+sina("model listesi: onerilmeyenin ve kapi modelinin yaninda not, adlar okunur",
+     all(x["ad"] for x in _hepsi)
+     and all(x["not"] for x in _hepsi if R.dislanan_mi(x["id"]) or x["kapi"]))
+ofis.kadro.motor_ayarla("ayna", motor="codex", model="gpt-6-astra")
+with db.baglanti() as _c:
+    _u = [r[0] for r in _c.execute("SELECT govde FROM olay WHERE tur='uyari' AND govde LIKE '%KAPI%'")]
+sina("kapi modeli ajana ATANABILIR ve uyari kayda gecer",
+     ofis.kadro.ajan("ayna")["model"] == "gpt-6-astra" and any("ayna" in u for u in _u), str(_u))
 sina("gemini durumunda video notu DURUSTCE yazili",
      any("video" in n for n in sec["motor_durum"]["gemini"]["notlar"]))
 r = ist.post("/api/ajan", json={"ad": "sahne", "meslek": "video", "kanat": magaza,
@@ -205,6 +217,12 @@ sina("bos takim silindi; kapanmis isi KAYITTA kaldi (bagi cozuldu)",
      r.status_code == 200 and ofis.tahta.gorev(kapali["no"])["kanat_id"] is None, r.text[:200])
 sina("bekleyen sablon onerisi takimla birlikte kapandi",
      Ekip(ofis).oneri(o2["no"])["durum"] == "reddedildi")
+_kt = ofis.kanat_ac("GECICI", "GC")
+ofis.kadro.katalogdan_al("gl", "lider", kanat_id=_kt, lider_mi=True, klasor=str(kok))
+ofis.kadro.katalogdan_al("gu", "metin", kanat_id=_kt, klasor=str(kok))
+r = ist.post("/api/kanat/" + _kt + "/sil", json={"ajanlarla": True})
+sina("takim AJANLARIYLA silindi (ajanlar arsivde, lider dahil)",
+     r.status_code == 200 and all(ofis.kadro.ajan(x)["arsiv"] for x in ("gl", "gu")), r.text[:200])
 r = ist.post("/api/katalog", json={"rol": "seo", "motor": "codex", "model": "gpt-6.1-sol"})
 sina("katalog ucu yazar", r.status_code == 200 and R.meslek_katalogu(db, pid)["seo"]["motor"] == "codex")
 kat = {x["rol"]: x for x in ist.get("/api/katalog").json()}
