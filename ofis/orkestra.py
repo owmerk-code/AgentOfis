@@ -86,6 +86,10 @@ JSON_BLOK = re.compile(r"```(?:json)?\s*(\{.*?\})\s*```", re.DOTALL)
 AZAMI_KOL = 6
 
 
+#: lider ad -> son isitma hatasi (ayni sebep bir kez yazilsin).
+_ISIT_HATALARI: dict = {}
+
+
 class OrkestraHatasi(RuntimeError):
     pass
 
@@ -825,6 +829,42 @@ class Orkestra:
                 "kadroya yanlis isi verir.")
         return liderler[0]
 
+    def lider_isit(self, lider: dict, butce_usd=None) -> bool:
+        """Liderin BIR SONRAKI turunun surecini onceden hazirlar (sicak).
+
+        `_lideri_kostur`un ILK basamagiyla AYNI degerler: ayni anahtar
+        uretilmezse hazirlanan surec kullanilmaz. Mesaj gonderilmez."""
+        from .motor.tui import kipe_gore
+        try:
+            basamaklar, _ = basamaklari_kur(
+                self.db, self.proje_id, lider, fabrika=self.motor_fabrikasi,
+                zincir=LIDER_ZINCIRI, butce_usd=butce_usd,
+                kademe_haritasi=roller.kademe_haritasi(self.db, self.proje_id),
+                rol="lider")
+            if not basamaklar:
+                return False
+            b = basamaklar[0]
+            motor = kipe_gore(self.db, self.proje_id, self.motor_fabrikasi(b["motor"]),
+                              ajan_ad=lider["ad"], butce_usd=butce_usd, lider=True)
+            if not getattr(motor, "sicak_destegi", False):
+                return False
+            return motor.sicak_isit(
+                klasor=lider["klasor"], model=b["model"],
+                efor=roller.tur_eforu(self.db, self.proje_id, lider["efor"]),
+                yazabilir=False, ek_klasorler=(),
+                butce_usd=tur_butcesi(b, motor, butce_usd),
+                ek_ortam=b.get("ortam") or None)
+        except Exception as exc:                 # noqa: BLE001 -- isitma hiz icin, is degil
+            # SESSIZ YUTULMAZ (kalici ders): isitma calismiyorsa lider yine
+            # kosar ama YAVAS -- sebep kayda gecer, ayni sebep bir kez.
+            sebep = f"{type(exc).__name__}: {exc}"[:300]
+            if _ISIT_HATALARI.get(lider.get("ad")) != sebep:
+                _ISIT_HATALARI[lider.get("ad")] = sebep
+                self.db.olay_yaz(self.proje_id, "uyari",
+                                 f"Lider onceden hazirlanamadi (tur yine kosar, yavas): {sebep}",
+                                 ajan_ad=lider.get("ad") or "")
+            return False
+
     def _lideri_kostur(self, lider: dict, metin: str, butce_usd, zaman_asimi,
                        ek_klasorler=(), akis=None) -> str:
         """Lider turu -- NOBET ZINCIRIYLE (bkz. `zincir.LIDER_ZINCIRI`).
@@ -893,6 +933,8 @@ class Orkestra:
                 ek_klasorler=tuple(ek_klasorler or ()),
                 butce_usd=motor_butcesi, zaman_asimi=zaman_asimi,
                 ek_ortam=b.get("ortam") or None,
+                # SICAK LIDER (05.10.2026): yukleme turdan once; guc ayni.
+                **({"sicak": True} if getattr(motor, "sicak_destegi", False) else {}),
             ):
                 kesildi = tavan.lider_freni(
                     self.db, self.proje_id, fren, olay, ajan_ad=lider["ad"],

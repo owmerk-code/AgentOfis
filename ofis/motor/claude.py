@@ -62,10 +62,101 @@ from typing import Iterator
 
 from .. import motor_saglik
 from .tip import (ortam_hazirla, limit_penceresi, dokum_ekle, Motor, MotorOlayi,
-                  MotorHatasi, MotorYokHatasi, SurecKafesi)
+                  MotorHatasi, MotorYokHatasi, SurecKafesi, TurKanali)
 
 _PENCERE_YOK = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
 _SON = object()
+
+# -- SICAK BEKLEYEN SUREC (05.10.2026) ----------------------------------------
+#
+# OLCULDU (Sonnet, bos klasor, liderin TAM komutu): liderin triyaj turu
+# 10-11,6 sn; bunun ~7 sn'si MODELDEN ONCE -- her turda 6 claude.ai eklenti
+# paketi, Context7 ve hesabin baglayicilari (Gmail, Drive, Shopify...)
+# yeniden yukleniyor ("init" olayi 7-10. sn'de). Ayni komutla ONCEDEN
+# baslatilip bekletilen surec: istemden sonuca 3,0-4,0 sn (init 0,2 sn).
+# Patron: "gucu etkileyecek bir sey yapma" -- model, efor, araclar, baglayicilar
+# AYNI; yalniz yukleme turdan ONCE yapilir. Her tur yine TEMIZ bir oturumdur
+# (sicak surec yeni bir --session-id ile acilir, mesaj gelene kadar bekler).
+# Anahtar komutun KENDISI (oturum kimligi haric) + klasor + ortam: model, efor
+# ya da ayar degisirse bekleyen surec KULLANILMAZ. Mesaj gelmeden kimseye
+# jeton harcatmaz; panel kapanirsa stdin kapanir ve surec cikar.
+SICAK_OMUR_SN = 600
+#: Tazeleme omrun bu kadar oncesinde yapilir (bekleyen hic bayatlamasin).
+SICAK_TAZELE_PAYI_SN = 180
+SICAK_AZAMI = 3
+_SICAK: dict = {}
+_SICAK_KILIT = threading.Lock()
+
+
+def _oturumsuz(komut: list) -> list:
+    k = list(komut)
+    if "--session-id" in k:
+        i = k.index("--session-id")
+        del k[i:i + 2]
+    return k
+
+
+def _sicak_anahtar(komut: list, kok, ortam: dict) -> str:
+    return json.dumps([_oturumsuz(komut), str(kok), sorted(ortam.items())],
+                      ensure_ascii=False)
+
+
+def _sicak_al(anahtar: str):
+    """Bekleyen surec -> (surec, oturum) ya da None. Bayat/olu olan kapatilir."""
+    with _SICAK_KILIT:
+        k = _SICAK.pop(anahtar, None)
+    if not k:
+        return None
+    if k["surec"].poll() is None and time.monotonic() - k["an"] < SICAK_OMUR_SN:
+        return k["surec"], k["oturum"]
+    _sicak_oldur(k["surec"])
+    return None
+
+
+def _sicak_oldur(surec) -> None:
+    try:
+        surec.kill()
+        surec.wait(timeout=5)
+    except Exception:                            # noqa: BLE001 -- zaten olmus olabilir
+        pass
+
+
+def _sicak_hazirla(anahtar: str, komut: list, kok, ortam: dict) -> None:
+    """Ayni komutla, YENI oturum kimligiyle bir sonraki sureci baslatir."""
+    oturum = str(uuid.uuid4())
+    k = _oturumsuz(komut) + ["--session-id", oturum]
+    try:
+        surec = subprocess.Popen(k, cwd=str(kok), env=ortam, stdin=subprocess.PIPE,
+                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+                                 encoding="utf-8", errors="replace", bufsize=1,
+                                 creationflags=_PENCERE_YOK)
+    except OSError:
+        return
+    eskiler = []
+    with _SICAK_KILIT:
+        eski = _SICAK.pop(anahtar, None)
+        if eski:
+            eskiler.append(eski["surec"])
+        _SICAK[anahtar] = {"surec": surec, "oturum": oturum, "an": time.monotonic()}
+        while len(_SICAK) > SICAK_AZAMI:
+            en_eski = min(_SICAK, key=lambda x: _SICAK[x]["an"])
+            eskiler.append(_SICAK.pop(en_eski)["surec"])
+    for s in eskiler:
+        _sicak_oldur(s)
+
+
+def sicaklari_kapat() -> int:
+    """Bekleyen butun surecleri kapatir (panel kapanisi, sinama)."""
+    with _SICAK_KILIT:
+        hepsi = [k["surec"] for k in _SICAK.values()]
+        _SICAK.clear()
+    for s in hepsi:
+        _sicak_oldur(s)
+    return len(hepsi)
+
+
+import atexit as _atexit                           # noqa: E402
+_atexit.register(sicaklari_kapat)
 
 #: Turun ust siniri. Sonsuz bekleyen bir tur, kilidi de sonsuza kadar
 #: tutar; zaman asimi bu yuzden mimari bir kapidir, konfor degil.
@@ -367,6 +458,8 @@ class ClaudeMotoru(Motor):
     butce_destegi = True   # --max-budget-usd
     araclar_kapatilabilir = True
     izin_kancasi = True   # --tools ""
+    #: Sicak bekleyen surec destegi (`tur_kos(sicak=True)`), bkz. modul ustu.
+    sicak_destegi = True
     #: Tur SURERKEN not ve durdurma (`TurKanali`). OLCULDU (26.09.2026):
     #: `--input-format stream-json` ile yazilan mesaj bir sonraki arac
     #: sinirinda AYNI tura girer; arac siniri yoksa ikinci bir tur acar.
@@ -636,10 +729,16 @@ class ClaudeMotoru(Motor):
         araclar_kapali: bool = False,
         izin_araci: str = "",
         kanal=None,
+        sicak: bool = False,
     ) -> Iterator[MotorOlayi]:
         metin = str(metin or "").strip()
         if not metin:
             raise MotorHatasi("Bos brifing kosulamaz.")
+        # SICAK (bkz. modul ustu): yalniz YENI oturumlu turda. Istem stdin
+        # json kanalindan gider (surec mesaji bekler); bos kanal = not yok.
+        sicak = bool(sicak) and not oturum_id
+        if sicak and kanal is None:
+            kanal = TurKanali()
         if not self.calistirilabilir:
             raise MotorYokHatasi(
                 "claude CLI bulunamadi. Kurulu mu: 'claude --version'?"
@@ -652,47 +751,42 @@ class ClaudeMotoru(Motor):
         devam = bool(oturum_id)
         sinir = float(zaman_asimi or self.zaman_asimi)
 
-        komut = self._komut_kur(
+        komut, ortam = self._komut_ve_ortam(
             oturum, devam=devam, model=model, efor=efor, yazabilir=yazabilir,
             ek_klasorler=ek_klasorler, butce_usd=butce_usd,
             mcp_yapilandirma=mcp_yapilandirma, izinli_araclar=izinli_araclar,
             araclar_kapali=araclar_kapali, izin_araci=izin_araci,
-            akis_girdi=kanal is not None,
-        )
-
-        self._arguman_dogrula(komut)
-
-        # SIRLAR AYIKLANIR. claude turu hicbir dis servis anahtarina
-        # ihtiyac duymaz; `izinli` bos birakiliyor. Ajanin elinde
-        # `Bash(echo *)` var -- gecen her anahtar, terminal kaniti olarak
-        # tahtaya dusebilir (bkz. tip.SIR_ONEKLERI).
-        ortam = ortam_hazirla(os.environ, ek={**TUR_ORTAMI,
-                                              **self._baglayici_ortami(araclar_kapali),
-                                              **(ek_ortam or {})},
-                              izinli=tuple(ek_ortam or ()))
-        # Safe mode acik kalirsa kendi MCP yapilandirmamiz da devre disi
-        # kalir; turu yalitmanin yolu safe mode degil, acik bayraklar.
-        ortam.pop("CLAUDE_CODE_SAFE_MODE", None)
-        ortam.pop("CLAUDE_CODE_SIMPLE", None)
+            akis_girdi=kanal is not None, ek_ortam=ek_ortam)
 
 
         basladi = time.monotonic()
+        surec = None
+        if sicak:
+            anahtar = _sicak_anahtar(komut, kok, ortam)
+            hazir = _sicak_al(anahtar)
+            if hazir:
+                surec, oturum = hazir
         try:
-            surec = subprocess.Popen(
-                komut,
-                cwd=str(kok),
-                env=ortam,
-                stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-                encoding="utf-8",   # Windows konsolu cp1254; boru utf-8 olmali
-                errors="replace",
-                bufsize=1,
-                creationflags=_PENCERE_YOK,
-            )
+            if surec is None:
+                surec = subprocess.Popen(
+                    komut,
+                    cwd=str(kok),
+                    env=ortam,
+                    stdin=subprocess.PIPE,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True,
+                    encoding="utf-8",   # Windows konsolu cp1254; boru utf-8 olmali
+                    errors="replace",
+                    bufsize=1,
+                    creationflags=_PENCERE_YOK,
+                )
         except OSError as exc:
             raise MotorYokHatasi(f"claude baslatilamadi: {exc}") from exc
+        if sicak:
+            # SIRADAKI tur icin hemen yukle: liderin plan/rapor turu cogu kez
+            # saniyeler icinde gelir.
+            _sicak_hazirla(anahtar, komut, kok, ortam)
         # KAFES: turun baslattigi HER SEY tur bitince biter (yetimler dahil).
         kafes = SurecKafesi(surec)
 
@@ -1242,6 +1336,64 @@ class ClaudeMotoru(Motor):
         else:
             komut += ["--session-id", oturum]
         return komut
+
+    def _komut_ve_ortam(self, oturum: str, *, devam: bool, model: str, efor: str,
+                        yazabilir: bool, ek_klasorler, butce_usd, mcp_yapilandirma: str,
+                        izinli_araclar, araclar_kapali: bool, izin_araci: str,
+                        akis_girdi: bool, ek_ortam) -> tuple:
+        """Turun komutu ve ortami -- TEK yerde: tur da onceden isitma da
+        (`sicak_isit`) buradan gecer; iki kopya olsaydi anahtar kayardi ve
+        bekleyen surec hic kullanilmazdi."""
+        komut = self._komut_kur(
+            oturum, devam=devam, model=model, efor=efor, yazabilir=yazabilir,
+            ek_klasorler=ek_klasorler, butce_usd=butce_usd,
+            mcp_yapilandirma=mcp_yapilandirma, izinli_araclar=izinli_araclar,
+            araclar_kapali=araclar_kapali, izin_araci=izin_araci,
+            akis_girdi=akis_girdi,
+        )
+        self._arguman_dogrula(komut)
+        # SIRLAR AYIKLANIR. claude turu hicbir dis servis anahtarina
+        # ihtiyac duymaz; `izinli` bos birakiliyor. Ajanin elinde
+        # `Bash(echo *)` var -- gecen her anahtar, terminal kaniti olarak
+        # tahtaya dusebilir (bkz. tip.SIR_ONEKLERI).
+        ortam = ortam_hazirla(os.environ, ek={**TUR_ORTAMI,
+                                              **self._baglayici_ortami(araclar_kapali),
+                                              **(ek_ortam or {})},
+                              izinli=tuple(ek_ortam or ()))
+        # Safe mode acik kalirsa kendi MCP yapilandirmamiz da devre disi
+        # kalir; turu yalitmanin yolu safe mode degil, acik bayraklar.
+        ortam.pop("CLAUDE_CODE_SAFE_MODE", None)
+        ortam.pop("CLAUDE_CODE_SIMPLE", None)
+        return komut, ortam
+
+    def sicak_isit(self, *, klasor: str, model: str = "", efor: str = "normal",
+                   yazabilir: bool = True, ek_klasorler: tuple = (), butce_usd=None,
+                   mcp_yapilandirma: str = "", izinli_araclar: tuple = (),
+                   ek_ortam: dict = None, araclar_kapali: bool = False,
+                   izin_araci: str = "") -> bool:
+        """Bir turu KOSMADAN, ayni komutla bekleyen sureci hazirlar (panel
+        acilisi ve tazeleme). Ayni anahtarda taze bir surec varsa dokunmaz.
+        Mesaj gonderilmez, limit harcanmaz. Donus: yeni surec acildi mi."""
+        if not self.calistirilabilir:
+            return False
+        kok = Path(klasor).expanduser().resolve()
+        if not kok.is_dir():
+            return False
+        komut, ortam = self._komut_ve_ortam(
+            str(uuid.uuid4()), devam=False, model=model, efor=efor, yazabilir=yazabilir,
+            ek_klasorler=ek_klasorler, butce_usd=butce_usd,
+            mcp_yapilandirma=mcp_yapilandirma, izinli_araclar=izinli_araclar,
+            araclar_kapali=araclar_kapali, izin_araci=izin_araci,
+            akis_girdi=True, ek_ortam=ek_ortam)
+        anahtar = _sicak_anahtar(komut, kok, ortam)
+        with _SICAK_KILIT:
+            k = _SICAK.get(anahtar)
+            taze = (k is not None and k["surec"].poll() is None
+                    and time.monotonic() - k["an"] < SICAK_OMUR_SN - SICAK_TAZELE_PAYI_SN)
+        if taze:
+            return False
+        _sicak_hazirla(anahtar, komut, kok, ortam)
+        return True
 
     @staticmethod
     def _oturum_dogrula(oturum_id: str) -> str:

@@ -3441,6 +3441,7 @@ def kos(adres: str = "127.0.0.1", kapi: int = 8900, db_yolu=None,
     _gunluk_yedek_arkada(db_yolu)
     _limit_tazele_arkada(db_yolu, proje_ad)
     _guncelleme_arkada(db_yolu, proje_ad)
+    _lider_isit_arkada(db_yolu, proje_ad)
     uvicorn.run(uygulama, host=adres, port=kapi, log_level="warning")
 
 
@@ -3516,6 +3517,39 @@ def _guncelleme_arkada(db_yolu, proje_ad=None) -> None:
             time.sleep(600)
 
     threading.Thread(target=dongu, name="guncelleme", daemon=True).start()
+
+
+#: Sicak lider tazeleme araligi (sn). Bekleyen surecin omru 10 dk, tazeleme
+#: 3 dk once: lider hep hazir kalir.
+LIDER_ISIT_SN = 120
+
+
+def _lider_isit_arkada(db_yolu, proje_ad=None) -> None:
+    """SICAK LIDER (05.10.2026): her takim liderinin bir sonraki turunun
+    sureci ONCEDEN hazir bekler -- olculdu, lider turu 10-11 sn'den 3-4 sn'ye.
+    Acilista ve LIDER_ISIT_SN'de bir: yeni takim, model degisikligi, bayatlama
+    kendiliginden yakalanir. Mesaj gonderilmez, limit harcanmaz. Yalniz
+    GERCEK panelde (kos) baslar; sinama paneli `olustur` ile kurulur."""
+    import time
+    from .db import VARSAYILAN_YOL
+
+    def dongu():
+        time.sleep(3)
+        while True:
+            def isi(o):
+                for a in o.kadro.liste():
+                    if a["lider_mi"]:
+                        o.orkestra.lider_isit(a, butce_usd=PANEL_TUR_TAVANI_USD)
+            try:
+                _db = Veritabani(db_yolu or VARSAYILAN_YOL)
+                pid = _proje_id_bul(_db, proje_ad)
+                if pid is not None:
+                    isi(Ofis(_db, pid))
+            except Exception:     # noqa: BLE001 -- isitma hiz icindir, panel olmesin
+                pass
+            time.sleep(LIDER_ISIT_SN)
+
+    threading.Thread(target=dongu, name="lider-isit", daemon=True).start()
 
 
 def _limit_tazele_arkada(db_yolu, proje_ad=None) -> None:
