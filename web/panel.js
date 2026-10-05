@@ -295,6 +295,13 @@ function cizSerit() {
     b.onclick = () => { D.kanat = kn.id; yenile(); };
     k.append(b);
   }
+  // YONET (05.10.2026): secili takimin ajanlari, motorlari, modelleri.
+  if (D.kanat) {
+    const yon = el("button", "kanat-sekme kanat-yonet", "⚙ Yönet");
+    yon.title = "Bu takımı yönet: ajan ekle/çıkar/taşı, motor ve model, lider, şablon";
+    yon.onclick = () => organizasyonAc(D.kanat);
+    k.append(yon);
+  }
   // + TAKIM: yeni kanat. Kurulunca secilir ve ilk adim SOYLENIR (lider).
   const yeni = el("button", "kanat-sekme kanat-ekle", "+");
   yeni.title = "Yeni takım (kanat) kur — kendi ofisi, kadrosu ve lideri olur.";
@@ -1798,9 +1805,7 @@ function haritaAjani(a, yer, kumas) {
   d.dataset.oda = a.oda;
   const balon = balonYap(a, yer);
   if (balon) d.append(balon);
-  const sac = SACLAR[_tohum(a.ad) % SACLAR.length];
-  d.append(pikselCiz(FIGUR, { H: sac, S: TEN, E: GOZ, C: kumas, K: AYAK },
-                     3, "sprite-kutu"));
+  d.append(pikselCiz(FIGUR, karakterRenk(a, kumas), 3, "sprite-kutu"));
   const ad = el("div", "kat-ad");
   ad.append(el("span", "kat-ad-yazi", a.ad));
   // BIZE OZGU, rakipte YOK: yazma kilidi ofiste GORUNUR (Yasa 1).
@@ -4477,6 +4482,7 @@ function cizBaglam() {
 function cekmeceAc(doldur) {
   const c = $("#cekmece");
   c.innerHTML = "";
+  c.classList.remove("genis");
   doldur(c);
   $("#perde").classList.remove("gizli");
 }
@@ -4613,7 +4619,7 @@ function rolSecimi(sec, secili) {
   for (const k of sec.kategoriler) {
     const g = el("optgroup"); g.label = k;
     for (const r of sec.roller.filter(x => x.kategori === k)) {
-      const o = el("option", null, `${r.ad} — ${kes(r.ozet, 60)}`);
+      const o = el("option", null, `${r.baslik || r.ad} — ${kes(r.ozet, 60)}`);
       o.value = r.ad;
       if (r.ad === secili) o.selected = true;
       g.append(o);
@@ -4650,7 +4656,7 @@ async function ajanAyarlari(c, a) {
   const kutu = el("div");
   const rol = rolSecimi(sec, a.meslek);
   const motor = motorSecimi(sec, a.motor);
-  const model = el("input"); model.value = a.model || ""; model.placeholder = "rolün kademesinden";
+  const model = modelGirdisi(sec, a.motor, a.model || ""); model.placeholder = "rolün kademesinden";
   const efor = secim(sec.eforlar.map(e => [e, e]), a.efor);
   const ip = el("div", "form-ipucu");
   formAlan(kutu, "Rol", rol, el("div", "form-ipucu",
@@ -4659,12 +4665,18 @@ async function ajanAyarlari(c, a) {
   formAlan(sira, "Motor", motor); formAlan(sira, "Efor", efor);
   kutu.append(sira);
   formAlan(kutu, "Model", model, ip);
+  kutu.append(model.liste);
+  let karakter = a.karakter || "";
+  const renk = ((D.ofis.kanatlar || []).find((k) => k.id === a.kanat_id) || {}).renk || "#6b7480";
+  formAlan(kutu, "Karakter", karakterSecici(karakter, renk, (k) => { karakter = k; }));
   const tazele = () => modelIpucu(sec, rol.value, motor.value, ip);
-  rol.onchange = tazele; motor.onchange = tazele; tazele();
+  rol.onchange = tazele;
+  motor.onchange = () => { model.motorYap(motor.value); tazele(); };
+  tazele();
   const kaydet = el("button", "dugme olumlu", "Kaydet");
   kaydet.onclick = async () => {
     const r = await eylem(`/api/ajan/${a.ad}/ayar`, {
-      meslek: rol.value, motor: motor.value, model: model.value, efor: efor.value },
+      meslek: rol.value, motor: motor.value, model: model.value, efor: efor.value, karakter },
       (r) => `${r.ad}: ${r.meslek} · ${r.tur} · ${r.motor}/${r.model || "varsayılan"} · ${r.efor}`);
     // ONCE TAZELE, SONRA AC: ajanAc listeden okur; tazelenmeden acilirsa
     // eski ayari gosterir (ya da yeni ajani hic bulamaz -- olculdu).
@@ -4693,87 +4705,421 @@ function takimEkleAc() {
       if (!ad.value.trim()) { ad.placeholder = "Ad zorunlu"; return ad.focus(); }
       const r = await eylem("/api/kanat", { ad: ad.value, onek: onek.value, renk: renk.value },
         (x) => `takım ${x.ad} kuruldu — şimdi "+ ajan" ile bir lider işe al`);
-      if (r) { D.kanat = r.id; D.kadroSec = null; await yenile(); ajanEkleAc(); }
+      if (r) { D.kanat = r.id; D.kadroSec = null; await yenile(); ajanEkleAc(r.id); }
     };
     const sat = el("div", "cek-eylem"); sat.append(kur); c.append(sat);
   });
 }
 
-/* ISE ALMA. Ajanlar projenin ORTAK kokunde calisir (karar 18.09) --
-   klasor secilmez, sunucu verir. Lider isareti kanat basina tektir;
-   kadro zaten reddeder, panel yalniz soyler. */
-async function ajanEkleAc() {
+/* ─────────────── ORGANIZASYON (05.10.2026) ───────────────
+   Patron: "her takımın Yönet kısmı olsun; motorları, modelleri, ajanları
+   buradan yönetelim" + rakibin "Organizasyon — Şirket ağacı". İki görünüm
+   (bütün şirket / tek takım) AYNI uçları kullanır. Kurallar kadro'da
+   (açık işi olan taşınmaz, lider taşınmaz, ad geri dönmez); panel yalnız
+   ona ulaşan kapı — sunucunun reddi olduğu gibi gösterilir. */
+
+const MOTOR_ETIKET = { claude: "Claude Code", codex: "Codex", gemini: "Antigravity" };
+const TENLER = ["#e8b98a", "#d29a6a", "#a8714a", "#7a4e33"];
+/* 0 = takımın rengi (varsayılan); öteki kumaşlar karakter seçiminden. */
+const KUMASLAR = ["", "#5a7fa8", "#7a5aa8", "#4f8a6a", "#a8584f", "#a8904f", "#3d4a5c", "#b0b8c4"];
+
+/* Karakter "sac:ten:kumas" sıra numaraları; boşsa addan türetilir
+   (eski davranış — kalıcı kimlik görsel olarak da kalıcı). */
+function karakterRenk(a, kumas) {
+  const k = String(a.karakter || "").split(":").map(Number);
+  if (k.length === 3 && k.every((n) => Number.isInteger(n))) {
+    return { H: SACLAR[k[0] % SACLAR.length], S: TENLER[k[1] % TENLER.length],
+             E: GOZ, C: KUMASLAR[k[2] % KUMASLAR.length] || kumas, K: AYAK };
+  }
+  return { H: SACLAR[_tohum(a.ad || "") % SACLAR.length], S: TEN, E: GOZ, C: kumas, K: AYAK };
+}
+
+function karakterSecici(secili, renk, onSec) {
+  const kap = el("div", "karakter-liste");
+  const secenek = [];
+  for (let i = 0; i < 18; i++) secenek.push(`${i % 6}:${Math.floor(i / 6) % 4}:${(i * 3) % 8}`);
+  if (secili && !secenek.includes(secili)) secenek.unshift(secili);
+  const dugmeler = [];
+  const isaretle = (k) => dugmeler.forEach(([d, x]) => d.classList.toggle("secili", x === k));
+  const oto = el("button", "karakter-kart", "otomatik");
+  oto.type = "button"; oto.title = "Görünüş adından türetilir";
+  oto.onclick = () => { isaretle(""); onSec(""); };
+  dugmeler.push([oto, ""]); kap.append(oto);
+  for (const k of secenek) {
+    const d = el("button", "karakter-kart"); d.type = "button";
+    d.append(pikselCiz(FIGUR, karakterRenk({ karakter: k }, renk), 3, "sprite-kutu"));
+    d.onclick = () => { isaretle(k); onSec(k); };
+    dugmeler.push([d, k]); kap.append(d);
+  }
+  isaretle(secili || "");
+  return kap;
+}
+
+/* Model seçimi: sunucunun söylediği adlar (kademe + katalog) + elle yazılabilir. */
+function modelGirdisi(sec, motor, deger) {
+  const g = el("input"); g.value = deger || "";
+  const liste = el("datalist");
+  liste.id = "model-liste-" + Math.random().toString(36).slice(2, 8);
+  g.setAttribute("list", liste.id);
+  g.motorYap = (m) => {
+    liste.innerHTML = "";
+    for (const x of ((sec.model_secenek || {})[m] || [])) { const o = el("option"); o.value = x; liste.append(o); }
+  };
+  g.motorYap(motor);
+  g.liste = liste;
+  return g;
+}
+
+async function organizasyonAc(odak) {
+  let org, sec;
+  D.kadroSec = null;
+  try { [org, sec] = await Promise.all([al("/api/organizasyon"), kadroSecenek()]); }
+  catch (e) { return bildir("organizasyon okunamadı: " + e.message, "kotu"); }
+  D.acikCekmece = { tur: "org", odak: odak || "" };
+  cekmeceAc((c) => {
+    c.classList.add("genis");
+    const tk = odak ? org.kanatlar.find((k) => k.id === odak) : null;
+    cekBas(c, tk ? "takımı yönet" : "organizasyon · şirket ağacı",
+           tk ? tk.ad : "Takımlar ve ajanlar");
+    const ust = el("div", "cek-eylem");
+    if (tk) {
+      const hepsi = el("button", "dugme", "Bütün şirket");
+      hepsi.onclick = () => organizasyonAc("");
+      ust.append(hepsi);
+    } else {
+      const yeni = el("button", "dugme olumlu", "+ Takım");
+      yeni.onclick = takimEkleAc;
+      ust.append(yeni);
+    }
+    const kat = el("button", "dugme", "Meslek kataloğu");
+    kat.title = "Hangi meslek hangi motor ve modelle çalışır (yeni ajanlar buradan alır)";
+    kat.onclick = katalogAc;
+    ust.append(kat);
+    c.append(ust);
+    const liste = tk ? [tk] : org.kanatlar;
+    if (!liste.length) c.append(el("div", "form-ipucu", "Henüz takım yok. “+ Takım” ile kur."));
+    for (const k of liste) c.append(orgTakim(k, org, sec));
+    if (!tk && org.takimsiz.length) {
+      const g = el("div", "org-takim");
+      g.append(el("div", "cek-etiket", "TAKIMSIZ AJANLAR — bir takıma taşı"));
+      for (const a of org.takimsiz) g.append(orgSatir(a, org, sec, null, false));
+      c.append(g);
+    }
+    if (org.arsiv.length) {
+      const d = el("details", "org-arsiv");
+      d.append(el("summary", null,
+        `Arşiv (${org.arsiv.length}) — çıkarılan ajanlar; adları geri dönmez, geçmişleri okunur`));
+      for (const a of org.arsiv) d.append(orgSatir(a, org, sec, null, true));
+      c.append(d);
+    }
+  });
+}
+const organizasyonYenile = () => organizasyonAc((D.acikCekmece || {}).odak || "");
+
+function orgTakim(k, org, sec) {
+  const kutu = el("div", "org-takim");
+  kutu.style.setProperty("--kanat-renk", k.renk);
+  const bas = el("div", "org-takim-bas");
+  const sol = el("div");
+  sol.append(el("div", "org-takim-ad", k.ad));
+  const bilgi = el("div", "org-takim-bilgi" + (k.lider ? "" : " uyari"),
+    `${k.ajanlar.length} ajan · lider: ${k.lider || "YOK — önce lider ekle"}`);
+  sol.append(bilgi);
+  const e = el("div", "org-eylem");
+  const b = (metin, f, sinif) => {
+    const x = el("button", "dugme" + (sinif ? " " + sinif : ""), metin);
+    x.onclick = f; e.append(x);
+  };
+  b("+ Ajan ekle", () => ajanEkleAc(k.id), "olumlu");
+  b("Düzenle", () => takimDuzenleAc(k));
+  b("Şablon olarak kaydet", () => sablonKaydetAc(k));
+  b("Sil", () => takimSil(k), "olumsuz");
+  bas.append(sol, e);
+  kutu.append(bas);
+  if (!k.ajanlar.length)
+    kutu.append(el("div", "form-ipucu", "Takım boş. İlk ajan LİDER olmalı: işi o böler ve inceler."));
+  for (const a of k.ajanlar) kutu.append(orgSatir(a, org, sec, k, false));
+  return kutu;
+}
+
+function orgSatir(a, org, sec, k, arsiv) {
+  const s = el("div", "org-satir" + (arsiv ? " arsiv" : ""));
+  s.append(pikselCiz(FIGUR, karakterRenk(a, (k && k.renk) || "#6b7480"), 2, "org-sprite"));
+  const ad = el("div", "org-ad");
+  const ust = el("div", "org-ad-ust");
+  ust.append(el("b", null, a.ad));
+  if (a.lider_mi) ust.append(el("span", "etiket lider", "LİDER"));
+  if (a.calisiyor) ust.append(el("span", "etiket org-calisiyor", "çalışıyor"));
+  else if (a.acik_is) ust.append(el("span", "etiket", a.acik_is + " açık iş"));
+  ad.append(ust, el("div", "org-meslek", a.meslek_baslik));
+  const md = (sec.motor_durum || {})[a.motor] || {};
+  const motor = el("div", "org-motor");
+  motor.append(el("span", "org-rozet motor-" + a.motor, MOTOR_ETIKET[a.motor] || a.motor),
+               el("span", "org-model", `${a.model || "varsayılan"} · ${a.efor}`));
+  if (md.notlar && md.notlar.length) motor.title = md.notlar.join(" · ");
+  s.append(ad, motor);
+  if (!arsiv) {
+    const e = el("div", "org-eylem");
+    const b = (metin, f, sinif, ipucu) => {
+      const x = el("button", "dugme kucuk" + (sinif ? " " + sinif : ""), metin);
+      x.onclick = f; if (ipucu) x.title = ipucu; e.append(x);
+    };
+    b("Düzenle", () => ajanAc(a.ad), "", "Meslek, motor, model, efor, karakter");
+    b("Taşı", () => tasiAc(a, org), "", "Başka takıma — hafızası onunla gider");
+    if (!a.lider_mi && k)
+      b("Lider yap", async () => {
+        if (await eylem(`/api/ajan/${encodeURIComponent(a.ad)}/lider`, {},
+                        `${a.ad} artık ${k.ad} takımının lideri`)) organizasyonYenile();
+      });
+    b("Çıkar", () => ajanCikar(a), "olumsuz", "Arşive gider; adı geri dönmez");
+    s.append(e);
+  }
+  return s;
+}
+
+function tasiAc(a, org) {
+  const hedefler = org.kanatlar.filter((k) => !k.ajanlar.some((x) => x.ad === a.ad));
+  cekmeceAc((c) => {
+    cekBas(c, "ajanı taşı", a.ad);
+    if (!hedefler.length) { c.append(el("div", "form-ipucu", "Taşınacak başka takım yok.")); return; }
+    const s = secim(hedefler.map((k) => [k.id, k.ad]), hedefler[0].id);
+    formAlan(c, "Hedef takım", s, el("div", "form-ipucu",
+      "Hafızası, dersleri ve oturumu onunla gider. Açık işi olan ajan ve takım lideri taşınamaz."));
+    const t = el("button", "dugme olumlu", "Taşı");
+    t.onclick = async () => {
+      if (await eylem(`/api/ajan/${encodeURIComponent(a.ad)}/tasi`, { kanat: s.value },
+                      `${a.ad} taşındı`)) organizasyonAc("");
+    };
+    const geri = el("button", "dugme", "Vazgeç"); geri.onclick = () => organizasyonAc("");
+    const sat = el("div", "cek-eylem"); sat.append(t, geri); c.append(sat);
+  });
+}
+
+async function ajanCikar(a) {
+  if (!confirm(`${a.ad} takımdan çıkarılsın mı?\n\nArşive gider: adı geri dönmez, ` +
+               "geçmişi ve dersleri okunur kalır. Açık işi varsa çıkarılamaz.")) return;
+  if (await eylem(`/api/ajan/${encodeURIComponent(a.ad)}/cikar`, {}, `${a.ad} arşive alındı`))
+    organizasyonYenile();
+}
+
+function takimDuzenleAc(k) {
+  cekmeceAc((c) => {
+    cekBas(c, "takımı düzenle", k.ad);
+    const ad = el("input"); ad.value = k.ad;
+    const renk = el("input"); renk.type = "color"; renk.value = k.renk;
+    const sira = el("div", "form-sira");
+    formAlan(sira, "Takım adı", ad); formAlan(sira, "Renk", renk);
+    c.append(sira);
+    const kaydet = el("button", "dugme olumlu", "Kaydet");
+    kaydet.onclick = async () => {
+      if (await eylem(`/api/kanat/${k.id}/duzenle`, { ad: ad.value, renk: renk.value },
+                      (x) => `takım: ${x.ad}`)) organizasyonAc(k.id);
+    };
+    const geri = el("button", "dugme", "Vazgeç"); geri.onclick = () => organizasyonAc(k.id);
+    const sat = el("div", "cek-eylem"); sat.append(kaydet, geri); c.append(sat);
+  });
+}
+
+async function takimSil(k) {
+  if (!confirm(`${k.ad} takımı silinsin mi?\n\nYalnız BOŞ takım silinir: içinde ajan ya da ` +
+               "açık iş varsa önce taşı/çıkar. Kapanmış işlerin kaydı durur.")) return;
+  if (await eylem(`/api/kanat/${k.id}/sil`, {}, (x) => `takım silindi: ${x.silindi}`)) {
+    if (D.kanat === k.id) D.kanat = "";
+    organizasyonAc("");
+  }
+}
+
+function sablonKaydetAc(k) {
+  cekmeceAc((c) => {
+    cekBas(c, "şablon olarak kaydet", k.ad);
+    c.append(el("div", "form-ipucu",
+      "Takımın bugünkü meslekleri (lider hariç) şablon olur. Yeni takım kurarken seçebilirsin; " +
+      "motor ve model o gün meslek kataloğundan gelir."));
+    const ad = el("input"); ad.value = k.ad.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    const baslik = el("input"); baslik.value = k.ad;
+    const aciklama = el("input"); aciklama.placeholder = "ne iş yapar (isteğe bağlı)";
+    formAlan(c, "Şablon adı (küçük harf, tire)", ad);
+    formAlan(c, "Başlık", baslik);
+    formAlan(c, "Açıklama", aciklama);
+    const kaydet = el("button", "dugme olumlu", "Kaydet");
+    kaydet.onclick = async () => {
+      if (await eylem("/api/sablon/kaydet",
+          { kanat: k.id, ad: ad.value, baslik: baslik.value, aciklama: aciklama.value },
+          (x) => `şablon kaydedildi: ${x.baslik} (${x.roller.join(", ")})`)) organizasyonAc(k.id);
+    };
+    const geri = el("button", "dugme", "Vazgeç"); geri.onclick = () => organizasyonAc(k.id);
+    const sat = el("div", "cek-eylem"); sat.append(kaydet, geri); c.append(sat);
+  });
+}
+
+async function katalogAc() {
+  let kat, sec;
+  D.kadroSec = null;
+  try { [kat, sec] = await Promise.all([al("/api/katalog"), kadroSecenek()]); }
+  catch (e) { return bildir("katalog okunamadı: " + e.message, "kotu"); }
+  cekmeceAc((c) => {
+    c.classList.add("genis");
+    cekBas(c, "ayar · meslek kataloğu", "Hangi meslek hangi motor ve modelle çalışır");
+    c.append(el("div", "form-ipucu",
+      "Yeni işe alınan ajan motorunu ve modelini buradan alır. Mevcut ajanlar DEĞİŞMEZ — " +
+      "onları Organizasyon'dan tek tek değiştir."));
+    const geri = el("button", "dugme", "← Organizasyon"); geri.onclick = () => organizasyonAc("");
+    const ust = el("div", "cek-eylem"); ust.append(geri); c.append(ust);
+    const kurulu = Object.entries(sec.motor_durum || {}).filter(([, d]) => d.kurulu).map(([m]) => m);
+    for (const kategori of sec.kategoriler) {
+      c.append(el("div", "cek-etiket katalog-kategori", (sec.kategori_baslik[kategori] || kategori).toUpperCase()));
+      for (const r of kat.filter((x) => x.kategori === kategori)) {
+        const sat = el("div", "katalog-satir");
+        const motor = secim(kurulu.map((m) => [m, MOTOR_ETIKET[m] || m]), r.motor);
+        const model = modelGirdisi(sec, r.motor, r.model);
+        motor.onchange = () => { model.motorYap(motor.value); model.value = ""; };
+        const kaydet = el("button", "dugme kucuk olumlu", "Kaydet");
+        kaydet.onclick = async () => {
+          if (await eylem("/api/katalog", { rol: r.rol, motor: motor.value, model: model.value },
+                          (x) => `${r.baslik}: ${MOTOR_ETIKET[x.motor] || x.motor} · ${x.model}`)) katalogAc();
+        };
+        const ad = el("div", "katalog-ad", r.baslik);
+        if (r.ayar) ad.append(el("span", "etiket", "değiştirildi"));
+        sat.append(ad, motor, model, model.liste, kaydet);
+        if (r.ayar) {
+          const v = el("button", "dugme kucuk", "Varsayılan");
+          v.title = `Varsayılan: ${MOTOR_ETIKET[r.varsayilan.motor] || r.varsayilan.motor} · ${r.varsayilan.model}`;
+          v.onclick = async () => {
+            if (await eylem("/api/katalog", { rol: r.rol, motor: "", model: "" },
+                            `${r.baslik}: varsayılana döndü`)) katalogAc();
+          };
+          sat.append(v);
+        }
+        c.append(sat);
+      }
+    }
+  });
+}
+
+/* YENİ AJAN (rakipteki "Yeni çalışan" penceresi): takım · ad · meslek
+   (katalog) · karakter · AI motoru (dürüst durum) · model · efor.
+   Meslek seçilince motor ve model KATALOGDAN gelir; insan değiştirebilir. */
+async function ajanEkleAc(kanatId) {
   let sec;
+  D.kadroSec = null;
   try { sec = await kadroSecenek(); }
   catch (e) { return bildir("kadro seçenekleri okunamadı: " + e.message, "kotu"); }
   let sablonlar = [];
-  try { sablonlar = await al("/api/sablonlar"); } catch (e) { /* form yine acilir */ }
+  try { sablonlar = await al("/api/sablonlar"); } catch (e) { /* form yine açılır */ }
+  if (typeof kanatId !== "string") kanatId = D.kanat || "";
   cekmeceAc((c) => {
-    cekBas(c, "kadro", "Ajan işe al");
-    // SABLONDAN EKIP: lider cagrilmaz, jeton yanmaz. Uretilen sey bir
-    // ONERIDIR -- kurmaz; "senden bekleniyor"da onizlemesiyle durur.
+    c.classList.add("genis");
+    cekBas(c, "organizasyon", "Yeni ajan");
+    const takim = secim([["", "takımsız"]].concat(sec.kanatlar.map((k) => [k.id, k.ad])), kanatId);
+    const bosMu = () => !!takim.value && !D.ofis.ajanlar.some((x) => x.kanat_id === takim.value);
+    formAlan(c, "Takım", takim);
+
+    // ŞABLONDAN EKİP: lider çağrılmaz, jeton yanmaz; üretilen şey bir ÖNERİDİR.
     if (sablonlar.length) {
-      c.append(el("div", "cek-etiket", "ŞABLONDAN EKİP (önce önizleme)"));
-      // Cok takimli ofiste sablon BIR TAKIMA kurulur: "tum ofis" gorunumunde
-      // hangisine kurulacagi belli degil -- kartlar pasif, sebep yazili.
-      const cokTakim = !D.kanat && (D.ofis.kanatlar || []).length > 1;
-      if (cokTakim)
-        c.append(el("div", "form-ipucu",
-          "Şablon bir takıma kurulur: önce üstten takım sekmesini seç."));
+      const d = el("details", "sablon-kutu");
+      d.append(el("summary", null, "Şablondan bütün ekip (önce önizleme)"));
       const liste = el("div", "sablon-liste");
       for (const s of sablonlar) {
         const b = el("button", "sablon-kart");
-        b.disabled = cokTakim;
-        b.append(el("div", "sablon-ad", s.baslik),
+        b.append(el("div", "sablon-ad", s.baslik + (s.ozel ? " ★" : "")),
                  el("div", "sablon-aciklama", s.aciklama),
                  el("div", "sablon-roller", s.roller.join(" · ")));
         b.title = "Önizleme oluşturur; kurmak için SENDEN BEKLENİYOR'da 'Kur'a bas.";
         b.onclick = async () => {
-          const r = await eylem("/api/sablon", { ad: s.ad, kanat: D.kanat || "" },
+          if (!takim.value) return bildir("Şablon bir takıma kurulur: önce takımı seç.", "kotu");
+          const r = await eylem("/api/sablon", { ad: s.ad, kanat: takim.value },
             (x) => `ekip önerisi #${x.no} hazır (${x.uyeler.length} ajan) — ` +
                    "SENDEN BEKLENİYOR'da önizle, kur ya da reddet");
           if (r) cekmeceKapat();
         };
         liste.append(b);
       }
-      c.append(liste);
-      c.append(el("div", "cek-etiket", "YA DA TEK AJAN"));
+      d.append(liste);
+      c.append(d);
     }
-    const ad = el("input"); ad.placeholder = "küçük harf, tire (ör. selin)";
-    // Takimda hic ajan yoksa ilk ajan LIDER olmali (isi o dagitir);
-    // form bunu onceden doldurur, insan degistirebilir.
-    const bosTakim = !!D.kanat && !D.ofis.ajanlar.some(x => x.kanat_id === D.kanat);
-    const rol = rolSecimi(sec, bosTakim ? "lider" : "backend");
-    const motor = motorSecimi(sec, sec.motorlar.claude ? "claude"
-      : (Object.keys(sec.motorlar).find(m => sec.motorlar[m]) || ""));
-    const model = el("input"); model.placeholder = "boş → rolün kademesinden";
-    const efor = secim(sec.eforlar.map(e => [e, e]), "normal");
-    const kanat = secim([["", "kanatsız"]].concat(sec.kanatlar.map(k => [k.id, k.ad])),
-                        D.kanat || "");
-    const lider = el("input"); lider.type = "checkbox"; lider.checked = bosTakim;
-    const ip = el("div", "form-ipucu");
-    formAlan(c, "Ad", ad, el("div", "form-ipucu",
+
+    const ad = el("input"); ad.placeholder = "küçük harf, tire (ör. ayna)";
+    formAlan(c, "Ajan adı", ad, el("div", "form-ipucu",
       "Ad bir kimliktir ve geri dönmez: sicil ve dersler bu adda birikir."));
-    formAlan(c, "Rol", rol);
+
+    let meslek = "", motor = "", karakter = "";
+    const mesKap = el("div", "meslek-liste");
+    const mesDug = {};
+    const oneri = el("div", "form-ipucu");
+    const model = modelGirdisi(sec, "", "");
+    const efor = secim(sec.eforlar.map((e) => [e, e]), "normal");
+    const lider = el("input"); lider.type = "checkbox";
+    const motKap = el("div", "motor-liste");
+    const motDug = {};
+    const motorSec = (m, mdl) => {
+      motor = m;
+      Object.entries(motDug).forEach(([x, d]) => d.classList.toggle("secili", x === m));
+      model.motorYap(m);
+      model.value = mdl !== undefined ? mdl : "";
+    };
+    for (const [m, d] of Object.entries(sec.motor_durum || {})) {
+      const b = el("button", "motor-kart" + (d.kurulu ? "" : " kapali")); b.type = "button";
+      b.append(el("div", "motor-kart-ad", d.etiket || m),
+               el("div", "motor-kart-durum durum-" + d.durum.replace(/\s+/g, "-"), d.durum));
+      b.title = d.notlar && d.notlar.length ? d.notlar.join(" · ") : "eksik bilinen özellik yok";
+      b.disabled = !d.kurulu;
+      b.onclick = () => { motorSec(m, ""); oneri.textContent = "Motor elle seçildi; model boşsa mesleğin kademesinden."; };
+      motDug[m] = b; motKap.append(b);
+    }
+    const meslekSec = (r) => {
+      meslek = r;
+      Object.entries(mesDug).forEach(([x, d]) => d.classList.toggle("secili", x === r));
+      const k = (sec.katalog || {})[r] || {};
+      const md = (sec.motor_durum || {})[k.motor] || {};
+      const baslik = (sec.roller.find((x) => x.ad === r) || {}).baslik || r;
+      if (md.kurulu) {
+        motorSec(k.motor, k.model);
+        oneri.textContent = `Meslekten önerildi: ${baslik} → ${MOTOR_ETIKET[k.motor] || k.motor} · ${k.model}`;
+        oneri.className = "form-ipucu";
+      } else {
+        const ilk = Object.keys(motDug).find((x) => !motDug[x].disabled) || "";
+        motorSec(ilk, "");
+        oneri.textContent = `Katalogdaki motor (${k.motor || "?"}) kurulu değil; ${MOTOR_ETIKET[ilk] || ilk} seçildi.`;
+        oneri.className = "form-ipucu uyari";
+      }
+      if (r === "lider" && bosMu()) lider.checked = true;
+    };
+    for (const kategori of sec.kategoriler) {
+      mesKap.append(el("div", "meslek-kategori", (sec.kategori_baslik[kategori] || kategori).toUpperCase()));
+      const izgara = el("div", "meslek-izgara");
+      for (const r of sec.roller.filter((x) => x.kategori === kategori)) {
+        const b = el("button", "meslek-kart"); b.type = "button";
+        b.append(el("div", "meslek-kart-ad", r.baslik || r.ad), el("div", "meslek-kart-ozet", kes(r.ozet, 70)));
+        if (r.uyari) b.title = r.uyari;
+        b.onclick = () => meslekSec(r.ad);
+        mesDug[r.ad] = b; izgara.append(b);
+      }
+      mesKap.append(izgara);
+    }
+    formAlan(c, "Meslek (katalog)", mesKap);
+    const takimRengi = () => ((D.ofis.kanatlar || []).find((k) => k.id === takim.value) || {}).renk || "#6b7480";
+    formAlan(c, "Karakter", karakterSecici("", takimRengi(), (k) => { karakter = k; }));
+    formAlan(c, "AI motoru", motKap);
     const sira = el("div", "form-sira");
-    formAlan(sira, "Motor", motor); formAlan(sira, "Efor", efor);
-    c.append(sira);
-    formAlan(c, "Model", model, ip);
-    formAlan(c, "Kanat", kanat);
-    formAlan(c, "Bu kanadın lideri", lider, el("div", "form-ipucu",
-      "Kanat başına TEK lider — ikinci lider reddedilir."));
-    const tazele = () => modelIpucu(sec, rol.value, motor.value, ip);
-    rol.onchange = tazele; motor.onchange = tazele; tazele();
-    const al_ = el("button", "dugme olumlu", "İşe al");
-    al_.onclick = async () => {
+    formAlan(sira, "Model", model); sira.append(model.liste);
+    formAlan(sira, "Efor", efor);
+    c.append(sira, oneri);
+    formAlan(c, "Bu takımın lideri", lider, el("div", "form-ipucu",
+      "Takım başına TEK lider — ikinci lider reddedilir. Boş takımda ilk ajan lider olmalı."));
+    meslekSec(bosMu() ? "lider" : "arayuz");
+    takim.onchange = () => { if (bosMu()) { meslekSec("lider"); lider.checked = true; } };
+
+    const ekle = el("button", "dugme olumlu", "Ekle");
+    ekle.onclick = async () => {
       if (!ad.value.trim()) { ad.placeholder = "Ad zorunlu"; return ad.focus(); }
       const r = await eylem("/api/ajan", {
-        ad: ad.value, meslek: rol.value, motor: motor.value, model: model.value,
-        efor: efor.value, kanat: kanat.value, lider: lider.checked },
-        (r) => `${r.ad} işe alındı: ${r.meslek} · ${r.tur} · ${r.motor}/${r.model || "varsayılan"}`);
-      if (r) { D.kadroSec = null; await yenile(); ajanAc(r.ad); }
+        ad: ad.value, meslek, motor, model: model.value, efor: efor.value,
+        kanat: takim.value, lider: lider.checked, karakter },
+        (x) => `${x.ad} eklendi: ${x.meslek} · ${MOTOR_ETIKET[x.motor] || x.motor} · ${x.model || "varsayılan"}`);
+      if (r) { D.kadroSec = null; await yenile(); organizasyonAc(takim.value || ""); }
     };
-    const sat = el("div", "cek-eylem"); sat.append(al_);
+    const vazgec = el("button", "dugme", "Vazgeç"); vazgec.onclick = cekmeceKapat;
+    const sat = el("div", "cek-eylem"); sat.append(vazgec, ekle);
     c.append(sat);
   });
 }
@@ -5770,7 +6116,8 @@ $("#komut-gonder").onclick = () => komutGonder();
     });
   }
 }
-$("#ajan-ekle").onclick = ajanEkleAc;
+$("#ajan-ekle").onclick = () => ajanEkleAc();
+$("#org-ac").onclick = () => organizasyonAc("");
 
 /* ARAMA. Sonuc cekmecede; gorevi olan sonuca tiklamak gorevi acar.
    Eslesen parca ISARETLENIR ama metin olarak -- innerHTML'e ham defter

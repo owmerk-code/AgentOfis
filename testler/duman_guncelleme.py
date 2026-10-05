@@ -191,7 +191,8 @@ except Exception as exc:          # COKMEZ, KALIR -- bkz. no_bul notu
     sina("'çok zor' yazimi KABUL edildi", False, str(exc))
 sina("'cok zor' yazimi normallesti ve 'cok_yuksek' GONDERILDI",
      _Kaydeden.son.get("efor") == "cok_yuksek", str(_Kaydeden.son.get("efor")))
-sina("cok_zor GUCLU modele gitti", _Kaydeden.son.get("model") == "opus",
+# 05.10.2026: varsayilan kipte zorluk MODELE dokunmaz (ajanin sabit modeli).
+sina("cok_zor: model AJANIN kendi modeli (zorluk yalniz efor)", _Kaydeden.son.get("model") == "sonnet",
      str(_Kaydeden.son.get("model")))
 try:
     ofis.tahta.gorev_ac("Gerekcesiz", neden="s", ana_hedef="s", kabul_olcutu="y",

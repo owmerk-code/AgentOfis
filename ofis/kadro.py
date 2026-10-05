@@ -174,6 +174,134 @@ class Kadro:
                          f"{ad} ({meslek}) ise alindi -- {motor}", ajan_ad=ad)
         return self.ajan(ad)
 
+    def katalogdan_al(self, ad: str, meslek: str, *, motor: str = "",
+                      model: str = "", **kw) -> dict:
+        """Ise alma -- motor ve model MESLEK KATALOGUNDAN (05.10.2026).
+
+        Panel, sablon ve liderin onerisi buradan gecer; `ise_al`in kendi
+        varsayilani ("claude") eski cagiranlar icin oldugu gibi kalir.
+        Acikca verilen motor/model her zaman kazanir. Katalogun motoru
+        kurulu degilse yedek motor secilir ve bu olaya YAZILIR.
+        """
+        from .motor import musait_motorlar
+        try:
+            rol_ad = roller.coz(meslek)
+        except roller.RolHatasi as exc:
+            raise KadroHatasi(str(exc)) from exc
+        k_motor, k_model, not_ = roller.meslek_motoru(
+            rol_ad, self.db, self.proje_id, musait_motorlar())
+        if not motor:
+            motor = k_motor
+            if not model:
+                model = k_model
+        elif not model and motor == k_motor:
+            model = k_model
+        a = self.ise_al(ad, rol_ad, motor=motor, model=model, **kw)
+        if not_:
+            self.db.olay_yaz(self.proje_id, "uyari", f"{a['ad']}: {not_}", ajan_ad=a["ad"])
+        return a
+
+    # -- organizasyon: tasi, cikar, lider ----------------------------------
+
+    def _acik_isleri(self, ad: str) -> list:
+        with self.db.baglanti() as conn:
+            return [f"#{r['no']}" for r in conn.execute(
+                "SELECT no FROM gorev WHERE proje_id = ? AND sahip = ? "
+                "AND durum NOT IN ('bitti', 'iptal') ORDER BY no",
+                (self.proje_id, ad)).fetchall()]
+
+    def tasi(self, ad: str, kanat_id: str) -> dict:
+        """Ajani baska takima tasir; hafizasi, dersleri ve oturumu onunla gider.
+
+        Acik isi varsa REDDEDILIR: is eski takimin lideriyle incelenir, ajan
+        yari yolda takim degistirirse kimin inceleyecegi belirsizlesir.
+        Lider tasinmaz -- once takimina baska bir lider secilir.
+        """
+        a = self.ajan(ad)
+        if a.get("arsiv"):
+            raise KadroHatasi(f"{ad} arsivde; once geri al.")
+        with self.db.baglanti() as conn:
+            if not conn.execute("SELECT 1 FROM kanat WHERE proje_id = ? AND id = ?",
+                                (self.proje_id, kanat_id)).fetchone():
+                raise KadroHatasi("Hedef takim yok.")
+        if a["kanat_id"] == kanat_id:
+            return a
+        if a["lider_mi"]:
+            raise KadroHatasi(f"{ad} takiminin LIDERI. Once o takima baska bir "
+                              "lider sec, sonra tasi -- lidersiz takim is dagitamaz.")
+        acik = self._acik_isleri(ad)
+        if acik:
+            raise KadroHatasi(f"{ad}'in acik isleri var ({', '.join(acik)}). Isler "
+                              "bitsin ya da iptal edilsin, sonra tasi.")
+        with self.db.baglanti() as conn:
+            conn.execute("UPDATE ajan SET kanat_id = ?, revizyon = revizyon + 1, "
+                         "guncellendi = ? WHERE proje_id = ? AND ad = ?",
+                         (kanat_id, simdi(), self.proje_id, ad))
+        self.db.olay_yaz(self.proje_id, "ajan_tasindi", f"{ad} baska takima tasindi",
+                         ajan_ad="insan")
+        return self.ajan(ad)
+
+    def cikar(self, ad: str) -> dict:
+        """Ajani takimdan cikarir: ARSIVE gider, silinmez (ad geri donmez,
+        sicili ve gecmis isleri okunur kalir). Acik isi olan ve takiminda
+        baska ajan varken LIDER olan ajan cikarilamaz."""
+        a = self.ajan(ad)
+        if a.get("arsiv"):
+            return a
+        acik = self._acik_isleri(ad)
+        if acik:
+            raise KadroHatasi(f"{ad}'in acik isleri var ({', '.join(acik)}). Isler "
+                              "bitsin ya da iptal edilsin, sonra cikar.")
+        if a["lider_mi"]:
+            with self.db.baglanti() as conn:
+                diger = conn.execute(
+                    "SELECT COUNT(*) AS n FROM ajan WHERE proje_id = ? AND kanat_id IS ? "
+                    "AND ad != ? AND arsiv = 0", (self.proje_id, a["kanat_id"], ad)
+                ).fetchone()["n"]
+            if diger:
+                raise KadroHatasi(f"{ad} takiminin LIDERI ve takimda {diger} ajan "
+                                  "daha var. Once baska bir lider sec.")
+        with self.db.baglanti() as conn:
+            conn.execute("UPDATE ajan SET arsiv = 1, lider_mi = 0, kanat_id = NULL, "
+                         "revizyon = revizyon + 1, guncellendi = ? "
+                         "WHERE proje_id = ? AND ad = ?", (simdi(), self.proje_id, ad))
+        self.db.olay_yaz(self.proje_id, "ajan_cikarildi",
+                         f"{ad} ({a['meslek']}) takimdan cikarildi -- arsivde, ad geri donmez",
+                         ajan_ad="insan")
+        return self.ajan(ad)
+
+    def lider_yap(self, ad: str) -> dict:
+        """Ajani KENDI takiminin lideri yapar; eski lider ekip uyesi olur.
+        Takimda tek lider kurali korunur (ayni islemde biri iner, biri cikar)."""
+        a = self.ajan(ad)
+        if a.get("arsiv"):
+            raise KadroHatasi(f"{ad} arsivde.")
+        if a["tur"] != "eller":
+            raise KadroHatasi("Lider 'eller' olmali: gorev acar, tahtaya yazar, kanit inceler.")
+        if a["lider_mi"]:
+            return a
+        with self.db.baglanti() as conn:
+            conn.execute("UPDATE ajan SET lider_mi = 0, guncellendi = ? WHERE proje_id = ? "
+                         "AND kanat_id IS ? AND lider_mi = 1",
+                         (simdi(), self.proje_id, a["kanat_id"]))
+            conn.execute("UPDATE ajan SET lider_mi = 1, revizyon = revizyon + 1, "
+                         "guncellendi = ? WHERE proje_id = ? AND ad = ?",
+                         (simdi(), self.proje_id, ad))
+        self.db.olay_yaz(self.proje_id, "lider_degisti", f"{ad} takiminin lideri oldu",
+                         ajan_ad="insan")
+        return self.ajan(ad)
+
+    def karakter_yaz(self, ad: str, karakter: str) -> dict:
+        karakter = (karakter or "").strip()
+        if karakter and not re.fullmatch(r"\d{1,2}:\d{1,2}:\d{1,2}", karakter):
+            raise KadroHatasi("Karakter 'sac:ten:kumas' bicimi olmali (orn. 2:1:0).")
+        self.ajan(ad)
+        with self.db.baglanti() as conn:
+            conn.execute("UPDATE ajan SET karakter = ?, guncellendi = ? "
+                         "WHERE proje_id = ? AND ad = ?",
+                         (karakter, simdi(), self.proje_id, ad))
+        return self.ajan(ad)
+
     def faz_ayarla(self, ad: str, faz: str) -> dict:
         if faz not in (FAZ_KURULUYOR, FAZ_AKTIF, FAZ_BASARISIZ):
             raise KadroHatasi(f"Bilinmeyen faz: {faz}")
@@ -287,17 +415,22 @@ class Kadro:
             raise KadroHatasi(f"Ajan bulunamadi: {ad}")
         return dict(row)
 
-    def liste(self, kanat_id: str = None) -> list:
+    def liste(self, kanat_id: str = None, *, arsivli: bool = False) -> list:
+        """Kadro. ARSIVDEKILER varsayilan olarak YOK: cikarilan ajan is
+        almaz, lidere gosterilmez, sohbette adreslenmez. Ad kontrolu gibi
+        "butun adlar" gereken yer `arsivli=True` verir."""
+        arsiv = "" if arsivli else " AND arsiv = 0"
         with self.db.baglanti() as conn:
             if kanat_id:
                 rows = conn.execute(
-                    "SELECT * FROM ajan WHERE proje_id = ? AND kanat_id = ? "
-                    "ORDER BY lider_mi DESC, ad",
+                    "SELECT * FROM ajan WHERE proje_id = ? AND kanat_id = ?" + arsiv
+                    + " ORDER BY lider_mi DESC, ad",
                     (self.proje_id, kanat_id),
                 ).fetchall()
             else:
                 rows = conn.execute(
-                    "SELECT * FROM ajan WHERE proje_id = ? ORDER BY lider_mi DESC, ad",
+                    "SELECT * FROM ajan WHERE proje_id = ?" + arsiv
+                    + " ORDER BY lider_mi DESC, ad",
                     (self.proje_id,),
                 ).fetchall()
         return [dict(r) for r in rows]
@@ -305,7 +438,8 @@ class Kadro:
     def lider(self, kanat_id: str = None) -> dict:
         with self.db.baglanti() as conn:
             row = conn.execute(
-                "SELECT * FROM ajan WHERE proje_id = ? AND kanat_id IS ? AND lider_mi = 1",
+                "SELECT * FROM ajan WHERE proje_id = ? AND kanat_id IS ? AND lider_mi = 1 "
+                "AND arsiv = 0",
                 (self.proje_id, kanat_id),
             ).fetchone()
         if not row:

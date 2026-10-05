@@ -98,7 +98,11 @@ sina("'orta' gerekce istemiyor", go["zorluk"] == "orta")
 
 # --------------------------------------------------- 2. KADEME ESLEMESI
 print("\n2. zorluk -> model eslemesi")
-sina("claude kolay -> haiku", R.model_sec("claude", "hizli") == "haiku")
+# 05.10.2026: Haiku hicbir kademede yok (kodlama 19,5); kolay is Sonnet + dusuk efor.
+sina("claude kolay -> sonnet (haiku YOK)", R.model_sec("claude", "hizli") == "sonnet"
+     and "haiku" not in R.KADEME_MODEL["claude"].values())
+sina("gemini guclu -> 3.8 flash high (3.1 pro DEGIL)",
+     R.model_sec("gemini", "guclu") == "gemini-3.8-flash-high")
 sina("claude zor -> opus", R.model_sec("claude", "guclu") == "opus")
 sina("codex kolay -> luna", R.model_sec("codex", "hizli") == "gpt-6-luna")
 sina("codex zor -> sol", R.model_sec("codex", "guclu") == "gpt-6.1-sol")
@@ -128,17 +132,35 @@ _f = lambda ad, **kw: _Kaydeden(cevap=CEVAP)          # noqa: E731
 ofis.kadro.ise_al("yaprak", "backend", motor="claude", model="sonnet",
                   klasor=str(kok / "w"))
 
+# 3a. VARSAYILAN KIP "ajan" (05.10.2026, patron: her ajanin sabit modeli):
+# zorluk MODELE dokunmaz, yalniz eforu belirler.
+sina("varsayilan zorluk kipi 'ajan'", R.zorluk_modeli(ofis.db, ofis.proje_id) == "ajan")
+a1 = ofis.tahta.gorev_ac("Kolay kod A", neden="s", ana_hedef="s",
+                         kabul_olcutu="y", zorluk="kolay")
+Koltuk(ofis, motor_fabrikasi=_f).kos(a1["no"], "yaprak")
+sina("ajan kipi: KOLAY iste model AJANIN (sonnet), efor dusuk",
+     _Kaydeden.son.get("model") == "sonnet" and _Kaydeden.son.get("efor") == "dusuk",
+     f"{_Kaydeden.son.get('model')} {_Kaydeden.son.get('efor')}")
+a2 = ofis.tahta.gorev_ac("Zor kod A", neden="s", ana_hedef="s",
+                         kabul_olcutu="y", zorluk="zor", zorluk_gerekce="ince hata avi")
+Koltuk(ofis, motor_fabrikasi=_f).kos(a2["no"], "yaprak")
+sina("ajan kipi: ZOR iste model YINE ajanin, efor yuksek",
+     _Kaydeden.son.get("model") == "sonnet" and _Kaydeden.son.get("efor") == "yuksek",
+     f"{_Kaydeden.son.get('model')} {_Kaydeden.son.get('efor')}")
+
+# 3b. "kademe" kipi (eski davranis, ayarla): zorluk modeli de secer.
+ofis.db.ayar_yaz(ofis.proje_id, R.ANAHTAR_ZORLUK_MODELI, "kademe")
 k1 = ofis.tahta.gorev_ac("Kolay kod", neden="s", ana_hedef="s",
                          kabul_olcutu="y", zorluk="kolay")
 Koltuk(ofis, motor_fabrikasi=_f).kos(k1["no"], "yaprak")
-sina("KOLAY is ucuz modele dustu", _Kaydeden.son.get("model") == "haiku",
+sina("kademe kipi: KOLAY is hizli kademede (sonnet)", _Kaydeden.son.get("model") == "sonnet",
      str(_Kaydeden.son.get("model")))
 
 k2 = ofis.tahta.gorev_ac("Zor kod", neden="s", ana_hedef="s",
                          kabul_olcutu="y", zorluk="zor",
                          zorluk_gerekce="ince hata avi")
 Koltuk(ofis, motor_fabrikasi=_f).kos(k2["no"], "yaprak")
-sina("ZOR is guclu modele cikti", _Kaydeden.son.get("model") == "opus",
+sina("kademe kipi: ZOR is guclu modele cikti", _Kaydeden.son.get("model") == "opus",
      str(_Kaydeden.son.get("model")))
 
 k3 = ofis.tahta.gorev_ac("Zorluksuz kod", neden="s", ana_hedef="s",
@@ -154,7 +176,8 @@ sina("zorluk yoksa AJANIN modeli kaliyor",
 with ofis.db.baglanti() as c:
     olaylar = [dict(r) for r in c.execute(
         "SELECT * FROM olay WHERE tur = 'zorluk_modeli'")]
-sina("model degisimi olaya yazildi", len(olaylar) == 2, str(len(olaylar)))
+# kolay -> sonnet ajanin kendi modeli (degisim yok); yalniz zor -> opus yazilir.
+sina("model degisimi olaya yazildi", len(olaylar) == 1, str(len(olaylar)))
 sina("olay hangi modele cikildigini soyluyor",
      any("opus" in o["govde"] for o in olaylar))
 

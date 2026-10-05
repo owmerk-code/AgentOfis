@@ -79,7 +79,10 @@ KADEMELER = ("hizli", "standart", "guclu")
 #: - `haiku` claude tarafinin en ucuz basamagi olarak kaliyor ama
 #:   isci koltugu icin artik onerilmiyor (bkz. modul docstring).
 KADEME_MODEL = {
-    "claude": {"hizli": "haiku", "standart": "sonnet", "guclu": "opus"},
+    # 05.10.2026 (patron karari, BenchLM): Haiku 4.5 kodlamada 19,5 / genel
+    # 42 -- Claude ajanlari kod yapiyor, kolay is de Haiku'ya DUSMEZ;
+    # Sonnet dusuk eforla kosar. Haiku hicbir kademede yok.
+    "claude": {"hizli": "sonnet", "standart": "sonnet", "guclu": "opus"},
     # 30.09.2026: gercek ofisin otomatik guncellemeden gecmis kademeleri.
     # Varsayilan eskiyse YENI her ofis (ve gercek set) eski modelle kosar:
     # olculdu, temiz ofiste codex iscisi gpt-5.6-luna aldi. Guncelleme
@@ -87,8 +90,10 @@ KADEME_MODEL = {
     "codex": {"hizli": "gpt-6-luna", "standart": "gpt-6.1-sol",
               "guclu": "gpt-6.1-sol"},
     # 04.10.2026: Antigravity (`agy models` ciktisi). Modelin efor eki adinda.
+    # 05.10.2026: 3.1 Pro, 3.8 Flash'tan ZAYIF (BenchLM 65,1 / 74,0; ajan
+    # isi 39,3 / 64,7) -- adi "Pro" diye guclu kademede durmaz.
     "gemini": {"hizli": "gemini-3.8-flash-low", "standart": "gemini-3.8-flash-medium",
-               "guclu": "gemini-3.1-pro-high"},
+               "guclu": "gemini-3.8-flash-high"},
     # Sahte motor jeton yakmaz; kademe ayrimi anlamsiz ama SESSIZ
     # kalmamali -- eksik anahtar KeyError verirdi, testte gurultu olur.
     "sahte": {"hizli": "", "standart": "", "guclu": ""},
@@ -534,9 +539,29 @@ ROLLER = {r.ad: r for r in (
        butce_alt_siniri=0.20,
        # Model turu degil URETIM parasi: video saniye basi fiyatlanir ve
        # 30 saniyelik standart bir klip $12'ye kadar cikar.
-       uyari="URETIM PARA HARCAR ve ucretsiz katmani yok. Tavan "
-             "`video.VARSAYILAN_TAVAN_USD` ($2) ile kapali kalarak "
-             "calisir; asilirsa is HIC BASLAMAZ."),
+       # 04.10.2026 patron karari: video gomulu tarayicida Google Flow ile,
+       # patronun KENDI girdigi hesapla (abonelik kredisi). `video_uret`
+       # ucretli API'dir; para kilidi "sadece free" oldugu icin kapali kalir.
+       uyari="Videoyu gomulu tarayicida Google Flow ile uret (`flow-video` "
+             "becerisi; patronun abonelik kredisi). Kredi harcayan uretim "
+             "`onay_iste` ile sorulur. `video_uret` ucretli API'dir."),
+
+    # ------------------------------------------ BILGISAYAR (ek, 05.10.2026)
+    # Patron: "PC kullanimi, sitelerde islem". Ajan gomulu tarayicida
+    # (kabin) sayfanin YAPISINI okuyarak calisir (Playwright); BenchLM'de
+    # bu ise en yakin olcum BrowseComp. Riskli tiklama zaten kapida.
+    _r("bilgisayar", "BILGISAYAR",
+       "Bilgisayar ve tarayici isleri: sitelerde islem, form, yonetim "
+       "paneli, dosya duzeni. Gomulu tarayiciyi kullanir.",
+       tur="eller",
+       kanit_turleri=("gorsel", "baglanti", "dosya"),
+       olcut_sablonu="Islem SITEDE GORUNUR: ekran goruntusu ya da kayit "
+                     "baglantisi kanit olarak eklendi; gonder/ode/sil gibi "
+                     "riskli adim onaya dustu.",
+       kademe="standart",
+       butce_alt_siniri=0.40,
+       uyari="Gonder, ode, sil, yayinla RISKLIDIR: `onay_iste` ile sorulur. "
+             "Sifre ajana gecmez: giris gerekirse `giris_iste`."),
 
     # --------------------------------------------- TICARET (ek, 20.09.2026)
     _r("destek", "TICARET",
@@ -553,6 +578,117 @@ ROLLER = {r.ad: r for r in (
              "ile insana sorulur."),
 
 )}
+
+#: Insana gorunen meslek adlari (kod adlari ASCII kalir).
+MESLEK_BASLIK = {
+    "lider": "Lider", "urun": "Ürün / şartname", "backend": "Backend",
+    "arayuz": "Arayüz (UI/UX)", "entegrasyon": "Entegrasyon", "devops": "DevOps",
+    "guvenlik": "Güvenlik", "kalite": "Kalite (QA / test)",
+    "arastirma": "Araştırma", "analiz": "Analiz", "metin": "Metin", "seo": "SEO",
+    "dokuman": "Doküman", "ceviri": "Çeviri", "tasarim": "Tasarım", "video": "Video",
+    "magaza": "Mağaza", "reklam": "Reklam", "destek": "Destek",
+    "bilgisayar": "Bilgisayar ve tarayıcı",
+}
+KATEGORI_BASLIK = {"YONETIM": "Yönetim", "YAZILIM": "Yazılım", "BILGI": "Bilgi",
+                   "ICERIK": "İçerik", "TICARET": "Ticaret",
+                   "BILGISAYAR": "Bilgisayar"}
+
+#: MESLEK KATALOGU (05.10.2026, patron karari): her meslek hangi motor ve
+#: modelle calisir. Yeni ajan -- elle, sablondan, liderin onerisiyle --
+#: motorunu ve modelini BURADAN alir; insan tek tek degistirebilir.
+#: Gerekce (BenchLM kategori puanlari + patronun gorusu):
+#:   Claude Opus 5.5 ajan isi 88,1 / akil 82,4 -> lider
+#:   Claude Sonnet 5.5 kodlama 85,6 (1.) -> yazilim meslekleri
+#:   GPT-6.1 Sol akil 79,4, kodlama 59 -> plan, olcut, inceleme, test (kod YAZMAZ)
+#:   GPT-5.6 Sol BrowseComp %92,2, OSWorld %62,6 -> tarayici ve magaza paneli
+#:   Gemini 3.8 Flash cok ortamli 83,9, ayri Google limiti -> arastirma, icerik
+#: Kod degil AYAR: `meslek:<rol>` = "motor|model" koddaki varsayilani ezer.
+MESLEK_MOTORU = {
+    "lider": ("claude", "opus"),
+    "urun": ("codex", "gpt-6.1-sol"),
+    "backend": ("claude", "sonnet"), "arayuz": ("claude", "sonnet"),
+    "entegrasyon": ("claude", "sonnet"), "devops": ("claude", "sonnet"),
+    "guvenlik": ("claude", "sonnet"),
+    "kalite": ("codex", "gpt-6.1-sol"), "analiz": ("codex", "gpt-6.1-sol"),
+    "arastirma": ("gemini", "gemini-3.8-flash-high"),
+    "metin": ("gemini", "gemini-3.8-flash-high"),
+    "seo": ("gemini", "gemini-3.8-flash-high"),
+    "dokuman": ("gemini", "gemini-3.8-flash-high"),
+    "ceviri": ("gemini", "gemini-3.8-flash-high"),
+    "tasarim": ("gemini", "gemini-3.8-flash-high"),
+    "video": ("gemini", "gemini-3.8-flash-high"),
+    "reklam": ("gemini", "gemini-3.8-flash-high"),
+    "destek": ("gemini", "gemini-3.8-flash-high"),
+    "magaza": ("codex", "gpt-5.6-sol"),
+    "bilgisayar": ("codex", "gpt-5.6-sol"),
+}
+MESLEK_AYAR_ONEKI = "meslek:"
+#: Motor kurulu degilse yedek sirasi (model kademeden gelir).
+MOTOR_YEDEK_SIRASI = ("claude", "codex", "gemini")
+
+
+def meslek_katalogu(db=None, proje_id: str = "") -> dict:
+    """Etkin katalog: rol -> {"motor", "model", "ayar"} (ayar = insan ezdi mi)."""
+    out = {}
+    for ad in ROLLER:
+        motor, model = MESLEK_MOTORU.get(ad, ("claude", ""))
+        ayarli = False
+        if db is not None and proje_id:
+            deger = db.ayar_oku(proje_id, f"{MESLEK_AYAR_ONEKI}{ad}", "")
+            if deger and "|" in deger:
+                motor, model = deger.split("|", 1)
+                ayarli = True
+        out[ad] = {"motor": motor, "model": model, "ayar": ayarli}
+    return out
+
+
+def meslek_yaz(db, proje_id: str, rol_ad: str, motor: str, model: str) -> dict:
+    """Katalogun bir satirini AYAR olarak yazar. Bos motor = koddaki varsayilana don."""
+    ad = coz(rol_ad)
+    motor, model = (motor or "").strip(), (model or "").strip()
+    if not motor:
+        db.ayar_yaz(proje_id, f"{MESLEK_AYAR_ONEKI}{ad}", "")
+        return meslek_katalogu(db, proje_id)[ad]
+    from .motor import kayitli_motorlar
+    if motor not in kayitli_motorlar():
+        raise RolHatasi(f"Bilinmeyen motor: {motor!r}")
+    if any(k in model for k in KAPI_MODELLERI):
+        raise RolHatasi(f"{model!r} bir KAPI modeli; kataloga konmaz.")
+    db.ayar_yaz(proje_id, f"{MESLEK_AYAR_ONEKI}{ad}", f"{motor}|{model}")
+    return meslek_katalogu(db, proje_id)[ad]
+
+
+def meslek_motoru(rol_ad: str, db=None, proje_id: str = "", musait=None) -> tuple:
+    """Yeni ajanin (motor, model) onerisi. Katalogun motoru KURULU DEGILSE
+    yedek siradaki ilk kurulu motor + rolun kademesi -- hic kosamayacak bir
+    ajan kurmaktansa calisan bir motor, ve bu SOYLENIR (ucuncu deger)."""
+    ad = coz(rol_ad)
+    k = meslek_katalogu(db, proje_id)[ad]
+    if musait is None or musait.get(k["motor"]):
+        return k["motor"], k["model"], ""
+    harita = kademe_haritasi(db, proje_id)
+    for m in MOTOR_YEDEK_SIRASI:
+        if musait.get(m):
+            return (m, model_sec(m, ROLLER[ad].kademe, harita),
+                    f"katalogdaki motor ({k['motor']}) kurulu degil; {m} secildi")
+    return k["motor"], k["model"], f"katalogdaki motor ({k['motor']}) kurulu degil"
+
+
+#: ZORLUK MODELI (05.10.2026, patron karari "her ajanin sabit modeli"):
+#: "ajan" (varsayilan) -> model AJANDAN gelir, zorluk yalniz EFORU belirler;
+#: "kademe" -> eski davranis, zorluk modeli de kademeden secer. Eski
+#: davranista katalogun secimi ezilirdi (orn. tarayici ajani GPT-5.6 Sol,
+#: "orta" is -> codex standart = 6.1 Sol).
+ANAHTAR_ZORLUK_MODELI = "zorluk_modeli"
+ZORLUK_MODELI_SECENEK = ("ajan", "kademe")
+
+
+def zorluk_modeli(db=None, proje_id: str = "") -> str:
+    if db is None or not proje_id:
+        return "ajan"
+    m = db.ayar_oku(proje_id, ANAHTAR_ZORLUK_MODELI, "ajan")
+    return m if m in ZORLUK_MODELI_SECENEK else "ajan"
+
 
 #: Kategoriler, kutuphanedeki SIRAYLA. Ayri bir liste tutmuyoruz --
 #: iki yerde tutulan bir sey birinde guncellenip otekinde unutulur.

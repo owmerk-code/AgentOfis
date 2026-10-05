@@ -177,7 +177,9 @@ if r:
          all(k in roller.GECERLI_KANITLAR for k in r.kanit_turleri))
     sina("  olcut GERCEK maliyeti istiyor",
          "maliyet" in r.olcut_sablonu.lower())
-    sina("  uyari PARA harcandigini soyluyor", "PARA" in (r.uyari or ""))
+    # 04.10.2026: video Flow ile (abonelik kredisi); kredi harcayan uretim sorulur.
+    sina("  uyari Flow + kredi sorusu + ucretli API ayrimi",
+         all(x in (r.uyari or "") for x in ("Flow", "onay_iste", "ucretli")))
 
 print(f"\n== sonuc: {GECEN} gecti, {KALAN} kaldi ==")
 sys.exit(1 if KALAN else 0)

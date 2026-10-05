@@ -1823,3 +1823,59 @@ details > summary.hf-bas { cursor: pointer; }
 .hf-rozet.uyari { color: var(--kotu); border-color: var(--kotu); }
 .hf-mini.olumsuz:hover { color: var(--kotu); border-color: var(--kotu); }
 .hf-geri { cursor: help; }
+
+/* ─────────────── ORGANIZASYON (05.10.2026) ─────────────── */
+.cekmece.genis { width: 920px; }
+.dugme.kucuk { padding: 3px 9px; font-size: var(--yz-kucuk); }
+.kanat-yonet { color: var(--metin-2); }
+.org-takim { border: 1px solid var(--cizgi); border-left: 3px solid var(--kanat-renk, var(--cizgi-acik));
+  border-radius: 8px; padding: 10px 12px; margin: 12px 0; background: var(--zemin-3); }
+.org-takim-bas { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+.org-takim-ad { font-weight: 700; font-size: var(--yz-alt); letter-spacing: .5px; }
+.org-takim-bilgi { font-size: var(--yz-kucuk); color: var(--metin-3); }
+.org-takim-bilgi.uyari { color: var(--uyari); }
+.org-eylem { display: flex; gap: 6px; margin-left: auto; flex-wrap: wrap; justify-content: flex-end; }
+.org-satir { display: flex; align-items: center; gap: 12px; padding: 7px 4px;
+  border-top: 1px solid var(--cizgi); }
+.org-satir.arsiv { opacity: .55; }
+.org-sprite { flex: none; position: relative; }
+.org-ad { min-width: 170px; }
+.org-ad-ust { display: flex; gap: 6px; align-items: center; }
+.org-meslek { font-size: var(--yz-kucuk); color: var(--metin-2); }
+.org-motor { display: flex; flex-direction: column; gap: 2px; min-width: 200px; }
+.org-rozet { font-size: var(--yz-mikro); font-weight: 700; padding: 1px 7px; border-radius: 5px;
+  border: 1px solid var(--cizgi-acik); width: fit-content; }
+.org-rozet.motor-claude { color: var(--turuncu); border-color: rgba(224,120,90,.45); }
+.org-rozet.motor-codex { color: var(--mavi); border-color: rgba(107,163,199,.45); }
+.org-rozet.motor-gemini { color: var(--yesil); border-color: rgba(95,185,138,.45); }
+.org-model { font-size: var(--yz-kucuk); color: var(--metin-3); }
+.etiket.org-calisiyor { color: var(--iyi); border-color: rgba(95,185,138,.45); }
+.org-arsiv { margin-top: 14px; color: var(--metin-2); font-size: var(--yz-kucuk); }
+.org-arsiv summary { cursor: pointer; }
+.meslek-kategori { font-size: var(--yz-mikro); font-weight: 700; color: var(--metin-3);
+  letter-spacing: .9px; margin: 8px 0 4px; }
+.meslek-izgara, .motor-liste { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 6px; }
+.meslek-kart, .motor-kart, .karakter-kart { text-align: left; background: var(--zemin);
+  border: 1px solid var(--cizgi); border-radius: var(--koseli); padding: 7px 9px;
+  cursor: pointer; color: var(--metin); }
+.meslek-kart:hover, .motor-kart:hover, .karakter-kart:hover { border-color: var(--cizgi-acik); }
+.meslek-kart.secili, .motor-kart.secili, .karakter-kart.secili { border-color: var(--vurgu);
+  box-shadow: 0 0 0 1px var(--vurgu) inset; }
+.meslek-kart-ad, .motor-kart-ad { font-weight: 600; font-size: var(--yz-alt); }
+.meslek-kart-ozet { font-size: var(--yz-mikro); color: var(--metin-3); margin-top: 2px; line-height: 1.35; }
+.motor-kart.kapali { opacity: .4; cursor: not-allowed; }
+.motor-kart-durum { font-size: var(--yz-mikro); margin-top: 2px; }
+.motor-kart-durum.durum-hazir { color: var(--iyi); }
+.motor-kart-durum.durum-kismi { color: var(--uyari); }
+.motor-kart-durum.durum-kurulu-degil { color: var(--metin-3); }
+.karakter-liste { display: flex; flex-wrap: wrap; gap: 6px; }
+.karakter-kart { display: flex; align-items: center; justify-content: center;
+  min-width: 46px; min-height: 52px; font-size: var(--yz-mikro); color: var(--metin-3); }
+.katalog-kategori { margin-top: 14px; }
+.katalog-satir { display: grid; grid-template-columns: 210px 170px 1fr auto auto; gap: 8px;
+  align-items: center; padding: 5px 0; border-top: 1px solid var(--cizgi); }
+.katalog-ad { display: flex; gap: 6px; align-items: center; font-size: var(--yz-alt); }
+.katalog-satir input, .katalog-satir select { background: var(--zemin); color: var(--metin);
+  border: 1px solid var(--cizgi); border-radius: var(--koseli); padding: 4px 7px; }
+.sablon-kutu { margin: 6px 0 12px; }
+.sablon-kutu summary { cursor: pointer; color: var(--metin-2); font-size: var(--yz-kucuk); }

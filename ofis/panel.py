@@ -48,6 +48,7 @@ from .motor import motor_ac, musait_motorlar
 from typing import Optional
 from .postane import PostaneHatasi
 from .tahta import TahtaHatasi
+from . import roller as _R
 
 WEB = Path(__file__).resolve().parent.parent / "web"
 
@@ -665,11 +666,12 @@ class KuralGovdesi(BaseModel):
 
 
 class IseAlGovdesi(BaseModel):
-    """Panelden ise alma. Bos birakilan tur/model ROLDEN dolar
-    (`kadro.ise_al`); acikca verilen deger her zaman kazanir."""
+    """Panelden ise alma. Bos motor/model MESLEK KATALOGUNDAN dolar
+    (`kadro.katalogdan_al`); acikca verilen deger her zaman kazanir."""
     ad: str
     meslek: str
-    motor: str = "claude"
+    motor: str = ""
+    karakter: str = ""
     model: str = ""
     efor: str = "normal"
     kanat: str = ""
@@ -709,6 +711,72 @@ class AjanAyarGovdesi(BaseModel):
     model: str | None = None
     efor: str | None = None
     meslek: str | None = None
+    karakter: str | None = None
+
+
+class TasiGovdesi(BaseModel):
+    kanat: str
+
+
+class KanatDuzenGovdesi(BaseModel):
+    ad: str | None = None
+    renk: str | None = None
+
+
+class KatalogGovdesi(BaseModel):
+    rol: str
+    motor: str = ""
+    model: str = ""
+
+
+class SablonKaydetGovdesi(BaseModel):
+    kanat: str
+    ad: str
+    baslik: str = ""
+    aciklama: str = ""
+
+
+def _motor_durumlari(musait: dict) -> dict:
+    """Her motorun DURUSTCE durumu: kurulu mu, bayraklardan eksikleri.
+    Rakipte "kismi / hazir degil" yaziyor; bizde ayni bilgi adaptorun
+    BAYRAKLARINDAN okunur, uydurulmaz."""
+    out = {}
+    for m, var in musait.items():
+        if m == "sahte":
+            continue
+        eksik = []
+        try:
+            a = motor_ac(m)
+            if not getattr(a, "butce_destegi", False):
+                eksik.append("tur basina harcama tavani yok")
+            if not getattr(a, "tur_ici_mesaj", False):
+                eksik.append("tur surerken not/durdur yok")
+            if not getattr(a, "tui_destegi", True):
+                eksik.append("gercek terminal kipi yok")
+        except Exception as exc:                 # noqa: BLE001 -- durum metni
+            eksik.append(f"acilamadi: {exc}")
+        if m == "gemini":
+            eksik.append("video araci yok (video Flow ile gomulu tarayicida)")
+        temel_eksik = [e for e in eksik if "not/durdur" in e or "acilamadi" in e]
+        out[m] = {"kurulu": bool(var),
+                  "durum": ("kurulu degil" if not var else
+                            "kismi" if temel_eksik else "hazir"),
+                  "notlar": eksik,
+                  "etiket": {"claude": "Claude Code", "codex": "Codex",
+                             "gemini": "Antigravity (Gemini)"}.get(m, m)}
+    return out
+
+
+def _model_secenekleri(harita: dict, katalog: dict) -> dict:
+    """Motor -> secilebilir modeller: kademe haritasi + meslek katalogu.
+    Uydurma liste degil; sistemin BUGUN kullandigi adlar."""
+    out = {}
+    for m, k in harita.items():
+        out.setdefault(m, set()).update(v for v in k.values() if v)
+    for k in katalog.values():
+        if k["model"]:
+            out.setdefault(k["motor"], set()).add(k["model"])
+    return {m: sorted(v) for m, v in out.items() if m != "sahte"}
 
 
 def _oda(ofis, ajan: dict) -> dict:
@@ -1121,6 +1189,8 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
             yer = _oda(ofis, a)
             ajanlar.append({
                 "ad": a["ad"], "meslek": a["meslek"], "lider_mi": bool(a["lider_mi"]),
+                "meslek_baslik": _R.MESLEK_BASLIK.get(a["meslek"], a["meslek"]),
+                "karakter": a.get("karakter") or "",
                 "motor": a["motor"], "model": a["model"] or "hesap varsayilani",
                 "efor": a["efor"], "tur": a["tur"], "faz": a["faz"],
                 "kanat_id": a["kanat_id"], "oturum_var": bool(a["oturum_id"]),
@@ -2479,15 +2549,23 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
             kanatlar = [dict(r) for r in conn.execute(
                 "SELECT id, ad FROM kanat WHERE proje_id = ? "
                 "ORDER BY olusturuldu", (ofis.proje_id,)).fetchall()]
+        harita = R.kademe_haritasi(ofis.db, ofis.proje_id)
+        katalog = R.meslek_katalogu(ofis.db, ofis.proje_id)
+        musait = musait_motorlar()
         return {
             "roller": [{"ad": r.ad, "kategori": r.kategori, "ozet": r.ozet,
+                        "baslik": R.MESLEK_BASLIK.get(r.ad, r.ad),
                         "tur": r.tur, "kademe": r.kademe, "uyari": r.uyari}
                        for r in R.ROLLER.values()],
             "kategoriler": R.kategoriler(),
-            "motorlar": musait_motorlar(),
+            "kategori_baslik": R.KATEGORI_BASLIK,
+            "motorlar": musait,
+            "motor_durum": _motor_durumlari(musait),
+            "model_secenek": _model_secenekleri(harita, katalog),
+            "katalog": katalog,
             "kanatlar": kanatlar,
             "eforlar": list(EFORLAR),
-            "kademe_harita": R.kademe_haritasi(ofis.db, ofis.proje_id),
+            "kademe_harita": harita,
         }
 
     @uygulama.post("/api/ajan")
@@ -2497,7 +2575,7 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
         # KURULU OLMAYAN MOTORLA ISE ALINMAZ: hic kosamayacak bir ajan,
         # ekip onerisi kapisinin reddettigi seyin aynisi. Burada da
         # reddedilir -- iki kapidan biri gevserse digeri bosluk birakmaz.
-        if not musait_motorlar().get(govde.motor):
+        if govde.motor and not musait_motorlar().get(govde.motor):
             raise HTTPException(400, f"'{govde.motor}' motoru bu makinede "
                                      "kurulu degil ya da kimligi yok; o motorla "
                                      "ise alinan ajan HIC kosamaz.")
@@ -2507,10 +2585,12 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
         kok = ofis.kok_klasoru()
         Path(kok).mkdir(parents=True, exist_ok=True)
         try:
-            a = ofis.kadro.ise_al(
+            a = ofis.kadro.katalogdan_al(
                 govde.ad.strip().lower(), govde.meslek, motor=govde.motor,
                 model=govde.model, efor=govde.efor, klasor=kok,
                 kanat_id=govde.kanat or None, lider_mi=govde.lider)
+            if govde.karakter:
+                a = ofis.kadro.karakter_yaz(a["ad"], govde.karakter)
         except KadroHatasi as exc:
             raise HTTPException(400, str(exc))
         return a
@@ -2549,12 +2629,171 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
         if govde.motor and not musait_motorlar().get(govde.motor):
             raise HTTPException(400, f"'{govde.motor}' motoru kurulu degil.")
         try:
-            return ofis.kadro.motor_ayarla(
+            a = ofis.kadro.motor_ayarla(
                 ad, motor=govde.motor or None,
                 model=govde.model if govde.model is not None else None,
                 efor=govde.efor or None, meslek=govde.meslek or None)
+            if govde.karakter is not None:
+                a = ofis.kadro.karakter_yaz(ad, govde.karakter)
+            return a
         except (KadroHatasi, R.RolHatasi) as exc:
             raise HTTPException(400, str(exc))
+
+    # -- ORGANIZASYON (05.10.2026): sirket agaci + takimin Yonet bolumu --
+    #
+    # Patron: "her takimin yonet kismi olsun, motorlari modelleri ajanlari
+    # buradan yonetelim" + rakibin "Organizasyon -- Sirket agaci". Iki ekran
+    # AYNI uclari kullanir; kurallar (acik isi olan tasinmaz, lider tasinmaz,
+    # ad geri donmez) `kadro`da -- panel yalniz ona ulasan kapi.
+
+    @uygulama.get("/api/organizasyon")
+    def api_organizasyon():
+        ofis = ofis_ac()
+        with ofis.db.baglanti() as conn:
+            kanatlar = [dict(r) for r in conn.execute(
+                "SELECT id, ad, onek, renk FROM kanat WHERE proje_id = ? "
+                "ORDER BY olusturuldu", (ofis.proje_id,)).fetchall()]
+            acik = {r["sahip"]: r["n"] for r in conn.execute(
+                "SELECT sahip, COUNT(*) AS n FROM gorev WHERE proje_id = ? AND "
+                "durum NOT IN ('bitti', 'iptal') AND sahip IS NOT NULL "
+                "GROUP BY sahip", (ofis.proje_id,)).fetchall()}
+            calisan = {r["sahip"] for r in conn.execute(
+                "SELECT sahip FROM gorev WHERE proje_id = ? AND durum = 'calisiyor'",
+                (ofis.proje_id,)).fetchall()}
+
+        def _a(a):
+            return {"ad": a["ad"], "meslek": a["meslek"],
+                    "meslek_baslik": _R.MESLEK_BASLIK.get(a["meslek"], a["meslek"]),
+                    "motor": a["motor"], "model": a["model"], "efor": a["efor"],
+                    "karakter": a.get("karakter") or "", "lider_mi": bool(a["lider_mi"]),
+                    "faz": a["faz"], "acik_is": acik.get(a["ad"], 0),
+                    "calisiyor": a["ad"] in calisan}
+
+        hepsi = ofis.kadro.liste()
+        for k in kanatlar:
+            k["ajanlar"] = [_a(a) for a in hepsi if a["kanat_id"] == k["id"]]
+            k["lider"] = next((a["ad"] for a in k["ajanlar"] if a["lider_mi"]), "")
+        return {"kanatlar": kanatlar,
+                "takimsiz": [_a(a) for a in hepsi if not a["kanat_id"]],
+                "arsiv": [_a(a) for a in ofis.kadro.liste(arsivli=True)
+                          if a.get("arsiv")]}
+
+    def _kadro_eylem(islev):
+        from .kadro import KadroHatasi
+        try:
+            return islev()
+        except (KadroHatasi, _R.RolHatasi) as exc:
+            raise HTTPException(400, str(exc))
+
+    @uygulama.post("/api/ajan/{ad}/tasi")
+    def api_ajan_tasi(ad: str, govde: TasiGovdesi):
+        ofis = ofis_ac()
+        return _kadro_eylem(lambda: ofis.kadro.tasi(ad, govde.kanat))
+
+    @uygulama.post("/api/ajan/{ad}/cikar")
+    def api_ajan_cikar(ad: str):
+        ofis = ofis_ac()
+        return _kadro_eylem(lambda: ofis.kadro.cikar(ad))
+
+    @uygulama.post("/api/ajan/{ad}/lider")
+    def api_ajan_lider(ad: str):
+        ofis = ofis_ac()
+        return _kadro_eylem(lambda: ofis.kadro.lider_yap(ad))
+
+    @uygulama.post("/api/kanat/{kid}/duzenle")
+    def api_kanat_duzenle(kid: str, govde: KanatDuzenGovdesi):
+        import re as _re
+        ofis = ofis_ac()
+        with ofis.db.baglanti() as conn:
+            k = conn.execute("SELECT * FROM kanat WHERE proje_id = ? AND id = ?",
+                             (ofis.proje_id, kid)).fetchone()
+            if not k:
+                raise HTTPException(404, "Takim yok.")
+            ad = (govde.ad or k["ad"]).strip().upper()
+            renk = govde.renk or k["renk"]
+            if not ad or len(ad) > 24:
+                raise HTTPException(400, "Takim adi bos olamaz (en fazla 24 harf).")
+            if not _re.fullmatch(r"#[0-9A-Fa-f]{6}", renk):
+                raise HTTPException(400, "Renk #RRGGBB biciminde olmali.")
+            if ad != k["ad"] and conn.execute(
+                    "SELECT 1 FROM kanat WHERE proje_id = ? AND ad = ?",
+                    (ofis.proje_id, ad)).fetchone():
+                raise HTTPException(400, f"'{ad}' adinda bir takim zaten var.")
+            conn.execute("UPDATE kanat SET ad = ?, renk = ? WHERE id = ?", (ad, renk, kid))
+        return {"id": kid, "ad": ad, "renk": renk}
+
+    @uygulama.post("/api/kanat/{kid}/sil")
+    def api_kanat_sil(kid: str):
+        """Takimi siler -- yalniz BOSSA: icinde ajan ya da acik is varsa
+        reddedilir (ajanlar once tasinir ya da cikarilir). Yalniz takim
+        satiri silinir; kapanmis islerin kaydi `kanat_id`siyle durur."""
+        ofis = ofis_ac()
+        with ofis.db.baglanti() as conn:
+            k = conn.execute("SELECT ad FROM kanat WHERE proje_id = ? AND id = ?",
+                             (ofis.proje_id, kid)).fetchone()
+            if not k:
+                raise HTTPException(404, "Takim yok.")
+            ajan = conn.execute("SELECT COUNT(*) AS n FROM ajan WHERE proje_id = ? AND "
+                                "kanat_id = ? AND arsiv = 0", (ofis.proje_id, kid)).fetchone()["n"]
+            if ajan:
+                raise HTTPException(400, f"{k['ad']} takiminda {ajan} ajan var; once "
+                                         "ajanlari tasi ya da cikar.")
+            is_ = conn.execute("SELECT COUNT(*) AS n FROM gorev WHERE proje_id = ? AND "
+                               "kanat_id = ? AND durum NOT IN ('bitti', 'iptal')",
+                               (ofis.proje_id, kid)).fetchone()["n"]
+            if is_:
+                raise HTTPException(400, f"{k['ad']} takiminin {is_} acik isi var; "
+                                         "once bitsin ya da iptal edilsin.")
+            # Kayit yabanci anahtarla bagli: kapanmis islerin ve eski ekip
+            # onerilerinin bagi cozulur (kayit durur), bekleyen oneri kapanir.
+            conn.execute("UPDATE gorev SET kanat_id = NULL WHERE proje_id = ? AND "
+                         "kanat_id = ?", (ofis.proje_id, kid))
+            conn.execute("UPDATE ekip_onerisi SET durum = CASE WHEN durum = 'bekliyor' "
+                         "THEN 'reddedildi' ELSE durum END, sebep = CASE WHEN durum = "
+                         "'bekliyor' THEN 'takim silindi' ELSE sebep END, kanat_id = NULL "
+                         "WHERE proje_id = ? AND kanat_id = ?", (ofis.proje_id, kid))
+            conn.execute("UPDATE ajan SET kanat_id = NULL WHERE proje_id = ? AND "
+                         "kanat_id = ? AND arsiv = 1", (ofis.proje_id, kid))
+            conn.execute("DELETE FROM kanat WHERE id = ?", (kid,))
+        ofis.db.olay_yaz(ofis.proje_id, "kanat_silindi", f"Takim silindi: {k['ad']}",
+                         ajan_ad="insan")
+        return {"silindi": k["ad"]}
+
+    @uygulama.get("/api/katalog")
+    def api_katalog():
+        ofis = ofis_ac()
+        k = _R.meslek_katalogu(ofis.db, ofis.proje_id)
+        return [{"rol": r.ad, "baslik": _R.MESLEK_BASLIK.get(r.ad, r.ad),
+                 "kategori": r.kategori, **k[r.ad],
+                 "varsayilan": dict(zip(("motor", "model"), _R.MESLEK_MOTORU[r.ad]))}
+                for r in _R.ROLLER.values()]
+
+    @uygulama.post("/api/katalog")
+    def api_katalog_yaz(govde: KatalogGovdesi):
+        """Meslek katalogunun bir satiri. Bos motor = koddaki varsayilana don.
+        Mevcut ajanlar DEGISMEZ -- yeni ise alinanlar bu satiri kullanir."""
+        ofis = ofis_ac()
+        if govde.motor and not musait_motorlar().get(govde.motor):
+            raise HTTPException(400, f"'{govde.motor}' motoru kurulu degil.")
+        try:
+            return _R.meslek_yaz(ofis.db, ofis.proje_id, govde.rol, govde.motor, govde.model)
+        except _R.RolHatasi as exc:
+            raise HTTPException(400, str(exc))
+
+    @uygulama.post("/api/sablon/kaydet")
+    def api_sablon_kaydet(govde: SablonKaydetGovdesi):
+        """Takimin bugunku uyelerini (lider haric) SABLON olarak saklar."""
+        from . import sablon as _s
+        ofis = ofis_ac()
+        uyeler = [(a["meslek"], f"{_R.MESLEK_BASLIK.get(a['meslek'], a['meslek'])} "
+                                f"({govde.baslik or govde.ad} takimindan)")
+                  for a in ofis.kadro.liste(govde.kanat) if not a["lider_mi"]]
+        try:
+            s = _s.ozel_kaydet(ofis.db, ofis.proje_id, govde.ad, govde.baslik,
+                               govde.aciklama, uyeler)
+        except (_s.SablonHatasi, _R.RolHatasi) as exc:
+            raise HTTPException(400, str(exc))
+        return {"ad": s.ad, "baslik": s.baslik, "roller": [r for r, _ in s.uyeler]}
 
     # -- YETENEK: hesaplar, anahtarlar, araclar -----------------------------
     #
@@ -2640,8 +2879,11 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
     def api_sablonlar():
         """Takim sablonlari -- lider cagrilmaz, sonuc kararli."""
         from . import sablon as _s
+        ofis = ofis_ac()
+        hazir = set(_s.SABLONLAR)
         return [{"ad": s.ad, "baslik": s.baslik, "aciklama": s.aciklama,
-                 "roller": [r for r, _ in s.uyeler]} for s in _s.liste()]
+                 "roller": [r for r, _ in s.uyeler], "ozel": s.ad not in hazir}
+                for s in _s.liste(ofis.db, ofis.proje_id)]
 
     @uygulama.post("/api/sablon")
     def api_sablon(govde: SablonGovdesi):

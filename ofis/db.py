@@ -810,6 +810,12 @@ class Veritabani:
         # MOTOR SECIMI (03.10.2026, `karne`): isin ilk turunda secilen motor;
         # is boyunca ayni motorda kalir (oturum kopmasin). Bos = ajanin motoru.
         ("gorev", "motor_secimi", "TEXT NOT NULL DEFAULT ''"),
+        # ORGANIZASYON (05.10.2026): cikarilan ajan SILINMEZ (ad geri donmez,
+        # gecmisi okunur kalir) -- arsive gider, hicbir takimda gorunmez.
+        ("ajan", "arsiv", "INTEGER NOT NULL DEFAULT 0"),
+        # Ofis haritasindaki gorunusu ("sac:ten:kumas" sira numaralari; bos =
+        # addan turetilir).
+        ("ajan", "karakter", "TEXT NOT NULL DEFAULT ''"),
     )
 
     def _veri_goc(self, conn) -> None:

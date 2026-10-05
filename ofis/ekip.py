@@ -204,7 +204,7 @@ class Ekip:
                     "bir oneri getir.")
 
         musait = {m for m, var in musait_motorlar().items() if var}
-        mevcut_adlar = {a["ad"] for a in self.ofis.kadro.liste()}
+        mevcut_adlar = {a["ad"] for a in self.ofis.kadro.liste(arsivli=True)}
         gorulen = set()
 
         for i, u in enumerate(uyeler):
@@ -297,15 +297,17 @@ class Ekip:
         kadro = self.ofis.kadro.liste()
         lider_var = any(a["lider_mi"] and a["kanat_id"] == kanat_id
                         for a in kadro)
+        tum_adlar = [a["ad"] for a in self.ofis.kadro.liste(arsivli=True)]
         try:
-            oneri = _s.oneri_uret(sablon_ad, [a["ad"] for a in kadro],
-                                  lider_var=lider_var)
+            oneri = _s.oneri_uret(sablon_ad, tum_adlar,
+                                  lider_var=lider_var, db=self.db,
+                                  proje_id=self.proje_id)
         except _s.SablonHatasi as exc:
             raise EkipHatasi(str(exc)) from exc
         hata = self.oneriyi_dogrula(oneri)
         if hata:
             raise EkipHatasi(f"Sablon onerisi kapidan gecmedi: {hata}")
-        s = _s.SABLONLAR[sablon_ad.strip().lower()]
+        s = _s.bul(sablon_ad, self.db, self.proje_id)
         return self._sakla(f"Sablon: {s.baslik}", oneri, f"sablon:{s.ad}",
                            kanat_id)
 
@@ -318,16 +320,19 @@ class Ekip:
         for u in oneri["uyeler"]:
             rol_ad = roller.coz(u["rol"])
             r = roller.ROLLER[rol_ad]
-            motor = (u.get("motor") or "claude").strip()
+            from .motor import musait_motorlar
+            k_motor, k_model, _ = roller.meslek_motoru(
+                rol_ad, self.db, self.proje_id, musait_motorlar())
+            motor = (u.get("motor") or k_motor).strip()
             uyeler.append({
                 "ad": u["ad"].strip().lower(),
                 "rol": rol_ad,
                 "tur": r.tur,
                 "motor": motor,
                 "model": (u.get("model") or "").strip()
-                         or roller.model_sec(
+                         or (k_model if motor == k_motor else roller.model_sec(
                              motor, r.kademe,
-                             roller.kademe_haritasi(self.db, self.proje_id)),
+                             roller.kademe_haritasi(self.db, self.proje_id))),
                 "gerekce": u["gerekce"].strip(),
                 "uyari": r.uyari,
             })

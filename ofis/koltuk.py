@@ -411,7 +411,16 @@ class Koltuk:
             # Model rolun kademesinden; zorluk varsa asagidaki blok duzeltir.
             kosan_ajan = dict(ajan, motor=secilen,
                               model=roller.model_sec(secilen, _rol_kademe, harita))
-        if zorluk:
+        # 05.10.2026 (patron karari, "her ajanin sabit modeli"): varsayilan
+        # kipte zorluk MODELE dokunmaz, yalniz eforu belirler -- yoksa
+        # katalogun secimi her iste eziliyordu. Ajanin modeli bossa ya da
+        # motor karneyle degistiyse kademe yine gecerli.
+        from . import karne as _karne
+        _zorluk_modele = (roller.zorluk_modeli(self.db, self.proje_id) == "kademe"
+                          or _karne.secim_acik_mi(self.db, self.proje_id)
+                          or not ajan.get("model")
+                          or kosan_ajan["motor"] != ajan["motor"])
+        if zorluk and _zorluk_modele:
             zorluk_modeli = roller.model_sec(
                 kosan_ajan["motor"], roller.ZORLUK_KADEME[zorluk], harita)
             if zorluk_modeli and zorluk_modeli != kosan_ajan["model"]:

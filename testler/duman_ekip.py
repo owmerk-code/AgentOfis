@@ -297,14 +297,16 @@ try:
 except EkipHatasi as exc:
     _red = "takim" in str(exc)
 sina("cok takimli ofiste takim SORULUYOR (yanlis lidere baglanmasin)", _red)
-# Gemini 24.09.2026'da cikarildi: musait GORUNSE bile secilmez -- sablon
-# insanin kullanmamaya karar verdigi motoru kadroya sokmamali.
-sina("gemini HICBIR role onerilmiyor (cikarildi)",
-     _S.motor_sec("backend", {"gemini", "claude"}) == "claude"
-     and _S.motor_sec("metin", {"gemini", "codex"}) == "codex"
-     and "gemini" not in _S.MOTOR_TERCIHI)
+# 05.10.2026: motor MESLEK KATALOGUNDAN (kod -> claude, icerik -> gemini,
+# test -> codex); katalogun motoru kurulu degilse yedek sira.
+sina("motor meslek katalogundan",
+     _S.motor_sec("backend", {"gemini", "claude", "codex"}) == "claude"
+     and _S.motor_sec("metin", {"gemini", "claude", "codex"}) == "gemini"
+     and _S.motor_sec("kalite", {"gemini", "claude", "codex"}) == "codex")
+sina("katalog motoru kurulu degilse yedek motor",
+     _S.motor_sec("metin", {"claude"}) == "claude")
 try:
-    _S.motor_sec("metin", {"gemini"})
+    _S.motor_sec("metin", set())
     _red = False
 except _S.SablonHatasi:
     _red = True
