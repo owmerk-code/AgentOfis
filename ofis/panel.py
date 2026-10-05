@@ -723,6 +723,21 @@ class KanatDuzenGovdesi(BaseModel):
     renk: str | None = None
 
 
+class TakimUyesi(BaseModel):
+    ad: str
+    rol: str
+    motor: str = ""
+    model: str = ""
+    karakter: str = ""
+
+
+class TakimKurGovdesi(BaseModel):
+    ad: str
+    renk: str = "#6BA3C7"
+    onek: str = ""
+    uyeler: list[TakimUyesi] = []
+
+
 class TakimSilGovdesi(BaseModel):
     ajanlarla: bool = False
 
@@ -2782,6 +2797,95 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
         ofis.db.olay_yaz(ofis.proje_id, "kanat_silindi", f"Takim silindi: {k['ad']}",
                          ajan_ad="insan")
         return {"silindi": k["ad"]}
+
+    @uygulama.get("/api/sablon/{ad}/onizleme")
+    def api_sablon_onizleme(ad: str):
+        """Sablonun ajanlari -- KAYDETMEDEN: ad onerisi (kullanilmayan,
+        arsivdekiler dahil), meslek, katalogdan motor/model. Bos sablon
+        (`bos`) yalniz lider. Patron listede degistirir, `takim/kur` kurar."""
+        from . import sablon as _s
+        ofis = ofis_ac()
+        tum = [a["ad"] for a in ofis.kadro.liste(arsivli=True)]
+        musait = musait_motorlar()
+        if ad == "bos":
+            havuz = [x for x in _s.AD_HAVUZU if x not in tum]
+            roller_ = [("lider", "Takimin lideri: isi boler ve inceler.")]
+        else:
+            s_ = _s.bul(ad, ofis.db, ofis.proje_id)
+            if not s_:
+                raise HTTPException(404, f"Sablon yok: {ad}")
+            havuz = [x for x in _s.AD_HAVUZU if x not in tum]
+            roller_ = [("lider", "Takimin lideri: isi boler ve inceler.")] + list(s_.uyeler)
+        out = []
+        for (rol, neden), isim in zip(roller_, havuz):
+            m, mo, not_ = _R.meslek_motoru(rol, ofis.db, ofis.proje_id, musait)
+            out.append({"ad": isim, "rol": rol, "baslik": _R.MESLEK_BASLIK.get(rol, rol),
+                        "motor": m, "model": mo, "neden": neden, "not": not_})
+        return {"uyeler": out}
+
+    @uygulama.post("/api/takim/kur")
+    def api_takim_kur(govde: TakimKurGovdesi):
+        """TAKIM + AJANLARI TEK SEFERDE (05.10.2026, patron: sablon tiklayinca
+        bir sey olmuyordu; oneri "Senden bekleniyor"a dusuyor, ayrica onay
+        istiyordu). Kuran insan oldugu icin ayrica onay YOK. Once HER SEY
+        denetlenir (ad bicimi, kullanilmis ad -- arsiv dahil, meslek, motor,
+        tek lider); sorun varsa HICBIR SEY kurulmaz."""
+        import re as _re
+        from .kadro import KadroHatasi, _ad_dogrula
+        ofis = ofis_ac()
+        ad = govde.ad.strip().upper()
+        if not ad or len(ad) > 24:
+            raise HTTPException(400, "Takim adi bos olamaz (en fazla 24 harf).")
+        onek = (govde.onek or _re.sub(r"[^A-Z0-9]", "", ad)[:2] or "TK").upper()
+        if not _re.fullmatch(r"[A-Z0-9]{1,4}", onek):
+            raise HTTPException(400, "Onek 1-4 harf/rakam olmali.")
+        if not _re.fullmatch(r"#[0-9A-Fa-f]{6}", govde.renk or ""):
+            raise HTTPException(400, "Renk #RRGGBB biciminde olmali.")
+        with ofis.db.baglanti() as conn:
+            if conn.execute("SELECT 1 FROM kanat WHERE proje_id = ? AND ad = ?",
+                            (ofis.proje_id, ad)).fetchone():
+                raise HTTPException(400, f"'{ad}' adinda bir takim zaten var.")
+        if not govde.uyeler:
+            raise HTTPException(400, "Takimda en az bir ajan (lider) olmali.")
+        if sum(1 for u in govde.uyeler if u.rol == "lider") != 1:
+            raise HTTPException(400, "Takimda TAM bir lider olmali.")
+        tum = {a["ad"] for a in ofis.kadro.liste(arsivli=True)}
+        gorulen, musait = set(), musait_motorlar()
+        for u in govde.uyeler:
+            try:
+                a_ = _ad_dogrula(u.ad)
+                _R.coz(u.rol)
+            except (KadroHatasi, _R.RolHatasi) as exc:
+                raise HTTPException(400, f"'{u.ad}': {exc}")
+            if a_ in tum:
+                raise HTTPException(400, f"'{a_}' adi zaten kullanilmis (arsivdeki adlar da "
+                                         "geri donmez). Baska ad sec.")
+            if a_ in gorulen:
+                raise HTTPException(400, f"'{a_}' adi listede iki kez var.")
+            gorulen.add(a_)
+            if u.motor and not musait.get(u.motor):
+                raise HTTPException(400, f"'{a_}': '{u.motor}' motoru kurulu degil.")
+        kid = ofis.kanat_ac(ad, onek, govde.renk)
+        kok = ofis.kok_klasoru()
+        Path(kok).mkdir(parents=True, exist_ok=True)
+        alinan = []
+        try:
+            for i, u in enumerate(sorted(govde.uyeler, key=lambda u: u.rol != "lider")):
+                a = ofis.kadro.katalogdan_al(u.ad.strip().lower(), u.rol, motor=u.motor,
+                                             model=u.model, klasor=kok, kanat_id=kid,
+                                             lider_mi=(u.rol == "lider"))
+                # Karakter verilmediyse takimda HER AJAN FARKLI gorunsun (gozle
+                # goruldu: hepsi ayni figurdu). sac:ten:kumas -- lider takim rengi.
+                ofis.kadro.karakter_yaz(
+                    a["ad"], u.karakter or f"{(i * 5 + 1) % 6}:{(i * 3) % 4}:{0 if i == 0 else 1 + (i - 1) % 7}")
+                alinan.append(a["ad"])
+        except (KadroHatasi, _R.RolHatasi) as exc:
+            raise HTTPException(400, f"Kurulurken durdu: {exc}. Kurulanlar: "
+                                     f"{', '.join(alinan) or '(yok)'} -- takim {ad} acik kaldi.")
+        ofis.db.olay_yaz(ofis.proje_id, "kanat_acildi",
+                         f"Yeni takim: {ad} -- {len(alinan)} ajan ({', '.join(alinan)})",
+                         ajan_ad="insan")
+        return {"id": kid, "ad": ad, "ajanlar": alinan}
 
     @uygulama.get("/api/katalog")
     def api_katalog():

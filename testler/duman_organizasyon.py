@@ -236,5 +236,25 @@ sab = {x["ad"]: x for x in ist.get("/api/sablonlar").json()}
 sina("sablon listesi patronunkileri isaretli gosterir",
      sab["web-takimi"]["ozel"] and not sab["mobil"]["ozel"])
 
+print("\n6. TAKIM KUR (tek seferde)")
+o = ist.get("/api/sablon/mobil/onizleme").json()["uyeler"]
+sina("onizleme: lider + sablon uyeleri, kullanilmayan adlar, katalog motoru",
+     o[0]["rol"] == "lider" and [u["rol"] for u in o[1:]] == ["urun", "arayuz", "backend", "kalite"]
+     and not ({u["ad"] for u in o} & {a["ad"] for a in ofis.kadro.liste(arsivli=True)})
+     and o[0]["motor"] == "claude", str(o)[:200])
+r = ist.post("/api/takim/kur", json={"ad": "Yeni", "renk": "#123456", "uyeler": [
+    {"ad": "lider-x", "rol": "lider"}, {"ad": "bilge", "rol": "metin"}]})
+sina("kullanilmis (arsivdeki) ad: HICBIR SEY kurulmaz",
+     r.status_code == 400 and "kullanilmis" in r.text
+     and not any(k_["ad"] == "YENI" for k_ in ist.get("/api/organizasyon").json()["kanatlar"])
+     and "lider-x" not in [a["ad"] for a in ofis.kadro.liste(arsivli=True)], r.text[:200])
+r = ist.post("/api/takim/kur", json={"ad": "Yeni", "uyeler": [{"ad": "a1", "rol": "metin"}]})
+sina("lidersiz takim reddedilir", r.status_code == 400 and "lider" in r.text)
+r = ist.post("/api/takim/kur", json={"ad": "Yeni", "renk": "#123456", "uyeler": [
+    {"ad": u["ad"], "rol": u["rol"], "motor": u["motor"], "model": u["model"]} for u in o]})
+_k = next((k_ for k_ in ist.get("/api/organizasyon").json()["kanatlar"] if k_["ad"] == "YENI"), None)
+sina("takim ve 5 ajani TEK SEFERDE kuruldu, lider dogru",
+     r.status_code == 200 and _k and len(_k["ajanlar"]) == 5 and _k["lider"] == o[0]["ad"], r.text[:200])
+
 print(f"\n{GECEN} gecti, {KALAN} kaldi")
 sys.exit(1 if KALAN else 0)

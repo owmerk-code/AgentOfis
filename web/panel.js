@@ -4706,26 +4706,118 @@ async function ajanAyarlari(c, a) {
   c.append(kutu);
 }
 
-function takimEkleAc() {
+/* YENİ TAKIM (05.10.2026, patron: "şablona tıklıyorum çalışmıyor, istediğim
+   gibi değil"). Tek akış: ad + renk → başlangıç (boş takım ya da şablon) →
+   ajan listesi (ad, meslek, motor, model düzenlenir) → KUR. Takım ve
+   ajanları TEK SEFERDE kurulur; kuran insan olduğu için ayrıca onay yok.
+   Sorun varsa sunucu HİÇBİR ŞEY kurmaz ve sebep pencerenin içinde yazar. */
+const AD_ADRES = (x) => String(x || "").toLocaleLowerCase("tr").replace(/ç/g, "c").replace(/ğ/g, "g")
+  .replace(/ı/g, "i").replace(/ö/g, "o").replace(/ş/g, "s").replace(/ü/g, "u")
+  .replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+
+async function takimEkleAc() {
+  let sec, sablonlar = [];
+  D.kadroSec = null;
+  try { sec = await kadroSecenek(); }
+  catch (e) { return bildir("seçenekler okunamadı: " + e.message, "kotu"); }
+  try { sablonlar = await al("/api/sablonlar"); } catch (e) { /* boş takım yine kurulur */ }
   cekmeceAc((c) => {
-    cekBas(c, "takım", "Yeni takım kur");
-    const ad = el("input"); ad.placeholder = "ör. STÜDYO";
-    const onek = el("input"); onek.placeholder = "görev kimliği öneki (ör. ST)";
-    const renk = el("input"); renk.type = "color"; renk.value = "#6BA3C7";
-    formAlan(c, "Takım adı", ad);
+    c.classList.add("genis");
+    cekBas(c, "organizasyon", "Yeni takım");
+    const ad = el("input"); ad.placeholder = "ör. MAĞAZA, MOBİL, SAAS";
+    const renk = el("input"); renk.type = "color";
+    renk.value = ["#E0785A", "#6BA3C7", "#5FB98A", "#9B8BD0", "#D9A441"][(D.ofis.kanatlar || []).length % 5];
     const sira = el("div", "form-sira");
-    formAlan(sira, "Önek", onek); formAlan(sira, "Renk", renk);
+    formAlan(sira, "Takım adı", ad); formAlan(sira, "Renk", renk);
     c.append(sira);
-    c.append(el("div", "form-ipucu",
-      "Renk takımın ofisinin halısı ve sekmesi olur. Kurulunca ilk iş: bu takıma bir LİDER işe al."));
-    const kur = el("button", "dugme olumlu", "Kur");
-    kur.onclick = async () => {
-      if (!ad.value.trim()) { ad.placeholder = "Ad zorunlu"; return ad.focus(); }
-      const r = await eylem("/api/kanat", { ad: ad.value, onek: onek.value, renk: renk.value },
-        (x) => `takım ${x.ad} kuruldu — şimdi "+ ajan" ile bir lider işe al`);
-      if (r) { D.kanat = r.id; D.kadroSec = null; await yenile(); ajanEkleAc(r.id); }
+
+    c.append(el("div", "cek-etiket", "BAŞLANGIÇ"));
+    const kartlar = el("div", "sablon-liste");
+    const kartDug = {};
+    const kart = (anahtar, baslik, aciklama, roller) => {
+      const b = el("button", "sablon-kart"); b.type = "button";
+      b.append(el("div", "sablon-ad", baslik), el("div", "sablon-aciklama", aciklama));
+      if (roller) b.append(el("div", "sablon-roller", roller));
+      b.onclick = () => baslangic(anahtar);
+      kartDug[anahtar] = b; kartlar.append(b);
     };
-    const sat = el("div", "cek-eylem"); sat.append(kur); c.append(sat);
+    kart("bos", "Boş takım", "Yalnız lider; ajanları sonra eklersin.");
+    for (const s of sablonlar)
+      kart(s.ad, s.baslik + (s.ozel ? " ★" : ""), s.aciklama,
+           s.roller.map((r) => (sec.roller.find((x) => x.ad === r) || {}).baslik || r).join(" · "));
+    c.append(kartlar);
+
+    c.append(el("div", "cek-etiket", "AJANLAR"));
+    const liste = el("div", "takim-liste");
+    c.append(liste);
+    const satirlar = [];
+    const satirEkle = (u) => {
+      const sat = el("div", "takim-satir");
+      const adG = el("input"); adG.value = u.ad || ""; adG.placeholder = "ajan adı";
+      const rol = rolSecimi(sec, u.rol);
+      const kurulu = Object.entries(sec.motor_durum || {}).filter(([, d]) => d.kurulu).map(([m]) => m);
+      const motor = secim(kurulu.map((m) => [m, MOTOR_ETIKET[m] || m]), u.motor || kurulu[0]);
+      const model = modelGirdisi(sec, motor.value, u.model || "");
+      motor.onchange = () => model.motorYap(motor.value);
+      rol.onchange = () => {
+        const k = (sec.katalog || {})[rol.value] || {};
+        if (kurulu.includes(k.motor)) { motor.value = k.motor; model.motorYap(k.motor, k.model); }
+        satirlar.forEach((x) => x.liderEtiket.hidden = x.rol.value !== "lider");
+      };
+      const lid = el("span", "org-lider", "LİDER");
+      lid.hidden = u.rol !== "lider";
+      const sil = el("button", "dugme kucuk", "✕"); sil.title = "Listeden çıkar";
+      const kayit = { sat, adG, rol, motor, model, liderEtiket: lid };
+      sil.onclick = () => { satirlar.splice(satirlar.indexOf(kayit), 1); sat.remove(); };
+      const adKutu = el("div", "takim-ad"); adKutu.append(adG, lid);
+      sat.append(adKutu, rol, motor, model, sil);
+      satirlar.push(kayit); liste.append(sat);
+    };
+    const baslangic = async (anahtar) => {
+      Object.entries(kartDug).forEach(([x, d]) => d.classList.toggle("secili", x === anahtar));
+      try {
+        const o = await al(`/api/sablon/${encodeURIComponent(anahtar)}/onizleme`);
+        liste.innerHTML = ""; satirlar.length = 0;
+        o.uyeler.forEach(satirEkle);
+      } catch (e) { goster("Şablon okunamadı: " + e.message); }
+    };
+    const ekleDug = el("button", "dugme kucuk", "+ Meslek ekle");
+    ekleDug.onclick = () => {
+      const k = (sec.katalog || {}).arayuz || {};
+      satirEkle({ ad: "", rol: "arayuz", motor: k.motor, model: k.model });
+    };
+    const ekleSat = el("div", "cek-eylem"); ekleSat.append(ekleDug); c.append(ekleSat);
+    c.append(el("div", "form-ipucu",
+      "Türkçe harf ve boşluk adreste çevrilir (Ömer Can → omer-can). Arşivdeki adlar kullanılamaz. " +
+      "Motor ve model meslekten gelir; her satırda değiştirebilirsin."));
+
+    const hata = el("div", "cek-hata gizli");
+    function goster(m) { hata.textContent = m; hata.classList.remove("gizli"); hata.scrollIntoView({ block: "nearest" }); }
+    const kur = el("button", "dugme olumlu", "Takımı kur");
+    kur.onclick = async () => {
+      hata.classList.add("gizli");
+      if (!ad.value.trim()) { goster("Takım adı boş."); return ad.focus(); }
+      if (!satirlar.length) return goster("Başlangıç seç: Boş takım ya da bir şablon.");
+      const uyeler = satirlar.map((x) => ({ ad: AD_ADRES(x.adG.value), rol: x.rol.value,
+                                            motor: x.motor.value, model: x.model.value }));
+      const bos = uyeler.find((u) => !u.ad);
+      if (bos) return goster("Her ajanın bir adı olmalı.");
+      if (uyeler.filter((u) => u.rol === "lider").length !== 1)
+        return goster("Takımda TAM bir lider olmalı.");
+      for (const x of satirlar) if (!x.model.kapiOnayi()) return;
+      kur.disabled = true; kur.textContent = "Kuruluyor…";
+      try {
+        const r = await yolla("/api/takim/kur", { ad: ad.value, renk: renk.value, uyeler });
+        bildir(`${r.ad} takımı kuruldu: ${r.ajanlar.join(", ")}`, "iyi");
+        D.kanat = r.id; D.kadroSec = null; await yenile(); organizasyonAc(r.id);
+      } catch (e) {
+        goster("Kurulmadı: " + String(e.message || e));
+      } finally { kur.disabled = false; kur.textContent = "Takımı kur"; }
+    };
+    const vazgec = el("button", "dugme", "Vazgeç"); vazgec.onclick = cekmeceKapat;
+    const sat = el("div", "cek-eylem"); sat.append(vazgec, kur);
+    c.append(hata, sat);
+    baslangic("bos");
   });
 }
 
@@ -5186,30 +5278,6 @@ async function ajanEkleAc(kanatId) {
     const takim = secim([["", "takımsız"]].concat(sec.kanatlar.map((k) => [k.id, k.ad])), kanatId);
     const bosMu = () => !!takim.value && !D.ofis.ajanlar.some((x) => x.kanat_id === takim.value);
     formAlan(c, "Takım", takim);
-
-    // ŞABLONDAN EKİP: lider çağrılmaz, jeton yanmaz; üretilen şey bir ÖNERİDİR.
-    if (sablonlar.length) {
-      const d = el("details", "sablon-kutu");
-      d.append(el("summary", null, "Şablondan bütün ekip (önce önizleme)"));
-      const liste = el("div", "sablon-liste");
-      for (const s of sablonlar) {
-        const b = el("button", "sablon-kart");
-        b.append(el("div", "sablon-ad", s.baslik + (s.ozel ? " ★" : "")),
-                 el("div", "sablon-aciklama", s.aciklama),
-                 el("div", "sablon-roller", s.roller.join(" · ")));
-        b.title = "Önizleme oluşturur; kurmak için SENDEN BEKLENİYOR'da 'Kur'a bas.";
-        b.onclick = async () => {
-          if (!takim.value) return bildir("Şablon bir takıma kurulur: önce takımı seç.", "kotu");
-          const r = await eylem("/api/sablon", { ad: s.ad, kanat: takim.value },
-            (x) => `ekip önerisi #${x.no} hazır (${x.uyeler.length} ajan) — ` +
-                   "SENDEN BEKLENİYOR'da önizle, kur ya da reddet");
-          if (r) cekmeceKapat();
-        };
-        liste.append(b);
-      }
-      d.append(liste);
-      c.append(d);
-    }
 
     const ad = el("input"); ad.placeholder = "ajanın adı (ör. ayna, Ömer Can)";
     // AD → ADRES: sistem adı adres olarak kullanır (küçük harf, tire). Türkçe

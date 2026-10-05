@@ -2016,3 +2016,12 @@ details > summary.hf-bas { cursor: pointer; }
   padding: 11px 13px; border-radius: 9px; font-size: var(--yz-govde);
   background: rgba(217,164,65,.10); border: 1px solid rgba(217,164,65,.45); }
 .cek-uyari .dugme { margin-left: auto; }
+
+/* Yeni takım: ajan listesi (05.10.2026) */
+.sablon-kart.secili { border-color: var(--vurgu); box-shadow: 0 0 0 1px var(--vurgu) inset; }
+.takim-liste { display: flex; flex-direction: column; gap: 6px; }
+.takim-satir { display: grid; grid-template-columns: 1.1fr 1.4fr .9fr 1.3fr auto; gap: 8px; align-items: center;
+  padding: 7px 8px; border: 1px solid var(--cizgi); border-radius: 9px; background: var(--zemin-3); }
+.takim-satir input, .takim-satir select { width: 100%; min-width: 0; background: var(--zemin); color: var(--metin);
+  border: 1px solid var(--cizgi); border-radius: var(--koseli); padding: 5px 8px; font-size: var(--yz-alt); }
+.takim-ad { display: flex; align-items: center; gap: 6px; }

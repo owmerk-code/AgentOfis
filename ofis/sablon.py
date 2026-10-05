@@ -43,9 +43,9 @@ SABLONLAR = {
     # SaaS, bot, icerik... Uyeler lider HARIC en fazla 5 (AZAMI_UYE 6).
     # Motor ve model MESLEK KATALOGUNDAN gelir (`roller.MESLEK_MOTORU`).
     "ticaret": Sablon(
-        "ticaret", "Magaza",
-        "Magazanin gunluk isleri: urun, metin, gorsel, reklam, musteri -- "
-        "riskli eylemler ONAYA duser.",
+        "ticaret", "Mağaza",
+        "Mağazanın günlük işleri: ürün, metin, görsel, reklam, müşteri — "
+        "riskli eylemler onaya düşer.",
         (("magaza", "Katalog, stok, siparis ve urun kayitlari."),
          ("metin", "Urun aciklamasi ve duyuru metni."),
          ("tasarim", "Urun ve kampanya gorselleri."),
@@ -53,53 +53,53 @@ SABLONLAR = {
          ("destek", "Musteri yanitlarinin TASLAGINI yazar, gondermez."))),
     "mobil": Sablon(
         "mobil", "Mobil uygulama",
-        "Mobil uygulama gelistirme: olcut, ekran, sunucu, test.",
+        "Mobil uygulama geliştirme: ölçüt, ekran, sunucu, test.",
         (("urun", "Kabul olcutunu yazar; belirtim hatasi en buyuk hata kumesi."),
          ("arayuz", "Uygulamanin ekranlari ve kullanici deneyimi."),
          ("backend", "Sunucu tarafi, veri ve is kurallari."),
          ("kalite", "Bagimsiz sinama: testler yesil VE iddia sayisi azalmadi."))),
     "urun": Sablon(
-        "urun", "SaaS / web urunu",
-        "Web tabanli urun: olcut + gelistirme + yayin + sinama.",
+        "urun", "SaaS / web ürünü",
+        "Web tabanlı ürün: ölçüt + geliştirme + yayın + sınama.",
         (("urun", "Kabul olcutunu yazar; belirtim hatasi en buyuk hata kumesi."),
          ("arayuz", "Ekranlar."),
          ("backend", "Sunucu tarafi."),
          ("devops", "Derleme, yayin, ortam; yayina alma onaya duser."),
          ("kalite", "Bagimsiz sinama."))),
     "yazilim": Sablon(
-        "yazilim", "Web sitesi / yazilim",
-        "Uygulama, web sitesi, servis: sunucu + arayuz + arama + test.",
+        "yazilim", "Web sitesi / yazılım",
+        "Uygulama, web sitesi, servis: sunucu + arayüz + arama + test.",
         (("backend", "Sunucu tarafi, veri ve is kurallari."),
          ("arayuz", "Kullanicinin gordugu ekranlar."),
          ("seo", "Arama gorunurlugu: baslik, ustveri, ic baglanti."),
          ("kalite", "Testler yesil VE iddia sayisi azalmadi -- bagimsiz goz."))),
     "bot": Sablon(
         "bot", "Bot / otomasyon",
-        "Bot ve otomasyon: dis servisleri baglar, isletir, sinar.",
+        "Bot ve otomasyon: dış servisleri bağlar, işletir, sınar.",
         (("entegrasyon", "Dis servisi baglar (API, baglayici, bot)."),
          ("backend", "Botun is mantigi ve verisi."),
          ("kalite", "Bagimsiz sinama."))),
     "icerik": Sablon(
-        "icerik", "Icerik / sosyal medya",
-        "Metin, gorsel, video ve arama gorunurlugu: yayina hazir icerik.",
+        "icerik", "İçerik / sosyal medya",
+        "Metin, görsel, video ve arama görünürlüğü: yayına hazır içerik.",
         (("metin", "Metni yazar."),
          ("tasarim", "Gorsel sartlara uygun uretir."),
          ("video", "Kisa video (Flow) uretir."),
          ("seo", "Aranabilirlik ve baslik/aciklama."))),
     "studyo": Sablon(
-        "studyo", "Video / gorsel studyo",
-        "Video ve gorsel uretimi: istem, uretim, metin.",
+        "studyo", "Video / görsel stüdyo",
+        "Video ve görsel üretimi: istem, üretim, metin.",
         (("video", "Videoyu gomulu tarayicida Flow ile uretir."),
          ("tasarim", "Gorselleri uretir."),
          ("metin", "Senaryo, alt yazi ve aciklama metni."))),
     "arastirma": Sablon(
-        "arastirma", "Arastirma",
-        "Kaynakli arastirma ve olculu analiz.",
+        "arastirma", "Araştırma",
+        "Kaynaklı araştırma ve ölçülü analiz.",
         (("arastirma", "Kaynakli tarama, her iddia icin baglanti."),
          ("analiz", "Sayilar ve karsilastirma."))),
     "bilgisayar": Sablon(
-        "bilgisayar", "Bilgisayar ve tarayici isleri",
-        "Sitelerde islem, form, yonetim paneli; gerektiginde arastirma.",
+        "bilgisayar", "Bilgisayar ve tarayıcı işleri",
+        "Sitelerde işlem, form, yönetim paneli; gerektiğinde araştırma.",
         (("bilgisayar", "Gomulu tarayicida sitelerde islem yapar."),
          ("arastirma", "Gereken bilgiyi kaynagiyla bulur."))),
 }
