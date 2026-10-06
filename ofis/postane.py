@@ -444,14 +444,17 @@ class Postane:
         `kapsam`:
           * `eylem` (varsayilan) -- BIR KEZ gecer, sonra tukenir.
           * `is`    -- bu gorev boyunca ayni eylem bir daha sorulmaz.
+          * `proje` -- BU PROJEDE HEP (06.10.2026, onay yorgunlugu E80):
+            karttan KALICI izin yazilir (`izin.karttan_izin`; para, silme,
+            sifre, masaustu asla). Izin Ayarlar'da gorunur ve kaldirilir.
 
         Varsayilan DAR olan. Genis kapsam insanin ACIK tercihidir;
         varsayilan yapsaydik bir "evet" sessizce surekli yetkiye
         donusurdu. Reddederken kapsam anlamsiz: ret her halde ogretir.
         """
-        if kapsam not in ("eylem", "is"):
+        if kapsam not in ("eylem", "is", "proje"):
             raise PostaneHatasi(
-                f"Bilinmeyen kapsam: {kapsam!r}. 'eylem' ya da 'is'.")
+                f"Bilinmeyen kapsam: {kapsam!r}. 'eylem', 'is' ya da 'proje'.")
         if not onayla and not (not_ or "").strip():
             raise PostaneHatasi(
                 "Ret gerekcesi zorunlu. Gerekcesiz ret, ajanin ayni seyi "
@@ -469,6 +472,21 @@ class Postane:
                     f"Bu istek zaten '{row['durum']}'. Onay bir kez verilir."
                 )
             durum = "onaylandi" if onayla else "reddedildi"
+            if onayla and kapsam == "proje":
+                # Once IZIN yazilir: verilemiyorsa kart da DEGISMEZ (yarim
+                # kalan "onaylandi ama izin yok" durumu olmaz).
+                from ofis import izin as _izin
+                k = _izin.karttan_izin(dict(row))
+                if not k["verilebilir"]:
+                    raise PostaneHatasi("Bu projede hep izni verilemez: " + k["sebep"])
+                try:
+                    _izin.tanimla(
+                        self.db, self.proje_id, desen=k["desen"], sinif=k["sinif"],
+                        veren=cevaplayan, kaynak="insan",
+                        gerekce=(not_ or "").strip()
+                        or f"onay kartindan 'Bu projede hep': {row['eylem'][:80]}")
+                except _izin.IzinHatasi as exc:
+                    raise PostaneHatasi(str(exc))
             conn.execute(
                 "UPDATE onay SET durum = ?, cevap_notu = ?, cevaplandi = ?, "
                 "kapsam = ? WHERE id = ?",
@@ -477,7 +495,8 @@ class Postane:
             )
         # KAPSAM DA KAYDA GECER. Gostermeyen cikti, sessizce genisleyen
         # bir yetkiyi fark ettirmez.
-        kapsam_notu = " [BU IS BOYUNCA]" if (onayla and kapsam == "is") else ""
+        kapsam_notu = {"is": " [BU IS BOYUNCA]", "proje": " [BU PROJEDE HEP]"}.get(
+            kapsam, "") if onayla else ""
         self.db.olay_yaz(
             self.proje_id, "onay_cevabi",
             f"{row['eylem'][:120]} -> {durum}{kapsam_notu}. {not_}".strip(),

@@ -59,6 +59,16 @@ SILME = {
     "PowerShell [IO.File]::Delete": ("PowerShell", '[System.IO.File]::Delete("a.txt")'),
     "PowerShell [IO.Directory]::Delete": ("PowerShell", '[IO.Directory]::Delete("d", $true)'),
     "find -delete": ("Bash", 'find . -name "*.tmp" -delete'),
+    # 06.10: dolayli yazimlar (once SORMADAN geciyordu)
+    "takma ad f=os.remove": ("Bash", 'python -c "import os; f=os.remove; f(\'a\')"'),
+    "from os import remove": ("Bash", 'python -c "from os import remove; remove(\'a\')"'),
+    "from shutil import rmtree": ("Bash", 'python -c "from shutil import rmtree as r; r(\'d\')"'),
+    "__import__('os').remove": ("Bash", 'python -c "__import__(\'os\').remove(\'a\')"'),
+    "importlib os .unlink": ("Bash", 'python -c "import importlib; importlib.import_module(\'os\').unlink(\'a\')"'),
+    "getattr(os,'remove')": ("Bash", 'python -c "import os as o; getattr(o,\'remove\')(\'a\')"'),
+    "subprocess liste ['rm',...]": ("Bash", 'python -c "import subprocess; subprocess.run([\'rm\',\'-rf\',\'x\'])"'),
+    "subprocess liste ['cmd','/c','del']": ("Bash", 'python -c "import subprocess; subprocess.run([\'cmd\',\'/c\',\'del\',\'a\'])"'),
+    "node getattr benzeri fs['rmSync']": ("Bash", 'node -e "const fs=require(\'fs\'); fs[\'rmSync\'](\'d\')"'),
     "codex kod kipi exec_command(python os.remove)":
         ("Bash", 'text(await tools.exec_command({cmd:"python -c \\"import os; os.remove(\'a\')\\""}));'),
 }
@@ -75,6 +85,9 @@ ZARARSIZ = {
     "pytest": "python -m pytest -q",
     "heredoc rapor metni": "python - <<'EOF'\nprint('deploy notu ve rm kelimesi')\nEOF",
     "betik calistirma, dosya yok": "python yok_boyle_bir_betik.py",
+    "listede 'del' kelimesi (komut degil)": 'python -c "print([\'add\', \'del\'])"',
+    "os.path okumasi": 'python -c "import os; print(os.path.exists(\'a\'))"',
+    "os.replace (yazma, silme degil)": 'python -c "import os; os.replace(\'b\', \'a\')"',
 }
 for ad, komut in ZARARSIZ.items():
     sina(f"{ad} -> SERBEST", karar("Bash", komut) is None, str(karar("Bash", komut)))

@@ -2862,6 +2862,13 @@ async function cizBekleyenler() {
   bas.append(el("span", null, "SENDEN BEKLENİYOR"));
   if (adet) bas.append(el("span", "sayi", String(adet)));
   kap.append(bas);
+  // ONAY YORGUNLUGU OLCULUR (E80): bugun kac kez soruldu, kac adim senin
+  // iznine dayanarak sorulmadan gecti. Cok soruluyorsa kartta "Bu projede hep".
+  const sy = b.onay_sayaci;
+  if (sy && (sy.bugun_soruldu || sy.bugun_izinle_gecti || sy.kalici_izin))
+    kap.append(el("div", "sonuk",
+      `bugün ${sy.bugun_soruldu} onay soruldu · ${sy.bugun_izinle_gecti} adım senin izninle sorulmadan geçti`
+      + ` · ${sy.kalici_izin} kalıcı izin`));
 
   // OTOMATIK UYGULANAN GUNCELLEMELER: senden KARAR beklemez (sayaca
   // girmez) ama gorulene kadar durur -- sessizce degisen model olmasin.
@@ -3063,6 +3070,18 @@ async function cizBekleyenler() {
       { onayla: true, not_: girdi.value, kapsam: "eylem" }, "onaylandı (bir kez)");
     hep.onclick = () => eylem(`/api/onay/${a.id}`,
       { onayla: true, not_: girdi.value, kapsam: "is" }, "onaylandı (bu iş boyunca)");
+    // UCUNCU KADEME (06.10, onay yorgunlugu): yalniz kalici izne donusebilen
+    // kartta (kural sunucuda: izin.karttan_izin). Para/silme/sifre hic cikmaz.
+    let proje = null;
+    if (a.kalici && a.kalici.verilebilir) {
+      proje = el("button", "dugme", "Bu projede hep");
+      proje.title = `Bu projede "${a.kalici.desen}" bir daha SORULMAZ (kalıcı izin). Ayarlar > İzinler'den kaldırılır.`;
+      proje.onclick = () => {
+        if (!confirm(`Bu projede "${a.kalici.desen}" bundan sonra sana sorulmadan geçecek. Emin misin?`)) return;
+        eylem(`/api/onay/${a.id}`, { onayla: true, not_: girdi.value, kapsam: "proje" },
+              "onaylandı (bu projede hep — kalıcı izin yazıldı)");
+      };
+    }
     red.onclick = () => {
       if (!girdi.value.trim()) {
         girdi.placeholder = "Ret gerekçesi zorunlu — ajan neyi yapmayacağını bilmeli";
@@ -3071,7 +3090,7 @@ async function cizBekleyenler() {
       eylem(`/api/onay/${a.id}`, { onayla: false, not_: girdi.value },
             "reddedildi — gerekçe ajana iletilecek");
     };
-    satir.append(girdi, ver, hep, red);
+    satir.append(girdi, ver, hep, ...(proje ? [proje] : []), red);
     o.append(satir);
     kap.append(o);
   }

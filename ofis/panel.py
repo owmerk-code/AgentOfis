@@ -2081,9 +2081,13 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
         # CEVAPLAMAMALI -- ofis kendi icinde danisiyor demektir. Ayni
         # kuyruga koymak, insana kendisine dusmeyen isi gosterirdi;
         # tamamen gizlemek ise ofisi sessiz kilardi.
+        from . import izin as _izin
+        onaylar = [{**o, "kalici": _izin.karttan_izin(o)}
+                   for o in _onaylar_giris_ile(ofis.postane.bekleyen_onaylar())]
         return {"sorular": ofis.postane.insan_bekleyenler(),
                 "danisilanlar": ofis.postane.ajana_bekleyenler(),
-                "onaylar": _onaylar_giris_ile(ofis.postane.bekleyen_onaylar())}
+                "onaylar": onaylar,
+                "onay_sayaci": _izin.gun_sayaci(ofis.db, ofis.proje_id)}
 
     # -- insanin mudahalesi ------------------------------------------------
 
@@ -2130,8 +2134,8 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
         # Kapsam SUNUCUDA dogrulanir: bilinmeyen bir deger sessizce
         # `eylem`e dusseydi, insan "is boyunca" verdigini sanip her
         # seferinde yeniden sorulurdu (ya da tersi).
-        if govde.kapsam not in ("eylem", "is"):
-            raise HTTPException(400, "kapsam 'eylem' ya da 'is' olmali.")
+        if govde.kapsam not in ("eylem", "is", "proje"):
+            raise HTTPException(400, "kapsam 'eylem', 'is' ya da 'proje' olmali.")
         ofis = ofis_ac()
         from . import giris as _giris
         # GIRIS ISTEGI siradan onay gibi cevaplanamaz: "yaptim" OLCULUR

@@ -625,7 +625,7 @@ OKUMA_FIILLERI = frozenset("""
 get list search read query describe resolve ping find check validate
 preview fetch download schema docs suggest score context benchmark
 insights stats status summary transcript export view show inspect
-count lookup discover
+count lookup discover help guide
 """.split())
 
 #: Bunlar OKUMA fiiliyle birlikte gelse bile riskli sayilir -- cunku
@@ -633,8 +633,24 @@ count lookup discover
 #: `create_payment_method` degil; ayrimi asagidaki fiil kumeleri yapar.
 ARAC_PARA = frozenset("""
 discount boost budget payment pay charge purchase checkout billing
-invoice subscribe subscription refund payout generation generate
+invoice subscribe subscription refund payout
 """.split())
+
+#: URETIM ancak MEDYA uretimiyse paradir (06.10.2026, gercek baglayici
+#: adlariyla OLCULDU): `generate-image`, `create_image_generation` kredi yer;
+#: Shopify `generate-business-names` / `generate-domain-names` ucretsiz oneridir
+#: ve "PARA" diye soruluyordu.
+ARAC_URETIM = frozenset("generate generation".split())
+ARAC_MEDYA = frozenset("""
+image images video videos design designs audio music voice speech avatar clip
+""".split())
+
+#: Kisi listesini DISARI yukleyen cagri (06.10.2026 OLCULDU): Meta
+#: `ads_update_custom_audience_users` musteri e-posta/telefon listesini Meta'ya
+#: yollar; adinda yalniz `update` oldugu icin "kayit" sayilip SORULMADAN
+#: geciyordu. Kisisel veri disari cikiyor -> gonderim.
+ARAC_KITLE = frozenset("audience audiences".split())
+ARAC_KISILER = frozenset("users members contacts customers emails phones".split())
 
 ARAC_YAYIN = frozenset("""
 publish unpublish activate deactivate launch live enable disable
@@ -647,7 +663,7 @@ rm rmdir unlink truncate drop
 """.split())
 
 ARAC_GONDERIM = frozenset("""
-send post share reply comment message email tweet notify invite
+send post share reply comment email tweet notify invite
 push scp rsync
 """.split())
 
@@ -667,7 +683,8 @@ DURUM_YAYIN = frozenset("active live published enabled running".split())
 ARAC_DEGISTIR = frozenset("""
 create update set add write mutation attach finalize apply switch
 connect disconnect save follow unfollow mark label move copy claim
-upload rename assign draft
+upload rename assign draft edit resize merge autofill import configure
+unsave unlabel unmark untrash restore batch
 """.split())
 
 
@@ -801,6 +818,19 @@ _KOD_SILME_KALIPLARI = (
     r"\brimraf\b",
     r"\[(?:system\.)?io\.(?:file|directory)\]::delete\b",
     r"\bfind\b[^|;&]*\s-delete\b",
+    # DOLAYLI YAZIM (06.10.2026 OLCULDU): ayni silme parantezsiz takma adla
+    # (`f = os.remove; f(x)`), `from os import remove`, `__import__('os').remove`,
+    # `getattr(os, 'remove')` ve alt surece LISTE olarak verilen komutla
+    # (`subprocess.run(['rm', '-rf', x])`) SORULMADAN geciyordu.
+    r"\bos\.(?:remove|unlink|rmdir|removedirs)\b",
+    r"\bfrom\s+(?:os|shutil|pathlib)\s+import\b[^\n;]*\b(?:remove|unlink|rmdir|removedirs|rmtree)\b",
+    r"['\"](?:os|shutil)['\"]\s*\)\s*\.\s*(?:remove|unlink|rmdir|removedirs|rmtree)\b",
+    r"\bgetattr\s*\([^)]*['\"](?:remove|unlink|rmdir|removedirs|rmtree|rmsync|unlinksync|rmdirsync)['\"]",
+    # Liste: yalniz komutun ILK ogesi (`['rm', ...]`) ya da kabuga verilen
+    # listede silme komutu (`['cmd', '/c', 'del', x]`). Herhangi bir listede
+    # "del" gecmesi (`['add', 'del']`) silme degildir.
+    r"\[\s*['\"](?:rm|del|erase|rmdir|rd|unlink|remove-item)['\"]\s*[,\]]",
+    r"\[\s*['\"](?:cmd|powershell|pwsh|bash|sh)(?:\.exe)?['\"][^\]]*['\"](?:rm|del|erase|rmdir|rd|ri|remove-item|unlink)\b",
 )
 KOD_SILME = _kur(_KOD_SILME_KALIPLARI)
 
@@ -1109,6 +1139,25 @@ def arac_degerlendir(arac: str, girdi: dict = None) -> dict | None:
     if not parcalar:
         return None
     kume = set(parcalar)
+    # `message` artik gonderim FIILI degil (Gmail `get_message` bir OKUMADIR,
+    # 06.10 olculdu: "DISARIYA GONDERIM" diye soruluyordu); `send`/`post`
+    # tasiyan arac yine yakalanir.
+    # ILK FIIL OKUMAYSA para kelimesi NESNEDIR: `get_payment_method`,
+    # `get_image_generation` (uretimin DURUMUNU okur) sorulmaz.
+    _fiiller = (OKUMA_FIILLERI | ARAC_PARA | ARAC_SILME | ARAC_YAYIN | ARAC_GONDERIM
+                | ARAC_DEGISTIR | ARAC_URETIM)
+    ilk_fiil = next((p for p in parcalar if p in _fiiller), "")
+    okuma_onde = ilk_fiil in OKUMA_FIILLERI
+    if kume & ARAC_KITLE and kume & ARAC_KISILER:
+        return _arac_bulgu("gonderim", "audience users", ad, "")
+    if not okuma_onde and kume & ARAC_URETIM and kume & ARAC_MEDYA:
+        return _arac_bulgu("para", sorted(kume & ARAC_URETIM)[0], ad, "")
+    if kume & ARAC_URETIM and not okuma_onde:
+        # Medya disi uretim (isim/alan adi onerisi) bir DEGISIKLIK kaydidir.
+        kume = kume | {"create"}
+    if {"remove", "background"} <= kume:
+        # Gorselden arka plani kaldirmak bir DUZENLEMEDIR, silme degil.
+        kume = (kume - {"remove"}) | {"edit"}
 
     # GIRDI DE camelCase AYRILIR.
     #
@@ -1125,6 +1174,8 @@ def arac_degerlendir(arac: str, girdi: dict = None) -> dict | None:
     for sinif, fiiller in (("para", ARAC_PARA), ("silme", ARAC_SILME),
                            ("yayin", ARAC_YAYIN),
                            ("gonderim", ARAC_GONDERIM)):
+        if sinif == "para" and okuma_onde:
+            continue
         ortak = kume & fiiller
         if ortak:
             return _arac_bulgu(sinif, sorted(ortak)[0], ad, girdi_metni)

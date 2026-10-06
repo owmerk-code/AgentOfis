@@ -78,6 +78,14 @@ HER_ZAMAN_SORULUR = {
     "masaustu": "PATRONUN MASAUSTU / TARAYICISI",
 }
 
+#: TEK ARAC ADIYLA acilabilen sinif (06.10.2026, onay yorgunlugu E80).
+#: Taninmayan bir baglayici araci (`mcp__claude_ai_Atria__load_skill`) her
+#: cagrida soruluyordu; patron "bu projede hep" diyebilmeli. Izin DESENLE
+#: degil yalniz ARACIN TAM ADIYLA eslesir ve yalniz insandan gelir (lider
+#: plana yazamaz: `dogrula("", ...)` bu sinifi reddeder).
+ARAC_ADIYLA = {"bilinmiyor": "taninmayan arac (yalniz bu arac)"}
+_ARAC_ADI = re.compile(r"^mcp__[A-Za-z0-9_-]+__[A-Za-z0-9_.-]+$")
+
 #: Izin verilmis sinifta bile ZORLA/YIKICI bicim gecmez: "pushla" demek
 #: "uzaktaki gecmisi ez" demek degildir.
 YIKICI_BICIM = re.compile(
@@ -156,6 +164,10 @@ def desen_sinifi(desen: str) -> str:
     desen = (desen or "").strip()
     if not desen:
         return ""
+    if _ARAC_ADI.match(desen):
+        # Baglayici ARACININ ADI: sinifi arac kapisinin kendi karari.
+        b = riskli.arac_degerlendir(desen, {})
+        return b["sinif"] if b and b.get("sorulur") else ""
     k = riskli.kabuk_degerlendir("Bash", {"command": desen})
     if k:
         return k["sinif"]
@@ -203,6 +215,13 @@ def olumsuz_mu(patron_sozu: str, alinti: str) -> bool:
 def dogrula(sinif_istenen: str, desen: str) -> str:
     """Desen izin verilebilir mi. Donen: olculen sinif. Degilse hata."""
     olculen = desen_sinifi(desen)
+    if sinif_istenen in ARAC_ADIYLA:
+        if not _ARAC_ADI.match(desen or "") or olculen != sinif_istenen:
+            raise IzinHatasi(
+                f"'{desen}' icin {ARAC_ADIYLA[sinif_istenen]} izni yalniz "
+                "ARACIN TAM ADIYLA verilir (mcp__sunucu__arac) ve kapi onu "
+                f"gercekten '{sinif_istenen}' saymali (olculen: {olculen or 'serbest'}).")
+        return olculen
     if not olculen:
         raise IzinHatasi(
             f"'{desen}' tek basina riskli bir eylem tanimlamiyor; boyle bir "
@@ -252,8 +271,9 @@ def tanimla(db, proje_id: str, *, desen: str, veren: str, kaynak: str,
             "(:id,:proje_id,:gorev_id,:sinif,:desen,:alinti,:kaynak,:gerekce,"
             ":veren,:olusturuldu)", kayit)
     kapsam = "bu is icin" if gorev_id else "KALICI"
+    _ne = IZIN_VERILEBILIR.get(olculen) or ARAC_ADIYLA.get(olculen) or olculen
     db.olay_yaz(proje_id, "izin_verildi",
-                f"{kapsam}: {desen} ({IZIN_VERILEBILIR[olculen]})"
+                f"{kapsam}: {desen} ({_ne})"
                 + (f" | patron: \"{alinti[:120]}\"" if alinti else ""),
                 ajan_ad="insan", gorev_id=gorev_id)
     return kayit
@@ -310,6 +330,13 @@ def eslesen(db, proje_id: str, gorev_id, bulgu: dict):
     """
     try:
         sinif = (bulgu or {}).get("sinif") or ""
+        arac_adi = str((bulgu or {}).get("arac") or "")
+        if sinif in ARAC_ADIYLA:
+            # Yalniz ARACIN TAM ADI; desen benzerligi yok.
+            for iz in liste(db, proje_id, gorev_id=gorev_id):
+                if iz["sinif"] == sinif and iz["desen"] == arac_adi:
+                    return iz
+            return None
         if sinif not in IZIN_VERILEBILIR:
             return None
         hedef = f"{bulgu.get('hedef') or ''} {bulgu.get('element') or ''}"
@@ -322,11 +349,17 @@ def eslesen(db, proje_id: str, gorev_id, bulgu: dict):
         # kelimesine ortusmezler. Olculen sey: kapinin SORMA SEBEBI olan
         # kelime (`esles`, orn. "gonder") izinde koku ile geciyor mu.
         # Kabuk komutu (`git push`) SIKI eslesmede kalir.
-        tarayici = bool(bulgu.get("element")) and bool(bulgu.get("esles"))
+        # 06.10 OLCULDU: kabuk bulgusu da `element` tasiyor (komutun kendisi);
+        # bu gevsek yol ona da uygulaniyordu ve "git push origin main" izni
+        # "git push origin canli"yi de geciriyordu. Kabuk SIKI eslesmede kalir.
+        tarayici = (bool(bulgu.get("element")) and bool(bulgu.get("esles"))
+                    and arac_adi not in riskli.KABUK_ARACLARI)
         sebep_j = _jeton(str(bulgu.get("esles") or "")) if tarayici else []
         for iz in liste(db, proje_id, gorev_id=gorev_id):
             if iz["sinif"] != sinif:
                 continue
+            if arac_adi and iz["desen"] == arac_adi:
+                return iz                    # baglayici araci, tam adiyla
             if _ardisik_icerir(hedef_j, _jeton(iz["desen"])):
                 return iz
             if sebep_j and _ardisik_icerir(_kokler(_jeton(iz["desen"])), sebep_j):
@@ -334,6 +367,68 @@ def eslesen(db, proje_id: str, gorev_id, bulgu: dict):
     except Exception:
         return None
     return None
+
+
+#: Onay kartindan KALICI izne: komut bu uzunlugu asarsa izin verilmez
+#: (desen 120 harfte kesilir; kesik desen istenenden GENIS bir izin olurdu).
+_KART_DESEN_SINIRI = 120
+_COK_SATIR = "(cok satirli komut)"
+
+
+def karttan_izin(onay: dict) -> dict:
+    """Bu onay kartindan "bu projede hep" izni cikabilir mi -- TEK KURAL.
+
+    Panel dugmeyi bununla gosterir, postane izni bununla yazar. Kartin
+    `ayrinti`sindaki `sinif :` ve `desen :` satirlarini kapi (`izin_sor`)
+    yazar; o satirlari tasimayan (eski ya da ajanin kendi `onay_iste`si)
+    kart kalici izne donusmez.
+    """
+    ayr = str((onay or {}).get("ayrinti") or "")
+    m_s = re.search(r"^sinif\s*:\s*(\S+)\s*$", ayr, re.M)
+    m_d = re.search(r"^desen\s*:\s*(.+?)\s*$", ayr, re.M)
+    if not (m_s and m_d):
+        return {"verilebilir": False, "sebep": "Bu kart ofisin kapisindan gelmedi; kalici izne donusmez."}
+    sinif, desen = m_s.group(1), m_d.group(1)
+    if sinif in HER_ZAMAN_SORULUR and sinif not in ARAC_ADIYLA:
+        return {"verilebilir": False, "sinif": sinif, "desen": desen,
+                "sebep": f"{HER_ZAMAN_SORULUR[sinif]} her seferinde sorulur; kalici izinle acilmaz."}
+    if desen == _COK_SATIR:
+        return {"verilebilir": False, "sinif": sinif, "desen": "",
+                "sebep": "Cok satirli komut; kalici izin tek bir komuta verilir."}
+    if len(desen) > _KART_DESEN_SINIRI:
+        return {"verilebilir": False, "sinif": sinif, "desen": desen,
+                "sebep": "Komut cok uzun; kalici izin dar olmali (kabuk izin ile kisa desen ver)."}
+    try:
+        dogrula(sinif, desen)
+    except IzinHatasi as exc:
+        return {"verilebilir": False, "sinif": sinif, "desen": desen, "sebep": str(exc)}
+    return {"verilebilir": True, "sinif": sinif, "desen": desen, "sebep": ""}
+
+
+def kart_ayrintisi(arac: str, girdi: dict, bulgu: dict) -> str:
+    """Kapinin onay kartina yazdigi `sinif`/`desen` satirlari (karttan_izin okur)."""
+    komut = str((girdi or {}).get("command") or "") if arac in riskli.KABUK_ARACLARI else ""
+    desen = re.sub(r"\s+", " ", komut).strip() if komut else arac
+    if "\n" in komut.strip():
+        desen = _COK_SATIR                  # cok satirli komut: kalici izne donusmez
+    return f"sinif : {bulgu.get('sinif') or ''}\ndesen : {desen}\n"
+
+
+def gun_sayaci(db, proje_id: str) -> dict:
+    """Onay yorgunlugu OLCULUR (E80): bugun kac kez soruldu, kac adim
+    izinle sorulmadan gecti, kac kalici izin var."""
+    from datetime import datetime, timezone
+    # Defter UTC yazar; "bugun" patronun YEREL gece yarisindan baslar.
+    yerel = datetime.now().astimezone()
+    bas = yerel.replace(hour=0, minute=0, second=0, microsecond=0)
+    bas = bas.astimezone(timezone.utc).isoformat(timespec="seconds")
+    with db.baglanti() as c:
+        soruldu = c.execute("SELECT COUNT(*) FROM onay WHERE proje_id=? AND olusturuldu >= ?",
+                            (proje_id, bas)).fetchone()[0]
+        gecti = c.execute("SELECT COUNT(*) FROM olay WHERE proje_id=? AND tur='izinle_gecti' "
+                          "AND olusturuldu >= ?", (proje_id, bas)).fetchone()[0]
+    return {"bugun_soruldu": soruldu, "bugun_izinle_gecti": gecti,
+            "kalici_izin": len(liste(db, proje_id))}
 
 
 def gecti_kaydi(db, proje_id: str, *, izin: dict, bulgu: dict, ajan_ad: str,

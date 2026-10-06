@@ -7,6 +7,42 @@
 > 5 Deneme seti · 6 Fazlar · 7 Çalışma düzeni · 8 Riskler ·
 > 9 Senden gereken kararlar
 
+## 0. KALAN EKSİKLER — SIRALI (06.10.2026, patron kararı)
+
+**EN SON dört iş:** büyük işlerle uçtan uca test · sesli orkestratör ·
+masaüstü uygulaması (Tauri) · panel görünüşü/arayüz. **Bunların dışında
+HİÇBİR eksik kalmayacak.** Aşağıdaki liste bu dördü hariç her açığı sırayla
+kapatır; her madde gerçek koşulda ölçülmeden "bitti" sayılmaz. Arayüz yalnız
+işlevin gerektirdiği kadar (görünüş en sonda yeniden yapılacak).
+
+| # | Eksik | Bitti ölçütü |
+|---|---|---|
+| K1 | ~~Kapı satır içi kodla yapılan silmeyi görmüyor~~ **BİTTİ (06.10):** dolaylı yazımlar (takma ad, `__import__`, `getattr`, alt süreç listesi) soruluyor | sahte ve gerçek motorda satır içi silme SORULUYOR; zararsız satır içi kod sorulmuyor |
+| K2 | Kişisel veri (müşteri adı/telefon/adres/e-posta) modele gitmeden maskelenmiyor (E79) | proje başına açık/kapalı; açıkken brifing ve araç çıktısında maskeli; ölçüldü |
+| K3 | ~~Gerçek bağlayıcı çağrısı kapıdan hiç geçmedi (E26)~~ **BİTTİ (06.10):** 271 gerçek araç adı sınıflandı, 4 yanlış düzeldi; gerçek Claude ajanında okuma geçti, tanınmayan araç kapıda durdu | gerçek bir claude.ai bağlayıcısında okuma serbest, yazma soruldu (ölçüm, yazma yapılmadan) |
+| K4 | İşçiler hafızaya az yazıyor (E30) | yazma uyumu ≥ %50 gerçek motorla |
+| K5 | Sohbette söylenen bilgi hafızaya geçmiyor (E31) | lider öneriyor, patron onaylıyor; ölçüldü |
+| K6 | Aynı olgunun farklı kayıtlarını birleştirme yok (E32) | aday listesi + birleştir; geçmiş kaybolmuyor |
+| K7 | Belge yükleme → parçalanıp hafızaya (PDF, Excel, Word, metin) (E77) | yüklenen belgeden soruya kaynaklı cevap |
+| K8 | Teslime 1–5 puan + gerekçe → ders ve karne (E78) | puan karneye ve derse giriyor |
+| K9 | İşe başlamadan tahmini kota ve süre (E74) | karneden tahmin; gerçekleşenle karşılaştırma |
+| K10 | Bağlam doluluğu göstergesi + oturum tazeleme (E34) | iki motorda yüzde gösteriliyor, eşikte devir paketiyle tazeleme |
+| K11 | ~~Onay yorgunluğu (E80)~~ **BİTTİ (06.10):** onay kartında "Bu projede hep" (kalıcı dar izin; para/silme/şifre/masaüstü asla), günlük sayaç | patron kalıcı politika verir, sayaç görünür |
+| K12 | Proje/müşteri ayrımı: ayrı hafıza, bütçe, erişim (E40) | iki projeli senaryoda sızıntı 0 |
+| K13 | Yazılım işinde görev başına git dalı (E41) | iş kendi dalında, onayla birleşir |
+| K14 | Önizleme ortamı; onay kartında "önizlemeyi aç" (E75) | yayından önce yerel önizleme açılıyor |
+| K15 | Marka/proje kiti: logo, renk, ses tonu, yasak kelime (E76) | her görsel/metin işinin brifinginde; yasak kelime kanıtta denetleniyor |
+| K16 | Entegrasyonda deneme/canlı ayrımı; canlı açık bayrak ister (E67) | canlı anahtar bayraksız kullanılamıyor |
+| K17 | Ofis kendi eksiğini önerir (E84) | sağlık + düşen işten öneri, onayla |
+| K18 | Medya: Gemini görsel, Flow video, seslendirme, müzik (E44) | ajan kabinde üretir, kredi sorulur, kanıt dosya |
+| K19 | Video kurgu: ffmpeg ile birleştirme, altyazı, ses (E48) | "kısa reklam videosu" uçtan uca |
+| K20 | Codex görsel turu pahalı (~220k jeton) (E46) | ölçülüp düşürüldü ya da gerekçesi yazıldı |
+| K21 | Telefon: bildirim, onay/ret, durum, fotoğraf ekleme (E36, E53, E66) | telefondan verilen onay işi sürdürüyor |
+| K22 | Kabinin ilk açılış ölümü (E12) | sebep bulundu ya da 20 açılışta tekrar etmedi |
+| K23 | Plandaki eski eksik listesinin (§2) her maddesi tek tek denetlenir | her madde "bitti (kanıt)" ya da bu tabloda |
+
+Sıra güvenlik → hafıza → proje yapısı → medya → telefon. Ardından en son dört iş.
+
 ---
 
 ## 1. Hedef ve "bitti" tanımı

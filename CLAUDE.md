@@ -217,7 +217,12 @@ matrisin ölçümüyle karşılaştırır.
   tanınmayan sorulur; onay "bir kez" ya da "bu iş boyunca".
   **Patronun sözü izindir:** mesajında açıkça istediğin push/deploy o iş
   için sorulmaz (kartta görünür, kaldırılabilir); para ve silme her zaman
-  sorulur; kalıcı izin yalnız insandan (`kabuk izin`).
+  sorulur; kalıcı izin yalnız insandan (`kabuk izin` ya da onay kartında
+  **"Bu projede hep"** — 06.10: kart TAM komutu / TAM araç adını kalıcı
+  izne çevirir, kural `izin.karttan_izin`; para/silme/şifre/masaüstü ve çok
+  satırlı komut çevrilmez; tanınmayan bağlayıcı aracı yalnız ADIYLA açılır,
+  lider bunu plana yazamaz). Panelde günlük sayaç (`izin.gun_sayaci`).
+  Kabuk izni SIKI eşleşir (gevşek eşleşme yalnız tarayıcı tıklamasında).
 - **Tarayıcı:** her işte serbest; riskli tıklama ve beyan edilmemiş site
   (daraltılmış işte) sorulur; sayfadaki gizli talimat işaretlenir.
 - **Zincir:** limit/oturum düşünce aynı turda sıradaki hesaba devreder, devir
@@ -255,7 +260,7 @@ matrisin ölçümüyle karşılaştırır.
 - **F5 "ben yokken" altyapısı (01.10):** kuyruk + dönüş raporu, kesintiden devam, masaüstü bildirimi, zamanlayıcı — dördü canlı (8911, gerçek motor) ölçüldü. Kalan F5: telefon, onay yorgunluğu (E80), bağlam göstergesi, ses (en son).
 - **Güncelleme hemen:** 30 dakikada bir ölçer, uyguladıktan sonra yeniden
   ölçer (`olc_ve_ilerle`). CLI güncellemesinin deneme turu, ofis gerçek terminal kipindeyse terminalde de koşar (30.09).
-- **Sınamalar:** **4364/4364** (06.10; 69 dosya; tam takım ÇIKIŞ KODUYLA koşulur — kod 3 = artık klasör) + gerçek set (`gercek_set.py`, her gece 03:30). Deneme seti 15/15
+- **Sınamalar:** **4442/4442** (06.10; 71 dosya; tam takım ÇIKIŞ KODUYLA koşulur — kod 3 = artık klasör) + gerçek set (`gercek_set.py`, her gece 03:30). Deneme seti 15/15
   (Claude ve Codex, işçi+lider).
 - **MALİYET (03.10, `testler/carpan.py`):** basit iş ofiste doğrudan Claude'un **~1,6–1,8×**'i (sabah 3,9×). Claude önbelleği 5 dakika (`CLAUDE_CODE_PROMPT_CACHE_TTL=5m`, ~%30 ucuz lider turu); RET ÖLÇÜTE BAĞLI (`lider.ret_dayanagi`: `OLCUT:` alıntısı ya da `BOZULDU:`, yoksa bir kez sorulur). Liderin triyaj+planı TEK TUR (`hedef_ver(hazir_plan=)`, geçmezse plan turu); "anlattı yapmadı" koruması (`yazilacak_dosyalar`); her tur `jeton_dokumu`, terminal turuna ölçülmüş birimden `maliyet_tahmini_usd` (`ev/fiyat_olcumu.json`). Asıl sabit bedel: Claude her yeni oturumda ~12k (Haiku)/~23k (Sonnet) jetonu 1 sa önbelleğe yazar. Yalın lider (güç kısar) ve çatal/`--fork-session` (Sonnet'te önbellek kullanmıyor, ölçüldü) DENENDİ, GERİ ALINDI. Araştırma `docs/arastirma/`. KARMA (karne + çapraz kontrol, varsayılan): 20 işlik sette 19/20, gereksiz ret 0, Claude payı yalnız-Claude'a göre %40 az (Codex Plus 5 sa +26 puan). Ofis köke bırakılan YENİ yardımcı dosyayı `.ofis/` altına taşır (`degisim.yardimcilari_topla`). Sıradaki: Ponytail ölçümü, Caveman (muhtemelen faydasız).
 - **Kullanıcının belirttiği eksikler (29.09):** her panoda her zaman açık

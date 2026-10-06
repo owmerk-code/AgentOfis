@@ -1106,6 +1106,10 @@ def arac_izin_sor(oturum: Oturum, args: dict) -> str:
             # KAPSAM 'is' ise tuketilmez: insan bu gorev boyunca
             # acikca izin vermistir. Varsayilan 'eylem' ve o BIR KEZ
             # gecer -- yoksa tek bir "evet" surekli yetkiye donerdi.
+            # 'proje' karti burada BIR KEZ gecer (eylem gibi); sonrasini
+            # karttan yazilan DAR kalici izin tasir (`izin.eslesen`, tam
+            # desen). Imza kabadir (`git push`): 'is' gibi davransaydi ayni
+            # iste baska dala push da sorulmadan gecerdi (06.10 olculdu).
             if (kayit.get("kapsam") or "eylem") == "is":
                 return izin()
             if not postane.onay_kullanildi_mi(kayit["id"]):
@@ -1127,7 +1131,9 @@ def arac_izin_sor(oturum: Oturum, args: dict) -> str:
         f"arac  : {arac}\n"
         f"isaret: {bulgu['esles']!r}\n"
         f"girdi : {str(girdi)[:400]}\n"
-        f"{bulgu['sebep']}"
+        # "Bu projede hep" dugmesinin okudugu satirlar (izin.karttan_izin).
+        + izin_mod.kart_ayrintisi(arac, girdi, bulgu)
+        + f"{bulgu['sebep']}"
     )
     try:
         onay = postane.onay_iste(oturum.ajan_ad, bulgu["eylem"],

@@ -14487,3 +14487,40 @@ SICAK LİDER: `motor/claude.py` havuzu (`_SICAK`, anahtar = oturum kimliği hari
 ÖLÇÜMDE BULUNAN YAN ETKİ: `baglayici.durum` önbelleği yokken `claude mcp list` 16,7 sn BEKLETİYOR (taze kurulum); gerçek evde disk önbelleği var, arka planda tazeleniyor — patronun panelini etkilemiyor.
 ÖNBELLEK KAÇAĞI: aynı istemle iki tur → çıplak/eklentili Claude ikinci turda 4,6 bin okuyor (tutuyor); claude.ai bağlayıcıları açıkken 0 okuyor, 63–103 bin yazıyor (ertelenmiş yüklemeyle lider ~32 bin). Sebep: bağlayıcı listesi her başlangıçta farklı sırada (Claude Code içi). Düzeltmenin tek yolu liderden bağlayıcıları çıkarmak → güç düşer → patronun kuralı gereği DOKUNULMADI.
 Tam takım 4364/4364.
+
+## 06.10.2026 — Kalan eksikler sıralandı; Aşama 1 (güvenlik) kapandı
+
+PATRON KARARI: en son dört iş — büyük işlerle test, sesli orkestratör,
+uygulamaya çevirme (Tauri), arayüz tasarımı. Geri kalan HİÇBİR eksik
+kalmayacak. 41 maddelik sıra konuşmada verildi (7 aşama); Aşama 1 güvenlik
+(kişisel veri maskeleme patron isteğiyle sonraya).
+
+K1 SATIR İÇİ SİLME: ölçüldü, önceden SORMADAN geçenler — `f=os.remove; f(x)`,
+`from os import remove`, `__import__('os').remove`, `importlib...('os').unlink`,
+`getattr(o,'remove')`, `subprocess.run(['rm','-rf',x])`, `['cmd','/c','del',x]`.
+`riskli._KOD_SILME_KALIPLARI`na eklendi (liste kuralı yalnız ilk öğe ya da
+kabuğa verilen liste: `['add','del']` serbest). duman_kapi_kod 50.
+
+K3 GERÇEK BAĞLAYICI: patronun hesabındaki 271 gerçek claude.ai araç adı
+(`testler/veri/baglayici_adlari.txt`) sınıflandı. YANLIŞLAR: Gmail
+`get_message` "DIŞARIYA GÖNDERİM" (message gönderim fiili sayılıyordu),
+`get_image_generation`/`get-generate-image-job` "PARA", Canva edit/resize/merge
+"TANINMAYAN", `remove-background` "SİLME", Shopify isim/alan adı önerisi "PARA";
+TERS YÖN (tehlikeli): Meta `ads_update_custom_audience_users` (müşteri listesini
+Meta'ya yükler) "kayıt" → SORULMADAN geçiyordu. Düzeltme: `message` fiil
+değil; ilk fiil okumaysa para kelimesi nesne; üretim yalnız MEDYA ise para;
+kitle+kişiler = gönderim; düzenleme fiilleri kayda. duman_baglayici_adlari 33
+(eski kapıda 10'u düşüyor). GERÇEK UÇTAN UCA (geçici ofis, Claude Sonnet,
+gerçek bağlayıcılar, ~156k jeton): Canva `help` SORULMADAN çalıştı; Atria
+`load_skill` kapıda durdu, kart "TANINMAYAN ARAC", ajan tekrar denemedi.
+
+K11 ONAY YORGUNLUĞU: onay kartında üçüncü kademe "Bu projede hep" → kalıcı
+izin (kapı karta `sinif :`/`desen :` satırı yazar; `izin.karttan_izin` TEK
+kural: panel düğmeyi onunla gösterir, postane izni onunla yazar). Tanınmayan
+araç yalnız TAM ADIYLA (yeni `ARAC_ADIYLA`), lider plana yazamaz. Proje kartı
+o anki eylemi BİR KEZ geçirir (imza kaba: `is` gibi davransaydı aynı işte başka
+dala push da geçerdi — ölçüldü), sonrası dar izin. Günlük sayaç
+(`izin.gun_sayaci`, yerel gece yarısından). ESKİ AÇIK BULUNDU: `izin.eslesen`
+kabuk bulgusunu da tarayıcı gibi GEVŞEK eşliyordu (`element` taşıdığı için):
+"git push origin main" izni "git push origin canli"yi geçiriyordu → kabuk
+sıkı eşleşmede. duman_onay_yorgunlugu 33.
