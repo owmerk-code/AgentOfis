@@ -124,6 +124,8 @@ _SON = object()
 
 #: Turun ust siniri. Sonsuz bekleyen bir tur kilidi de sonsuza tutar.
 VARSAYILAN_ZAMAN_ASIMI = 1800.0
+#: MCP araci basina zaman asimi (sn): video cizimi gibi uzun araclar icin.
+UZUN_ARAC_SN = 900
 
 #: Motor sessizken kac saniyede bir `nabiz` olayi akitilacak (kilit kirasi).
 NABIZ_ARALIGI = 1.0
@@ -1941,6 +1943,9 @@ class CodexMotoru(Motor):
                 # Ayni kacis kurali: ham interpolasyon guvenilmez.
                 satirlar.append("mcp_servers.%s.url=%s"
                                 % (ad, json.dumps(str(ayar["url"]))))
+            # UZUN ARAC (06.10.2026, video kurgu): codex'in arac zaman asimi
+            # kisa; dakikalar suren cizim (`video_kurgula`) yarida kesilirdi.
+            satirlar.append(f"mcp_servers.{ad}.tool_timeout_sec={UZUN_ARAC_SN}")
         return satirlar
 
     @staticmethod

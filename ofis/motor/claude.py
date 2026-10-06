@@ -345,6 +345,9 @@ TUR_ORTAMI = {
     # $0,061 (~%35). Bedeli: 5 dakikadan uzun aradan sonraki ilk tur
     # (sonnet $0,100 -> $0,128). Hicbir sey kapanmaz; Codex'e dokunmaz.
     "CLAUDE_CODE_PROMPT_CACHE_TTL": "5m",
+    # UZUN ARAC (06.10.2026, video kurgu): MCP arac cagrisinin zaman asimi
+    # ACIKCA 15 dk -- varsayilan CLI surumune bagli; codex'teki ayarin esi.
+    "MCP_TOOL_TIMEOUT": "900000",
 }
 #: Saf yargi turu (araclar kapali) ve limit okuma baglayici TASIMAZ.
 BAGLAYICISIZ = {"ENABLE_CLAUDEAI_MCP_SERVERS": "false"}

@@ -14676,3 +14676,32 @@ KENDİ EKSİĞİ: model yok; son 7 günün tekrar eden düşüş / takılma / uy
 ret döngüsü / canlı engeli / kota payı + sağlık uyarıları → "OFİSİN ÖNERİSİ"
 kartı; Onayla = `ev/ofis_eksikleri.jsonl` (`kabuk eksikler`), Gereksiz =
 bir daha gelmez. duman_eksik 20.
+
+## 06.10.2026 — Aşama 5 (medya) başladı: video kurgu altyapısı
+
+PATRON KARARI: yapay zekâ videosu YALNIZ Flow'da (gömülü tarayıcı, kendi
+hesabı); Flow'u süren model ölçerek değil KATALOGLA (video → Gemini 3.8 Flash
+High; takılırsa değiştirilir — patron "her modele test ettirmeye gerek yok");
+kurgu araçları KURULUR (ilk cevabımda bunları yanlışlıkla çıkarmıştım; patron
+düzeltti: cümlesi yalnız Flow'u süren modelle ilgiliydi). Marka kiti /
+Semu'ya özel ayar şimdilik yok. Teslim dosya; paylaşım patronda.
+
+KURULUM: ffmpeg 9.0.2 (gyan.dev essentials, SHA-256 yayınlananla aynı) ofisin
+evine (`ev/araclar/ffmpeg`, winget yok, sisteme dokunulmadı). Remotion 4.0.533
+`medya/remotion` (Remotion kişi / ≤3 çalışan şirkete ücretsiz).
+
+ŞABLON: tek genel `Kurgu` bileşeni, ajan PLAN yazar. Ölçülen ayrıntılar:
+Remotion varsayılan çıktısı `yuvj420p` (tam aralık) — `--pixel-format` ile
+DEĞİŞMEDİ, `--color-space=bt709` ile `yuv420p`/tv aralığı; koyu kapanış kartı
+(#111) `blackdetect pix_th=0.10`'da "siyah ekran" sayılıyordu → 0.02; kare
+özetinde pencereli seçim kare hızına denk gelmeyince boş karo bırakıyordu →
+`prev_selected_t` adımı. Türkçe harfler (ş ı İ ğ) gerçek çizimde doğru, yazı
+Instagram güvenli alanında (gözle bakıldı). 7,5 sn plan → 201 kare (hesapla
+aynı), çizim ~20 sn.
+
+UZUN ARAÇ (gerçek motor, en ucuz model, 200 sn bekleyen sahte MCP aracı):
+Claude haiku 207 sn tamam ($0,031); Codex luna ayarlı 210 sn, VARSAYILAN 212
+sn tamam — yani bu sürümde codex varsayılanı kısa DEĞİL; açık 15 dk sınır
+(claude `MCP_TOOL_TIMEOUT`, codex `tool_timeout_sec`) yine de kondu: CLI
+güncellenince sessizce kısalmasın. duman_kurgu 29 (gerçek çizim; 2 mutasyon).
+KALAN: Flow ile gerçek uçtan uca (patronun girişli kabini + kredi onayı).

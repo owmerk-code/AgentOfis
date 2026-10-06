@@ -546,6 +546,96 @@ def arac_gorev_ac(oturum: Oturum, args: dict) -> str:
     return f"Gorev acildi: #{g['no']} {g['baslik']}"
 
 
+def _video_kaniti(oturum: Oturum, d: dict, baslik: str) -> None:
+    """Olcum ofisin: kanit OTOMATIK yazilir (ajan ayrica `kanit_ekle` cagirmaz)."""
+    from ofis import kurgu as _k
+    icerik = (_k.ozet_metni(d) + "\nvideo: " + d.get("video", "")
+              + ("\nkapak: " + d["kapak"] if d.get("kapak") else "")
+              + ("\nkareler: " + d["kareler"] if d.get("kareler") else ""))
+    oturum.ofis.tahta.kanit_ekle(oturum.gorev_no, "dosya", baslik, icerik, oturum.ajan_ad)
+
+
+def _goreli(yol: str, kok) -> str:
+    from pathlib import Path as _P
+    try:
+        return _P(yol).resolve().relative_to(_P(kok).resolve()).as_posix()
+    except (ValueError, OSError):
+        return yol
+
+
+def arac_video_kurgula(oturum: Oturum, args: dict) -> str:
+    """Kurgu PLANINI paylasmaya hazir videoya cizer (`ofis/kurgu.py`).
+
+    Ajan Remotion kodu yazmaz: plani yazar, ofis cizer ve OLCER. Cikti
+    `.ofis/ekler/<ad>.mp4` + kapak + kare ozeti; olcum kanit olur.
+    """
+    import json as _json
+    from ofis import kurgu as _k
+    if oturum.gorev_no is None:
+        return "HATA: bu turda acik bir gorev yok; video nereye ait olacak?"
+    plan = args.get("plan")
+    if isinstance(plan, str):
+        try:
+            plan = _json.loads(plan)
+        except ValueError as exc:
+            return f"HATA: plan JSON degil: {exc}"
+    g = oturum.gorev()
+    kok = oturum.ofis.isin_koku(g)
+    ad = str(args.get("ad") or f"video-{g['no']}")
+    try:
+        d = _k.kurgula(plan, kok, ad)
+    except _k.KurguHatasi as exc:
+        return f"HATA: {exc}"
+    _video_kaniti(oturum, d, f"video: {_goreli(d['video'], kok)} ({d['bicim']})")
+    satirlar = [
+        "VIDEO HAZIR (ofisin olcumu):", _k.ozet_metni(d), "",
+        f"video  : {_goreli(d['video'], kok)}",
+        f"kapak  : {_goreli(d['kapak'], kok)}" if d.get("kapak") else "kapak  : cikarilamadi",
+        f"kareler: {_goreli(d['kareler'], kok)}" if d.get("kareler") else "kareler: cikarilamadi",
+        "",
+        "Kanit OTOMATIK yazildi; ayrica kanit_ekle CAGIRMA.",
+        "Kare ozetine (kareler) BAK: yazi okunuyor mu, sahne dogru mu? Sorun varsa plani "
+        "duzeltip yeniden ciz.",
+    ]
+    if d["sorunlar"]:
+        satirlar.append("SORUN VAR: bu video paylasilamaz; once duzelt.")
+    else:
+        satirlar.append("Bitince patrona `sohbete_yaz(ekler=[video, kapak])` ile gonder ve "
+                        "Instagram aciklama metnini (+ etiketler) mesaja yaz.")
+    return "\n".join(satirlar)
+
+
+def arac_video_denetle(oturum: Oturum, args: dict) -> str:
+    """Herhangi bir videoyu (orn. Flow'dan inen) OLCER; kanit olarak yazar."""
+    from pathlib import Path as _P
+    from ofis import kurgu as _k
+    if oturum.gorev_no is None:
+        return "HATA: bu turda acik bir gorev yok."
+    g = oturum.gorev()
+    kok = _P(oturum.ofis.isin_koku(g)).resolve()
+    p = _P(str(args.get("dosya") or "").strip())
+    if not str(p):
+        return "HATA: dosya gerekli."
+    if not p.is_absolute():
+        p = kok / p
+    try:
+        p.resolve().relative_to(kok)
+    except ValueError:
+        return "HATA: dosya isin klasorunun disinda; once klasore indir."
+    if not p.is_file():
+        return f"HATA: {args.get('dosya')} bulunamadi."
+    try:
+        d = _k.denetle(p, str(args.get("bicim") or ""))
+    except _k.KurguHatasi as exc:
+        return f"HATA: {exc}"
+    d["video"] = str(p)
+    _video_kaniti(oturum, d, f"video olcumu: {_goreli(str(p), kok)}")
+    return ("OLCUM (ofisin):\n" + _k.ozet_metni(d)
+            + (f"\nkareler: {_goreli(d['kareler'], kok)}" if d.get("kareler") else "")
+            + (f"\nkapak: {_goreli(d['kapak'], kok)}" if d.get("kapak") else "")
+            + "\nKanit otomatik yazildi.")
+
+
 def _medya_hedefi(kok, alanlar, ad):
     """Tek kaynak `tahta.medya_hedefi`; burada yalniz ice aktarma (betik
     kipinde mutlak -- goreli ice aktarma bu sunucuda bir kez patladi)."""
@@ -1474,6 +1564,50 @@ ARACLAR = [
             "required": ["hizmet", "neden"],
         },
         "islev": arac_giris_iste,
+    },
+    {
+        "name": "video_kurgula",
+        "description": (
+            "Flow kliplerinden / gorsellerden PAYLASMAYA HAZIR video yapar (Instagram "
+            "Reels/hikaye 9:16, gonderi 4:5 ya da 1:1, 16:9): sahneler, ekran yazisi, "
+            "altyazi, solma gecisi, muzik, kapanis karti. Sen yalniz PLANI yazarsin; ofis "
+            "cizer, OLCER (boyut, sure, ses, siyah ekran), kapak ve kare ozeti cikarir, "
+            "kaniti otomatik yazar. Dosyalar isin klasorunde olmali (orn. Flow'dan "
+            "indirdigin `.ofis/ekler/klip1.mp4`). Plan ornegi: {\"bicim\":\"9:16\","
+            "\"sahneler\":[{\"tur\":\"video\",\"dosya\":\".ofis/ekler/klip1.mp4\","
+            "\"sure\":4,\"yazi\":\"Yeni sezon\",\"yazi_konum\":\"ust\"},{\"tur\":"
+            "\"gorsel\",\"dosya\":\"urun.jpg\",\"sure\":3,\"hareket\":\"yakinlas\"}],"
+            "\"gecis\":\"solma\",\"muzik\":\".ofis/ekler/muzik.mp3\",\"altyazi\":[{\"bas\":0,"
+            "\"son\":2,\"metin\":\"...\"}],\"son_kart\":{\"metin\":\"Marka\",\"alt_metin\":"
+            "\"site.com\",\"sure\":2}}. Sahne turleri: video (kirp_bas: bastan atlanacak sn, "
+            "ses: klibin kendi sesi), gorsel (hareket: yakinlas|uzaklas|yok), renk (renk: #hex)."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "plan": {"type": "object", "description": "Kurgu plani (yukaridaki bicim)."},
+                "ad": {"type": "string", "description": "Cikti adi, orn. 'belle-reels-15sn'."},
+            },
+            "required": ["plan"],
+        },
+        "islev": arac_video_kurgula,
+    },
+    {
+        "name": "video_denetle",
+        "description": (
+            "Bir videoyu (orn. Flow'dan indirdigin) OLCER: boyut/oran, sure, kare hizi, "
+            "kodlayici, ses var mi, siyah ekran, sessizlik; kare ozeti ve kapak cikarir; "
+            "olcum kanit olarak yazilir. Paylasmaya hazir mi diye `bicim` ver (9:16, 4:5, 1:1, 16:9)."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "dosya": {"type": "string", "description": "Isin klasorune gore yol."},
+                "bicim": {"type": "string", "description": "Beklenen oran (bos = oran denetlenmez)."},
+            },
+            "required": ["dosya"],
+        },
+        "islev": arac_video_denetle,
     },
     {
         "name": "gorsel_uret",

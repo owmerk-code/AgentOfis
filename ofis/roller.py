@@ -532,8 +532,9 @@ ROLLER = {r.ad: r for r in (
        # araci olmadan eklemeyi REDDETMISTIK: "araci olmayan rol, rol
        # degildir." `ofis/video.py` yazilip dort kapisi olculunce rol
        # mesru oldu. Sira boyle: once arac, sonra rol.
-       olcut_sablonu="Video dosyasi URETILDI ve eklendi; sure/oran/"
-                     "cozunurluk istenen sartlari karsiliyor. GERCEK "
+       olcut_sablonu="Video dosyasi URETILDI ve eklendi; `video_kurgula`/"
+                     "`video_denetle` OLCUMUNDE sorun yok (oran/sure/ses); "
+                     "kare ozetinde yazi okunuyor; GERCEK harcanan kredi/"
                      "maliyet yazildi (tahmin degil).",
        kademe="standart",
        butce_alt_siniri=0.20,
@@ -542,8 +543,10 @@ ROLLER = {r.ad: r for r in (
        # 04.10.2026 patron karari: video gomulu tarayicida Google Flow ile,
        # patronun KENDI girdigi hesapla (abonelik kredisi). `video_uret`
        # ucretli API'dir; para kilidi "sadece free" oldugu icin kapali kalir.
-       uyari="Videoyu gomulu tarayicida Google Flow ile uret (`flow-video` "
-             "becerisi; patronun abonelik kredisi). Kredi harcayan uretim "
+       uyari="Klipleri gomulu tarayicida Google Flow ile uret (`flow-video` "
+             "becerisi; patronun abonelik kredisi), `.ofis/ekler/`e indir; "
+             "PAYLASMAYA HAZIR videoyu `video_kurgula` ile yap (plan yaz, "
+             "ofis cizer ve olcer; ffmpeg PATH'te). Kredi harcayan uretim "
              "`onay_iste` ile sorulur. `video_uret` ucretli API'dir."),
 
     # ------------------------------------------ BILGISAYAR (ek, 05.10.2026)

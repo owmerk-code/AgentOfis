@@ -23,6 +23,9 @@ import uuid
 from pathlib import Path
 
 from .db import Veritabani, simdi
+from . import kurgu as _kurgu
+# Ofisin ffmpeg'i (ev/araclar) ajan turlarina da gorunsun (06.10.2026).
+_kurgu.yola_ekle()
 from .kadro import Kadro, KadroHatasi
 from .tahta import Tahta, TahtaHatasi, KilitCakismasi, RevizyonCakismasi
 from .bellek import Bellek, BellekHatasi

@@ -141,7 +141,7 @@ motor matrisinden geçmeden deftere girmez.
 
 ```
 YÜZEYLER    panel · kabuk (CLI) · telefon(sonra) · ses(sonra)
-PROTOKOL    ofis MCP sunucusu (stdio JSON-RPC, 17 araç)
+PROTOKOL    ofis MCP sunucusu (stdio JSON-RPC, 19 araç)
 ÇEKİRDEK    kadro · DAG tahta · yazma kilidi · kanıt kapısı · karar günlüğü
             orkestra (halka) · lider (3 kapı) · sohbet (ön kapı) · takım
 BELLEK      olay · olgu (çift-zamanlı) · bilgi/kural/ders · brifing K1–K4
@@ -183,7 +183,7 @@ matrisin ölçümüyle karşılaştırır.
 | `ofis/zamanlayici.py` | Zamanlayıcı (F5/4): sohbetten kurulur (triyaj `karar=zamanla`, saati ofis doğrular ve cevabı ofis kurar); gunluk/haftalik/bir_kez/aralik; vakti gelen iş kuyruğa; kaçırılan birikmez, bir kez koşar. |
 | `ofis/postane.py` | Soru/onay, patronun notu (`NOT_KURALI`), imza/kapsam ile onay eşleştirme. |
 | `ofis/danisma.py` | Ajana sorulan soruyu teslim eder (araçsız, salt okunur); cevaplanamazsa insana yükseltir. |
-| `ofis/mcp_sunucu.py` | Ofis MCP: durum · kanit_ekle · karar_yaz · sohbete_yaz · soru_sor · onay_iste · bilgi_yaz · gorev_ac · gorsel_uret/iste · video_uret/durum/iste · izin_sor (kanca) · giris_iste. Kimlik ORTAMDAN gelir. |
+| `ofis/mcp_sunucu.py` | Ofis MCP: durum · kanit_ekle · karar_yaz · sohbete_yaz · soru_sor · onay_iste · bilgi_yaz · gorev_ac · gorsel_uret/iste · video_uret/durum/iste · video_kurgula · video_denetle · izin_sor (kanca) · giris_iste. Kimlik ORTAMDAN gelir. |
 | `ofis/motor/tui.py` | GERÇEK TERMİNAL KİPİ: iç motoru (claude/codex) ConPTY'de gerçek CLI olarak koşturan sarmalayıcı; brifing yapıştırılır, olaylar CLI'ın oturum dosyasından okunur, terminal turlar arası açık kalır. Ayar `terminal_kipi` (`arka`/`gercek`); tek kural `kipe_gore` (işçi + lider; tavan gereken tur arkada). |
 | `ofis/kanca.py` | Gerçek terminal (TUI) kancası: CLI'ın her araç çağrısını arka plan kipindeki AYNI kapıya sorar; hata = deny; `--oz-sinama`. |
 | `ofis/izin.py` | Patronun ACIKCA istedigi riskli eylem (push, deploy) sorulmaz: lider planda patronun sozunden KELIMESI KELIMESINE alintiyla izin yazar, ofis sinifi olcer, olumsuz cumleyi reddeder; is basina ve kalici (insan). Para ve silme izinle acilmaz. |
@@ -199,6 +199,7 @@ matrisin ölçümüyle karşılaştırır.
 | `ofis/devral.py` · `terminal.py` · `konsol.py` | Ajanın terminalini insan devralır (ConPTY) · bağımsız konsol. |
 | `ofis/ekler.py` | Sohbete dosya/görsel: kökün `ekler/` klasörü, `[ek] ekler/ad` satırı, ad/boyut/yol kapıları; `paylas` (ajan `sohbete_yaz(ekler=…)`, lider `[ek] <yol>` satırı; kök dışı/gizli ret); GitHub'a ve disk ölçümüne girmez. |
 | `ofis/gorsel.py` · `video.py` | Medya; codex aboneliğiyle görsel; para kilidi. |
+| `ofis/kurgu.py` · `medya/remotion/` | VİDEO KURGU (06.10, patron): yapay zekâ videosu Flow'da (kabin, `flow-video` becerisi); ajan `video_kurgula`ya PLAN yazar (sahne/yazı/altyazı/geçiş/müzik/kapanış; 9:16 · 4:5 · 1:1 · 16:9, Instagram güvenli alanı), ofis tek Remotion şablonuyla çizer (`--color-space=bt709` → H.264 yuv420p) ve ÖLÇER (ffprobe; siyah ekran, sessizlik, kare özeti, kapak) — ölçüm otomatik kanıt. ffmpeg ofisin evinde (`ev/araclar/ffmpeg`, ajan PATH'ine eklenir). Uzun araç: iki motora açık 15 dk (ölçüldü: 200 sn'lik çağrı iki motorda da tamam). |
 | `ofis/kaynaklar.py` | Motorlardan gelenler: Claude/Codex hesabında ne varsa ajanlara da (ertelenmiş yükleme, ölçüldü +5k jeton/tur); eklentiler `--plugin-dir`, kendi MCP'ler (playwright hariç), kapatılan bağlayıcı `--disallowedTools`; kancalı eklenti sorulur; Codex'in kendi tarayıcıları kapalı; tarayıcı tek: gömülü. |
 | `ofis/beceri.py` | Beceri deposu (`ev/beceriler`, aynı zamanda Claude eklentisi): GENEL, tek tek kapatılır; Claude'a `--plugin-dir`, Codex evine işaretli kopya; ajan `beceri_oner` ile kanıtlı TASLAK yazar, patron onaylar. |
 | `ofis/ayarlar.py` · `entegrasyon.py` · `web/ayarlar.js` | Ayarlar ekranı (⚙): tek okuma + İZİNLİ yazma, kural evinde · entegrasyon kartları (claude.ai bağlayıcıları `claude mcp list`, gh, vercel; bağla/kopar KOMUTU söylenir, giriş insanın) · takım başına bağlayıcı izni (lider izinliyi kola yazar, `lider.dagit` verir). |
@@ -268,7 +269,7 @@ matrisin ölçümüyle karşılaştırır.
 - **F5 "ben yokken" altyapısı (01.10):** kuyruk + dönüş raporu, kesintiden devam, masaüstü bildirimi, zamanlayıcı — dördü canlı (8911, gerçek motor) ölçüldü. Kalan F5: telefon, onay yorgunluğu (E80), bağlam göstergesi, ses (en son).
 - **Güncelleme hemen:** 30 dakikada bir ölçer, uyguladıktan sonra yeniden
   ölçer (`olc_ve_ilerle`). CLI güncellemesinin deneme turu, ofis gerçek terminal kipindeyse terminalde de koşar (30.09).
-- **Sınamalar:** **4838/4838** (06.10; 89 dosya; tam takım ÇIKIŞ KODUYLA koşulur — kod 3 = artık klasör) + gerçek set (`gercek_set.py`, her gece 03:30). Deneme seti 15/15
+- **Sınamalar:** **4867/4867** (06.10; 90 dosya; tam takım ÇIKIŞ KODUYLA koşulur — kod 3 = artık klasör) + gerçek set (`gercek_set.py`, her gece 03:30). Deneme seti 15/15
   (Claude ve Codex, işçi+lider).
 - **MALİYET (03.10, `testler/carpan.py`):** basit iş ofiste doğrudan Claude'un **~1,6–1,8×**'i (sabah 3,9×). Claude önbelleği 5 dakika (`CLAUDE_CODE_PROMPT_CACHE_TTL=5m`, ~%30 ucuz lider turu); RET ÖLÇÜTE BAĞLI (`lider.ret_dayanagi`: `OLCUT:` alıntısı ya da `BOZULDU:`, yoksa bir kez sorulur). Liderin triyaj+planı TEK TUR (`hedef_ver(hazir_plan=)`, geçmezse plan turu); "anlattı yapmadı" koruması (`yazilacak_dosyalar`); her tur `jeton_dokumu`, terminal turuna ölçülmüş birimden `maliyet_tahmini_usd` (`ev/fiyat_olcumu.json`). Asıl sabit bedel: Claude her yeni oturumda ~12k (Haiku)/~23k (Sonnet) jetonu 1 sa önbelleğe yazar. Yalın lider (güç kısar) ve çatal/`--fork-session` (Sonnet'te önbellek kullanmıyor, ölçüldü) DENENDİ, GERİ ALINDI. Araştırma `docs/arastirma/`. KARMA (karne + çapraz kontrol, varsayılan): 20 işlik sette 19/20, gereksiz ret 0, Claude payı yalnız-Claude'a göre %40 az (Codex Plus 5 sa +26 puan). Ofis köke bırakılan YENİ yardımcı dosyayı `.ofis/` altına taşır (`degisim.yardimcilari_topla`). Sıradaki: Ponytail ölçümü, Caveman (muhtemelen faydasız).
 - **Kullanıcının belirttiği eksikler (29.09):** her panoda her zaman açık
@@ -344,7 +345,7 @@ matrisin ölçümüyle karşılaştırır.
   girmiyor (30.09'da ekran görüntüsü temizliğiyle silindi, geri gelmedi).
   Geçici ekran görüntüsü tek tek dosya adıyla silinir; kalıcı rakip dökümü
   `docs/rakip/`e (metin) yazılır.
-- Ortam: Python 3.12 (ek paketler: `pypdf` belge, `pywebpush` telefon bildirimi) · `claude`, `codex` CLI'ları npm'de; kullanıcının öteki
+- Ortam: Python 3.12 (ek paketler: `pypdf` belge, `pywebpush` telefon bildirimi) · ffmpeg 9.0.2 `ev/araclar/ffmpeg` · Remotion 4.0.533 `medya/remotion` (`npm install`, node_modules depoya girmez) · `claude`, `codex` CLI'ları npm'de; kullanıcının öteki
   kodu `C:\Users\pc\Desktop\JarvisForge` (çalışan parça varsa ödünç al).
 
 ## Sınamayı koşturmak
