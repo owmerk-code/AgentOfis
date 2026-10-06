@@ -557,6 +557,18 @@ CREATE TABLE IF NOT EXISTS teslim_puani (
     olusturuldu     TEXT NOT NULL
 );
 
+-- CIHAZ (06.10.2026, Asama 3 / telefon): eslestirilmis telefonlar. Anahtar
+-- yalniz OZETIYLE durur; cihaz silinmez, kaldirilir (acil kesme).
+CREATE TABLE IF NOT EXISTS cihaz (
+    id              TEXT PRIMARY KEY,
+    ad              TEXT NOT NULL,
+    anahtar_ozet    TEXT NOT NULL,
+    olusturuldu     TEXT NOT NULL,
+    son_gorulme     TEXT NOT NULL,
+    push_abonelik   TEXT NOT NULL DEFAULT '',
+    kaldirildi      TEXT
+);
+
 CREATE TABLE IF NOT EXISTS kural (
     id              TEXT PRIMARY KEY,
     proje_id        TEXT NOT NULL REFERENCES proje(id),

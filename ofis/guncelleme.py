@@ -770,6 +770,13 @@ def uygula(ofis, no: int, *, kademe: str = "", fabrika=None,
     db, pid = ofis.db, ofis.proje_id
     o = _bul(db, pid, no)
     tur = o["tur"]
+    # CLI kosan turun ALTINDAN cekilmez -- insan onaylasa da (06.10.2026).
+    if tur == "cli" and veren == "insan":
+        neden = mesgul(db, pid)
+        if neden:
+            raise GuncellemeHatasi(f"Ofis su an mesgul ({neden}). CLI'yi kosan turun "
+                                   "altindan degistirmek turu dusurur; is bitince "
+                                   "onayla (ofis bosalinca otomatik de uygulanir).")
     kim = "Insan onayladi" if veren == "insan" else "OTOMATIK (ofis)"
     karar_degeri = "onay" if veren == "insan" else "otomatik"
 
@@ -994,11 +1001,45 @@ def insana_dusenler(db, proje_id: str) -> list:
             for o in liste if not otomatik_uygulanir_mi(db, proje_id, o)]
 
 
-def _kosan_is_var(db, proje_id: str) -> bool:
+def mesgul(db, proje_id: str = "") -> str:
+    """Ofis su an IS YAPIYOR mu -- yapiyorsa sebebi, bossa "".
+
+    GUNCELLEME PENCERESI (06.10.2026, E82): model ve CLI degisikligi yalniz
+    ofis BOSKEN uygulanir. Once yalniz `calisiyor` is CLI'yi erteliyordu;
+    MODEL degisikligi is ortasinda uygulanabiliyordu (isin sonraki turu
+    baska modelle kosar, incelemeyi baska model yapar) ve sirada bekleyen
+    patron mesaji / incelemedeki is hic sayilmiyordu. CLI ve modeller
+    butun projelerin ortak kaynagidir: bakis DEFTERIN TAMAMINA.
+    """
+    # CANLI MI: is, koşturan surecin kimligini tasir (`surec.kimlik`). Olu
+    # surecten kalan "calisiyor" kaydi (cokme) guncellemeyi SONSUZA DEK
+    # kilitlemesin; kimliksiz kayit (olculemez) temkinle mesgul sayilir.
+    # Incelemedeki is KOSMUYOR (liderin turu bekliyor): sayilmaz -- panel
+    # kapaliyken gunlerce oyle durabilir.
+    from . import surec as _surec
+
+    def _canli(kim: str) -> bool:
+        return not kim or _surec.yasiyor(kim) is not False
+
     with db.baglanti() as c:
-        return bool(c.execute(
-            "SELECT 1 FROM gorev WHERE proje_id = ? AND durum = 'calisiyor' LIMIT 1",
-            (proje_id,)).fetchone())
+        g = sum(1 for r in c.execute(
+            "SELECT kosan_surec FROM gorev WHERE durum = 'calisiyor'") if _canli(r[0]))
+        try:
+            k = sum(1 for r in c.execute(
+                "SELECT durum, kosan_surec FROM kuyruk WHERE durum IN ('bekliyor', 'kosuyor')")
+                if r[0] == "bekliyor" or _canli(r[1]))
+        except Exception:                          # noqa: BLE001 -- eski defter
+            k = 0
+    parca = []
+    if g:
+        parca.append(f"{g} is calisiyor")
+    if k:
+        parca.append(f"sirada {k} mesaj")
+    return ", ".join(parca)
+
+
+def _kosan_is_var(db, proje_id: str) -> bool:
+    return bool(mesgul(db, proje_id))
 
 
 ANAHTAR_KILIT = "guncelleme:kilit"
@@ -1105,10 +1146,13 @@ def _otomatik_ilerle(ofis, *, fabrika=None) -> list:
                       if otomatik_uygulanir_mi(db, pid, o)),
                      key=lambda o: sira.get(o["tur"], 9))
     for o in adaylar:
-        if o["tur"] == "cli" and _kosan_is_var(db, pid):
+        # Her oneri icin YENIDEN bakilir: onceki uygulamanin suresinde
+        # patron yeni is vermis olabilir.
+        neden = mesgul(db, pid)
+        if neden:
             sonuclar.append({"anahtar": o["anahtar"], "basarili": False,
                              "ertelendi": True, "ozet": o["ozet"],
-                             "mesaj": "is kosuyor, CLI sonra guncellenecek"})
+                             "mesaj": f"ofis mesgul ({neden}); ofis bosalinca uygulanacak"})
             continue
         # Numaralar her olcumde yeniden verilir: uygulamadan hemen once
         # guncel numarayi ANAHTARLA bul.

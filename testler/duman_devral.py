@@ -270,17 +270,32 @@ with istemci.websocket_connect(f"/ws/terminal/{no}") as ws:
             break
     sina("WS: panelden yazilan terminale gitti, yankisi geldi", gordu)
     ws.send_json({"tur": "boyut", "sutun": 80, "satir": 24})
-_eski = _P.TERMINAL_YEREL
-_P.TERMINAL_YEREL = ("127.0.0.1",)
+# UZAK ISTEMCI (06.10.2026): kural `telefon.uzak_mi`; panelin GIRIS kapisi
+# websocket'i el sikismadan reddeder, eslesmemis HTTP'ye 401 doner.
+from starlette.websockets import WebSocketDisconnect as _WSK  # noqa: E402
+
+
+def _ws_reddedildi(yol):
+    try:
+        with istemci.websocket_connect(yol) as ws:
+            m = ws.receive_json()
+            return m.get("tur") == "hata"
+    except _WSK:
+        return True
+
+
+_eski = _P._telefon.YEREL
+_P._telefon.YEREL = ("127.0.0.1",)
 try:
     d2 = istemci.post(f"/api/gorev/{no}/devral", json={})
-    sina("yerel olmayan istemci devral: 403", d2.status_code == 403, str(d2.status_code))
-    with istemci.websocket_connect(f"/ws/terminal/{no}") as ws:
-        m = ws.receive_json()
-        sina("yerel olmayan istemci terminal WS: REDDEDILIR",
-             m["tur"] == "hata" and "bilgisayardan" in m["govde"], str(m))
+    sina("yerel olmayan istemci devral: reddedildi", d2.status_code in (401, 403), str(d2.status_code))
+    sina("yerel olmayan istemci terminal WS: REDDEDILIR", _ws_reddedildi(f"/ws/terminal/{no}"))
+    d3 = istemci.post(f"/api/gorev/{no}/devral", json={}, headers={})
 finally:
-    _P.TERMINAL_YEREL = _eski
+    _P._telefon.YEREL = _eski
+d4 = istemci.post(f"/api/gorev/{no}/devral", json={}, headers={"x-forwarded-for": "100.64.0.9"})
+sina("AKTARICI izi (tailscale serve) olan yerel istek de uzak: reddedildi",
+     d4.status_code in (401, 403), str(d4.status_code))
 b = istemci.post(f"/api/gorev/{no}/geri_ver", json={"not_": "panelden geri"})
 sina("POST geri_ver 200 ve duzgun kapanis", b.status_code == 200 and b.json()["kapanis"] == "duzgun",
      b.text[:200])
@@ -334,17 +349,15 @@ if kk:
 with istemci.websocket_connect(f"/ws/konsol/{gid}") as ws:
     m = ws.receive_json()
     sina("devralinan isin terminali konsol ucundan ACILMAZ", m["tur"] == "hata", str(m)[:120])
-_eski = _P.TERMINAL_YEREL
-_P.TERMINAL_YEREL = ("127.0.0.1",)
+_eski = _P._telefon.YEREL
+_P._telefon.YEREL = ("127.0.0.1",)
 try:
     r2 = istemci.post("/api/konsol", json={"klasor": str(dis), "motor": "sahte"})
-    sina("yerel olmayan istemci konsol acamaz: 403", r2.status_code == 403, str(r2.status_code))
+    sina("yerel olmayan istemci konsol acamaz", r2.status_code in (401, 403), str(r2.status_code))
     if kk:
-        with istemci.websocket_connect(f"/ws/konsol/{kk}") as ws:
-            m = ws.receive_json()
-            sina("yerel olmayan istemci konsol WS: REDDEDILIR", m["tur"] == "hata", str(m)[:120])
+        sina("yerel olmayan istemci konsol WS: REDDEDILIR", _ws_reddedildi(f"/ws/konsol/{kk}"))
 finally:
-    _P.TERMINAL_YEREL = _eski
+    _P._telefon.YEREL = _eski
 if kk:
     kp = istemci.post(f"/api/konsol/{kk}/kapat", json={})
     sina("konsol DUZGUN kapanir", kp.status_code == 200 and kp.json().get("kapanis") == "duzgun",
@@ -396,14 +409,14 @@ db.olay_yaz(ofis.proje_id, "konsol_acildi",
 on2 = istemci.get("/api/konsol").json().get("oneriler", [])
 sina("var olmayan klasor ONERILMEZ",
      not any("boyle-bir-klasor-yok" in o["yol"] for o in on2))
-_eski = _P.TERMINAL_YEREL
-_P.TERMINAL_YEREL = ("127.0.0.1",)
+_eski = _P._telefon.YEREL
+_P._telefon.YEREL = ("127.0.0.1",)
 try:
     r3 = istemci.post("/api/konsol/gozat", json={})
-    sina("yerel olmayan istemci klasor penceresi ACAMAZ: 403", r3.status_code == 403,
+    sina("yerel olmayan istemci klasor penceresi ACAMAZ", r3.status_code in (401, 403),
          str(r3.status_code))
 finally:
-    _P.TERMINAL_YEREL = _eski
+    _P._telefon.YEREL = _eski
 
 # Klasor verilmezse konsol ana klasorde acilir (kullanici: "proje klasoru
 # acmadan terminali baslatamaz miyim").

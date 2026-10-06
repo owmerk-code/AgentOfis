@@ -133,6 +133,7 @@ const OLAY = {
   birlesti:      (o) => ["bilgiler birleştirildi", o.govde, ""],
   belge_yuklendi: (o) => ["belge yüklendi", o.govde, ""],
   tahmin:        (o) => ["ön tahmin", tahminMetni(o.govde), ""],
+  oturum_tazelendi: (o) => ["oturum tazelendi", o.govde, "dikkat"],
   puan:          (o) => ["patron puanladı", o.govde, "dikkat"],
   tahmin_gercek: (o) => ["tahmin / gerçek", tahminMetni(o.govde), ""],
   belge_kaldirildi: (o) => ["belge kaldırıldı", o.govde, ""],
@@ -700,6 +701,19 @@ function panoKur(a, secenek) {
     const m = el("span", "pano-motor", motorAd.replace("claude-", ""));
     m.title = "son turda olculen motor/model";
     bas.append(m);
+  }
+  // BAGLAM (06.10, E34): ajanin aklinin ne kadari dolu. Olculmediyse YOK;
+  // sinir bilinmiyorsa yalniz jeton. %80'de bir sonraki tur temiz oturumla
+  // (devir paketiyle) baslar.
+  const bg = sonTur.baglam;
+  if (bg && bg.dolu) {
+    const yuzde = bg.oran != null ? Math.round(bg.oran * 100) : null;
+    const r = el("span", "pano-motor" + (yuzde != null && yuzde >= 80 ? " dolu" : ""),
+                 yuzde != null ? `bağlam %${yuzde}` : `bağlam ${Math.round(bg.dolu / 1000)}b`);
+    r.title = `son turda ${bg.dolu.toLocaleString("tr-TR")} jeton`
+      + (bg.sinir ? ` / ${bg.sinir.toLocaleString("tr-TR")} sınır` : " (sınır bilinmiyor)")
+      + ". %80'i geçince sonraki tur temiz oturumla, kaldığı yerden başlar.";
+    bas.append(r);
   }
   // HESAP LIMITI: rakip her pano basliginda haftalik limiti gosteriyor.
   // Bizde olculuyor (saglayicinin kendi bildirimi) ama yalniz Hesap

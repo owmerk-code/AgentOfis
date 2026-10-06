@@ -167,6 +167,7 @@ matrisin ölçümüyle karşılaştırır.
 | `ofis/tahta.py` | Görev, DAG, yazma kilidi (kira+nabız), kanıt kapısı, CAS, `iptal_et`, `medya_hedefi`, kök-göreli alan doğrulama. |
 | `ofis/bellek.py` | Olgular, karar günlüğü, bilgi kapısı (`bilgi_ekle`), `[[bağ]]`, kurallar (yalnız insandan). 06.10: sohbetten hafıza önerisi (`sohbet_onerileri`, alıntı denetimli, patron "Yaz"), birleştirme (`birlesim_adaylari`/`birlestir`, `konu_takma`). |
 | `ofis/belge.py` · `arama.py` | Belge kütüphanesi (06.10): PDF/Word/Excel/CSV/metin → yerli parçalar (`.ofis/belgeler/`), `belge_ara` MCP aracı, brifing ve triyaja kaynaklı ilk 3 parça. `arama.sirala` hafıza seçimi + belge aramasının TEK kuralı (kelime kapısı + harf dizisi sırası; ölçüldü `olcum_anlamsal.py`: 13→15/30, yerel anlam modeli 19/30 ama 1 GB → alınmadı). |
+| `ofis/telefon.py` · `web/telefon.*` · `web/sw.js` | TELEFON (06.10, Tailscale): panelin GİRİŞ kapısı `_UzakKapi` her HTTP+websocket isteğini süzer — uzak = adres yerel değil YA DA aktarıcı izi (`x-forwarded-for`, `tailscale-user-*`) YA DA Host bilgisayarın adı değil (`tailscale serve` 127.0.0.1'den iletir); uzak websocket HEP ret; uzak HTTP yalnız eşleşmiş cihaz (bilgisayarda tek kullanımlık kod, anahtar özetle, HttpOnly+Secure çerez, Ayarlar > Telefon'dan acil kesme) ve `telefon.IZINLI` uçlar. Web Push (VAPID DER evde; masaüstü bildirimleriyle aynı olaylar). |
 | `ofis/puan.py` · `tahmin.py` · `dosya.py` | Teslime 1–5 puan (düşük puanın gerekçesi ajanın dersi, karnede temiz sayılmaz) · ön tahmin (karneden süre/jeton; kota % yalnız tutarlı pencere ölçümünde) · `atomik_yaz` (benzersiz geçici dosya + Windows yeniden deneme; eşzamanlı yazan süreçler artık düşmüyor). |
 | `ofis/brifing.py` | Dört katmanlı brifing (K1 kimlik/rol · K2 künye+kural+olgu · K3 kararlar · K4 iş+kanıt+not), devir paketi. |
 | `ofis/koltuk.py` | Seat Runner: kilit → brifing → motor → olaylar → nabız → kanıt → inceleme. Zincir/devir, kaçak freni, not/durdurma kanalı, disk ölçümü, gölge anlık, kabin izleme. |
@@ -235,6 +236,8 @@ matrisin ölçümüyle karşılaştırır.
 - **Genel kanal:** çok takımlı ofiste "Tüm ofis"ten `@TAKIM` o takımın liderine; adres yoksa ofis takım ÖNERİR (model yok), insan seçer.
 - **Takım sohbeti:** adres yok → lider; `@ajan` → işi varsa not, boşsa soru;
   `@ajan iş:` → lider planlar ama sahip o ajan.
+- **Bağlam (06.10):** her tur `baglam` {dolu, sınır, oran} bildirir (son çağrı; sınır motorun kendi bildirimi, Claude terminal kipinde arka kipte öğrenilen); panel ajan başlığında %; aynı işte %80'i geçince sonraki tur devir paketli TEMİZ oturum (`oturum_tazelendi`). Sınır bilinmezse karar yok.
+- **Güncelleme penceresi (06.10):** model/CLI yalnız `guncelleme.mesgul` boşken (canlı süreçli `calisiyor` iş, sıradaki mesaj); incelemedeki iş ve ölü süreç kaydı engellemez; insan CLI onayı meşgulken ret.
 - **Hafıza satırı (06.10):** işçi bitirirken ZORUNLU `BILGI: konu -> değer (nereden)` ya da `HAFIZA: yok` yazar; ofis `bilgi_onerisi` kaydeder (hafızaya doğrudan GİTMEZ), lider kanıtla doğrulayıp kendi `BILGI:` satırıyla yazar; `hafiza_adimi` işçinin satırını da sayar.
 - **Hafıza:** patron bilgiyi/dersi **Yanlış** diye kapatır (geri gelmez), panelde arama ve geri bağ sayısı; bilgi kapısı (insanın yazdığını ajan devremez), `[[bağ]]`,
   kurallar her brifinge; lider incelemede `BILGI:` yazar (yalnız kapanan işte): değer, TUZAK, kök sebep, patron tercihi ya da `HAFIZA: yok` (adım `hafiza_adimi` olayıyla sayılır); hata dolanmasını anlatan ajan yazısı patrona `hata_suphesi` olarak bildirilir.
@@ -263,7 +266,7 @@ matrisin ölçümüyle karşılaştırır.
 - **F5 "ben yokken" altyapısı (01.10):** kuyruk + dönüş raporu, kesintiden devam, masaüstü bildirimi, zamanlayıcı — dördü canlı (8911, gerçek motor) ölçüldü. Kalan F5: telefon, onay yorgunluğu (E80), bağlam göstergesi, ses (en son).
 - **Güncelleme hemen:** 30 dakikada bir ölçer, uyguladıktan sonra yeniden
   ölçer (`olc_ve_ilerle`). CLI güncellemesinin deneme turu, ofis gerçek terminal kipindeyse terminalde de koşar (30.09).
-- **Sınamalar:** **4556/4556** (06.10; 78 dosya; tam takım ÇIKIŞ KODUYLA koşulur — kod 3 = artık klasör) + gerçek set (`gercek_set.py`, her gece 03:30). Deneme seti 15/15
+- **Sınamalar:** **4630/4630** (06.10; 81 dosya; tam takım ÇIKIŞ KODUYLA koşulur — kod 3 = artık klasör) + gerçek set (`gercek_set.py`, her gece 03:30). Deneme seti 15/15
   (Claude ve Codex, işçi+lider).
 - **MALİYET (03.10, `testler/carpan.py`):** basit iş ofiste doğrudan Claude'un **~1,6–1,8×**'i (sabah 3,9×). Claude önbelleği 5 dakika (`CLAUDE_CODE_PROMPT_CACHE_TTL=5m`, ~%30 ucuz lider turu); RET ÖLÇÜTE BAĞLI (`lider.ret_dayanagi`: `OLCUT:` alıntısı ya da `BOZULDU:`, yoksa bir kez sorulur). Liderin triyaj+planı TEK TUR (`hedef_ver(hazir_plan=)`, geçmezse plan turu); "anlattı yapmadı" koruması (`yazilacak_dosyalar`); her tur `jeton_dokumu`, terminal turuna ölçülmüş birimden `maliyet_tahmini_usd` (`ev/fiyat_olcumu.json`). Asıl sabit bedel: Claude her yeni oturumda ~12k (Haiku)/~23k (Sonnet) jetonu 1 sa önbelleğe yazar. Yalın lider (güç kısar) ve çatal/`--fork-session` (Sonnet'te önbellek kullanmıyor, ölçüldü) DENENDİ, GERİ ALINDI. Araştırma `docs/arastirma/`. KARMA (karne + çapraz kontrol, varsayılan): 20 işlik sette 19/20, gereksiz ret 0, Claude payı yalnız-Claude'a göre %40 az (Codex Plus 5 sa +26 puan). Ofis köke bırakılan YENİ yardımcı dosyayı `.ofis/` altına taşır (`degisim.yardimcilari_topla`). Sıradaki: Ponytail ölçümü, Caveman (muhtemelen faydasız).
 - **Kullanıcının belirttiği eksikler (29.09):** her panoda her zaman açık
@@ -339,7 +342,7 @@ matrisin ölçümüyle karşılaştırır.
   girmiyor (30.09'da ekran görüntüsü temizliğiyle silindi, geri gelmedi).
   Geçici ekran görüntüsü tek tek dosya adıyla silinir; kalıcı rakip dökümü
   `docs/rakip/`e (metin) yazılır.
-- Ortam: Python 3.12 · `claude`, `codex` CLI'ları npm'de; kullanıcının öteki
+- Ortam: Python 3.12 (ek paketler: `pypdf` belge, `pywebpush` telefon bildirimi) · `claude`, `codex` CLI'ları npm'de; kullanıcının öteki
   kodu `C:\Users\pc\Desktop\JarvisForge` (çalışan parça varsa ödünç al).
 
 ## Sınamayı koşturmak

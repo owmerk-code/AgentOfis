@@ -26,7 +26,7 @@ işlevin gerektirdiği kadar (görünüş en sonda yeniden yapılacak).
 | K7 | ~~Belge yükleme (E77)~~ **BİTTİ (06.10):** PDF/Word/Excel/CSV/metin, kaynaklı parça; G22 iki motorda geçti | yüklenen belgeden soruya kaynaklı cevap |
 | K8 | ~~Teslime puan (E78)~~ **BİTTİ (06.10)** | puan karneye ve derse giriyor |
 | K9 | ~~Ön tahmin (E74)~~ **BİTTİ (06.10):** süre+jeton karneden; kota yüzdesi yalnız tutarlı ölçümde (bugün hesap dışarıda da kullanıldığı için "bilinmiyor") | karneden tahmin; gerçekleşenle karşılaştırma |
-| K10 | Bağlam doluluğu göstergesi + oturum tazeleme (E34) | iki motorda yüzde gösteriliyor, eşikte devir paketiyle tazeleme |
+| K10 | ~~Bağlam göstergesi + tazeleme (E34)~~ **BİTTİ (06.10):** iki motorda gerçek tur ölçüldü (Claude 29.404/1.000.000, Codex 19.610/258.400); %80'de devir paketli temiz oturum | iki motorda yüzde gösteriliyor, eşikte devir paketiyle tazeleme |
 | K11 | ~~Onay yorgunluğu (E80)~~ **BİTTİ (06.10):** onay kartında "Bu projede hep" (kalıcı dar izin; para/silme/şifre/masaüstü asla), günlük sayaç | patron kalıcı politika verir, sayaç görünür |
 | K12 | Proje/müşteri ayrımı: ayrı hafıza, bütçe, erişim (E40) | iki projeli senaryoda sızıntı 0 |
 | K13 | Yazılım işinde görev başına git dalı (E41) | iş kendi dalında, onayla birleşir |
@@ -37,9 +37,11 @@ işlevin gerektirdiği kadar (görünüş en sonda yeniden yapılacak).
 | K18 | Medya: Gemini görsel, Flow video, seslendirme, müzik (E44) | ajan kabinde üretir, kredi sorulur, kanıt dosya |
 | K19 | Video kurgu: ffmpeg ile birleştirme, altyazı, ses (E48) | "kısa reklam videosu" uçtan uca |
 | K20 | Codex görsel turu pahalı (~220k jeton) (E46) | ölçülüp düşürüldü ya da gerekçesi yazıldı |
-| K21 | Telefon: bildirim, onay/ret, durum, fotoğraf ekleme (E36, E53, E66) | telefondan verilen onay işi sürdürüyor |
+| K21 | ~~Telefon (E36, E53, E66)~~ **KOD BİTTİ (06.10):** Tailscale (patron kararı), cihaz eşleştirme + acil kesme, izin listesi, Web Push (gerçek kütüphane yerel sunucuda ölçüldü), telefon sayfası gerçek Chrome'da (390 px) ölçüldü. KALAN: patron Tailscale'i kurup gerçek telefonla dener | telefondan verilen onay işi sürdürüyor |
 | K22 | Kabinin ilk açılış ölümü (E12) | sebep bulundu ya da 20 açılışta tekrar etmedi |
 | K23 | Plandaki eski eksik listesinin (§2) her maddesi tek tek denetlenir | her madde "bitti (kanıt)" ya da bu tabloda |
+| K24 | Güncelleme penceresi (E82) | **BİTTİ (06.10):** model ve CLI yalnız ofis boşken (canlı süreçli iş / sıradaki mesaj); ölü süreç kaydı kilitlemez |
+| K25 | Aynı motorda hesap değişince oturum sürmesi (E20) | **İKİNCİ HESAP GELİNCE:** bugün tek Claude (abonelik makinede tek) ve tek Codex hesabı var; ölçmek için ikinci hesap ya da ücretli API gerekir, giriş kopyalamak geri alınamaz risk. Bugünkü davranış güvenli: yeni hesapta devir paketli yeni oturum |
 
 Sıra güvenlik → hafıza → proje yapısı → medya → telefon. Ardından en son dört iş.
 

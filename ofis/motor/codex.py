@@ -116,7 +116,8 @@ from typing import Iterator
 # `issubclass(CodexMotoru, Motor)` yanlis yere False doner. Paket icinde
 # tek kopya garanti oldugu icin sorun ortadan kalkar.
 from .tip import (ortam_hazirla, limit_penceresi, PENCERE_DAKIKA_ADI, Motor,
-                  MotorOlayi, MotorHatasi, MotorYokHatasi, SurecKafesi)
+                  MotorOlayi, MotorHatasi, MotorYokHatasi, SurecKafesi,
+                  baglam_bilgisi)
 
 _PENCERE_YOK = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
 _SON = object()
@@ -975,6 +976,8 @@ class CodexMotoru(Motor):
                 # ya da bildirim gelmediyse) oturum kaydi okunur.
                 "limit_pencere": (durum.get("pencere")
                                   or codex_pencereleri(ev, durum["oturum_id"])),
+                "baglam": baglam_bilgisi(durum.get("son_baglam"), durum.get("baglam_siniri"),
+                                         model=durum["model"] or model),
                 "butce_usd": butce_usd,
                 "izinli_araclar": tuple(izinli_araclar or ()),
             },
@@ -1528,6 +1531,15 @@ class CodexMotoru(Motor):
             return self._hata_siniflandir(hata.get("message"),
                                           hata.get("codexErrorInfo"), durum)
         if yontem == "thread/tokenUsage/updated":
+            _tu = prm.get("tokenUsage") or {}
+            _son = _tu.get("last") or {}
+            # BAGLAM (06.10.2026): son cagri + modelin penceresi.
+            _dolu = _son.get("totalTokens") or ((_son.get("inputTokens") or 0)
+                                                + (_son.get("outputTokens") or 0))
+            if _dolu:
+                durum["son_baglam"] = int(_dolu)
+            if _tu.get("modelContextWindow"):
+                durum["baglam_siniri"] = int(_tu["modelContextWindow"])
             toplam = (prm.get("tokenUsage") or {}).get("total") or {}
             # exec kipiyle AYNI hesap (girdi + cikti + onbellek): iki kipin
             # jetonu ayni defterde toplaniyor, farkli formul tavani kaydirir.
@@ -1784,6 +1796,8 @@ class CodexMotoru(Motor):
                                        "arac": ad, "girdi": girdi}))
         elif tur == "event_msg" and pt == "token_count":
             son = ((p.get("info") or {}).get("last_token_usage") or {})
+            if (p.get("info") or {}).get("model_context_window"):
+                durum["baglam_siniri"] = int(p["info"]["model_context_window"])
             durum.setdefault("kullanim", {})[str(len(durum.get("kullanim", {})))] = \
                 int(son.get("total_tokens") or 0)
         elif tur == "event_msg" and pt == "task_complete":

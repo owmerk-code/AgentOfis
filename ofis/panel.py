@@ -33,7 +33,7 @@ import threading
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
-from fastapi.responses import FileResponse, Response, StreamingResponse
+from fastapi.responses import FileResponse, JSONResponse, Response, StreamingResponse
 from pydantic import BaseModel
 
 from . import Ofis, Veritabani
@@ -49,6 +49,7 @@ from typing import Optional
 from .postane import PostaneHatasi
 from .tahta import TahtaHatasi
 from . import roller as _R
+from . import telefon as _telefon
 
 WEB = Path(__file__).resolve().parent.parent / "web"
 
@@ -617,7 +618,9 @@ class GeriVerGovdesi(BaseModel):
 #: calistirabilen bir penceredir; telefondan (Tailscale) ya da agdaki baska
 #: bir cihazdan acilmasi, o cihaza bu bilgisayarin kabugunu vermek olurdu.
 #: `testclient` Starlette'in sinama istemcisinin adidir, bir ag adresi degil.
-TERMINAL_YEREL = ("127.0.0.1", "::1", "localhost", "testclient")
+#: (06.10.2026) Kural TEK yerde: `telefon.uzak_mi` -- adres YANINDA aktarici
+#: izine de bakar (`tailscale serve` istegi 127.0.0.1'den iletir).
+TERMINAL_YEREL = _telefon.YEREL
 
 
 class KonsolGovdesi(BaseModel):
@@ -949,6 +952,9 @@ def _ajan_sicili(ofis, ad: str) -> dict:
                     # ikinci bir codex hesabiyla kosan turda rozet
                     # birinci hesabin yuzdesini gosterirdi.
                     "hesap": d.get("hesap") or "",
+                    # BAGLAM (06.10.2026, E34): son turun baglam dolulugu
+                    # (dolu / sinir / oran); olculemediyse None.
+                    "baglam": d.get("baglam"),
                 }
                 break
         sicil["kilit"] = [x["yol_oneki"] for x in conn.execute(
@@ -1095,9 +1101,47 @@ def _baglam_sagligi(ofis) -> dict:
     }
 
 
+class _UzakKapi:
+    """PANELIN GIRIS KAPISI (06.10.2026, telefon): her HTTP ve WEBSOCKET
+    istegi buradan gecer. Uzak istek (adres yerel degil ya da aktarici izi
+    var): websocket HER ZAMAN reddedilir (terminal, kabin, devralma telefona
+    kapali); HTTP yalniz eslesmis cihazla ve `telefon.IZINLI` uclara.
+    OLCULDU: `/ws/kabin`in hic yerel denetimi yoktu -- panel yalniz
+    127.0.0.1'deyken zararsizdi, aga acilinca patronun girisli tarayicisi
+    eslesmemis cihaza acik kalirdi. Kapi uclarda degil GIRISTE: yarin
+    eklenen uc da kendiliginden kapsanir."""
+
+    def __init__(self, app, db) -> None:
+        self.app, self.db = app, db
+
+    async def __call__(self, scope, receive, send):
+        if scope.get("type") in ("http", "websocket"):
+            from starlette.requests import HTTPConnection
+            from starlette.responses import JSONResponse
+            baglanti = HTTPConnection(scope)
+            if _telefon.uzak_mi(baglanti):
+                if scope["type"] == "websocket":
+                    await send({"type": "websocket.close", "code": 1008})
+                    return
+                anahtar = (baglanti.cookies.get(_telefon.CEREZ)
+                           or baglanti.headers.get("x-ofis-cihaz") or "")
+                cihaz = _telefon.cihaz_bul(self.db, anahtar)
+                if not _telefon.izinli_mi(scope.get("method", "GET"), scope.get("path", ""),
+                                          eslesmis=bool(cihaz)):
+                    yanit = JSONResponse(
+                        {"detail": ("Bu cihaz eslesmemis: bilgisayardaki panelden kod al."
+                                    if not cihaz else "Bu islem telefondan kapali; bilgisayardan yap.")},
+                        status_code=401 if not cihaz else 403)
+                    await yanit(scope, receive, send)
+                    return
+                scope.setdefault("state", {})["cihaz"] = cihaz
+        await self.app(scope, receive, send)
+
+
 def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
     db = Veritabani(db_yolu or VARSAYILAN_YOL)
     uygulama = FastAPI(title="AgentOfis", docs_url=None, redoc_url=None)
+    uygulama.add_middleware(_UzakKapi, db=db)
 
     def ofis_ac() -> Ofis:
         with db.baglanti() as conn:
@@ -1172,6 +1216,80 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
     @uygulama.get("/")
     def sayfa():
         return FileResponse(WEB / "index.html", headers=ONBELLEKSIZ)
+
+    # -- TELEFON (06.10.2026, Asama 3) ---------------------------------------
+    @uygulama.get("/telefon")
+    def telefon_sayfasi():
+        return FileResponse(WEB / "telefon.html", headers=ONBELLEKSIZ)
+
+    @uygulama.get("/telefon/{dosya}")
+    def telefon_varlik(dosya: str):
+        if dosya not in ("telefon.js", "telefon.css", "manifest.json"):
+            raise HTTPException(404, "Bulunamadi.")
+        return FileResponse(WEB / dosya, headers=ONBELLEKSIZ)
+
+    @uygulama.get("/sw.js")
+    def hizmet_iscisi():
+        # Bildirim icin hizmet iscisi KOK yoldan sunulmali (kapsami /).
+        return FileResponse(WEB / "sw.js", media_type="application/javascript",
+                            headers=ONBELLEKSIZ)
+
+    @uygulama.get("/api/telefon/durum")
+    def api_telefon_durum(istek: Request):
+        cihaz = (istek.scope.get("state") or {}).get("cihaz")
+        return {"uzak": _telefon.uzak_mi(istek), "eslesmis": bool(cihaz) or not _telefon.uzak_mi(istek),
+                "cihaz": (cihaz or {}).get("ad"), "vapid": _telefon.vapid()["acik"]}
+
+    @uygulama.post("/api/telefon/eslestir")
+    def api_telefon_eslestir(govde: dict):
+        """Telefon kodu girer; cevap ANAHTARI cerezle birakir (bir kez)."""
+        try:
+            c = _telefon.eslestir(db, str(govde.get("kod") or ""), ad=str(govde.get("ad") or ""))
+        except _telefon.TelefonHatasi as exc:
+            raise HTTPException(400, str(exc))
+        yanit = JSONResponse({"id": c["id"], "ad": c["ad"]})
+        yanit.set_cookie(_telefon.CEREZ, c["anahtar"], max_age=400 * 24 * 3600, httponly=True,
+                         secure=True, samesite="strict")
+        return yanit
+
+    @uygulama.post("/api/telefon/kod")
+    def api_telefon_kod(govde: dict, istek: Request):
+        """Eslestirme kodu YALNIZ bu bilgisayarda uretilir."""
+        if _telefon.uzak_mi(istek):
+            raise HTTPException(403, "Kod yalniz bilgisayardaki panelden alinir.")
+        return {"kod": _telefon.kod_uret(str(govde.get("ad") or "telefon")),
+                "omur_sn": _telefon.KOD_OMRU_SN, "tailscale": _telefon.tailscale_durumu()}
+
+    @uygulama.get("/api/telefon/cihazlar")
+    def api_telefon_cihazlar(istek: Request):
+        if _telefon.uzak_mi(istek):
+            raise HTTPException(403, "Cihaz listesi yalniz bilgisayardan.")
+        return {"cihazlar": _telefon.cihazlar(db), "tailscale": _telefon.tailscale_durumu()}
+
+    @uygulama.post("/api/telefon/cihaz/{cihaz_id}/kaldir")
+    def api_telefon_kaldir(cihaz_id: str, istek: Request):
+        if _telefon.uzak_mi(istek):
+            raise HTTPException(403, "Cihazi yalniz bilgisayardan kaldirabilirsin.")
+        try:
+            return _telefon.kaldir(db, cihaz_id)
+        except _telefon.TelefonHatasi as exc:
+            raise HTTPException(400, str(exc))
+
+    @uygulama.post("/api/telefon/abone")
+    def api_telefon_abone(govde: dict, istek: Request):
+        cihaz = (istek.scope.get("state") or {}).get("cihaz")
+        if not cihaz:
+            raise HTTPException(400, "Bildirim yalniz eslesmis telefona.")
+        try:
+            _telefon.abone_yaz(db, cihaz["id"], govde.get("abonelik") or {})
+        except _telefon.TelefonHatasi as exc:
+            raise HTTPException(400, str(exc))
+        return {"abone": True}
+
+    @uygulama.post("/api/telefon/dene")
+    def api_telefon_dene(istek: Request):
+        """Deneme bildirimi -- telefonun bildirimi aldigini OLCMEK icin."""
+        return _telefon.gonder(db, "AgentOfis", "Deneme bildirimi: telefon bagli.")
 
     @uygulama.get("/favicon.ico")
     def favicon():
@@ -1555,7 +1673,7 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
     def api_anahtar_ekle(govde: dict, istek: Request):
         """Kasaya API anahtari. Deger GERI DONMEZ, kayda da yazilmaz
         (yalniz ad + parmak izi). Yalniz bu bilgisayardan."""
-        if istek.client and istek.client.host not in TERMINAL_YEREL:
+        if _telefon.uzak_mi(istek):
             raise HTTPException(403, "Anahtar yalniz bu bilgisayardan eklenir.")
         from . import gizli as _gz
         try:
@@ -1569,7 +1687,7 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
 
     @uygulama.post("/api/entegrasyon/anahtar/{ad}/sil")
     def api_anahtar_sil(ad: str, istek: Request):
-        if istek.client and istek.client.host not in TERMINAL_YEREL:
+        if _telefon.uzak_mi(istek):
             raise HTTPException(403, "Anahtar yalniz bu bilgisayardan silinir.")
         from . import gizli as _gz
         if not _gz.sil(ad):
@@ -2224,7 +2342,7 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
     # -- DEVRAL (E18): insan ajanin isini gercek terminalde alir ----------
     @uygulama.post("/api/gorev/{no}/devral")
     def api_devral(no: int, govde: DevralGovdesi, istek: Request):
-        if istek.client and istek.client.host not in TERMINAL_YEREL:
+        if _telefon.uzak_mi(istek):
             raise HTTPException(403, "Terminal yalniz bu bilgisayardan acilir.")
         from . import devral as _dv
         ofis = ofis_ac()
@@ -2315,7 +2433,7 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
         Insan araya yazabilir (terminalde yazar gibi). Yalniz bu bilgisayar."""
         from .motor import tui as _tui
         await soket.accept()
-        if soket.client and soket.client.host not in TERMINAL_YEREL:
+        if _telefon.uzak_mi(soket):
             await soket.send_json({"tur": "hata",
                                    "govde": "Terminal yalniz bu bilgisayardan acilir."})
             await soket.close()
@@ -2335,7 +2453,7 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
         baglanan panel son ekran gecmisini alir -- bos acilmaz."""
         from . import terminal as _tr
         await soket.accept()
-        if soket.client and soket.client.host not in TERMINAL_YEREL:
+        if _telefon.uzak_mi(soket):
             await soket.send_json({"tur": "hata",
                                    "govde": "Terminal yalniz bu bilgisayardan acilir."})
             await soket.close()
@@ -2358,7 +2476,7 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
     # -- KONSOL: ofisten bagimsiz terminal (28.09) -----------------------
     @uygulama.post("/api/konsol")
     def api_konsol_ac(govde: KonsolGovdesi, istek: Request):
-        if istek.client and istek.client.host not in TERMINAL_YEREL:
+        if _telefon.uzak_mi(istek):
             raise HTTPException(403, "Terminal yalniz bu bilgisayardan acilir.")
         from . import konsol as _ks
         try:
@@ -2399,7 +2517,7 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
     @uygulama.post("/api/konsol/gozat")
     async def api_konsol_gozat(istek: Request):
         # Pencere INSANIN masaustunde acilir: yalniz bu bilgisayardan.
-        if istek.client and istek.client.host not in TERMINAL_YEREL:
+        if _telefon.uzak_mi(istek):
             raise HTTPException(403, "Klasor secme yalniz bu bilgisayardan.")
         from . import konsol as _ks
         try:
@@ -2426,7 +2544,7 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
     async def ws_konsol(soket: WebSocket, kimlik: str):
         from . import terminal as _tr
         await soket.accept()
-        if soket.client and soket.client.host not in TERMINAL_YEREL:
+        if _telefon.uzak_mi(soket):
             await soket.send_json({"tur": "hata",
                                    "govde": "Terminal yalniz bu bilgisayardan acilir."})
             await soket.close()

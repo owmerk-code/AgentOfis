@@ -14576,3 +14576,39 @@ YAN BULGULAR (gerçek koşu yakaladı):
   BU İŞTE yarattığı dosyayı yamayla silmesi kabuktaki gibi kayda geçer; işin
   açılışı saniyeye yuvarlı olduğu için aynı saniyedeki eski dosya "yeni"
   sayılıyordu → +1 sn (şüpheli saniye sorulur).
+
+## 06.10.2026 — Aşama 3 (sen yokken çalışma) — kod tarafı kapandı
+
+GÜNCELLEME PENCERESİ: önce yalnız `calisiyor` iş CLI'yi erteliyordu; MODEL iş
+ortasında değişebiliyor, sıradaki patron mesajı sayılmıyordu. `mesgul`: canlı
+süreçli iş (kimlik `pid:oluşma`; ölü süreç kaydı güncellemeyi sonsuza dek
+kilitlemez, kimliksiz temkinle meşgul) + bekleyen/canlı sıra kaydı; incelemedeki
+iş koşmuyor → sayılmaz (ilk sürüm sayıyordu; sınamada 6 eski iş CLI'yi kilitledi
+— panel kapalıyken günlerce öyle durabilir). duman_guncelleme_penceresi 12.
+
+BAĞLAM: olçü son çağrının girdi+çıktısı (turun toplamı değil). GERÇEK ölçüm:
+Claude sonucu `modelUsage.contextWindow` = 1.000.000 (Sonnet 5.5) → tur
+29.404/1.000.000; Codex app-server `tokenUsage.last` + `modelContextWindow`
+→ 19.610/258.400 (ilk deneme geçici evde girişsizdi, düştü — beklenen).
+Claude gerçek terminal kipi sınır bildirmiyor → arka kipte öğrenilen sınır
+`ev/baglam_siniri.json`. Tazeleme %80: aynı işte sonraki tur tam brifing + devir.
+
+HESAP DEĞİŞİMİ (E20) ÖLÇÜLEMEDİ: tek Claude aboneliği (makinede tek), Claude
+API ücretli (para kilidi), codex2 kayıp; giriş kopyalamak codex2'yi kaybettiren
+türden geri alınamaz risk. Bugün yaşanmıyor; yaşansa devir paketli yeni oturum.
+
+TELEFON (patron: Tailscale). AÇIK BULUNDU: `/ws/kabin`in hiç yerel denetimi
+yoktu (panel 127.0.0.1'deyken zararsız; ağa açılınca patronun girişli
+tarayıcısı eşleşmemiş cihaza açık kalırdı) ve bütün yerel denetimler yalnız
+ADRESE bakıyordu — `tailscale serve` isteği 127.0.0.1'den iletir, telefon
+bilgisayar sanılırdı. Kapı uçlarda değil GİRİŞTE (`_UzakKapi`, ASGI: HTTP +
+websocket); uzak = adres / aktarıcı başlığı / Host adı. Gerçek kütüphane
+ölçümü (yerel bildirim sunucusu) VAPID anahtarının PEM verilince HİÇ
+gönderilmediğini yakaladı ("Could not deserialize key data") → DER. Telefon
+sayfası gerçek başsız Chrome'da 390×844: çizim, onay (defterde onaylandı),
+mesaj (sıraya girdi), taşma yok, düğme ≥45 px, JS hatası 0; uzak akış
+(aktarıcı başlıklarıyla): eşleştirme ekranı → kod → ana ekran, çerez
+JavaScript'ten okunamıyor. duman_telefon 47, duman_devral 74.
+KALAN (patron): Tailscale'i bilgisayara + telefona kur ve gir, `tailscale serve
+--bg 8900`, Ayarlar > Telefon > Kod al, telefonda `https://<ad>.ts.net/telefon`,
+"Bildirimleri aç" + "Deneme bildirimi" (iPhone'da önce Ana Ekrana Ekle).

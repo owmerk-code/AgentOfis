@@ -62,7 +62,8 @@ from typing import Iterator
 
 from .. import motor_saglik
 from .tip import (ortam_hazirla, limit_penceresi, dokum_ekle, Motor, MotorOlayi,
-                  MotorHatasi, MotorYokHatasi, SurecKafesi, TurKanali)
+                  MotorHatasi, MotorYokHatasi, SurecKafesi, TurKanali,
+                  baglam_bilgisi, baglam_siniri_ogren)
 
 _PENCERE_YOK = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
 _SON = object()
@@ -1003,6 +1004,8 @@ class ClaudeMotoru(Motor):
                 "limit": durum["limit"],
                 "zaman_asimi": zaman_asti,
                 "limit_pencere": claude_pencereleri(durum["limit_bilgi"]),
+                "baglam": baglam_bilgisi(durum.get("son_baglam"), durum.get("baglam_siniri"),
+                                         model=durum["model"] or model),
                 "sebep": ("" if basarili else
                           "oturum_kapandi" if durum["hesap_hatasi"] else
                           "zaman_asimi" if zaman_asti else
@@ -1467,6 +1470,14 @@ class ClaudeMotoru(Motor):
             return olaylar
 
         if tur == "assistant":
+            # BAGLAM: son model cagrisinin girdisi + ciktisi (06.10.2026).
+            _kul = ((mesaj.get("message") or {}).get("usage") or {}) \
+                if isinstance(mesaj.get("message"), dict) else {}
+            if _kul:
+                durum["son_baglam"] = int(
+                    (_kul.get("input_tokens") or 0) + (_kul.get("output_tokens") or 0)
+                    + (_kul.get("cache_read_input_tokens") or 0)
+                    + (_kul.get("cache_creation_input_tokens") or 0))
             # CLI hesap sorununu AYRI bir alanla bildirir (semasi CLI'in
             # kendi kodundan okundu, 27.09.2026). Okunmasaydi dusen oturum
             # siradan bir "basarisiz tur" gibi gorunur ve hatirlanmazdi.
@@ -1532,6 +1543,10 @@ class ClaudeMotoru(Motor):
                 + (kullanim.get("cache_creation_input_tokens") or 0)
             )
             dokum_ekle(durum.setdefault("jeton_dokumu", {}), kullanim)
+            for _mad, _mu in (mesaj.get("modelUsage") or {}).items():
+                if isinstance(_mu, dict) and _mu.get("contextWindow"):
+                    durum["baglam_siniri"] = int(_mu["contextWindow"])
+                    baglam_siniri_ogren(durum.get("model") or _mad, _mu["contextWindow"])
             dusuk = (durum["hata_notu"] + " " + durum["sonuc"]).lower()
             if "rate limit" in dusuk or "usage limit" in dusuk:
                 durum["limit"] = True

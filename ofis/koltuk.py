@@ -273,6 +273,20 @@ class Koltuk:
 
         # 1 -- KILIT ONCE. Cakisma yutulmaz, yukari birakilir.
         devam = self._devam_mi(no, ajan_ad, ajan, gorev)
+        # OTURUM TAZELEME (06.10.2026, E34): baglam doldukca model eski
+        # ayrintiyi unutur, yavaslar. Son olculen baglam esigi asmissa oturum
+        # SURDURULMEZ: tam brifing + devir paketi (diskte olculen fark, durum
+        # notu, kanitlar) ile TEMIZ oturum. Sinir bilinmiyorsa karar yok.
+        if devam:
+            _bg = self._son_baglam(gorev["id"], ajan_ad)
+            if _bg and _bg.get("oran") is not None and _bg["oran"] >= self.TAZELEME_ESIGI:
+                devam = False
+                yield self._olay(
+                    "oturum_tazelendi",
+                    f"#{no}: baglam %{round(_bg['oran'] * 100)} doldu "
+                    f"({_bg['dolu']:,} / {_bg['sinir']:,} jeton) -- yeni oturum, "
+                    "kaldigi yer devir paketiyle".replace(",", "."),
+                    {"gorev_no": no, **_bg}, ajan_ad=ajan_ad, gorev_id=gorev["id"])
 
         # DEVAM ile SAHIPLENME ayri sorulardir.
         #   devam        = model tarafinda oturum surecek mi (baglam)
@@ -1804,6 +1818,26 @@ class Koltuk:
         """Tur surerken ajana giden notun bicimi. Adaptor BICIMLENDIRMEZ."""
         return ("PATRONUN NOTU (sen calisirken geldi): " + govde.strip()
                 + "\n\n" + NOT_KURALI + " Ona gore devam et.")
+
+    #: Baglam bu orana ulasinca bir sonraki tur TEMIZ oturumla baslar.
+    TAZELEME_ESIGI = 0.80
+
+    def _son_baglam(self, gorev_id: str, ajan_ad: str) -> dict | None:
+        """Bu ajanin bu isteki SON turunun baglam olcumu (yoksa None)."""
+        import json as _json
+        with self.db.baglanti() as conn:
+            rows = conn.execute(
+                "SELECT govde FROM olay WHERE proje_id = ? AND gorev_id = ? AND ajan_ad = ? "
+                "AND tur = 'tur_ozeti' ORDER BY rowid DESC LIMIT 3",
+                (self.proje_id, gorev_id, ajan_ad)).fetchall()
+        for r in rows:
+            try:
+                b = (_json.loads(r["govde"] or "{}") or {}).get("baglam")
+            except ValueError:
+                continue
+            if isinstance(b, dict):
+                return b
+        return None
 
     def _devam_mi(self, no: int, ajan_ad: str, ajan: dict, gorev: dict) -> bool:
         """Bu tur, oncekinin USTUNE mi kosacak yoksa SIFIRDAN mi?

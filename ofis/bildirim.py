@@ -78,6 +78,11 @@ def _windows_gonder(baslik: str, metin: str, adres: str = "") -> None:
 #: Sinama bunu degistirir (ekrana gercek bildirim atmadan toplar).
 GONDERICI = _windows_gonder if sys.platform == "win32" else (lambda *a, **k: None)
 
+#: Telefon bildirimi (Web Push): sinamada degistirilir, gercekte `telefon.gonder`.
+def TELEFON_GONDERICI(db, baslik, metin):
+    from .telefon import gonder
+    return gonder(db, baslik, metin)
+
 
 def acik_mi(ofis) -> bool:
     if not ACIK:
@@ -117,6 +122,7 @@ class Izleyici:
             self.son_cevap = c.execute("SELECT COALESCE(MAX(cevaplandi), '') FROM mesaj "
                                        "WHERE proje_id = ?", (ofis.proje_id,)).fetchone()[0]
         self.dustu = False
+        self.telefon_dustu = False
 
     def topla(self) -> list:
         """Yeni olaylar -> [(baslik, metin)], en fazla AZAMI_SATIR + ozet."""
@@ -191,6 +197,18 @@ class Izleyici:
                     self.dustu = True
                     self.ofis.db.olay_yaz(self.ofis.proje_id, "uyari",
                                           f"Masaustu bildirimi gonderilemedi: {exc}")
+            # TELEFON (06.10.2026): AYNI olaylar eslesmis telefona da gider.
+            try:
+                r = TELEFON_GONDERICI(self.ofis.db, baslik, metin)
+                if r.get("hata") and not self.telefon_dustu:
+                    self.telefon_dustu = True
+                    self.ofis.db.olay_yaz(self.ofis.proje_id, "uyari",
+                                          f"Telefon bildirimi gonderilemedi: {r['hata']}")
+            except Exception as exc:   # noqa: BLE001
+                if not self.telefon_dustu:
+                    self.telefon_dustu = True
+                    self.ofis.db.olay_yaz(self.ofis.proje_id, "uyari",
+                                          f"Telefon bildirimi gonderilemedi: {exc}")
         return len(ogeler)
 
 

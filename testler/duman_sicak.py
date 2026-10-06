@@ -47,11 +47,20 @@ import json, os, sys
 sys.stdout.reconfigure(encoding="utf-8"); sys.stdin.reconfigure(encoding="utf-8")
 kayit = os.path.join(os.path.dirname(__file__), "kayit.jsonl")
 argv = sys.argv[1:]
-import subprocess as _sp
-_yan = _sp.Popen([sys.executable, "-c", "import time; time.sleep(120)"],
-                 creationflags=getattr(_sp, "CREATE_NO_WINDOW", 0))
 with open(kayit, "a", encoding="utf-8") as f:
-    f.write(json.dumps({"pid": os.getpid(), "argv": argv, "yan": _yan.pid}) + "\n")
+    f.write(json.dumps({"pid": os.getpid(), "argv": argv}) + "\n")
+# YAN SUREC (gercek CLI'in MCP sunuculari gibi) -- kaydi AYRI dosyada: surec
+# sayimi yan surecin zamanlamasina bagli kalmasin (yuk altinda 0,5 sn'de
+# satir dusmuyordu, sinama kararsizdi -- 06.10 olculdu).
+# Gercek CLI yan sureci yalniz OTURUM acarken baslatir (`-p`); `auth status`
+# gibi tek seferlik komut acmaz (06.10: sahte her cagrida aciyordu, sinama
+# kendi oksuzunu uretiyordu).
+if "-p" in argv:
+    import subprocess as _sp
+    _yan = _sp.Popen([sys.executable, "-c", "import time; time.sleep(120)"],
+                     creationflags=getattr(_sp, "CREATE_NO_WINDOW", 0))
+    with open(kayit + ".yan", "a", encoding="utf-8") as f:
+        f.write(json.dumps({"pid": os.getpid(), "yan": _yan.pid}) + "\n")
 def yaz(m):
     sys.stdout.write(json.dumps(m, ensure_ascii=False) + "\n"); sys.stdout.flush()
 oturum = argv[argv.index("--session-id") + 1] if "--session-id" in argv else ""
@@ -82,8 +91,16 @@ calisma = Path(tempfile.mkdtemp(prefix="ofis-sicakcalisma-"))
 _gercek = subprocess.Popen
 
 
+#: Dogan surecler DOGDUKLARI ANDA sayilir (06.10.2026): sahte CLI'in kendi
+#: kayit satiri yuk altinda gec dusuyordu ve sayim yarisa giriyordu (8 kopya
+#: paralelde kararsizdi). Popen cagrisi zaman uyumlu: yaris yok.
+_DOGAN: list = []
+
+
 def _sahte_popen(komut, **kw):
-    return _gercek([sys.executable, str(skl / "sahte_claude.py"), *komut[1:]], **kw)
+    s = _gercek([sys.executable, str(skl / "sahte_claude.py"), *komut[1:]], **kw)
+    _DOGAN.append({"pid": s.pid, "argv": list(komut[1:])})
+    return s
 
 
 CL.subprocess.Popen = _sahte_popen
@@ -97,7 +114,7 @@ def kos(**ek):
 
 
 def surec_sayisi():
-    return len(kayit.read_text(encoding="utf-8").splitlines()) if kayit.exists() else 0
+    return len(_DOGAN)
 
 
 print("== sicak bekleyen surec duman testi ==\n")
@@ -118,7 +135,7 @@ sina("ikinci tur BEKLEYENI kullandi (cevap o surecten)", b.ek["basarili"] and st
 sina("ikinci tur sicagin OTURUM kimligiyle kostu", b.ek["oturum_id"] == sicak_oturum,
      f"{b.ek['oturum_id']} != {sicak_oturum}")
 sina("ikinci turda yalniz YENI sicak acildi (soguk acilmadi)", surec_sayisi() == 3, str(surec_sayisi()))
-_ilk_argv = json.loads(kayit.read_text(encoding="utf-8").splitlines()[1])["argv"]
+_ilk_argv = _DOGAN[1]["argv"]
 sina("sicak surec istemi json kanalindan bekliyor (stream-json)",
      _ilk_argv[_ilk_argv.index("--input-format") + 1] == "stream-json")
 
@@ -148,8 +165,25 @@ sina("DEVAM eden (oturumlu) tur sicak kullanmaz ve hazirlamaz", surec_sayisi() =
 
 kalan = [k["surec"] for k in CL._SICAK.values()]
 _kalan_pid = {k["surec"].pid for k in CL._SICAK.values()}
-_yanlar = [json.loads(x)["yan"] for x in kayit.read_text(encoding="utf-8").splitlines()
-           if json.loads(x)["pid"] in _kalan_pid]
+_yan_kayit = Path(str(kayit) + ".yan")
+
+
+def _yan_kayitlari() -> list:
+    """Tamamlanmis satirlar; yazilmakta olan YARIM satir atlanir (yuk altinda olculdu)."""
+    out = []
+    if _yan_kayit.exists():
+        for x in _yan_kayit.read_text(encoding="utf-8").splitlines():
+            try:
+                out.append(json.loads(x))
+            except ValueError:
+                pass
+    return out
+
+
+_bitis = time.time() + 10
+while time.time() < _bitis and not _kalan_pid <= {k["pid"] for k in _yan_kayitlari()}:
+    time.sleep(0.05)
+_yanlar = [k["yan"] for k in _yan_kayitlari() if k["pid"] in _kalan_pid]
 
 
 def _yasiyor(pid: int) -> bool:
@@ -166,8 +200,8 @@ def _yasiyor(pid: int) -> bool:
     return kod.value == 259
 
 
-sina("bekleyen surecin YAN sureci kapatmadan once yasiyor",
-     bool(_yanlar) and all(_yasiyor(p) for p in _yanlar), str(_yanlar))
+_yanlar = [p for p in _yanlar if _yasiyor(p)]
+sina("bekleyen surecin YAN sureci kapatmadan once yasiyor", bool(_yanlar), str(_yanlar))
 n = CL.sicaklari_kapat()
 time.sleep(0.3)
 sina("sicaklari_kapat hepsini kapatti", n == len(kalan) and n > 0
@@ -203,11 +237,6 @@ sina("lider_isit bekleyen sureci hazirladi", _isindi and len(CL._SICAK) == 1,
 sina("ikinci isitma TAZE olani bozmaz (yeni surec acmaz)",
      not _o.orkestra.lider_isit(_lider, butce_usd=0.5) and len(CL._SICAK) == 1)
 _pid = next(iter(CL._SICAK.values()))["surec"].pid
-# Sahte CLI kayit satirini yan sureci baslattiktan SONRA yazar: sayim o satir
-# dusmeden alinirsa bekleyenin satiri "yeni surec" sayilir.
-_bitis = time.time() + 5
-while not any(f'"pid": {_pid}' in x for x in kayit.read_text(encoding="utf-8").splitlines())         and time.time() < _bitis:
-    time.sleep(0.05)
 once = surec_sayisi()
 _cevap = _o.orkestra._lideri_kostur(_lider, "naber", 0.5, None)
 time.sleep(0.5)

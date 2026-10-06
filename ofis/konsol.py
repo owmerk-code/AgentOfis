@@ -16,7 +16,7 @@ Kurallar:
 * **Kayda gecer, ama yalniz acildi/kapandi.** Konsolun ICI ofisin kaydi
   degildir (isin disinda); kim, nerede, hangi motorla actigi ise gorunur
   kalir -- "bu terminal ne zaman acilmis" sorusu cevapsiz kalmasin.
-* **Yalniz bu bilgisayardan** (panel `TERMINAL_YEREL`).
+* **Yalniz bu bilgisayardan** (`telefon.uzak_mi`).
 * Motor komutlarini insan onaylar: Claude/Codex kendi izin sorularini
   sorar, klavyenin basinda insan var.
 """

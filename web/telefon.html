@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1b1d22">
+<title>AgentOfis</title>
+<link rel="manifest" href="/telefon/manifest.json">
+<link rel="stylesheet" href="/telefon/telefon.css">
+</head>
+<body>
+<header>
+  <span class="baslik">AgentOfis</span>
+  <span id="durum" class="durum"></span>
+</header>
+
+<!-- ESLESTIRME: anahtarsiz telefon yalniz bunu gorur -->
+<section id="eslestir" class="gizli">
+  <h2>Telefonu eşleştir</h2>
+  <p class="soluk">Bilgisayardaki panelde <b>Ayarlar › Telefon › Kod al</b> de, çıkan kodu buraya yaz.</p>
+  <input id="kod" autocomplete="one-time-code" placeholder="Kod (8 harf)" maxlength="8">
+  <input id="cihaz-ad" placeholder="Bu cihazın adı (örn. iPhone'um)" maxlength="40">
+  <button id="eslestir-dugme" class="ana">Eşleştir</button>
+</section>
+
+<main id="ana" class="gizli">
+  <section>
+    <h2>Senden bekleniyor <span id="bekleyen-sayi" class="rozet"></span></h2>
+    <div id="bekleyenler"></div>
+  </section>
+
+  <section>
+    <h2>Lidere yaz</h2>
+    <textarea id="mesaj" rows="3" placeholder="Ne yapılsın?"></textarea>
+    <div class="satir">
+      <label class="dugme ikincil">📷 Fotoğraf<input id="foto" type="file" accept="image/*" capture="environment" hidden></label>
+      <span id="foto-ad" class="soluk"></span>
+      <button id="gonder" class="ana">Gönder</button>
+    </div>
+    <div id="takim-sec"></div>
+  </section>
+
+  <section>
+    <h2>İşler</h2>
+    <div id="isler"></div>
+  </section>
+
+  <section class="alt">
+    <button id="bildirim-ac" class="ikincil">Bildirimleri aç</button>
+    <button id="bildirim-dene" class="ikincil gizli">Deneme bildirimi</button>
+    <button id="durdur" class="tehlike">Acil durdur</button>
+  </section>
+</main>
+
+<div id="bildiri" class="bildiri gizli"></div>
+<script src="/telefon/telefon.js"></script>
+</body>
+</html>

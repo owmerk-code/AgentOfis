@@ -34,6 +34,7 @@ baslayamamasidir.
 
 from __future__ import annotations
 
+import json
 import os
 
 import queue
@@ -393,6 +394,60 @@ def dokum_ekle(dokum: dict, kullanim: dict) -> dict:
     saat = ((kullanim or {}).get("cache_creation") or {}).get("ephemeral_1h_input_tokens")
     dokum["onbellek_yazma_1sa"] = int(dokum.get("onbellek_yazma_1sa") or 0) + int(saat or 0)
     return dokum
+
+
+# -- BAGLAM DOLULUGU (06.10.2026, Asama 3 / E34) ------------------------------
+#
+# Ajanin baglami (modelin o anda tasidigi metin) dolunca model eski ayrintiyi
+# unutur, ayni dosyayi yeniden okur, yavaslar. Olcu: turun SON model
+# cagrisinin girdisi + ciktisi (turun TOPLAM jetonu degil -- o her cagriyi
+# yeniden sayar). Sinir motorun KENDI bildirimi: Claude `modelUsage.
+# contextWindow` (olculdu: Sonnet 5.5 = 1.000.000), Codex `modelContextWindow`
+# / `model_context_window` (olculdu: 258.400). Bilinmeyen sinir None.
+
+def _baglam_defteri():
+    from ..yollar import ofis_evi
+    return ofis_evi() / "baglam_siniri.json"
+
+
+def baglam_siniri_ogren(model: str, sinir) -> None:
+    """Arka kipte olculen siniri model basina saklar (gercek terminal kipi
+    sinir bildirmiyor; oradaki gosterge bunu kullanir)."""
+    if not model or not sinir:
+        return
+    try:
+        yol = _baglam_defteri()
+        veri = json.loads(yol.read_text(encoding="utf-8")) if yol.is_file() else {}
+        if veri.get(model) == int(sinir):
+            return
+        veri[model] = int(sinir)
+        from ..dosya import atomik_yaz
+        atomik_yaz(yol, json.dumps(veri, ensure_ascii=False))
+    except (OSError, ValueError, TypeError):
+        pass                                  # gosterge; tur durmaz
+
+
+def baglam_siniri(model: str):
+    try:
+        yol = _baglam_defteri()
+        return json.loads(yol.read_text(encoding="utf-8")).get(model) if yol.is_file() else None
+    except (OSError, ValueError):
+        return None
+
+
+def baglam_bilgisi(dolu, sinir, *, model: str = "") -> dict | None:
+    """`bitti.ek["baglam"]`: {dolu, sinir, oran}. Dolu bilinmiyorsa None."""
+    try:
+        dolu = int(dolu or 0)
+    except (TypeError, ValueError):
+        return None
+    if dolu <= 0:
+        return None
+    if not sinir and model:
+        sinir = baglam_siniri(model)
+    sinir = int(sinir) if sinir else None
+    return {"dolu": dolu, "sinir": sinir,
+            "oran": round(dolu / sinir, 4) if sinir else None}
 
 
 def limit_penceresi(pencereler: dict, *, kaynak: str, hal: str = "",

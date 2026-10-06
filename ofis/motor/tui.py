@@ -47,7 +47,7 @@ import time
 from pathlib import Path
 from typing import Iterator
 
-from .tip import DOKUM_ALANLARI, Motor, MotorHatasi, MotorOlayi, TurKanali
+from .tip import DOKUM_ALANLARI, Motor, MotorHatasi, MotorOlayi, TurKanali, baglam_bilgisi
 
 KANCA = Path(__file__).resolve().parent.parent / "kanca.py"
 
@@ -568,5 +568,11 @@ class TuiMotoru(Motor):
             "jeton_dokumu": _dokum_topla(durum.get("dokum_mesaj")),
             "arac_sayisi": durum.get("arac_sayisi", 0),
             "limit": bool(durum.get("limit")), "limit_pencere": None,
+            # BAGLAM: oturum dosyasinda mesaj basina kullanim; SON mesaj
+            # baglamin kendisi. Sinir codex'te kayitta, claude'da arka kipte
+            # ogrenilen deger (yoksa None -> "bilinmiyor").
+            "baglam": baglam_bilgisi(
+                list((durum.get("kullanim") or {}).values())[-1] if durum.get("kullanim") else 0,
+                durum.get("baglam_siniri"), model=durum.get("model") or model),
             "sebep": sebep, "kip": "terminal",
         })

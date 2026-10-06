@@ -1,0 +1,12 @@
+{
+  "name": "AgentOfis",
+  "short_name": "Ofis",
+  "start_url": "/telefon",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#15171b",
+  "theme_color": "#1b1d22",
+  "icons": [
+    {"src": "/favicon.ico", "sizes": "any", "type": "image/svg+xml"}
+  ]
+}

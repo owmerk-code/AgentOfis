@@ -15,6 +15,7 @@ const AYAR_BOLUMLERI = [
   ["modeller", "Hesaplar ve modeller"],
   ["calisma", "Çalışma"],
   ["bildirim", "Bildirimler"],
+  ["telefon", "Telefon"],
   ["guvenlik", "Onay ve güvenlik"],
   ["yedek", "Yedek ve sağlık"],
 ];
@@ -73,7 +74,7 @@ async function ayarlarCiz() {
   if ((AYAR.veri.hatalar || []).length)
     govde.append(el("div", "form-ipucu uyari", "Okunamayan: " + AYAR.veri.hatalar.join(" · ")));
   const ciz = { entegrasyon: ayarEntegrasyon, beceri: ayarBeceri, kaynak: ayarKaynak, takim: ayarTakim, modeller: ayarModeller,
-                calisma: ayarCalisma, bildirim: ayarBildirim, guvenlik: ayarGuvenlik,
+                calisma: ayarCalisma, bildirim: ayarBildirim, telefon: ayarTelefon, guvenlik: ayarGuvenlik,
                 yedek: ayarYedek }[ad[0]];
   const taze = AYAR.taze; AYAR.taze = false;
   await ciz(govde, AYAR.veri, taze);
@@ -499,6 +500,57 @@ async function ayarCalisma(kap, v) {
 }
 
 /* -- 5. Bildirimler ------------------------------------------------------------ */
+
+/* TELEFON (06.10.2026, Asama 3): Tailscale ozel agi + eslestirilmis cihaz.
+   Kurulum ve giris patronun; ofis OLCER ve adimi soyler. Kod yalniz burada
+   (bilgisayarda) uretilir; cihaz tek tikla kaldirilir (kayip telefon). */
+async function ayarTelefon(kap) {
+  let j = { cihazlar: [], tailscale: {} };
+  try { j = await al("/api/telefon/cihazlar"); } catch (e) {
+    kap.append(el("div", "form-ipucu uyari", "okunamadı: " + e.message)); return;
+  }
+  const ts = j.tailscale || {};
+  ayarAltBaslik(kap, "1 · Tailscale (özel ağ)");
+  if (!ts.kurulu) {
+    kap.append(el("div", "ayar-aciklama",
+      "Bu bilgisayarda Tailscale kurulu değil. tailscale.com/download adresinden kur, aynı hesapla telefona da kur ve iki cihazda giriş yap."));
+  } else if (!ts.bagli) {
+    kap.append(el("div", "ayar-aciklama", "Tailscale kurulu ama bağlı değil: tepsideki simgeden giriş yap."));
+  } else {
+    kap.append(el("div", "ayar-aciklama", `Bağlı: ${ts.ad || ts.adres}.`));
+    ayarAltBaslik(kap, "2 · Paneli özel ağa aç (bir kez)");
+    kap.append(el("div", "ayar-aciklama",
+      "Bu bilgisayarda bir terminalde çalıştır (panel yalnız senin cihazlarına HTTPS ile açılır, internete açılmaz):"));
+    const kk = el("div", "ent-komut");
+    kk.append(el("code", null, "tailscale serve --bg 8900"));
+    kap.append(kk);
+    if (ts.ad) kap.append(el("div", "ayar-aciklama", `Telefonda aç: https://${ts.ad}/telefon`));
+  }
+  ayarAltBaslik(kap, "3 · Telefonu eşleştir");
+  const kodYer = el("div", "ayar-aciklama", "Telefonda açılan sayfa bir kod ister. Kod 10 dakika geçerli, bir kez kullanılır.");
+  const kodAl = el("button", "dugme olumlu", "Kod al");
+  kodAl.onclick = async () => {
+    try {
+      const r = await yolla("/api/telefon/kod", { ad: "telefon" });
+      kodYer.replaceChildren(el("b", null, r.kod), document.createTextNode("  — telefondaki sayfaya yaz."));
+    } catch (e) { bildir(String(e.message || e), "kotu"); }
+  };
+  kap.append(kodYer, kodAl);
+  ayarAltBaslik(kap, "Eşleşmiş cihazlar");
+  if (!j.cihazlar.length) kap.append(el("div", "bos-yazi", "Eşleşmiş cihaz yok."));
+  for (const c of j.cihazlar) {
+    const k = el("button", "dugme olumsuz", "Kaldır");
+    k.title = "Bu cihaz bir daha ofise ulaşamaz (kayıp telefon için acil kesme).";
+    k.onclick = async () => {
+      if (!confirm(`${c.ad} kaldırılsın mı? Bir daha bağlanmak için yeniden eşleştirmek gerekir.`)) return;
+      try { await yolla(`/api/telefon/cihaz/${c.id}/kaldir`, {}); bildir(`${c.ad} kaldırıldı`, "iyi"); }
+      catch (e) { bildir(String(e.message || e), "kotu"); }
+      ayarlarCiz();
+    };
+    ayarSatir(kap, c.ad, `son görülme: ${String(c.son_gorulme || "").slice(0, 16).replace("T", " ")}`
+      + (c.bildirim ? " · bildirim açık" : " · bildirim kapalı"), k);
+  }
+}
 
 async function ayarBildirim(kap, v) {
   const b = v.bildirim;

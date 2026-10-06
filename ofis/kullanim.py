@@ -99,7 +99,7 @@ OTURUM_SAAT = 5
 #: Iki kopyadan biri duzeltilip oteki unutuluyor; bu projede bu desen
 #: alti kez odendi.
 OZET_ALANLARI = ("jeton", "maliyet_usd", "sure_ms", "model",
-                 "arac_sayisi", "basarili", "jeton_dokumu")
+                 "arac_sayisi", "basarili", "jeton_dokumu", "baglam")
 
 
 def tur_ozeti_yaz(db, proje_id: str, ek: dict, *, ajan_ad: str = "",
