@@ -78,16 +78,29 @@ def bekleyenler(ofis) -> list:
     return [_sozluk(r) for r in rows]
 
 
-def sira_al(ofis, seri: str):
+def sira_al(ofis, seri: str, *, atla_takimlar=frozenset()):
     """Siradaki isi ALIR (bekliyor -> kosuyor). Yoksa None.
 
     Tek satirlik kosullu guncelleme: iki iplik ayni isi alamaz (ikincisinin
     `durum = 'bekliyor'` kosulu tutmaz, 0 satir degisir).
+
+    `atla_takimlar` (06.10.2026, takim kota payi): kota payi DOLU takimlarin
+    mesajlari atlanir -- BEKLIYOR kalir, silinmez; oteki takimlarinki surer.
     """
+    atla = set(atla_takimlar or ())
     while True:
         with ofis.db.baglanti() as c:
-            r = c.execute("SELECT id FROM kuyruk WHERE proje_id = ? AND durum = 'bekliyor' "
-                          "ORDER BY olusturuldu, rowid LIMIT 1", (ofis.proje_id,)).fetchone()
+            if atla:
+                soru = ",".join("?" * len(atla))
+                r = c.execute(
+                    "SELECT k.id FROM kuyruk k LEFT JOIN ajan a ON a.proje_id = k.proje_id "
+                    "AND a.ad = k.lider_ad WHERE k.proje_id = ? AND k.durum = 'bekliyor' "
+                    f"AND COALESCE(a.kanat_id, '') NOT IN ({soru}) "
+                    "ORDER BY k.olusturuldu, k.rowid LIMIT 1",
+                    (ofis.proje_id, *atla)).fetchone()
+            else:
+                r = c.execute("SELECT id FROM kuyruk WHERE proje_id = ? AND durum = 'bekliyor' "
+                              "ORDER BY olusturuldu, rowid LIMIT 1", (ofis.proje_id,)).fetchone()
             if not r:
                 return None
             sinir = c.execute("SELECT COALESCE(MAX(rowid), 0) FROM gorev").fetchone()[0]

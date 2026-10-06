@@ -97,6 +97,25 @@ def medya_hedefi(kok, alanlar, ad: str) -> Path:
         "eklenmeli.")
 
 
+
+def kanat_koku(db, kanat_id) -> str:
+    """Takimin kendi klasoru ("" = yok; proje koku kullanilir). TEK yer."""
+    if not kanat_id:
+        return ""
+    try:
+        with db.baglanti() as c:
+            r = c.execute("SELECT klasor FROM kanat WHERE id = ?", (kanat_id,)).fetchone()
+    except Exception:                         # noqa: BLE001 -- eski defter: sutun yok
+        return ""
+    return ((r["klasor"] if r else "") or "").strip()
+
+
+def _kok_anahtari(kok: str) -> str:
+    try:
+        return str(Path(kok).resolve()).lower() if kok else ""
+    except (OSError, ValueError):
+        return str(kok).lower()
+
 class TahtaHatasi(RuntimeError):
     pass
 
@@ -196,13 +215,17 @@ class Tahta:
 
     # -- gorev acma --------------------------------------------------------
 
-    def kok_klasor(self) -> str:
-        """Projenin kok klasoru -- yoksa bos dize.
+    def kok_klasor(self, kanat_id: str = None) -> str:
+        """Isin kok klasoru -- takimin klasoru, yoksa projenin; yoksa bos.
 
         Iki yerden okunuyordu (dogrulama ve alan normallestirme); tek
         yere alindi. Bu projede iki kopyadan biri duzeltilip oteki
-        unutuldugu icin bes kez hata cikti.
+        unutuldugu icin bes kez hata cikti. TAKIM KLASORU (06.10.2026,
+        patron: "her takim ayri"): takimin kendi koku varsa O.
         """
+        tk = kanat_koku(self.db, kanat_id)
+        if tk:
+            return tk
         kok = ((self.ofis.proje or {}).get("kok_klasor")
                if hasattr(self, "ofis") else None)
         if kok:
@@ -212,7 +235,16 @@ class Tahta:
                           (self.proje_id,)).fetchone()
         return (r["kok_klasor"] if r else "") or ""
 
-    def _alanlari_dogrula(self, alanlar, ek_klasorler=None) -> None:
+    def gorev_koku(self, gorev_or_id) -> str:
+        """Bir isin kok klasoru (isin takimina gore)."""
+        g = gorev_or_id
+        if not isinstance(g, dict):
+            with self.db.baglanti() as c:
+                r = c.execute("SELECT kanat_id FROM gorev WHERE id = ?", (g,)).fetchone()
+            g = dict(r) if r else {}
+        return self.kok_klasor(g.get("kanat_id") or None)
+
+    def _alanlari_dogrula(self, alanlar, ek_klasorler=None, kok: str = None) -> None:
         """Yazma alani PROJE KOKUNDE gercekten var mi.
 
         OLCULMUS HATA (21.09.2026) -- ve bedeli $2'ydi:
@@ -243,7 +275,7 @@ class Tahta:
         """
         if not alanlar:
             return
-        kok = self.kok_klasor()
+        kok = kok if kok is not None else self.kok_klasor()
         # KOKUN TAMAMI yazma alani olamaz (27.09.2026, motor matrisi olctu):
         # `["."]` normallesince BOS kaliyordu ve gorev_ac onu SESSIZCE
         # suzuyordu. Gorev "yazma alani belirtilmemis" diye acildi ve HIC
@@ -390,14 +422,14 @@ class Tahta:
         # kilit, ayni dosyayi gosteren iki yazimi (`KILAVUZ.md` ve
         # `C:/.../calisma/KILAVUZ.md`) farkli sayar ve cakismayi HIC
         # gormezdi -- Yasa 1'in sessizce delinmesi (bkz. `kok_goreli`).
-        _kok = self.kok_klasor()
+        _kok = self.kok_klasor(kanat_id or None)
         # Bos girdi (`""`) atlanir; ama `"."` gibi normallesince bos kalan
         # bir alan SUZULMEZ, kapiya gider ve reddedilir (bkz. _alanlari_dogrula).
         ham = [str(y).strip() for y in (yazma_alani or []) if str(y).strip()]
         self._alanlari_dogrula([y for y in ham if not kok_goreli(y, _kok)],
-                               ek_klasorler)
+                               ek_klasorler, kok=_kok)
         alanlar = [kok_goreli(y, _kok) for y in ham]
-        self._alanlari_dogrula(alanlar, ek_klasorler)
+        self._alanlari_dogrula(alanlar, ek_klasorler, kok=_kok)
         # Var olmadigi ANINDA reddedilir; sessizce atlanan bir klasor,
         # ajanin "bulamadim" demesiyle ortaya cikardi.
         ekler = metinler(klasorleri_dogrula(ek_klasorler))
@@ -703,8 +735,13 @@ class Tahta:
                 (simdi(), gorev["id"]),
             )
 
-    def cakisan_kilitler(self, alanlar) -> list:
-        """Talep edilen yollari kim tutuyor?"""
+    def cakisan_kilitler(self, alanlar, kok: str = None) -> list:
+        """Talep edilen yollari kim tutuyor?
+
+        `kok` verilirse yalniz AYNI KOKTE calisan islerin kilitleri sayilir
+        (06.10.2026, takim klasoru): farkli koklerdeki `index.html` iki ayri
+        dosyadir; ayni kokteki iki takim ise dosyayi gercekten paylasir.
+        """
         self.kilit_dusenleri_temizle()
         istenen = [yol_normalle(a) for a in alanlar if yol_normalle(a)]
         if not istenen:
@@ -714,6 +751,9 @@ class Tahta:
                 "SELECT yol_oneki, ajan_ad, gorev_id FROM yazma_kilidi WHERE proje_id = ?",
                 (self.proje_id,),
             ).fetchall()
+        if kok is not None:
+            hedef = _kok_anahtari(kok)
+            rows = [r for r in rows if _kok_anahtari(self.gorev_koku(r["gorev_id"])) == hedef]
         cakisan = []
         for row in rows:
             for yol in istenen:
@@ -741,7 +781,7 @@ class Tahta:
             adlar = ", ".join(f"#{b['no']}" for b in blok)
             raise TahtaHatasi(f"#{no} once {adlar} bitmeli.")
 
-        cakisan = self.cakisan_kilitler(gorev["yazma_alani"])
+        cakisan = self.cakisan_kilitler(gorev["yazma_alani"], kok=self.gorev_koku(gorev))
         if cakisan:
             detay = ", ".join(f"{c['yol_oneki']} -> {c['ajan_ad']}" for c in cakisan)
             raise KilitCakismasi(
@@ -868,6 +908,11 @@ class Tahta:
         self.db.olay_yaz(self.proje_id, "kapandi",
                          f"#{no} {gorev['baslik']} -- {len(kanit)} kanitla",
                          ajan_ad=kapatan, gorev_id=gorev["id"])
+        # IS BASINA GIT KAYDI (06.10.2026, patron): proje git deposuysa isin
+        # olculen dosyalari tek kayda girer. Hata isi geri acmaz (uyari olur).
+        from . import git_kaydi
+        git_kaydi.kaydet(self.db, self.proje_id, self.gorev_koku(gorev), gorev,
+                         kapatan=kapatan)
         return self.gorev(no)
 
     def giris_uygula(self, no: int, *, kaynak: str = "",

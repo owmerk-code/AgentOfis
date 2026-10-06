@@ -248,10 +248,21 @@ class Kadro:
         if acik:
             raise KadroHatasi(f"{ad}'in acik isleri var ({', '.join(acik)}). Isler "
                               "bitsin ya da iptal edilsin, sonra tasi.")
+        # TAKIM KLASORU (06.10.2026): eski takiminin kokunde calisan ajan
+        # yeni takiminin kokune gecer; KENDI klasoru olan (yalitilmis) ajanin
+        # klasoruna dokunulmaz.
+        from .tahta import kanat_koku, _kok_anahtari
         with self.db.baglanti() as conn:
-            conn.execute("UPDATE ajan SET kanat_id = ?, revizyon = revizyon + 1, "
+            pr = conn.execute("SELECT kok_klasor FROM proje WHERE id = ?", (self.proje_id,)).fetchone()
+        proje_kok = (pr["kok_klasor"] if pr else "") or ""
+        eski_kok = kanat_koku(self.db, a["kanat_id"]) or proje_kok
+        yeni_kok = a["klasor"]
+        if eski_kok and _kok_anahtari(a["klasor"]) == _kok_anahtari(eski_kok):
+            yeni_kok = kanat_koku(self.db, kanat_id) or proje_kok or a["klasor"]
+        with self.db.baglanti() as conn:
+            conn.execute("UPDATE ajan SET kanat_id = ?, klasor = ?, revizyon = revizyon + 1, "
                          "guncellendi = ? WHERE proje_id = ? AND ad = ?",
-                         (kanat_id, simdi(), self.proje_id, ad))
+                         (kanat_id, yeni_kok, simdi(), self.proje_id, ad))
         self.db.olay_yaz(self.proje_id, "ajan_tasindi", f"{ad} baska takima tasindi",
                          ajan_ad="insan")
         return self.ajan(ad)

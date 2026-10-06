@@ -319,7 +319,13 @@ def _kuyrugu_kostur(db_yolu, proje_ad: str) -> None:
             while True:
                 if _durdurulduysa(o, "Sira"):
                     break
-                k = _kuyruk.sira_al(o, seri)
+                # TAKIM KOTA PAYI: dolu takimin mesaji bekler, otekiler surer.
+                try:
+                    from . import pay as _pay
+                    _dolu = set(_pay.dolu_takimlar(o.db, o.proje_id))
+                except Exception:        # noqa: BLE001 -- olcum sirayi durdurmaz
+                    _dolu = set()
+                k = _kuyruk.sira_al(o, seri, atla_takimlar=_dolu)
                 if k is None:
                     break
                 _KOSU["mesaj"] = k["metin"][:80]
@@ -383,9 +389,16 @@ def zamanlayici_tik(db_yolu, proje_ad: str) -> int:
     pid = _proje_id_bul(_db, proje_ad)
     if pid is None:
         return 0
-    giren = _z.vadesi_gelenleri_sirala(Ofis(_db, pid))
+    o = Ofis(_db, pid)
+    giren = _z.vadesi_gelenleri_sirala(o)
     if giren:
         _kuyrugu_baslat(db_yolu, proje_ad)
+    else:
+        # KOTA PAYI yuzunden bekleyen mesaj, pencere yenilenince KENDILIGINDEN
+        # surer: sirada is varsa ve ofis bossa sira yeniden yoklanir.
+        from . import kuyruk as _kuyruk
+        if _kuyruk.bekleyenler(o):
+            _kuyrugu_baslat(db_yolu, proje_ad)
     return len(giren)
 
 
@@ -637,10 +650,12 @@ class KipGovdesi(BaseModel):
 class EkGovdesi(BaseModel):
     ad: str = ""
     veri: str = ""      # base64 (python-multipart bagimliligi eklenmesin)
+    kanat: str = ""     # belge icin: hangi takimin (bos/ortak = herkes)
 
 
 class HafizaOneriGovdesi(BaseModel):
     yaz: bool
+    herkese: bool = False  # True: ORTAK hafizaya (her takim gorur)
 
 
 class SebepGovdesi(BaseModel):
@@ -661,6 +676,7 @@ class SablonGovdesi(BaseModel):
 class BilgiGovdesi(BaseModel):
     konu: str = ""
     icerik: str = ""
+    kanat: str = ""        # "" / "ortak" = ortak hafiza; takim kimligi = o takim
 
 
 class KuralGovdesi(BaseModel):
@@ -670,6 +686,7 @@ class KuralGovdesi(BaseModel):
     olgu: str = ""
     ders_id: str = ""
     gerekce: str = ""
+    kanat: str = ""
 
 
 class IseAlGovdesi(BaseModel):
@@ -728,6 +745,11 @@ class TasiGovdesi(BaseModel):
 class KanatDuzenGovdesi(BaseModel):
     ad: str | None = None
     renk: str | None = None
+    klasor: str | None = None   # None = dokunma; "" = projenin koku
+    kota_payi: int | None = None  # None = dokunma; 0 = sinirsiz; 1..100
+    bitti_tanimi: str | None = None   # satir satir; None = dokunma
+    marka: dict | None = None         # {logo, renkler, ses_tonu, yasak}; None = dokunma
+    canli: bool | None = None         # None = dokunma; True = canli kip (bayrak)
 
 
 class TakimUyesi(BaseModel):
@@ -1386,7 +1408,7 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
                 continue
             if g["durum"] not in sutunlar:
                 continue
-            kilitler = ofis.tahta.cakisan_kilitler(g["yazma_alani"]) \
+            kilitler = ofis.tahta.cakisan_kilitler(g["yazma_alani"], kok=ofis.tahta.gorev_koku(g)) \
                 if g["yazma_alani"] else []
             sutunlar[g["durum"]].append({
                 "no": g["no"], "baslik": g["baslik"], "sahip": g["sahip"],
@@ -1422,6 +1444,10 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
         g["izinler"] = izin_mod.liste(db, ofis.proje_id, gorev_id=g["id"])
         from . import puan as _puan
         g["puan"] = _puan.oku(db, ofis.proje_id, g["id"])
+        from . import git_kaydi as _gk
+        g["git_kaydi"] = _gk.isin_kaydi(db, ofis.proje_id, g["id"])
+        from . import onizleme as _oz
+        g["onizleme"] = bool(_oz.giris(ofis.isin_koku(g)))
         g["brifing"] = dict(brifing) if brifing else None
         g["rapor"] = dict(rapor) if rapor else None
         return g
@@ -1437,8 +1463,20 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
                 (ofis.proje_id, sonra, adet)).fetchall()
         return [dict(r) for r in rows][::-1]
 
+    def _kanat_coz(kanat: str):
+        """Panelin takim secimi: "" = butun gorunum (None), "ortak" = yalniz
+        ortak (""), takim kimligi = o takim + ortak."""
+        kanat = (kanat or "").strip()
+        if not kanat:
+            return None
+        return "" if kanat == "ortak" else kanat
+
+    def _hafiza_bellegi(ofis, kanat: str):
+        k = _kanat_coz(kanat)
+        return ofis.bellek if k is None else ofis.bellek.kapsam(k)
+
     @uygulama.get("/api/hafiza")
-    def api_hafiza():
+    def api_hafiza(kanat: str = ""):
         """HAFIZA: bilgiler (baglariyla), kurallar, adaylar, dersler.
 
         Cizge istemcide cizilir ama KENARLAR burada, sunucuda cikarilir
@@ -1448,16 +1486,22 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
         gosterirdi.
         """
         ofis = ofis_ac()
+        bel = _hafiza_bellegi(ofis, kanat)
+        kosul, prm = bel._kosul()
         with db.baglanti() as conn:
             rows = conn.execute(
-                "SELECT konu, icerik, kaynak, gecerli_baslangic, gecerli_bitis, yanlis "
-                "FROM olgu WHERE proje_id = ? ORDER BY konu, gecerli_baslangic DESC",
-                (ofis.proje_id,)).fetchall()
+                "SELECT konu, icerik, kaynak, gecerli_baslangic, gecerli_bitis, yanlis, kanat_id "
+                f"FROM olgu WHERE proje_id = ?{kosul} ORDER BY konu, gecerli_baslangic DESC",
+                (ofis.proje_id, *prm)).fetchall()
+            kanat_adlari = {r[0]: r[1] for r in conn.execute(
+                "SELECT id, ad FROM kanat WHERE proje_id = ?", (ofis.proje_id,))}
             dersler = conn.execute(
                 "SELECT id, ajan_ad, ders, tekrar FROM ders WHERE proje_id = ? AND kaldirildi = '' "
                 "ORDER BY tekrar DESC, guncellendi DESC", (ofis.proje_id,)
             ).fetchall()
         hepsi = [dict(r) for r in rows]
+        for o in hepsi:
+            o["kanat_ad"] = kanat_adlari.get(o.get("kanat_id") or "", "ortak")
         surum = {}
         for o in hepsi:
             a = _bellek.konu_anahtari(o["konu"])
@@ -1483,12 +1527,16 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
         adaylar = {d["id"] for d in ofis.bellek.kural_adaylari()}
         # Eski olgu SILINMEZ, gosterilir -- ama 'gecersiz' olarak. Ajana
         # gitmez, insana gider: "eskiden ne kadardi" sorusu icin.
+        kurallar = [dict(k, kanat_ad=kanat_adlari.get(k.get("kanat_id") or "", "ortak"))
+                    for k in bel.kurallar()]
         return {"gecerli": gecerli,
                 "eski": [o for o in hepsi if o["gecerli_bitis"] is not None],
-                "kurallar": ofis.bellek.kurallar(),
-                "kural_maliyeti": ofis.bellek.kural_maliyeti(),
+                "kurallar": kurallar,
+                "kural_maliyeti": bel.kural_maliyeti(),
                 "dersler": [dict(d, aday=d["id"] in adaylar) for d in dersler],
-                "birlesim": ofis.bellek.birlesim_adaylari(),
+                "birlesim": bel.birlesim_adaylari(),
+                "kanat": kanat or "",
+                "kanatlar": [{"id": i, "ad": a} for i, a in kanat_adlari.items()],
                 "secim_esigi": _bellek.OLGU_SECIM_ESIGI}
 
     @uygulama.post("/api/hafiza/birlestir")
@@ -1496,14 +1544,15 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
         """Ayni bilginin iki konusu: `takma` -> `asil`. Yalniz insan (panel)."""
         o = ofis_ac()
         try:
-            return o.bellek.birlestir(str(govde.get("asil") or ""), str(govde.get("takma") or ""))
+            return _hafiza_bellegi(o, str(govde.get("kanat") or "")).birlestir(
+                str(govde.get("asil") or ""), str(govde.get("takma") or ""))
         except BellekHatasi as exc:
             raise HTTPException(400, str(exc))
 
     @uygulama.get("/api/hafiza/ara")
-    def api_hafiza_ara(q: str = ""):
+    def api_hafiza_ara(q: str = "", kanat: str = ""):
         """Hafizada kelime aramasi: bilgi, ders, kural, karar."""
-        return {"sorgu": q, "sonuc": ofis_ac().bellek.ara(q)}
+        return {"sorgu": q, "sonuc": _hafiza_bellegi(ofis_ac(), kanat).ara(q)}
 
     @uygulama.post("/api/hafiza/yanlis")
     def api_hafiza_yanlis(govde: dict):
@@ -1513,15 +1562,17 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
         try:
             if govde.get("ders_id"):
                 return o.kadro.ders_yanlis(str(govde["ders_id"]), str(govde.get("sebep") or ""))
-            return o.bellek.olgu_yanlis(str(govde.get("konu") or ""), str(govde.get("sebep") or ""))
+            return _hafiza_bellegi(o, str(govde.get("kanat") or "")).olgu_yanlis(
+                str(govde.get("konu") or ""), str(govde.get("sebep") or ""))
         except (BellekHatasi, KadroHatasi) as exc:
             raise HTTPException(400, str(exc))
 
     @uygulama.get("/api/hafiza/gecmis")
-    def api_hafiza_gecmis(konu: str):
+    def api_hafiza_gecmis(konu: str, kanat: str = ""):
         ofis = ofis_ac()
-        k = ofis.bellek._konu_bul(konu) or konu
-        return {"konu": k, "gecmis": ofis.bellek.konu_gecmisi(k)}
+        bel = _hafiza_bellegi(ofis, kanat)
+        k = bel._konu_bul(konu) or konu
+        return {"konu": k, "gecmis": bel.konu_gecmisi(k)}
 
     @uygulama.post("/api/bilgi")
     def api_bilgi(govde: BilgiGovdesi):
@@ -1529,7 +1580,8 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
         sessizce devremez (`bellek.bilgi_ekle`)."""
         ofis = ofis_ac()
         try:
-            r = ofis.bellek.bilgi_ekle(govde.konu, govde.icerik, yazan="insan")
+            r = ofis.bellek.bilgi_ekle(govde.konu, govde.icerik, yazan="insan",
+                                       kanat_id=_kanat_coz(govde.kanat) or "")
         except BellekHatasi as exc:
             raise HTTPException(400, str(exc))
         return r
@@ -1547,11 +1599,12 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
                                      "girer; neden konuldugu bilinmeli.")
         try:
             if govde.olgu:
-                r = ofis.bellek.olgudan_kural(govde.olgu, govde.gerekce)
+                r = _hafiza_bellegi(ofis, govde.kanat).olgudan_kural(govde.olgu, govde.gerekce)
             elif govde.ders_id:
                 r = ofis.bellek.dersten_kural(govde.ders_id, govde.gerekce)
             else:
-                r = ofis.bellek.kural_ekle(govde.metin, govde.gerekce)
+                r = ofis.bellek.kural_ekle(govde.metin, govde.gerekce,
+                                           kanat_id=_kanat_coz(govde.kanat) or "")
         except BellekHatasi as exc:
             raise HTTPException(400, str(exc))
         return r
@@ -1864,6 +1917,7 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
             except (TypeError, ValueError):
                 disar = []
             d["kapsam_notu"] = degisim.kapsam_notu(disar)
+            d["kok"] = ofis.tahta.kok_klasor(d.get("kanat_id") or None)
             kayitlar.append(d)
         return {"kok": ofis.tahta.kok_klasor(), "kayitlar": kayitlar}
 
@@ -2216,7 +2270,7 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
         # kuyruga koymak, insana kendisine dusmeyen isi gosterirdi;
         # tamamen gizlemek ise ofisi sessiz kilardi.
         from . import izin as _izin
-        onaylar = [{**o, "kalici": _izin.karttan_izin(o)}
+        onaylar = [{**o, "kalici": _izin.karttan_izin(o), "onizleme": _onizlenir(ofis, o)}
                    for o in _onaylar_giris_ile(ofis.postane.bekleyen_onaylar())]
         return {"sorular": ofis.postane.insan_bekleyenler(),
                 "danisilanlar": ofis.postane.ajana_bekleyenler(),
@@ -2389,7 +2443,7 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
         except (binascii.Error, ValueError):
             raise HTTPException(400, "Dosya okunamadi (bozuk veri).")
         try:
-            return _ek.kaydet(ofis_ac(), govde.ad, veri)
+            return _ek.kaydet(ofis_ac(), govde.ad, veri, kanat_id=govde.kanat or None)
         except _ek.EkHatasi as exc:
             raise HTTPException(400, str(exc))
 
@@ -2694,11 +2748,24 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
             if conn.execute("SELECT 1 FROM kanat WHERE proje_id = ? AND ad = ?",
                             (ofis.proje_id, ad)).fetchone():
                 raise HTTPException(400, f"'{ad}' adinda bir takim zaten var.")
+        kok = _takim_koku_hazirla(ofis, ad)
         kid = ofis.kanat_ac(ad, onek, govde.renk)
+        ofis.takim_klasoru_ayarla(kid, kok)
         ofis.db.olay_yaz(ofis.proje_id, "kanat_acildi",
                          f"Yeni takim: {ad} ({onek}) -- once bir lider ise al.",
                          ajan_ad="insan")
         return {"id": kid, "ad": ad, "onek": onek, "renk": govde.renk}
+
+    def _takim_koku_hazirla(ofis, ad: str) -> str:
+        """TAKIM KLASORU (06.10.2026, patron: "her takim ayri"): yeni takim
+        kendi kokunde -- gercek ofiste Masaustu\\<takim>. Klasor takim
+        ACILMADAN once hazirlanir: acilamazsa yarim takim kalmaz."""
+        try:
+            kok = ofis.yeni_takim_koku(ad)
+            Path(kok).mkdir(parents=True, exist_ok=True)
+        except (OSError, ValueError) as exc:
+            raise HTTPException(400, f"Takim klasoru acilamadi: {exc}")
+        return kok
 
     @uygulama.get("/api/kadro/secenek")
     def api_kadro_secenek():
@@ -2745,7 +2812,7 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
         # ORTAK KOK (karar 18.09.2026): butun ajanlar projenin kokunde
         # calisir; kilit ancak cakisma fiziksel olarak mumkunse anlamlidir.
         # Kural TEK YERDE (`Ofis.kok_klasoru`) -- kabuk da onu cagirir.
-        kok = ofis.kok_klasoru()
+        kok = ofis.kok_klasoru(govde.kanat or None)
         Path(kok).mkdir(parents=True, exist_ok=True)
         try:
             a = ofis.kadro.katalogdan_al(
@@ -2814,7 +2881,7 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
         ofis = ofis_ac()
         with ofis.db.baglanti() as conn:
             kanatlar = [dict(r) for r in conn.execute(
-                "SELECT id, ad, onek, renk FROM kanat WHERE proje_id = ? "
+                "SELECT id, ad, onek, renk, klasor, kota_payi, canli FROM kanat WHERE proje_id = ? "
                 "ORDER BY olusturuldu", (ofis.proje_id,)).fetchall()]
             acik = {r["sahip"]: r["n"] for r in conn.execute(
                 "SELECT sahip, COUNT(*) AS n FROM gorev WHERE proje_id = ? AND "
@@ -2834,6 +2901,19 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
 
         hepsi = ofis.kadro.liste()
         for k in kanatlar:
+            # Takimin GERCEK koku (kendi klasoru yoksa projeninki) ve kendi mi.
+            k["kendi_klasoru"] = bool(k.pop("klasor"))
+            k["klasor"] = ofis.kok_klasoru(k["id"])
+            from . import kit as _kit
+            k["kit"] = _kit.oku(ofis.db, k["id"])
+            # KOTA PAYI: olculen kullanim (yuzde 0..1; olculemeyen None).
+            try:
+                from . import pay as _pay
+                k["kota_kullanim"] = [
+                    {**s, "yenilenme": s["yenilenme"].isoformat()}
+                    for s in _pay.kullanim(ofis.db, ofis.proje_id, k["id"])]
+            except Exception:    # noqa: BLE001 -- olculemedi: bos liste, kart yine gelir
+                k["kota_kullanim"] = []
             k["ajanlar"] = [_a(a) for a in hepsi if a["kanat_id"] == k["id"]]
             k["lider"] = next((a["ad"] for a in k["ajanlar"] if a["lider_mi"]), "")
         return {"kanatlar": kanatlar,
@@ -2883,7 +2963,29 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
                     (ofis.proje_id, ad)).fetchone():
                 raise HTTPException(400, f"'{ad}' adinda bir takim zaten var.")
             conn.execute("UPDATE kanat SET ad = ?, renk = ? WHERE id = ?", (ad, renk, kid))
-        return {"id": kid, "ad": ad, "renk": renk}
+        if govde.bitti_tanimi is not None or govde.marka is not None:
+            from . import kit as _kit
+            try:
+                _kit.yaz(ofis.db, ofis.proje_id, kid, bitti_tanimi=govde.bitti_tanimi,
+                         marka=govde.marka)
+            except ValueError as exc:
+                raise HTTPException(400, f"Ad/renk kaydedildi; takim kiti degismedi: {exc}")
+        if govde.canli is not None:
+            from . import canli as _canli
+            _canli.ayarla(ofis.db, ofis.proje_id, kid, govde.canli)
+        if govde.kota_payi is not None:
+            from . import pay as _pay
+            try:
+                _pay.pay_yaz(ofis.db, ofis.proje_id, kid, govde.kota_payi)
+            except ValueError as exc:
+                raise HTTPException(400, f"Ad/renk kaydedildi; kota payi degismedi: {exc}")
+        klasor = ofis.kok_klasoru(kid)
+        if govde.klasor is not None and govde.klasor.strip() != klasor:
+            try:
+                klasor = ofis.takim_klasoru_ayarla(kid, govde.klasor)["klasor"]
+            except (OSError, ValueError) as exc:
+                raise HTTPException(400, f"Ad/renk kaydedildi; klasor degismedi: {exc}")
+        return {"id": kid, "ad": ad, "renk": renk, "klasor": klasor}
 
     @uygulama.post("/api/kanat/{kid}/sil")
     def api_kanat_sil(kid: str, govde: TakimSilGovdesi = None):
@@ -3003,9 +3105,9 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
             gorulen.add(a_)
             if u.motor and not musait.get(u.motor):
                 raise HTTPException(400, f"'{a_}': '{u.motor}' motoru kurulu degil.")
+        kok = _takim_koku_hazirla(ofis, ad)
         kid = ofis.kanat_ac(ad, onek, govde.renk)
-        kok = ofis.kok_klasoru()
-        Path(kok).mkdir(parents=True, exist_ok=True)
+        ofis.takim_klasoru_ayarla(kid, kok)
         alinan = []
         try:
             for i, u in enumerate(sorted(govde.uyeler, key=lambda u: u.rol != "lider")):
@@ -3136,11 +3238,58 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
         ofis = ofis_ac()
         # Otomatik moddaki oneriler insana DUSMEZ; otomatik UYGULANANLAR
         # ise gorulene kadar kart olarak durur (Geri al dugmesiyle).
+        # OFISIN KENDI EKSIGI (06.10.2026, K17): olculmus tekrar eden sorun.
+        try:
+            from . import eksik as _eksik
+            ofis_onerisi = _eksik.topla(ofis)
+        except Exception:        # noqa: BLE001 -- olculemedi: kart cikmaz
+            ofis_onerisi = []
         return {"ekip": ofis.ekip.bekleyenler(),
+                "ofis": ofis_onerisi,
                 "hafiza": ofis.bellek.bekleyen_hafiza_onerileri(),
                 "guncelleme": G.insana_dusenler(ofis.db, ofis.proje_id),
                 "uygulanan": G.gorulmemisler(ofis.db, ofis.proje_id),
                 "otomatik": G.otomatik_mi(ofis.db, ofis.proje_id)}
+
+    def _onizlenir(ofis, o) -> bool:
+        """YAYIN onayinda isin klasorunde onizlenecek sayfa var mi (K14)."""
+        if "YAYIN" not in str(o.get("eylem") or "").upper() or not o.get("gorev_no"):
+            return False
+        try:
+            from . import onizleme as _oz
+            return bool(_oz.giris(ofis.isin_koku(ofis.tahta.gorev(o["gorev_no"]))))
+        except Exception:        # noqa: BLE001 -- olculemedi: dugme cikmaz
+            return False
+
+    @uygulama.post("/api/eksik/{anahtar}")
+    def api_eksik(anahtar: str, govde: dict):
+        """Ofisin kendi eksik onerisine patronun karari: onayla / gereksiz."""
+        from . import eksik as _eksik
+        try:
+            return _eksik.karar_ver(ofis_ac(), anahtar, str(govde.get("karar") or ""),
+                                    notu=str(govde.get("not_") or ""))
+        except ValueError as exc:
+            raise HTTPException(400, str(exc))
+
+    @uygulama.post("/api/onizleme")
+    def api_onizleme(govde: dict):
+        """Isin klasorundeki siteyi YEREL sunucuda acar (yalniz bu bilgisayar)."""
+        from . import onizleme as _oz
+        ofis = ofis_ac()
+        try:
+            g = ofis.tahta.gorev(int(govde.get("gorev") or 0))
+            return _oz.ac(ofis.isin_koku(g))
+        except (ValueError, TahtaHatasi, OSError) as exc:
+            raise HTTPException(400, str(exc))
+
+    @uygulama.post("/api/gorev/{no}/git_geri_al")
+    def api_gorev_git_geri_al(no: int):
+        """Isin git kaydini geri alir (`git revert`, yeni kayit). Yalniz insan."""
+        from . import git_kaydi as _gk
+        try:
+            return _gk.geri_al(ofis_ac(), no)
+        except (ValueError, TahtaHatasi) as exc:
+            raise HTTPException(400, str(exc))
 
     @uygulama.post("/api/gorev/{no}/puan")
     def api_gorev_puan(no: int, govde: dict):
@@ -3152,10 +3301,11 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
             raise HTTPException(400, str(exc))
 
     @uygulama.get("/api/belgeler")
-    def api_belgeler():
+    def api_belgeler(kanat: str = ""):
         from . import belge as _b
         o = ofis_ac()
-        return {"belgeler": _b.liste(o.db, o.proje_id), "turler": list(_b.TURLER)}
+        return {"belgeler": _b.liste(o.db, o.proje_id, kanat=_kanat_coz(kanat)),
+                "turler": list(_b.TURLER)}
 
     @uygulama.post("/api/belge")
     def api_belge(govde: EkGovdesi):
@@ -3170,7 +3320,7 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
         except (binascii.Error, ValueError):
             raise HTTPException(400, "Dosya okunamadi (bozuk veri).")
         try:
-            return _b.yukle(ofis_ac(), govde.ad, veri)
+            return _b.yukle(ofis_ac(), govde.ad, veri, kanat_id=_kanat_coz(govde.kanat) or "")
         except _b.BelgeHatasi as exc:
             raise HTTPException(400, str(exc))
 
@@ -3183,10 +3333,10 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
             raise HTTPException(400, str(exc))
 
     @uygulama.get("/api/belge/ara")
-    def api_belge_ara(q: str = ""):
+    def api_belge_ara(q: str = "", kanat: str = ""):
         from . import belge as _b
         o = ofis_ac()
-        return {"sorgu": q, "sonuc": _b.ara(o.db, o.proje_id, q, azami=10)}
+        return {"sorgu": q, "sonuc": _b.ara(o.db, o.proje_id, q, azami=10, kanat=_kanat_coz(kanat))}
 
     @uygulama.post("/api/hafiza_onerisi/{oneri_id}")
     def api_hafiza_onerisi(oneri_id: str, govde: HafizaOneriGovdesi):
@@ -3194,7 +3344,8 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
         from .bellek import BellekHatasi
         ofis = ofis_ac()
         try:
-            return ofis.bellek.hafiza_onerisi_cevapla(oneri_id, yaz=govde.yaz)
+            return ofis.bellek.hafiza_onerisi_cevapla(oneri_id, yaz=govde.yaz,
+                                                      herkese=govde.herkese)
         except BellekHatasi as exc:
             raise HTTPException(400, str(exc))
 

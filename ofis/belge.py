@@ -166,11 +166,11 @@ def parcala(birim: list) -> list:
 
 # ------------------------------------------------------------------ defter
 
-def klasor(ofis) -> Path:
-    return Path(ofis.kok_klasoru()).resolve() / KLASOR
+def klasor(ofis, kanat_id: str = None) -> Path:
+    return Path(ofis.kok_klasoru(kanat_id or None)).resolve() / KLASOR
 
 
-def yukle(ofis, ad: str, veri: bytes, *, ekleyen: str = "insan") -> dict:
+def yukle(ofis, ad: str, veri: bytes, *, ekleyen: str = "insan", kanat_id: str = "") -> dict:
     """Belgeyi kaydeder, parcalar ve deftere yazar."""
     from .ekler import ad_temizle
     if not veri:
@@ -187,7 +187,7 @@ def yukle(ofis, ad: str, veri: bytes, *, ekleyen: str = "insan") -> dict:
                          (ofis.proje_id, ozet)).fetchone()
     if ayni:
         raise BelgeHatasi(f"Bu belge zaten yuklu ('{ayni['ad']}').")
-    k = klasor(ofis)
+    k = klasor(ofis, kanat_id)
     k.mkdir(parents=True, exist_ok=True)
     hedef = k / temiz
     n = 1
@@ -210,9 +210,10 @@ def yukle(ofis, ad: str, veri: bytes, *, ekleyen: str = "insan") -> dict:
     bid = uuid.uuid4().hex
     with ofis.db.baglanti() as c:
         c.execute("INSERT INTO belge (id, proje_id, ad, yol, ozet, tur, boyut, parca, ekleyen, "
-                  "olusturuldu) VALUES (?,?,?,?,?,?,?,?,?,?)",
+                  "olusturuldu, kanat_id) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
                   (bid, ofis.proje_id, hedef.name, f"{KLASOR}/{hedef.name}", ozet,
-                   hedef.suffix.lower().lstrip("."), len(veri), len(parcalar), ekleyen, simdi()))
+                   hedef.suffix.lower().lstrip("."), len(veri), len(parcalar), ekleyen, simdi(),
+                   kanat_id or ""))
         c.executemany("INSERT INTO belge_parca (belge_id, sira, yer, metin) VALUES (?,?,?,?)",
                       [(bid, i, yer, m) for i, (yer, m) in enumerate(parcalar)])
     ofis.db.olay_yaz(ofis.proje_id, "belge_yuklendi",
@@ -220,18 +221,26 @@ def yukle(ofis, ad: str, veri: bytes, *, ekleyen: str = "insan") -> dict:
     return {"id": bid, "ad": hedef.name, "yol": f"{KLASOR}/{hedef.name}", "parca": len(parcalar)}
 
 
-def yukle_yoldan(ofis, yol, *, ekleyen: str = "insan") -> dict:
+def yukle_yoldan(ofis, yol, *, ekleyen: str = "insan", kanat_id: str = "") -> dict:
     p = Path(yol).expanduser()
     if not p.is_file():
         raise BelgeHatasi(f"Dosya yok: {p}")
-    return yukle(ofis, p.name, p.read_bytes(), ekleyen=ekleyen)
+    return yukle(ofis, p.name, p.read_bytes(), ekleyen=ekleyen, kanat_id=kanat_id)
 
 
-def liste(db, proje_id: str) -> list:
+def _kapsam(kanat, on: str = "") -> tuple:
+    if kanat is None:
+        return "", ()
+    return f" AND ({on}kanat_id = '' OR {on}kanat_id = ?)", (kanat,)
+
+
+def liste(db, proje_id: str, *, kanat=None) -> list:
+    """Belgeler; `kanat` verilirse ortak + o takim (takim gozu)."""
+    k, prm = _kapsam(kanat)
     with db.baglanti() as c:
-        rows = c.execute("SELECT id, ad, yol, tur, boyut, parca, ekleyen, olusturuldu FROM belge "
-                         "WHERE proje_id = ? AND kaldirildi IS NULL ORDER BY olusturuldu, rowid",
-                         (proje_id,)).fetchall()
+        rows = c.execute("SELECT id, ad, yol, tur, boyut, parca, ekleyen, olusturuldu, kanat_id FROM belge "
+                         f"WHERE proje_id = ? AND kaldirildi IS NULL{k} ORDER BY olusturuldu, rowid",
+                         (proje_id, *prm)).fetchall()
     return [dict(r) for r in rows]
 
 
@@ -257,7 +266,7 @@ def kaldir(ofis, belge_id: str, *, kim: str = "insan") -> dict:
 
 # ------------------------------------------------------------------ arama
 
-def ara(db, proje_id: str, sorgu: str, *, azami: int = 5) -> list:
+def ara(db, proje_id: str, sorgu: str, *, azami: int = 5, kanat=None) -> list:
     """Sorguya en ilgili parcalar: [{belge, yer, metin, puan}].
 
     Siralama `arama.sirala` (kelime kapisi + harf dizisi sirasi; olculdu).
@@ -265,10 +274,11 @@ def ara(db, proje_id: str, sorgu: str, *, azami: int = 5) -> list:
     parca getirmek, "belgede yok" demekten kotudur.
     """
     from .arama import sirala
+    k, prm = _kapsam(kanat, "b.")
     with db.baglanti() as c:
         rows = c.execute(
             "SELECT b.ad, p.yer, p.metin FROM belge_parca p JOIN belge b ON b.id = p.belge_id "
-            "WHERE b.proje_id = ? AND b.kaldirildi IS NULL", (proje_id,)).fetchall()
+            f"WHERE b.proje_id = ? AND b.kaldirildi IS NULL{k}", (proje_id, *prm)).fetchall()
     if not rows:
         return []
     sira = sirala(sorgu, [f"{r['ad']} {r['yer']} {r['metin']}" for r in rows])
@@ -277,15 +287,15 @@ def ara(db, proje_id: str, sorgu: str, *, azami: int = 5) -> list:
 
 
 def kaynakli_blok(db, proje_id: str, metin: str, *, baslik: str,
-                  azami: int = BRIFING_PARCA) -> str:
+                  azami: int = BRIFING_PARCA, kanat=None) -> str:
     """Brifing / triyaj icin: ilgili parcalar, KAYNAGIYLA. Belge yoksa bos."""
     try:
-        belgeler = liste(db, proje_id)
+        belgeler = liste(db, proje_id, kanat=kanat)
     except Exception:                                 # noqa: BLE001 -- eski defter
         return ""
     if not belgeler:
         return ""
-    bulunan = ara(db, proje_id, metin, azami=azami)
+    bulunan = ara(db, proje_id, metin, azami=azami, kanat=kanat)
     satir = [f"## {baslik}", "",
              "Yuklu belgeler: " + ", ".join(b["ad"] for b in belgeler[:20])
              + (f" (+{len(belgeler) - 20})" if len(belgeler) > 20 else "") + ".",

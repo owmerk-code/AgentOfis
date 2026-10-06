@@ -112,6 +112,23 @@ class Oturum:
     def ajan(self) -> dict:
         return self.ofis.kadro.ajan(self.ajan_ad)
 
+    @property
+    def kanat(self) -> str:
+        """Bu turun TAKIMI (06.10.2026): isin takimi, yoksa ajanin takimi.
+        Ikisi de okunamazsa "" -- yalniz ORTAK hafiza (sizinti yonune
+        degil, eksik yonune yanilir)."""
+        try:
+            if self.gorev_no is not None:
+                return self.gorev().get("kanat_id") or ""
+            return self.ajan().get("kanat_id") or ""
+        except Exception:                          # noqa: BLE001
+            return ""
+
+    @property
+    def bellek(self):
+        """Ajanin hafizaya bakan gozu: ortak + kendi takimi (baska takim YOK)."""
+        return self.ofis.bellek.kapsam(self.kanat)
+
     def gorev(self) -> dict:
         if self.gorev_no is None:
             raise RuntimeError("Bu turda acik bir gorev yok.")
@@ -146,19 +163,20 @@ def arac_durum(oturum: Oturum, args: dict) -> str:
         except Exception as exc:
             satirlar.append(f"(gorev okunamadi: {exc})")
 
-    kurallar = ofis.bellek.kurallar()
+    bel = oturum.bellek
+    kurallar = bel.kurallar()
     if kurallar:
         satirlar += ["", "## OFIS KURALLARI (insan onayli, HER iste gecerli)"]
         for k in kurallar:
             satirlar.append(f"- {k['metin']}")
 
-    olgular = ofis.bellek.gecerli_olgular()
+    olgular = bel.gecerli_olgular()
     if olgular:
         satirlar += ["", "## GECERLI BILGILER"]
         for o in olgular[:40]:
             satirlar.append(f"- {o['konu']}: {o['icerik']}")
 
-    kararlar = ofis.bellek.son_kararlar(6)
+    kararlar = bel.son_kararlar(6)
     if kararlar:
         satirlar += ["", "## SON KARARLAR (baglayici)"]
         for k in kararlar:
@@ -208,10 +226,10 @@ def arac_belge_ara(oturum: Oturum, args: dict) -> str:
         azami = max(1, min(int(args.get("azami") or 5), 10))
     except (TypeError, ValueError):
         azami = 5
-    belgeler = _belge.liste(oturum.ofis.db, oturum.proje_id)
+    belgeler = _belge.liste(oturum.ofis.db, oturum.proje_id, kanat=oturum.kanat)
     if not belgeler:
         return "Yuklu belge yok."
-    bulunan = _belge.ara(oturum.ofis.db, oturum.proje_id, sorgu, azami=azami)
+    bulunan = _belge.ara(oturum.ofis.db, oturum.proje_id, sorgu, azami=azami, kanat=oturum.kanat)
     if not bulunan:
         return ("Belgelerde bu kelimelerle bir sey bulunamadi ("
                 + ", ".join(b["ad"] for b in belgeler[:10])
@@ -240,15 +258,15 @@ def arac_bilgi_yaz(oturum: Oturum, args: dict) -> str:
     if not oturum.ajan_ad:
         return "HATA: kimliksiz tur -- bilgi kimin adina yazilacak?"
     try:
-        r = oturum.ofis.bellek.bilgi_ekle(konu, icerik,
-                                         yazan=oturum.ajan_ad,
-                                         gorev_no=oturum.gorev_no)
+        r = oturum.bellek.bilgi_ekle(konu, icerik,
+                                     yazan=oturum.ajan_ad,
+                                     gorev_no=oturum.gorev_no)
     except BellekHatasi as exc:
         return f"HATA: {exc}"
     if r["durum"] == "ayni":
         return f"Zaten biliniyor: {r['konu']} (yeni surum acilmadi)."
     bag = baglar(r["icerik"])
-    kirik = [b for b in bag if not oturum.ofis.bellek._konu_bul(b)]
+    kirik = [b for b in bag if not oturum.bellek._konu_bul(b)]
     ek = ""
     if kirik:
         # Kirik bag bir HATA degil bir BILGIDIR: henuz yazilmamis bir
@@ -329,7 +347,7 @@ def _kendi_yeni_dosyalari(ofis, gorev_id: str, girdi: dict, hedefler=None) -> bo
     # yakaladi).
     from ofis import riskli
     try:
-        kok = str(_P(ofis.kok_klasoru()).resolve())
+        kok = str(_P(ofis.isin_koku(gorev_id)).resolve())
         if hedefler is not None:
             cwd = str(girdi.get("workdir") or girdi.get("cwd") or kok)
             hedefler = [riskli._yol_coz(h, cwd) for h in hedefler]
@@ -1055,7 +1073,7 @@ def arac_izin_sor(oturum: Oturum, args: dict) -> str:
             # Kok alinamazsa (defter yok) betik yolu surecin klasorunden
             # cozulur -- `ls` gibi serbest bir komut bu yuzden REDDEDILMEZ.
             try:
-                _kok = oturum.ofis.kok_klasoru()
+                _kok = oturum.ofis.kok_klasoru(oturum.kanat or None)
             except Exception:            # noqa: BLE001
                 _kok = ""
             bulgu = riskli.betik_degerlendir(arac, girdi, _kok)
@@ -1082,6 +1100,35 @@ def arac_izin_sor(oturum: Oturum, args: dict) -> str:
         if alinti:
             bulgu = riskli.suphe_bulgusu(
                 arac, str(girdi.get("command") or girdi)[:200], alinti)
+
+    # DENEME / CANLI (06.10.2026, K16): takimin canli bayragi kapaliysa canli
+    # sisteme dokunan eylem SORULMAZ, REDDEDILIR (patron sozu de acmaz).
+    # Olcum saf (ofise dokunmaz); ofis yalniz CANLI eylemde okunur ve orada
+    # bir sey patlarsa kapi KAPALI kalir -- canli olmayan eylem etkilenmez.
+    from ofis import canli as _canli
+    _kanat_c, _kok_c = "", ""
+    try:
+        _kanat_c = getattr(oturum, "kanat", "") or ""
+        _kok_c = oturum.ofis.kok_klasoru(_kanat_c or None)
+    except Exception:                    # noqa: BLE001 -- betik yolu surecin klasorunden
+        pass
+    try:
+        _sebep = _canli.degerlendir(arac, girdi, bulgu, _kok_c)
+    except Exception as exc:             # noqa: BLE001
+        return ret(f"Ofis kapisi canli denetimini yapamadi ({exc}). Eylem YAPILMADI.")
+    if _sebep:
+        try:
+            _acik = _canli.acik_mi(oturum.ofis.db, _kanat_c)
+        except Exception:                # noqa: BLE001 -- okunamazsa DENEME sayilir
+            _acik = False
+        if not _acik:
+            try:
+                oturum.ofis.db.olay_yaz(oturum.proje_id, "canli_engel",
+                                        f"{_sebep} | {str(girdi.get('command') or arac)[:200]}",
+                                        ajan_ad=oturum.ajan_ad)
+            except Exception:            # noqa: BLE001 -- kayit dusse de RET
+                pass
+            return ret(_canli.ret_metni(_sebep))
 
     if bulgu is None:
         return izin()

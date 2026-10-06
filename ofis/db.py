@@ -891,6 +891,22 @@ class Veritabani:
         # Ofis haritasindaki gorunusu ("sac:ten:kumas" sira numaralari; bos =
         # addan turetilir).
         ("ajan", "karakter", "TEXT NOT NULL DEFAULT ''"),
+        # TAKIM KAPSAMI (06.10.2026, patron: "her takim ayri"): hafizanin
+        # sahibi takim; bos = ORTAK (eski kayitlarin hepsi ortak kalir).
+        ("olgu", "kanat_id", "TEXT NOT NULL DEFAULT ''"),
+        ("karar", "kanat_id", "TEXT NOT NULL DEFAULT ''"),
+        ("kural", "kanat_id", "TEXT NOT NULL DEFAULT ''"),
+        ("belge", "kanat_id", "TEXT NOT NULL DEFAULT ''"),
+        ("hafiza_onerisi", "kanat_id", "TEXT NOT NULL DEFAULT ''"),
+        # TAKIM KLASORU (06.10.2026): bos = projenin koku (eski davranis).
+        ("kanat", "klasor", "TEXT NOT NULL DEFAULT ''"),
+        # TAKIM KOTA PAYI (06.10.2026): 0 = sinirsiz (`ofis/pay.py`).
+        ("kanat", "kota_payi", "INTEGER NOT NULL DEFAULT 0"),
+        # TAKIM KITI (06.10.2026): bitti tanimi (satir satir) + marka kiti (JSON).
+        ("kanat", "bitti_tanimi", "TEXT NOT NULL DEFAULT ''"),
+        ("kanat", "marka_kiti", "TEXT NOT NULL DEFAULT ''"),
+        # DENEME / CANLI (06.10.2026): 0 = deneme kipi (canli eylem reddedilir).
+        ("kanat", "canli", "INTEGER NOT NULL DEFAULT 0"),
     )
 
     def _veri_goc(self, conn) -> None:

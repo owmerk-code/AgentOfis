@@ -426,6 +426,45 @@ async function ayarModeller(kap, v) {
     }
   }
 
+  // TAKIM KOTA PAYI (06.10): varsayilan sinirsiz; dolunca takimin yeni isi bekler.
+  ayarAltBaslik(kap, "Takım kota payı");
+  kap.append(el("div", "ayar-aciklama",
+    "Bir takım hesabın 5 saatlik / haftalık penceresinin en fazla yüzde kaçını kullanabilir. " +
+    "0 = sınırsız. Pay dolunca o takımın yeni işi bekler (öteki takımlar sürer), sana bir kez " +
+    "haber verilir; pencere yenilenince kendiliğinden sürer. Takımın payı, ofisin o hesapta " +
+    "harcadığı jetonun takıma düşen kısmıyla ölçülür."));
+  try {
+    const org = await al("/api/organizasyon");
+    for (const t of org.kanatlar || []) {
+      const g = el("input", "ayar-girdi kisa");
+      g.type = "number"; g.min = 0; g.max = 100; g.value = t.kota_payi || 0;
+      const kaydet = el("button", "dugme", "kaydet");
+      kaydet.onclick = () => eylem(`/api/kanat/${t.id}/duzenle`, { kota_payi: Number(g.value) },
+        () => `${t.ad}: ` + (Number(g.value) ? `pay %${g.value}` : "sınırsız"));
+      const k = el("div", "ayar-kontrol"); k.append(g, el("span", null, "%"), kaydet);
+      const olc = (t.kota_kullanim || []).filter((s) => s.takim_yuzde !== null)
+        .map((s) => `${s.motor} ${s.pencere === "5s" ? "5 saat" : "hafta"}: %${Math.round(s.takim_yuzde * 100)}`);
+      ayarSatir(kap, t.ad, olc.length ? "şu an kullandığı: " + olc.join(" · ")
+                                      : "kullanımı henüz ölçülmedi", k);
+    }
+    // DENEME / CANLI (06.10): kapaliyken canli sisteme dokunan eylem reddedilir.
+    ayarAltBaslik(kap, "Canlı kip (takım başına)");
+    kap.append(el("div", "ayar-aciklama",
+      "Kapalıyken (deneme kipi) takımın ajanları canlıya dokunamaz: üretime dağıtım (--prod), canlı ödeme, " +
+      "paket yayımı, bağlı mağaza/reklam hesabına yazma reddedilir — senin \"deploy et\" sözün bile açmaz. " +
+      "Açıkken yayın ve para yine sana sorulur."));
+    for (const t of org.kanatlar || []) {
+      ayarSatir(kap, t.ad, t.canli ? "CANLI açık" : "deneme kipi",
+        ayarAnahtar(!!t.canli, async (a) => {
+          if (a && !confirm(`${t.ad} takımında CANLI kip açılsın mı?\n\nAjanlar üretime dağıtabilir, ` +
+                            "bağlı mağaza/reklam hesabına yazabilir (yayın ve para yine sorulur).")) return;
+          await eylem(`/api/kanat/${t.id}/duzenle`, { canli: a },
+                      () => `${t.ad}: ` + (a ? "canlı kip AÇIK" : "deneme kipi"));
+          ayarlarCiz();
+        }));
+    }
+  } catch (e) { kap.append(el("div", "form-ipucu uyari", "takımlar okunamadı: " + e.message)); }
+
   ayarAltBaslik(kap, "Hesabı önceden sıraya al");
   ayarSatir(kap, "Önceden geçiş",
     "Hesabın penceresi dolmak üzereyken yeni iş o hesapta başlamaz, sıradaki hesaba geçer (iş yarıda kesilmesin).",
@@ -494,6 +533,9 @@ async function ayarCalisma(kap, v) {
   ayarSatir(kap, "Çapraz kontrol",
     "Açıkken işi Claude yaptıysa Codex, Codex yaptıysa Claude inceler: farklı model farklı hatayı yakalar. Ek tur yok.",
     ayarAnahtar(c.capraz_inceleme, (a) => ayarYaz("capraz_inceleme", a)));
+  ayarSatir(kap, "Her işi git'e ayrı kaydet",
+    "Proje bir git deposuysa: lider işi kabul edince yalnız o işin değiştirdiği dosyalar tek kayıt olur (\"#12 sepet sayfası\"). İş kartından tek başına geri alınabilir. Depo değilse hiçbir şey yapılmaz.",
+    ayarAnahtar(c.git_is_kaydi, (a) => ayarYaz("git_is_kaydi", a)));
   ayarSatir(kap, "Gömülü tarayıcıyı ajanlar kendiliğinden kullansın",
     "Açıkken tarayıcı gereken iş panelin tarayıcısında canlı koşar (girdiğin hesaplarla); riskli tıklama yine sana sorulur.",
     ayarAnahtar(c.kabin_izle, (a) => ayarYaz("kabin_izle", a)));

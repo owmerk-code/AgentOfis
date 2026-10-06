@@ -147,8 +147,16 @@ class Brifing:
                     satirlar.append(f"- {d['ders']}")
         return "\n".join(satirlar)
 
-    def k2_kunye(self, no: int = None) -> str:
+    def _bellek(self, kanat=None, no: int = None):
+        """TAKIM GOZU (06.10.2026): isin takimi (ya da verilen takim) ->
+        ortak + o takimin hafizasi. Ikisi de yoksa butun gorunum."""
+        if no is not None:
+            kanat = (self.tahta.gorev(no).get("kanat_id") or "")
+        return self.bellek.kapsam(kanat) if kanat is not None else self.bellek
+
+    def k2_kunye(self, no: int = None, kanat=None) -> str:
         """Proje nedir. Haftada bir degisir, her brifingte tekrarlanir."""
+        bel = self._bellek(kanat, no)
         with self.db.baglanti() as conn:
             p = conn.execute(
                 "SELECT * FROM proje WHERE id = ?", (self.proje_id,)
@@ -171,7 +179,10 @@ class Brifing:
             satirlar += ["", f"**Sozluk:** {p['sozluk']}"]
         # OFIS KURALLARI -- KOSULSUZ. Olgu goreve gore secilir ve elenebilir;
         # kural, insanin "bu HER zaman bilinmeli" dedigi seydir.
-        satirlar += self.kural_satirlari()
+        satirlar += self.kural_satirlari(bel=bel)
+        # TAKIM KITI (06.10.2026): bitti tanimi + marka kiti -- isin TAKIMININ.
+        from . import kit as _kit
+        satirlar += _kit.blok(self.db, bel.kanat_id or "")
 
         # Gorev verildiyse olgular O ISE GORE secilir -- ama yalnizca
         # sisme esigi asilirsa (bkz. bellek.ilgili_olgular). Olculdu:
@@ -184,12 +195,12 @@ class Brifing:
             anahtar = " ".join(str(g.get(alan) or "") for alan in
                                ("baslik", "govde", "neden", "ana_hedef",
                                 "kabul_olcutu"))
-            sonuc = self.bellek.ilgili_olgular(anahtar)
+            sonuc = bel.ilgili_olgular(anahtar)
             olgular = sonuc["secilen"]
             elenen = sonuc["elenen"]
             secim_yapildi = sonuc["secim_yapildi"]
         else:
-            olgular = self.bellek.gecerli_olgular()
+            olgular = bel.gecerli_olgular()
         if olgular:
             satirlar += ["", "### Gecerli olgular", ""]
             for o in olgular:
@@ -220,18 +231,20 @@ class Brifing:
         if no is not None:
             from .belge import kaynakli_blok
             blok = kaynakli_blok(self.db, self.proje_id, anahtar,
-                                 baslik="Patronun belgeleri")
+                                 baslik="Patronun belgeleri", kanat=bel.kanat_id)
             if blok:
                 satirlar += ["", blok.replace("## ", "### ", 1),
                              "Daha fazlasi icin `belge_ara` aracini kullan (varsa)."]
         return "\n".join(satirlar)
 
-    def k3_durum(self, haric_ajan: str = "") -> str:
-        """HER DAGITIMDA TAZE URETILIR. Bayatlayamaz, cunku sorgudur."""
+    def k3_durum(self, haric_ajan: str = "", kanat=None) -> str:
+        """HER DAGITIMDA TAZE URETILIR. Bayatlayamaz, cunku sorgudur.
+        Takim verilirse YALNIZ o takimin isleri ve kararlari (06.10.2026)."""
         satirlar = ["## K3 — SU ANKI DURUM", ""]
+        bel = self._bellek(kanat)
 
-        calisan = self.tahta.liste(durum="calisiyor")
-        incelemede = self.tahta.liste(durum="inceleme")
+        calisan = self.tahta.liste(kanat_id=kanat or None, durum="calisiyor")
+        incelemede = self.tahta.liste(kanat_id=kanat or None, durum="inceleme")
         if calisan or incelemede:
             satirlar.append("**Su an kim ne yapiyor:**")
             for g in calisan:
@@ -244,7 +257,7 @@ class Brifing:
         else:
             satirlar.append("Su an calisan baska ajan yok.")
 
-        bekleyen = self.tahta.liste(durum="bekliyor")
+        bekleyen = self.tahta.liste(kanat_id=kanat or None, durum="bekliyor")
         if bekleyen:
             satirlar += ["", "**Bagimliligi bekleyenler:**"]
             for g in bekleyen:
@@ -252,7 +265,7 @@ class Brifing:
                 adlar = ", ".join(f"#{b['no']}" for b in blok) or "?"
                 satirlar.append(f"- #{g['no']} {g['baslik']} — {adlar} bekliyor")
 
-        kararlar = self.bellek.son_kararlar(8)
+        kararlar = bel.son_kararlar(8)
         if kararlar:
             satirlar += ["", "**Son kararlar** (en yenisi ustte):", ""]
             for k in kararlar:
@@ -265,15 +278,15 @@ class Brifing:
             )
         return "\n".join(satirlar)
 
-    def kural_satirlari(self) -> list:
+    def kural_satirlari(self, kanat=None, *, bel=None) -> list:
         """K2 ve lider istemleri icin kural blogu (bos ise hic yazilmaz)."""
-        kurallar = self.bellek.kurallar()
+        kurallar = (bel or self._bellek(kanat)).kurallar()
         if not kurallar:
             return []
         return (["", "**OFIS KURALLARI (insan onayli -- HER iste gecerli):**"]
                 + [f"- {k['metin']}" for k in kurallar])
 
-    def kunye_ozeti(self) -> str:
+    def kunye_ozeti(self, kanat=None) -> str:
         """LIDERIN gordugu kunye: amac, KAPSAM DISI, kisitlar, kurallar.
 
         OLCULDU (24.09.2026): lider triyajda, planlamada ve incelemede
@@ -301,12 +314,15 @@ class Brifing:
                             f"kabul edilmez): {p['kapsam_disi']}")
         if p["kisitlar"]:
             satirlar.append(f"- kisitlar: {p['kisitlar']}")
-        kurallar = self.kural_satirlari()
+        kurallar = self.kural_satirlari(kanat)
+        # TAKIM KITI: lider planlarken ve incelerken de gorur (karar verilen yer).
+        from . import kit as _kit
+        kurallar = kurallar + _kit.blok(self.db, kanat or "")
         if len(satirlar) == 2 and not kurallar:
             return ""
         return "\n".join(satirlar + kurallar)
 
-    def _alan_satiri(self, yol: str) -> str:
+    def _alan_satiri(self, yol: str, kok: str = None) -> str:
         """Yazma alanini TURUYLE yazar -- uydurmadan.
 
         OLCULEN HATA (26.09.2026, deneme D05, codex isci): burada her alanin
@@ -320,7 +336,7 @@ class Brifing:
         """
         ham = str(yol or "")
         ad = ham.rstrip("/\\")
-        kok = self.tahta.kok_klasor()
+        kok = kok if kok is not None else self.tahta.kok_klasor()
         tam = (Path(kok) / ad) if kok and not Path(ad).is_absolute() else Path(ad)
         try:
             if tam.is_dir():
@@ -364,7 +380,8 @@ class Brifing:
         "devam metni tam brifingden cok daha kisa" sinamasi kaldi.
         """
         g = self.tahta.gorev(no)
-        alan = ("\n".join(self._alan_satiri(y) for y in g["yazma_alani"])
+        _gk = self.tahta.gorev_koku(g)
+        alan = ("\n".join(self._alan_satiri(y, _gk) for y in g["yazma_alani"])
                 or "  - (belirtilmemis)")
         satirlar = [
             "## K4 — GOREVIN",
@@ -655,7 +672,8 @@ class Brifing:
         parcalar = [
             self.k1_anayasa(ajan_ad),
             self.k2_kunye(no),
-            self.k3_durum(haric_ajan=ajan_ad),
+            self.k3_durum(haric_ajan=ajan_ad,
+                          kanat=(self.tahta.gorev(no).get("kanat_id") or "")),
             self.k4_gorev(no),
         ]
         # Gecmisi olan is DEVIR paketini de tasir (bos ise hic eklenmez).
@@ -705,7 +723,11 @@ class Brifing:
         Tam brifing yeniden verilmez: devam eden oturum zaten dolu. Yalnizca
         DEGISEN sey verilir -- baglami sismeden guncel tutmanin tek yolu bu.
         """
-        olaylar = self.bellek.uyanis_ozeti(ajan_ad, son_gorulen_olay_id)
+        try:
+            _k = self.kadro.ajan(ajan_ad).get("kanat_id") or ""
+        except Exception:                    # noqa: BLE001 -- ajan yoksa ortak goz
+            _k = ""
+        olaylar = self.bellek.kapsam(_k).uyanis_ozeti(ajan_ad, son_gorulen_olay_id)
         if not olaylar:
             return ""
         satirlar = ["**Sen calisirken sunlar degisti:**", ""]

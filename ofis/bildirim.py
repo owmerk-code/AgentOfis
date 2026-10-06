@@ -105,14 +105,16 @@ def tur_anahtari(baslik: str) -> str:
             "Bir iş düştü": "dustu", "Ofis bir hafıza yazısını durdurdu": "hafiza",
             "Ajan bir beceri önerdi": "beceri", "Hafızada bir hata dolanması": "hafiza",
             "Zamanlanmış iş başladı": "zamanli",
-            "Ofis kaldığı yerden sürüyor": "kesinti"}.get(baslik, "")
+            "Ofis kaldığı yerden sürüyor": "kesinti",
+            "Takımın kota payı doldu": "kota"}.get(baslik, "")
 
 
 class Izleyici:
     """Defterdeki YENI olaylari bildirime cevirir. `tik()` bir tarama yapar."""
 
     OLAYLAR = ("onay_istendi", "donus_raporu", "kesinti_toparlandi", "hata",
-               "zamanli_calisti", "takildi", "hafiza_reddi", "beceri_taslagi", "hata_suphesi")
+               "zamanli_calisti", "takildi", "hafiza_reddi", "beceri_taslagi", "hata_suphesi",
+               "kota_payi_dolu")
 
     def __init__(self, ofis, adres: str = ""):
         self.ofis, self.adres = ofis, adres
@@ -151,6 +153,9 @@ class Izleyici:
                     ogeler.append(("Zamanlanmış iş başladı", g))
                 elif r["tur"] == "kesinti_toparlandi":
                     ogeler.append(("Ofis kaldığı yerden sürüyor", g))
+                elif r["tur"] == "kota_payi_dolu":
+                    # Sondaki [takim:pencere] isareti tekrar onlemek icin; patrona gitmez.
+                    ogeler.append(("Takımın kota payı doldu", g.rsplit(" [", 1)[0]))
                 elif r["tur"] == "hata" and g.startswith("Siradaki is dustu"):
                     ogeler.append(("Bir iş düştü", g))
             for r in c.execute(

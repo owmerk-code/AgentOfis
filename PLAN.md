@@ -28,12 +28,12 @@ işlevin gerektirdiği kadar (görünüş en sonda yeniden yapılacak).
 | K9 | ~~Ön tahmin (E74)~~ **BİTTİ (06.10):** süre+jeton karneden; kota yüzdesi yalnız tutarlı ölçümde (bugün hesap dışarıda da kullanıldığı için "bilinmiyor") | karneden tahmin; gerçekleşenle karşılaştırma |
 | K10 | ~~Bağlam göstergesi + tazeleme (E34)~~ **BİTTİ (06.10):** iki motorda gerçek tur ölçüldü (Claude 29.404/1.000.000, Codex 19.610/258.400); %80'de devir paketli temiz oturum | iki motorda yüzde gösteriliyor, eşikte devir paketiyle tazeleme |
 | K11 | ~~Onay yorgunluğu (E80)~~ **BİTTİ (06.10):** onay kartında "Bu projede hep" (kalıcı dar izin; para/silme/şifre/masaüstü asla), günlük sayaç | patron kalıcı politika verir, sayaç görünür |
-| K12 | Proje/müşteri ayrımı: ayrı hafıza, bütçe, erişim (E40) | iki projeli senaryoda sızıntı 0 |
-| K13 | Yazılım işinde görev başına git dalı (E41) | iş kendi dalında, onayla birleşir |
-| K14 | Önizleme ortamı; onay kartında "önizlemeyi aç" (E75) | yayından önce yerel önizleme açılıyor |
-| K15 | Marka/proje kiti: logo, renk, ses tonu, yasak kelime (E76) | her görsel/metin işinin brifinginde; yasak kelime kanıtta denetleniyor |
-| K16 | Entegrasyonda deneme/canlı ayrımı; canlı açık bayrak ister (E67) | canlı anahtar bayraksız kullanılamıyor |
-| K17 | Ofis kendi eksiğini önerir (E84) | sağlık + düşen işten öneri, onayla |
+| K12 | ~~Proje/müşteri ayrımı (E40)~~ **BİTTİ (06.10):** her takımın kendi hafızası/belgesi/kararı (+ortak), kendi klasörü (`Masaüstü\<takım>`), ayarlanabilir kota payı; bağlayıcı izni zaten takım başına | iki takımlı senaryoda sızıntı 0 (duman_takim_ayrimi/klasoru/payi) |
+| K13 | ~~Görev başına git dalı (E41)~~ **BİTTİ (06.10, patron: dal değil İŞ BAŞINA KAYIT):** proje git deposuysa kapanan işin ölçülen dosyaları `#no başlık` kaydına; iş kartından `git revert` | gerçek git ile 18/18 |
+| K14 | ~~Önizleme ortamı (E75)~~ **BİTTİ (06.10):** yayın onayı kartında ve iş kartında "Önizlemeyi aç" (yalnız bu bilgisayar, 127.0.0.1) | gerçek yerel sunucuyla 15/15 |
+| K15 | ~~Marka/proje kiti (E76)~~ **BİTTİ (06.10):** takım kiti (bitti tanımı + ses tonu/renk/logo/yasak kelime) brifingde ve liderin künyesinde; yasak kelime teslimde TARANIR | duman_takim_kiti 20 |
+| K16 | ~~Deneme/canlı ayrımı (E67)~~ **BİTTİ (06.10):** takımın canlı bayrağı (varsayılan deneme); kapalıyken canlıya dokunan eylem tek kapıda sorulmadan reddedilir; sorulmayan 4 canlı komut kapıya eklendi | duman_canli 41 |
+| K17 | ~~Ofis kendi eksiğini önerir (E84)~~ **BİTTİ (06.10):** ölçülmüş tekrar (düşüş, takılma, uyarı, ret döngüsü, canlı engeli, kota payı, sağlık) → öneri kartı; Onayla geliştirici listesine (`kabuk eksikler`) | duman_eksik 20 |
 | K18 | Medya: Gemini görsel, Flow video, seslendirme, müzik (E44) | ajan kabinde üretir, kredi sorulur, kanıt dosya |
 | K19 | Video kurgu: ffmpeg ile birleştirme, altyazı, ses (E48) | "kısa reklam videosu" uçtan uca |
 | K20 | Codex görsel turu pahalı (~220k jeton) (E46) | ölçülüp düşürüldü ya da gerekçesi yazıldı |

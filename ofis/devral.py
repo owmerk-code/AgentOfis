@@ -183,7 +183,7 @@ def devral(ofis, no: int, *, fabrika=motor_ac, sutun: int = 120,
         gorev = ofis.tahta.gorev(no)
 
     # OLCUM: insanin yaptigi da olculur ve geri alinabilir.
-    kok = ofis.tahta.kok_klasor()
+    kok = ofis.tahta.gorev_koku(gorev)
     once_anlik, golge_once = None, ""
     if kok:
         try:
@@ -237,7 +237,7 @@ def geri_ver(ofis, no: int, *, not_: str = "") -> dict:
     # arada yeniden basladiysa YOKTUR ve bu SOYLENIR ("degismedi" denmez).
     degisen, olcum_notu = [], ""
     once = acik.get("once_anlik")
-    kok = acik.get("kok") or ofis.tahta.kok_klasor()
+    kok = acik.get("kok") or ofis.tahta.gorev_koku(ofis.tahta.gorev(no))
     if once is not None and kok:
         try:
             sonra = degisim.anlik(kok, degisim.ofis_dosyalari(db.yol))

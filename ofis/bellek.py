@@ -154,14 +154,56 @@ class BellekHatasi(RuntimeError):
 
 
 class Bellek:
-    def __init__(self, db, proje_id: str) -> None:
+    """TAKIM KAPSAMI (06.10.2026, patron: "her takim ayri", Asama 4 / E40).
+
+    Bilgi, karar, kural ve hafiza onerisi bir TAKIMA (`kanat_id`) baglidir;
+    bos `kanat_id` ORTAK hafizadir (patronun her yerde gecerli tercihleri ve
+    takimlardan once yazilmis her sey). Uc kip:
+
+    * `kanat_id=None` -- PANELIN butun gorunumu: her sey okunur; yazim
+      acikca verilen takima, verilmezse ortaga.
+    * `kanat_id="<id>"` -- bir TAKIMIN gozu (`kapsam(kanat)`): ortak + kendi
+      takimi okunur, baska takimin hicbir sey; yazim kendi takimina. Ajan,
+      lider, brifing ve ajan araclari YALNIZ bu kipte okur -- sizinti olmasin.
+    * `kanat_id=""` -- yalniz ortak.
+
+    Ayni konu hem ortakta hem takimda varsa takiminki gecerlidir (takim
+    kendi degerini yazmistir).
+    """
+
+    def __init__(self, db, proje_id: str, kanat_id=None) -> None:
         self.db = db
         self.proje_id = proje_id
+        self.kanat_id = kanat_id
+
+    def kapsam(self, kanat_id) -> "Bellek":
+        """Bu takimin gozuyle bakan bellek (ortak + kendi takimi)."""
+        return Bellek(self.db, self.proje_id, kanat_id or "")
+
+    def _kosul(self, tablo_on: str = "") -> tuple:
+        """Okuma kosulu: (" AND (...)", (params)). Panel kipinde bos."""
+        if self.kanat_id is None:
+            return "", ()
+        k = f"{tablo_on}kanat_id"
+        return f" AND ({k} = '' OR {k} = ?)", (self.kanat_id,)
+
+    def _yazim(self, kanat_id=None) -> str:
+        """Yazimin takimi: acikca verilen > bellegin takimi > ortak."""
+        if kanat_id is not None:
+            return kanat_id or ""
+        return self.kanat_id or ""
+
+    def gorev_kanati(self, gorev_id) -> str:
+        if not gorev_id:
+            return self._yazim()
+        with self.db.baglanti() as conn:
+            r = conn.execute("SELECT kanat_id FROM gorev WHERE id = ?", (gorev_id,)).fetchone()
+        return (r["kanat_id"] if r else "") or ""
 
     # -- olgular -----------------------------------------------------------
 
     def olgu_yaz(self, konu: str, icerik: str, *, kaynak: str = "",
-                 gecerli_baslangic: str = None) -> dict:
+                 gecerli_baslangic: str = None, kanat_id=None) -> dict:
         """Yeni olgu yazar ve AYNI KONUDAKI gecerli olguyu kapatir.
 
         Kapatma otomatiktir cunku elle yapilirsa unutulur; unutulan eski olgu
@@ -176,19 +218,22 @@ class Bellek:
         an = simdi()
         baslangic = gecerli_baslangic or an
         yeni_id = uuid.uuid4().hex
+        kanat = self._yazim(kanat_id)
 
         with self.db.baglanti() as conn:
+            # Yalniz AYNI KAPSAMDAKI eski olgu kapanir: takimin degeri
+            # ortaktakini (ya da baska takiminkini) devirmez.
             eski = conn.execute(
                 "SELECT id, icerik FROM olgu WHERE proje_id = ? AND konu = ? "
-                "AND gecerli_bitis IS NULL",
-                (self.proje_id, konu),
+                "AND gecerli_bitis IS NULL AND kanat_id = ?",
+                (self.proje_id, konu, kanat),
             ).fetchall()
 
             conn.execute(
                 "INSERT INTO olgu (id, proje_id, konu, icerik, kaynak, "
-                "gecerli_baslangic, gecerli_bitis, kaydedildi, gecersiz_kilan) "
-                "VALUES (?, ?, ?, ?, ?, ?, NULL, ?, NULL)",
-                (yeni_id, self.proje_id, konu, icerik, kaynak, baslangic, an),
+                "gecerli_baslangic, gecerli_bitis, kaydedildi, gecersiz_kilan, kanat_id) "
+                "VALUES (?, ?, ?, ?, ?, ?, NULL, ?, NULL, ?)",
+                (yeni_id, self.proje_id, konu, icerik, kaynak, baslangic, an, kanat),
             )
 
             for row in eski:
@@ -204,26 +249,39 @@ class Bellek:
             )
         else:
             self.db.olay_yaz(self.proje_id, "olgu", f"{konu}: {icerik}")
-        return {"id": yeni_id, "konu": konu, "icerik": icerik}
+        return {"id": yeni_id, "konu": konu, "icerik": icerik, "kanat_id": kanat}
 
     def gecerli_olgular(self, konular=None) -> list:
-        """Su an dogru olan olgular. Brifing yalnizca bunlari gorur."""
+        """Su an dogru olan olgular (bu bellegin GOZUYLE). Brifing yalnizca
+        bunlari gorur. Takim gozunde ayni konu ortakta da varsa takiminki."""
+        kosul, prm = self._kosul()
         with self.db.baglanti() as conn:
             if konular:
                 isaret = ",".join("?" for _ in konular)
                 rows = conn.execute(
-                    f"SELECT konu, icerik, kaynak, gecerli_baslangic FROM olgu "
-                    f"WHERE proje_id = ? AND gecerli_bitis IS NULL AND konu IN ({isaret}) "
-                    f"ORDER BY konu",
-                    (self.proje_id, *konular),
+                    f"SELECT konu, icerik, kaynak, gecerli_baslangic, kanat_id FROM olgu "
+                    f"WHERE proje_id = ? AND gecerli_bitis IS NULL AND konu IN ({isaret})"
+                    f"{kosul} ORDER BY konu, kanat_id DESC",
+                    (self.proje_id, *konular, *prm),
                 ).fetchall()
             else:
                 rows = conn.execute(
-                    "SELECT konu, icerik, kaynak, gecerli_baslangic FROM olgu "
-                    "WHERE proje_id = ? AND gecerli_bitis IS NULL ORDER BY konu",
-                    (self.proje_id,),
+                    "SELECT konu, icerik, kaynak, gecerli_baslangic, kanat_id FROM olgu "
+                    f"WHERE proje_id = ? AND gecerli_bitis IS NULL{kosul} "
+                    "ORDER BY konu, kanat_id DESC",
+                    (self.proje_id, *prm),
                 ).fetchall()
-        return [dict(r) for r in rows]
+        out = [dict(r) for r in rows]
+        if self.kanat_id:
+            # kanat_id DESC: takiminki ('<id>') ortaktan ('') once gelir.
+            gorulen, tek = set(), []
+            for o in out:
+                a = konu_anahtari(o["konu"])
+                if a not in gorulen:
+                    gorulen.add(a)
+                    tek.append(o)
+            out = tek
+        return out
 
 
     def ilgili_olgular(self, gorev_metni: str, *, esik: int = None,
@@ -301,17 +359,18 @@ class Bellek:
         asil = self.takma_haritasi().get(a)
         if asil:
             return asil
+        kosul, prm = self._kosul()
         with self.db.baglanti() as conn:
             rows = conn.execute(
-                "SELECT DISTINCT konu FROM olgu WHERE proje_id = ?",
-                (self.proje_id,)).fetchall()
+                f"SELECT DISTINCT konu FROM olgu WHERE proje_id = ?{kosul}",
+                (self.proje_id, *prm)).fetchall()
         for r in rows:
             if konu_anahtari(r["konu"]) == a:
                 return r["konu"]
         return ""
 
     def bilgi_ekle(self, konu: str, icerik: str, *, yazan: str,
-                   gorev_no: int = None) -> dict:
+                   gorev_no: int = None, kanat_id=None) -> dict:
         """Olgu katmaninin TEK giris kapisi: ajan, panel, kabuk.
 
         Uc kural, ucu de bir hata sinifina karsi:
@@ -370,7 +429,7 @@ class Bellek:
             kaynak = KAYNAK_INSAN
         else:
             kaynak = f"ajan:{yazan}" + (f" #{gorev_no}" if gorev_no else "")
-        r = self.olgu_yaz(konu, icerik, kaynak=kaynak)
+        r = self.olgu_yaz(konu, icerik, kaynak=kaynak, kanat_id=kanat_id)
         r["durum"] = "guncellendi" if mevcut else "yeni"
         r["kaynak"] = kaynak
         return r
@@ -408,6 +467,8 @@ class Bellek:
             for b in olgular[i + 1:]:
                 if konu_anahtari(a["konu"]) == konu_anahtari(b["konu"]):
                     continue
+                if (a.get("kanat_id") or "") != (b.get("kanat_id") or ""):
+                    continue              # farkli takimlarin bilgisi ayni bilgi degildir
                 ortak_konu = _ortak(ka, _kelimeler(b["konu"]))
                 if not ortak_konu:
                     continue
@@ -452,13 +513,19 @@ class Bellek:
         if konu_anahtari(k_asil) == konu_anahtari(k_takma):
             raise BellekHatasi("Ayni konu kendisiyle birlestirilemez.")
         an = simdi()
+        ka = {o.get("kanat_id") or "" for o in self.gecerli_olgular([k_asil])}
+        kt = {o.get("kanat_id") or "" for o in self.gecerli_olgular([k_takma])}
+        ortak_k = sorted(ka & kt)
+        if not ortak_k:
+            raise BellekHatasi("Farkli takimlarin bilgileri birlestirilemez.")
+        kn = ortak_k[-1]
         with self.db.baglanti() as conn:
             asil_id = conn.execute(
-                "SELECT id FROM olgu WHERE proje_id = ? AND konu = ? AND gecerli_bitis IS NULL",
-                (self.proje_id, k_asil)).fetchone()["id"]
+                "SELECT id FROM olgu WHERE proje_id = ? AND konu = ? AND gecerli_bitis IS NULL "
+                "AND kanat_id = ?", (self.proje_id, k_asil, kn)).fetchone()["id"]
             t = conn.execute(
-                "SELECT id, icerik FROM olgu WHERE proje_id = ? AND konu = ? AND gecerli_bitis IS NULL",
-                (self.proje_id, k_takma)).fetchone()
+                "SELECT id, icerik FROM olgu WHERE proje_id = ? AND konu = ? AND gecerli_bitis IS NULL "
+                "AND kanat_id = ?", (self.proje_id, k_takma, kn)).fetchone()
             conn.execute("UPDATE olgu SET gecerli_bitis = ?, gecersiz_kilan = ? WHERE id = ?",
                          (an, asil_id, t["id"]))
             conn.execute(
@@ -521,14 +588,15 @@ class Bellek:
             with self.db.baglanti() as conn:
                 ayni = conn.execute(
                     "SELECT 1 FROM hafiza_onerisi WHERE proje_id = ? AND durum = 'bekliyor' "
-                    "AND konu = ? AND icerik = ?", (self.proje_id, k, icerik)).fetchone()
+                    "AND konu = ? AND icerik = ? AND kanat_id = ?",
+                    (self.proje_id, k, icerik, self._yazim())).fetchone()
                 if ayni:
                     continue
                 oid = uuid.uuid4().hex
                 conn.execute(
                     "INSERT INTO hafiza_onerisi (id, proje_id, konu, icerik, alinti, oneren, "
-                    "durum, olusturuldu) VALUES (?,?,?,?,?,?,'bekliyor',?)",
-                    (oid, self.proje_id, k, icerik, alinti[:300], oneren, simdi()))
+                    "durum, olusturuldu, kanat_id) VALUES (?,?,?,?,?,?,'bekliyor',?,?)",
+                    (oid, self.proje_id, k, icerik, alinti[:300], oneren, simdi(), self._yazim()))
             self.db.olay_yaz(self.proje_id, "hafiza_onerisi",
                              f"{k} -> {icerik} (patron: \"{alinti[:120]}\")", ajan_ad=oneren)
             acilan.append({"id": oid, "konu": k, "icerik": icerik, "alinti": alinti})
@@ -542,14 +610,15 @@ class Bellek:
         out = []
         for r in rows:
             d = dict(r)
-            m = self.gecerli_olgular([d["konu"]])
+            m = self.kapsam(d.get("kanat_id") or "").gecerli_olgular([d["konu"]])
             d["simdiki"] = m[0]["icerik"] if m else ""
             out.append(d)
         return out
 
     def hafiza_onerisi_cevapla(self, oneri_id: str, *, yaz: bool,
-                               kim: str = KAYNAK_INSAN) -> dict:
-        """Patronun karari: `yaz` -> bilgi INSANIN bilgisi olarak yazilir."""
+                               kim: str = KAYNAK_INSAN, herkese: bool = False) -> dict:
+        """Patronun karari: `yaz` -> bilgi INSANIN bilgisi olarak yazilir.
+        Onerinin takimina; `herkese` ise ORTAK hafizaya (her takim gorur)."""
         if kim != KAYNAK_INSAN:
             raise BellekHatasi("Hafiza onerisini yalniz patron cevaplar.")
         with self.db.baglanti() as conn:
@@ -561,7 +630,8 @@ class Bellek:
             raise BellekHatasi(f"Bu oneri zaten '{r['durum']}'.")
         sonuc = None
         if yaz:
-            sonuc = self.bilgi_ekle(r["konu"], r["icerik"], yazan=KAYNAK_INSAN)
+            sonuc = self.bilgi_ekle(r["konu"], r["icerik"], yazan=KAYNAK_INSAN,
+                                    kanat_id="" if herkese else (r["kanat_id"] or ""))
         with self.db.baglanti() as conn:
             conn.execute("UPDATE hafiza_onerisi SET durum = ?, cevaplandi = ? WHERE id = ?",
                          ("yazildi" if yaz else "reddedildi", simdi(), oneri_id))
@@ -588,9 +658,11 @@ class Bellek:
             raise BellekHatasi("Bilgiyi yalniz insan yanlis diye kapatir.")
         k = self._konu_bul(konu) or konu
         an = simdi()
+        kosul, prm = self._kosul()
         with self.db.baglanti() as conn:
             r = conn.execute("SELECT id, icerik FROM olgu WHERE proje_id = ? AND konu = ? "
-                             "AND gecerli_bitis IS NULL", (self.proje_id, k)).fetchone()
+                             f"AND gecerli_bitis IS NULL{kosul} ORDER BY kanat_id DESC",
+                             (self.proje_id, k, *prm)).fetchone()
             if not r:
                 raise BellekHatasi(f"'{konu}' diye gecerli bir bilgi yok.")
             conn.execute("UPDATE olgu SET gecerli_bitis = ?, yanlis = ? WHERE id = ?",
@@ -603,8 +675,9 @@ class Bellek:
     def _yanlis_mi(self, konu: str, icerik: str) -> str:
         """Bu konu+icerik daha once insanca YANLIS diye kapatildi mi? (sebep)"""
         with self.db.baglanti() as conn:
+            kosul, prm = self._kosul()
             for r in conn.execute("SELECT icerik, yanlis FROM olgu WHERE proje_id = ? AND konu = ? "
-                                  "AND yanlis != ''", (self.proje_id, konu)):
+                                  f"AND yanlis != ''{kosul}", (self.proje_id, konu, *prm)):
                 # Bosluk/noktalama farki ayni bilgi sayilir (olculdu: cift bosluk kaciyordu).
                 if _sadelestir(r["icerik"]).split() == _sadelestir(icerik).split():
                     return r["yanlis"]
@@ -626,10 +699,11 @@ class Bellek:
             return all(k in t for k in kelimeler)
 
         out = []
+        kosul, prm = self._kosul()
         with self.db.baglanti() as conn:
             for r in conn.execute("SELECT konu, icerik, kaynak, gecerli_bitis, yanlis, kaydedildi "
-                                  "FROM olgu WHERE proje_id = ? ORDER BY kaydedildi DESC",
-                                  (self.proje_id,)):
+                                  f"FROM olgu WHERE proje_id = ?{kosul} ORDER BY kaydedildi DESC",
+                                  (self.proje_id, *prm)):
                 if uyar(r["konu"], r["icerik"]):
                     durum = ("yanlis" if r["yanlis"] else "eski") if r["gecerli_bitis"] else "gecerli"
                     out.append({"tur": "bilgi", "baslik": r["konu"], "metin": r["icerik"],
@@ -641,8 +715,8 @@ class Bellek:
                                 "metin": r["ders"], "kaynak": r["ajan_ad"], "id": r["id"],
                                 "durum": "yanlis" if r["kaldirildi"] else "gecerli",
                                 "an": r["guncellendi"]})
-            for r in conn.execute("SELECT karar, gerekce, veren, olusturuldu FROM karar WHERE proje_id = ? "
-                                  "ORDER BY olusturuldu DESC LIMIT 500", (self.proje_id,)):
+            for r in conn.execute("SELECT karar, gerekce, veren, olusturuldu FROM karar WHERE proje_id = ?"
+                                  f"{kosul} ORDER BY olusturuldu DESC LIMIT 500", (self.proje_id, *prm)):
                 if uyar(r["karar"], r["gerekce"]):
                     out.append({"tur": "karar", "baslik": r["veren"], "metin": r["karar"],
                                 "kaynak": r["gerekce"][:200], "durum": "gecerli", "an": r["olusturuldu"]})
@@ -691,15 +765,16 @@ class Bellek:
     def kurallar(self, *, hepsi: bool = False) -> list:
         """Gecerli kurallar (eklenme sirasiyla). `hepsi`: kaldirilanlar da."""
         kosul = "" if hepsi else " AND kaldirildi IS NULL"
+        kk, prm = self._kosul()
         with self.db.baglanti() as conn:
             rows = conn.execute(
-                "SELECT * FROM kural WHERE proje_id = ?" + kosul
-                + " ORDER BY olusturuldu, rowid", (self.proje_id,)).fetchall()
+                "SELECT * FROM kural WHERE proje_id = ?" + kosul + kk
+                + " ORDER BY olusturuldu, rowid", (self.proje_id, *prm)).fetchall()
         return [dict(r) for r in rows]
 
     def kural_ekle(self, metin: str, gerekce: str, *,
                    veren: str = KAYNAK_INSAN, kaynak_tur: str = "insan",
-                   kaynak: str = "") -> dict:
+                   kaynak: str = "", kanat_id=None) -> dict:
         """Kural HER brifinge girer -- yani bir politika karari ve her
         turun jetonundan odenir.
 
@@ -726,19 +801,20 @@ class Bellek:
                 "Gerekce zorunlu. Kural her ise girer; neden konuldugu "
                 "bilinmezse kaldirilmasi gereken gun de bilinmez.")
         a = konu_anahtari(metin)
-        if any(konu_anahtari(k["metin"]) == a for k in self.kurallar()):
+        kanat = self._yazim(kanat_id)
+        if any(konu_anahtari(k["metin"]) == a for k in self.kapsam(kanat).kurallar()):
             raise BellekHatasi("Bu kural zaten gecerli.")
         kid = uuid.uuid4().hex
         with self.db.baglanti() as conn:
             conn.execute(
                 "INSERT INTO kural (id, proje_id, metin, kaynak_tur, kaynak,"
-                " gerekce, veren, olusturuldu) VALUES (?,?,?,?,?,?,?,?)",
+                " gerekce, veren, olusturuldu, kanat_id) VALUES (?,?,?,?,?,?,?,?,?)",
                 (kid, self.proje_id, metin, kaynak_tur, str(kaynak or ""),
-                 gerekce, veren, simdi()))
+                 gerekce, veren, simdi(), kanat))
         self.karar_yaz(f"Kural eklendi: {metin}", gerekce, veren,
-                       tur="kapsam")
+                       tur="kapsam", kanat_id=kanat)
         self.db.olay_yaz(self.proje_id, "kural", f"eklendi: {metin}")
-        return {"id": kid, "metin": metin, "kaynak_tur": kaynak_tur}
+        return {"id": kid, "metin": metin, "kaynak_tur": kaynak_tur, "kanat_id": kanat}
 
     def olgudan_kural(self, konu: str, gerekce: str, *,
                       veren: str = KAYNAK_INSAN) -> dict:
@@ -755,7 +831,7 @@ class Bellek:
         olgu = liste[0]
         return self.kural_ekle(f"{olgu['konu']}: {olgu['icerik']}", gerekce,
                                veren=veren, kaynak_tur="olgu",
-                               kaynak=olgu["konu"])
+                               kaynak=olgu["konu"], kanat_id=olgu.get("kanat_id") or "")
 
     def _kimlik_coz(self, tablo: str, onek: str) -> str:
         """Kisa kimlik (liste 8 hane gosterir) BENZERSIZSE kabul edilir.
@@ -788,8 +864,13 @@ class Bellek:
                              (ders_id, self.proje_id)).fetchone()
         if not d:
             raise BellekHatasi(f"Ders bulunamadi: {ders_id}")
+        # Ders bir ajanin; kurali o ajanin TAKIMINA (ortaga degil).
+        with self.db.baglanti() as conn:
+            a = conn.execute("SELECT kanat_id FROM ajan WHERE proje_id = ? AND ad = ?",
+                             (self.proje_id, d["ajan_ad"])).fetchone()
         return self.kural_ekle(" ".join(d["ders"].split()), gerekce, veren=veren,
-                               kaynak_tur="ders", kaynak=d["id"])
+                               kaynak_tur="ders", kaynak=d["id"],
+                               kanat_id=(a["kanat_id"] if a else "") or "")
 
     def kural_kaldir(self, kural_id: str, sebep: str, *,
                      veren: str = KAYNAK_INSAN) -> dict:
@@ -841,10 +922,11 @@ class Bellek:
     def konu_gecmisi(self, konu: str) -> list:
         """Bir konunun tum gecmisi -- 'eskiden ne kadardi' sorusu icin."""
         with self.db.baglanti() as conn:
+            kosul, prm = self._kosul()
             rows = conn.execute(
-                "SELECT icerik, kaynak, gecerli_baslangic, gecerli_bitis, kaydedildi "
-                "FROM olgu WHERE proje_id = ? AND konu = ? ORDER BY gecerli_baslangic DESC",
-                (self.proje_id, konu),
+                "SELECT icerik, kaynak, gecerli_baslangic, gecerli_bitis, kaydedildi, kanat_id "
+                f"FROM olgu WHERE proje_id = ? AND konu = ?{kosul} ORDER BY gecerli_baslangic DESC",
+                (self.proje_id, konu, *prm),
             ).fetchall()
         return [dict(r) for r in rows]
 
@@ -852,7 +934,8 @@ class Bellek:
 
     def karar_yaz(self, karar: str, gerekce: str, veren: str, *,
                   tur: str = "genel", gorev_id: str = None,
-                  etkilenen_yollar=None, denetle: bool = False) -> dict:
+                  etkilenen_yollar=None, denetle: bool = False,
+                  kanat_id=None) -> dict:
         """Gerekce ZORUNLUDUR.
 
         Gerekcesiz karar, alti ay sonra 'bunu neden boyle yapmistik' sorusuna
@@ -873,12 +956,15 @@ class Bellek:
         if denetle and veren != KAYNAK_INSAN:
             self.koruma_kapisi(veren, "karar", f"{karar} -- {gerekce}")
         karar_id = uuid.uuid4().hex
+        # Kararin takimi: acikca verilen > isin takimi > bellegin takimi.
+        kanat = (kanat_id if kanat_id is not None
+                 else (self.gorev_kanati(gorev_id) if gorev_id else self._yazim()))
         with self.db.baglanti() as conn:
             conn.execute(
                 "INSERT INTO karar (id, proje_id, gorev_id, tur, karar, gerekce, "
-                "veren, etkilenen_yollar, olusturuldu) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                "veren, etkilenen_yollar, olusturuldu, kanat_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 (karar_id, self.proje_id, gorev_id, tur, karar, gerekce, veren,
-                 json.dumps(etkilenen_yollar or [], ensure_ascii=False), simdi()),
+                 json.dumps(etkilenen_yollar or [], ensure_ascii=False), simdi(), kanat or ""),
             )
         self.db.olay_yaz(self.proje_id, "karar", f"{veren}: {karar}",
                          ajan_ad=veren, gorev_id=gorev_id)
@@ -896,11 +982,12 @@ class Bellek:
         sunar -- yani devrilmis bir karar, gecerliymis gibi okunur. Olculdu:
         ayni saniyede yazilan uc karar ters sirada dondu.
         """
+        kosul, prm = self._kosul()
         with self.db.baglanti() as conn:
             rows = conn.execute(
                 "SELECT karar, gerekce, veren, tur, olusturuldu FROM karar "
-                "WHERE proje_id = ? ORDER BY olusturuldu DESC, rowid DESC LIMIT ?",
-                (self.proje_id, adet),
+                f"WHERE proje_id = ?{kosul} ORDER BY olusturuldu DESC, rowid DESC LIMIT ?",
+                (self.proje_id, *prm, adet),
             ).fetchall()
         return [dict(r) for r in rows]
 
@@ -916,14 +1003,56 @@ class Bellek:
         """
         with self.db.baglanti() as conn:
             rows = conn.execute(
-                "SELECT id, ajan_ad, tur, govde, olusturuldu FROM olay "
+                "SELECT id, ajan_ad, gorev_id, tur, govde, olusturuldu FROM olay "
                 "WHERE proje_id = ? AND id > ? AND ajan_ad != ? "
                 "AND tur IN ('karar', 'olgu', 'olgu_guncellendi', 'kural', "
                 "'kapandi', 'iptal', 'ret') "
                 "ORDER BY id",
                 (self.proje_id, son_gorulen_olay_id, ajan_ad),
             ).fetchall()
-        return [dict(r) for r in rows]
+            out = [dict(r) for r in rows]
+            if self.kanat_id is None:
+                return out
+            # TAKIM GOZU: isin ya da yazanin takimi baskaysa olay GELMEZ;
+            # sahipsiz olgu/kural olayi ancak bu gozle gorunen konuysa.
+            uyeler = {r[0]: (r[1] or "") for r in conn.execute(
+                "SELECT ad, kanat_id FROM ajan WHERE proje_id = ?", (self.proje_id,))}
+            gorev_k = {r[0]: (r[1] or "") for r in conn.execute(
+                "SELECT id, kanat_id FROM gorev WHERE proje_id = ?", (self.proje_id,))}
+            # KARAR kendi kapsamini tasir (ortak karar herkese): olay, bu
+            # gozle gorunen bir kararin olayiysa gelir -- yazanin takimina
+            # bakilmaz (liderin ORTAK karari takimsiz ajana da gider).
+            kosul, prm = self._kosul()
+            kararlar = {f"{r[0]}: {r[1]}" for r in conn.execute(
+                f"SELECT veren, karar FROM karar WHERE proje_id = ?{kosul}",
+                (self.proje_id, *prm))}
+        gorunen = {konu_anahtari(o["konu"]) for o in self.gecerli_olgular()}
+        kurallar = {konu_anahtari(k["metin"]) for k in self.kurallar()}
+        bizim = ("", self.kanat_id)
+        tut = []
+        for o in out:
+            if o["tur"] == "karar":
+                if o["govde"] in kararlar:
+                    tut.append(o)
+                continue
+            gid = o.get("gorev_id")
+            if gid and gid in gorev_k:
+                if gorev_k[gid] in bizim:
+                    tut.append(o)
+                continue
+            if o["ajan_ad"] in uyeler:
+                if uyeler[o["ajan_ad"]] in bizim:
+                    tut.append(o)
+                continue
+            if o["tur"] in ("olgu", "olgu_guncellendi"):
+                if konu_anahtari(str(o["govde"]).split(":", 1)[0]) in gorunen:
+                    tut.append(o)
+            elif o["tur"] == "kural":
+                if konu_anahtari(str(o["govde"]).split(":", 1)[-1]) in kurallar:
+                    tut.append(o)
+            else:
+                tut.append(o)
+        return tut
 
     def son_olay_id(self) -> int:
         with self.db.baglanti() as conn:

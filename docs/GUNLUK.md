@@ -14612,3 +14612,67 @@ JavaScript'ten okunamıyor. duman_telefon 47, duman_devral 74.
 KALAN (patron): Tailscale'i bilgisayara + telefona kur ve gir, `tailscale serve
 --bg 8900`, Ayarlar > Telefon > Kod al, telefonda `https://<ad>.ts.net/telefon`,
 "Bildirimleri aç" + "Deneme bildirimi" (iPhone'da önce Ana Ekrana Ekle).
+
+## 06.10.2026 — Aşama 4 (proje yapısı) — kod tarafı kapandı
+
+TAKIM AYRIMI (patron: "her takım ayrı" + ortak hafıza). Hafıza, kural,
+belge, karar, öneri `kanat_id` taşır ('' = ortak); ajan ortak + kendi
+takımını görür, aynı konuda takımınki ortaktakini ezer. 15 okuma yolu
+kapsamlandı (brifing K2/K3, lider, inceleme, ön kapı, plan, danışma, uyanış,
+MCP durum/belge_ara/bilgi_yaz, panel). Uyanış özetindeki karar olayı ilk
+sürümde YAZANIN takımına göre süzülüyordu → liderin ORTAK kararı takımsız
+ajana gitmiyordu (duman_cekirdek yakaladı); karar artık kendi kapsamıyla.
+duman_takim_ayrimi 33 (mutasyon 15 düşüş).
+
+TAKIM KLASÖRÜ: `kanat.klasor`; tek çözücü `tahta.kanat_koku` / `Ofis.kok_klasoru(kanat)`
+/ `Ofis.isin_koku`. Yeni takım gerçek ofiste `Masaüstü\<takım>` (sınamada
+projenin içinde); başkasının kökü / ofisin yeri ise `-2`. Kilit KÖKE göre:
+farklı kökteki `index.html` iki ayrı dosya, aynı kökte yine çakışır (Yasa 1).
+Yakalanan iki hata: `gorev_ac` ikinci doğrulama çağrısı projenin köküne
+bakıyordu; klasör değişimi reddedilmeden ÖNCE klasör açılıyordu. Yalıtılmış
+(kendi klasörlü) ajana taşımada dokunulmaz. Mevcut takımlar projenin
+kökünde kalır (taşıma patronun kararı: Organizasyon > Düzenle > Klasör).
+duman_takim_klasoru 32.
+
+KOTA PAYI (patron: "olsun, ayarlanabilir", varsayılan sınırsız): takım % =
+hesabın pencere doluluğu × (pencere başından beri takımın tur jetonu / ofisin
+o hesaptaki jetonu). Patronun ofis dışı kullanımı da bu oranla dağılır —
+takım büyük görünür, küçük değil (kapalı kalan taraf). Dolunca: sıradaki
+mesajı bekler (öteki takımınki alınır), halka hazır işini başlatmaz,
+pencere başına bir bildirim; zamanlayıcı tikinde sıra yeniden yoklanır.
+duman_takim_payi 28 (4 mutasyon).
+
+İŞ BAŞINA GİT KAYDI (patron seçti: dal değil kayıt — ortak kökte aynı anda
+iki dal açılamaz). Proje git deposuysa kapanışta yalnız işin ÖLÇÜLEN
+dosyaları `#no başlık` kaydına; depo kökü/alt klasör öneki, patronun
+hazırladığı (staged) değişiklik karışmaz (yol verilmiş commit), yoksayılan /
+`.ofis` / atfı belirsiz alınmaz, kanca atlanmaz (reddederse uyarı), depo yoksa
+`init` yok. İş kartında "Bu işi geri al" = `git revert`. duman_git_kaydi 18
+(GERÇEK git; `--only` mutasyonu geçti çünkü yol verilen commit zaten öyle
+davranıyor — yolsuz commit mutasyonu 8 düşüş).
+
+TAKIM KİTİ: bitti tanımı + marka kiti (ses tonu, renk, logo, yasak kelime)
+işçinin K2'sinde ve liderin künyesinde; yasak kelime rica değil ÖLÇÜM:
+inceleme işin diskte değişen metin dosyalarını + kanıtları tarar (kelime
+sınırı, Türkçe I/İ). Ret dayanağı kit satırlarını da kabul eder.
+duman_takim_kiti 20.
+
+DENEME / CANLI: takım bayrağı (varsayılan DENEME). Kapalıyken üretime
+dağıtım, canlı ödeme (`--live`, `sk_live_`), paket yayımı, mağaza/reklam
+bağlayıcısına yazma tek kapıda SORULMADAN reddedilir — patronun izni bile
+açmaz; betiğin içi de taranır. ÖLÇÜMLE BULUNAN AÇIK: `vercel --prod`,
+`vercel promote`, `stripe … --live`, `shopify theme push/publish` bugün HİÇ
+sorulmuyordu ("deploy" kelimesi yok) → riskli.py yayın/para kurallarına
+eklendi. duman_mcp'nin reklam onay akışı artık canlı kipte ölçülüyor.
+duman_canli 41.
+
+ÖNİZLEME: yayın onayı kartında ve iş kartında "Önizlemeyi aç": giriş sayfası
+ölçülür (kök, dist/, build/ …), klasör 127.0.0.1'de ayrı küçük sunucuda
+(derlenmiş sitenin `/assets/...` mutlak yolları çalışsın diye; panelin
+altından sunulsa sayfa boş görünürdü), nokta ile başlayan yol verilmez,
+uzaktan (telefon) açılmaz. duman_onizleme 15.
+
+KENDİ EKSİĞİ: model yok; son 7 günün tekrar eden düşüş / takılma / uyarı /
+ret döngüsü / canlı engeli / kota payı + sağlık uyarıları → "OFİSİN ÖNERİSİ"
+kartı; Onayla = `ev/ofis_eksikleri.jsonl` (`kabuk eksikler`), Gereksiz =
+bir daha gelmez. duman_eksik 20.

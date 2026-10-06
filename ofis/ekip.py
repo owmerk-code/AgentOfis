@@ -403,7 +403,7 @@ class Ekip:
         # tanimli degil" diye reddeder. Yani panelden kurulan ekip HIC
         # calisamazdi. Kural tek yerde: `Ofis.kok_klasoru` (karar 18.09).
         if not klasor:
-            klasor = self.ofis.kok_klasoru()
+            klasor = self.ofis.kok_klasoru(o.get("kanat_id") or None)
             Path(klasor).mkdir(parents=True, exist_ok=True)
 
         alinan = []

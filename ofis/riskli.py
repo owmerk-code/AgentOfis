@@ -847,6 +847,11 @@ _KOD_SILME_KALIPLARI = (
 KOD_SILME = _kur(_KOD_SILME_KALIPLARI)
 
 KABUK_KURALLARI = (
+    # CANLI ODEME (06.10.2026, K16 olcumu): `stripe ... --live` ve canli
+    # anahtarla calisan komut SORULMUYORDU ("para" kelimesi yok).
+    ("para", _kur((
+        r"\bstripe\b[^\n]*\s--live\b", r"\b(?:sk|rk)_live_[0-9a-z]",
+    ))),
     ("silme", _kur((
         _B + r"rm\s", _B + r"rmdir\b", _B + r"(?:del|erase|rd|ri)\s",
         # `Remove-Item Env:X` ortam DEGISKENI kaldirir, dosya degil (30.09
@@ -873,6 +878,11 @@ KABUK_KURALLARI = (
         r"\b(?:npm|yarn|pnpm)\s+publish\b", r"\btwine\s+upload\b",
         r"\bdocker\s+push\b", r"\bgh\s+release\s+create\b", r"\bdeploy\b",
         r"\bwrangler\s+(?:deploy|publish)\b", r"\bkubectl\s+(?:apply|delete)\b",
+        # 06.10.2026 (K16 olcumu): "deploy" kelimesi gecmeyen uretim dagitimi
+        # SORULMUYORDU: `vercel --prod`, `vercel promote`, shopify tema.
+        r"\bvercel\b[^\n]*?(?<![\w-])--prod(?:uction)?\b", r"\bvercel\s+promote\b",
+        r"\bshopify\s+theme\s+publish\b",
+        r"\bshopify\s+theme\s+push\b(?![^\n]*--(?:unpublished|development))",
     ))),
     # MASAUSTU (30.09.2026). OLCULDU, gercek ofis: patron "tarayiciyi ac
     # ve youtube'a gir" dedi; codex ajani ofisin tarayicisini degil

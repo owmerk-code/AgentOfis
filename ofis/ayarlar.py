@@ -34,6 +34,7 @@ BILDIRIM_TURLERI = {
     "beceri": ("Ajan bir beceri önerdi", True),
     "zamanli": ("Zamanlanmış iş başladı", True),
     "kesinti": ("Ofis kaldığı yerden sürüyor", True),
+    "kota": ("Takımın kota payı doldu", True),
 }
 BILDIRIM_KAPALI = "bildirim_kapali"
 
@@ -59,7 +60,7 @@ def oku(ofis) -> dict:
     from .koltuk import Koltuk
     from .motor import tui
     from .orkestra import kabin_izle_acik_mi
-    from . import karne
+    from . import karne, git_kaydi
     db, pid = ofis.db, ofis.proje_id
     hatalar = []
     kapali = bildirim_kapalilar(db, pid)
@@ -73,6 +74,7 @@ def oku(ofis) -> dict:
             # KARNE (03.10.2026): isin motorunu ofis tecrubesiyle secer.
             "motor_secimi": "karne" if karne.secim_acik_mi(db, pid) else "ajan",
             "capraz_inceleme": karne.capraz_acik_mi(db, pid),
+            "git_is_kaydi": git_kaydi.acik_mi(db, pid),
             "karne": karne.ozet()["motorlar"],
         },
         "bildirim": {
@@ -170,6 +172,9 @@ def yaz(ofis, anahtar: str, deger) -> None:
         db.ayar_yaz(pid, karne.AYAR, deger)
     elif anahtar == "capraz_inceleme":
         db.ayar_yaz(pid, karne.CAPRAZ_AYAR, "acik" if deger else "kapali")
+    elif anahtar == "git_is_kaydi":
+        from . import git_kaydi
+        db.ayar_yaz(pid, git_kaydi.AYAR, "acik" if deger else "kapali")
     elif anahtar == "kabin_izle":
         db.ayar_yaz(pid, KABIN_IZLE_ANAHTARI, "acik" if deger else "kapali")
     elif anahtar == "bildirim_turu":

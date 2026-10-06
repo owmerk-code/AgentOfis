@@ -213,7 +213,7 @@ class Orkestra:
         ]
         # KUNYE: bolen kisi "yapma" denen seyi bilmeli (bkz.
         # brifing.kunye_ozeti -- olculdu, lider hic gormuyordu).
-        kunye = self.ofis.brifing.kunye_ozeti()
+        kunye = self.ofis.brifing.kunye_ozeti(kanat_id or "")
         if kunye:
             satirlar += [kunye, ""]
         if atanan:
@@ -340,7 +340,7 @@ class Orkestra:
             "DEGILDIR, cevap gelince kaldigi yerden devam eder.",
         ]
 
-        duzen = self._klasor_duzeni()
+        duzen = self._klasor_duzeni(kanat_id=kanat_id)
         if duzen:
             satirlar += [
                 "",
@@ -483,7 +483,7 @@ class Orkestra:
             ]
         return "\n".join(satirlar)
 
-    def _klasor_duzeni(self, derinlik: int = 2) -> str:
+    def _klasor_duzeni(self, derinlik: int = 2, kanat_id: str = None) -> str:
         """Calisma klasorunun kisa agaci.
 
         OLCULDU -- ve is durdu: lider yazma alanini `calisma/demir` yazdi,
@@ -493,10 +493,9 @@ class Orkestra:
         veriyoruz.
         """
         from pathlib import Path as _P
-        with self.db.baglanti() as conn:
-            row = conn.execute("SELECT kok_klasor FROM proje WHERE id = ?",
-                               (self.proje_id,)).fetchone()
-        kok = _P((row["kok_klasor"] or "").strip()) if row else None
+        # TAKIM KLASORU (06.10.2026): lider KENDI takiminin kokunu gorur.
+        _k = self.ofis.tahta.kok_klasor(kanat_id).strip()
+        kok = _P(_k) if _k else None
         if not kok or not kok.is_dir():
             return ""
         satirlar = []
@@ -740,7 +739,7 @@ class Orkestra:
                     # is yurur. Sonsuza kadar reddedebilen bir YARGI
                     # kapisi, tek bir modelin fikrinin ofisi
                     # kilitlemesi demektir.
-                    klasor_duzeni=self._klasor_duzeni(),
+                    klasor_duzeni=self._klasor_duzeni(kanat_id=lider.get("kanat_id") or None),
                     son_sans=(sira == max(1, deneme) - 1))
             if not hata:
                 break
@@ -1290,6 +1289,24 @@ class Orkestra:
                      and not self._takildi_mi(g) and not self.bayat_mi(g)]
         atamalar = []
         rezerve = set()
+        # TAKIM KOTA PAYI (06.10.2026): payi dolu takimin YENI (hazir) isi
+        # baslamaz, sebebi soylenir; calisan is kesilmez. Pay yoksa olcum
+        # bile yapilmaz (`pay.dolu_takimlar` yalniz payli takimlara bakar).
+        try:
+            from . import pay as _pay
+            _dolu = _pay.dolu_takimlar(self.db, self.proje_id)
+        except Exception:        # noqa: BLE001 -- olcum isi durdurmaz
+            _dolu = {}
+        if _dolu:
+            _kalan = []
+            for g in kosulacak:
+                _k = self.isin_takimi(g)
+                if g["durum"] == "hazir" and _k in _dolu:
+                    ozet["engel"].append({"gorev_no": g["no"],
+                                          "sebep": _pay.sebep_metni(self.db, _k, _dolu[_k])})
+                else:
+                    _kalan.append(g)
+            kosulacak = _kalan
         # KABIN TEK YUZEYDIR -- ayni anda tek is kullanabilir.
         #
         # OLCULDU (22.09.2026): kabine baglanan ajan YENI SEKME ACMAZ,

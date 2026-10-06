@@ -400,7 +400,7 @@ class Lider:
         # KUNYE ve KURALLAR incelemeye de girer: kabul olcutunu karsilayan
         # ama KAPSAM DISI olan ya da bir ofis kuralini cignenen is
         # kapatilmamali -- ve inceleyen bunu bilmiyorsa kapatir.
-        kunye = self.ofis.brifing.kunye_ozeti()
+        kunye = self.ofis.brifing.kunye_ozeti(g.get("kanat_id") or "")
         if kunye:
             satirlar += ["", kunye,
                          "",
@@ -494,6 +494,23 @@ class Lider:
                     "_Paralel tur kostugu icin bazi satirlarda 'kim yazdi'",
                     "OLCULEMEDI; beyan denetimi o satirlarda yapilmadi._",
                 ]
+        # YASAK KELIME (06.10.2026, marka kiti): rica degil OLCUM. Ofis isin
+        # diskte degisen metin dosyalarini ve kanitlari tarar; bulunani
+        # lider ajanin sozunden AYRI baslikla gorur.
+        try:
+            from . import kit as _kit
+            _yasak = _kit.yasak_tara(
+                self.db, g.get("kanat_id") or "", kok=self.ofis.isin_koku(g),
+                yollar=[k["yol"] for k in olculen if k["hal"] != "silindi"],
+                kanitlar=[f"{k['baslik']}\n{k['icerik'] or ''}" for k in kanitlar])
+        except Exception:        # noqa: BLE001 -- tarama incelemeyi durdurmaz
+            _yasak = []
+        if _yasak:
+            satirlar += ["", "### MARKA KITI: YASAK KELIME BULUNDU (ofisin olcumu)", ""]
+            satirlar += [f"- \"{y['kelime']}\" -> {y['yer']}: ...{kisalt(y['ornek'], 160)}..."
+                         for y in _yasak]
+            satirlar += ["Yasak kelime gecen teslim KAPATILMAZ: hangi dosyada oldugunu "
+                         "soyleyerek geri gonder (OLCUT: marka kiti)."]
         # PATRONA GONDERILENLER -- ofisin kaydi, ajanin sozu degil.
         # OLCULDU (30.09.2026, gercek set G01, codex): ajan ekran goruntusunu
         # `sohbete_yaz` ile gondermisti; lider "sohbete gonderildigine dair
@@ -644,7 +661,10 @@ class Lider:
         secimini yakalayamaz; yakalamanin yolu yazanin ne oldugunu GORMESI.
         Gormeden yazmak tahmindir (klasor duzeninde odenen ders).
         """
-        olgular = self.ofis.bellek.gecerli_olgular()
+        # TAKIM GOZU (06.10.2026): lider yalniz isin takiminin (+ ortak)
+        # hafizasini gorur; baska takimin bilgisi incelemeye girmez.
+        bel = self._is_bellegi(no)
+        olgular = bel.gecerli_olgular()
         if not olgular:
             oneri = self._isci_hafiza_onerisi(no)
             return (["", "### HAFIZA (BILGI yazmadan once bak)", ""] + oneri) if oneri else []
@@ -666,13 +686,17 @@ class Lider:
                          ("baslik", "govde", "neden", "ana_hedef",
                           "kabul_olcutu"))
         ilgili = [o["konu"] for o in
-                  self.ofis.bellek.ilgili_olgular(metin)["secilen"]]
+                  bel.ilgili_olgular(metin)["secilen"]]
         adlar = list(dict.fromkeys(
             ilgili + [o["konu"] for o in olgular]))[:self.HAFIZA_KONU_AZAMI]
         satirlar.append("Hafizadaki konu adlari: " + ", ".join(adlar)
                         + (f" (+{len(olgular) - len(adlar)} daha)"
                            if len(olgular) > len(adlar) else ""))
         return satirlar
+
+    def _is_bellegi(self, no: int):
+        """Isin takiminin gozuyle hafiza (ortak + o takim)."""
+        return self.ofis.bellek.kapsam(self.ofis.tahta.gorev(no).get("kanat_id") or "")
 
     def _isci_hafiza_onerisi(self, no: int) -> list:
         """Iscinin bitirirken yazdigi `BILGI:` onerileri (ajanin SOZU).
@@ -989,6 +1013,13 @@ class Lider:
                     "AND tur = 'patron_sozu'", (self.proje_id, gorev["id"]))]
         except sqlite3.Error:
             pass
+        # TAKIM KITI: bitti tanimi ve marka kiti de dayanak olur (patron yazdi).
+        try:
+            from . import kit as _kit
+            k = _kit.oku(self.db, gorev.get("kanat_id") or "")
+            metinler += k["bitti_tanimi"] + [", ".join(k["yasak"]), "marka kiti", k["ses_tonu"]]
+        except Exception:        # noqa: BLE001 -- kit okunamazsa eski dayanaklar
+            pass
         return metinler
 
     # -- ic isleyis --------------------------------------------------------
@@ -1082,8 +1113,8 @@ class Lider:
         for m in list(BILGI_DESENI.finditer(hukum or ""))[:AZAMI_INCELEME_BILGI]:
             konu, icerik = m.group(1).strip(" `*"), m.group(2).strip(" `*")
             try:
-                r = self.ofis.bellek.bilgi_ekle(konu, icerik, yazan=lider_ad,
-                                                gorev_no=no)
+                r = self._is_bellegi(no).bilgi_ekle(konu, icerik, yazan=lider_ad,
+                                                    gorev_no=no)
                 if r["durum"] != "ayni":
                     yazilan.append(r["konu"])
             except BellekHatasi as exc:

@@ -159,6 +159,11 @@ class Danisma:
             satirlar += self._takim_ozeti(mesaj)
 
         satirlar += ["", "## SORUSU", "", mesaj["govde"], ""]
+        # TAKIM GOZU (06.10.2026): cevaplayan ajanin takimi (+ ortak).
+        try:
+            _kanat = self.ofis.kadro.ajan(mesaj["alici"]).get("kanat_id") or ""
+        except Exception:                     # noqa: BLE001 -- bilinmiyorsa yalniz ortak
+            _kanat = ""
 
         with self.db.baglanti() as conn:
             proje = conn.execute("SELECT * FROM proje WHERE id = ?",
@@ -173,9 +178,9 @@ class Danisma:
                 satirlar.append(f"- kapsam disi: {proje['kapsam_disi']}")
             # Kurallar danisilana da girer: kurala aykiri bir akil vermek,
             # kuralin ise bosuna konmus olmasi demek.
-            satirlar += self.ofis.brifing.kural_satirlari()
+            satirlar += self.ofis.brifing.kural_satirlari(_kanat)
 
-        olgular = self.ofis.bellek.ilgili_olgular(mesaj["govde"])["secilen"]
+        olgular = self.ofis.bellek.kapsam(_kanat).ilgili_olgular(mesaj["govde"])["secilen"]
         if olgular:
             satirlar += ["", "## BILINENLER", ""]
             for o in olgular:

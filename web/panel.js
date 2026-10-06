@@ -239,6 +239,19 @@ function bildir(metin, tur) {
                          tur === "kotu" ? 20000 : 12000);
 }
 
+/* ONIZLEME (06.10): pencere TIKLAMA aninda acilir (sonra acilan pencereyi
+   tarayici engeller), adres sunucudan gelince yuklenir. */
+async function onizlemeAc(no) {
+  const w = window.open("about:blank", "_blank");
+  try {
+    const r = await yolla("/api/onizleme", { gorev: no });
+    if (w) w.location = r.url; else window.open(r.url, "_blank");
+  } catch (e) {
+    if (w) w.close();
+    bildir("önizleme açılamadı: " + (e.message || e), "kotu");
+  }
+}
+
 async function eylem(yol, govde, basari) {
   try {
     const r = await yolla(yol, govde || {});
@@ -2924,6 +2937,7 @@ async function cizBekleyenler() {
 
   if (!adet) {
     kap.append(el("div", "bekleyen-yok", "Şu an senden beklenen bir şey yok."));
+    ofisOnerileriCiz(kap, on);
     return;
   }
 
@@ -2990,12 +3004,17 @@ async function cizBekleyenler() {
     d.append(el("div", "istek-ayrinti", `senin sözün: «${h.alinti}»`
       + (h.simdiki ? ` · hafızada şu an: ${h.simdiki}` : "")));
     const satir = el("div", "istek-eylem");
-    const yaz = el("button", "dugme olumlu", "Yaz");
-    yaz.title = "Bu bilgi senin bilgin olarak hafızaya girer; ajanlar ilgili işte görür.";
+    const yaz = el("button", "dugme olumlu", "Takıma yaz");
+    yaz.title = "Bu takımın hafızasına: yalnız bu takımın ajanları görür.";
     const yazma = el("button", "dugme olumsuz", "Yazma");
     yaz.onclick = () => eylem(`/api/hafiza_onerisi/${h.id}`, { yaz: true }, `hafızaya yazıldı: ${h.konu}`);
     yazma.onclick = () => eylem(`/api/hafiza_onerisi/${h.id}`, { yaz: false }, "yazılmadı");
-    satir.append(yaz, yazma);
+    // HERKESE (06.10): bilgi yalniz bu takimin degil, butun takimlarin.
+    const herkese = el("button", "dugme", "Herkese yaz");
+    herkese.title = "Ortak hafızaya: bütün takımların ajanları görür.";
+    herkese.onclick = () => eylem(`/api/hafiza_onerisi/${h.id}`, { yaz: true, herkese: true },
+                                  `ortak hafızaya yazıldı: ${h.konu}`);
+    satir.append(yaz, herkese, yazma);
     d.append(satir);
     kap.append(d);
   }
@@ -3101,6 +3120,13 @@ async function cizBekleyenler() {
                el("span", "istek-risk", "RİSK: " + a.risk.toUpperCase()));
     o.append(ust, el("div", "istek-govde", a.eylem));
     if (a.ayrinti) o.append(el("div", "istek-ayrinti", a.ayrinti));
+    // ONIZLEME (06.10, K14): yayindan ONCE isin sitesine bak.
+    if (a.onizleme && a.gorev_no) {
+      const oz = el("button", "dugme", "Önizlemeyi aç");
+      oz.title = "İşin klasöründeki site bu bilgisayarda açılır (yayına almadan önce bak).";
+      oz.onclick = () => onizlemeAc(a.gorev_no);
+      const ozs = el("div", "istek-eylem"); ozs.append(oz); o.append(ozs);
+    }
     const satir = el("div", "istek-eylem");
     const girdi = el("input");
     girdi.placeholder = "Not (ret için zorunlu)";
@@ -3159,6 +3185,32 @@ async function cizBekleyenler() {
     satir.append(girdi, dg);
     o.append(satir);
     kap.append(o);
+  }
+  ofisOnerileriCiz(kap, on);
+}
+
+/* OFISIN KENDI EKSIGI (06.10, K17): acil kartlarin ALTINDA -- karar bekler ama
+   isi durdurmaz; onay ve sorular once gorunur. */
+function ofisOnerileriCiz(kap, on) {
+  // OFISIN KENDI EKSIGI (06.10, K17): olculmus tekrar eden sorun. Acil degil
+  // (sayaca girmez) ama karar bekler: Onayla = duzeltilsin, Gereksiz = bir daha gelmez.
+  for (const x of on.ofis || []) {
+    const d = el("div", "istek guncelleme-bilgi");
+    const ust = el("div", "istek-bas");
+    ust.append(el("span", "istek-kim", "OFİSİN ÖNERİSİ"), el("span", null, x.baslik));
+    d.append(ust, el("div", "istek-govde", x.oneri));
+    if ((x.ornekler || []).length)
+      d.append(el("div", "istek-ayrinti", "örnek: " + x.ornekler.map((o) => kes(o, 140)).join(" · ")));
+    const satir = el("div", "istek-eylem");
+    const ok = el("button", "dugme olumlu", "Onayla");
+    ok.title = "Düzeltilsin: geliştirme listesine yazılır (ofis kendini kurmaz; düzeltmeyi insan kurar).";
+    const yok = el("button", "dugme", "Gereksiz");
+    yok.title = "Bu öneri bir daha gelmez.";
+    ok.onclick = () => eylem(`/api/eksik/${x.anahtar}`, { karar: "onayla" }, "öneri onaylandı — geliştirme listesine yazıldı");
+    yok.onclick = () => eylem(`/api/eksik/${x.anahtar}`, { karar: "gereksiz" }, "öneri kapatıldı");
+    satir.append(ok, yok);
+    d.append(satir);
+    kap.append(d);
   }
 }
 
@@ -3839,10 +3891,31 @@ async function cizRaporlar(kap) {
    CIZGE bir sus degil, SECIMIN HARITASI: kenarlar sunucuda, brifing
    seciminin izledigi `[[bag]]`larin ta kendisi. Bag yoksa cizge
    cizilmez ve NEDEN cizilmedigi yazilir. */
+/* TAKIM KAPSAMI (06.10, patron: "her takim ayri"): "" = hepsi, "ortak" =
+   yalniz ortak, takim kimligi = o takim + ortak. Ajanlar YALNIZ kendi
+   takimini + ortagi gorur; panel hepsini gosterebilir. */
+function hafizaKanatQ() { return "kanat=" + encodeURIComponent(D.hafizaKanat || ""); }
+function hafizaYazimKanati() { return D.hafizaKanat || "ortak"; }
+function kanatAnahtari(kid) { return kid ? kid : "ortak"; }
+
 async function cizHafiza(kap) {
-  const h = await al("/api/hafiza");
+  const h = await al("/api/hafiza?" + hafizaKanatQ());
   D.hafiza = h;
   const ust = el("div", "hf-ust");
+  // TAKIM SECICI: yalniz birden cok takim varsa anlamli.
+  if ((h.kanatlar || []).length) {
+    const sec = el("select", "hf-kanat");
+    sec.title = "Hangi takımın hafızası? Ajanlar yalnız kendi takımının bilgisini ve ORTAK bilgiyi görür.";
+    for (const [v, ad] of [["", "Bütün takımlar"], ["ortak", "Ortak (herkes)"],
+                           ...h.kanatlar.map((k) => [k.id, k.ad])]) {
+      const o = el("option", null, ad);
+      o.value = v;
+      if ((D.hafizaKanat || "") === v) o.selected = true;
+      sec.append(o);
+    }
+    sec.onchange = () => { D.hafizaKanat = sec.value; cizSekme(); };
+    ust.append(sec);
+  }
   const kip = el("div", "hf-kip");
   for (const [k, ad] of [["liste", "Liste"], ["cizge", "Çizge"]]) {
     const b = el("button", "hf-kip-d" + ((D.hafizaKip || "liste") === k ? " secili" : ""), ad);
@@ -3860,7 +3933,7 @@ async function cizHafiza(kap) {
     D.hafizaAra = ara.value;
     if (!ara.value.trim()) { sonuc.replaceChildren(); return; }
     let r;
-    try { r = await al("/api/hafiza/ara?q=" + encodeURIComponent(ara.value)); }
+    try { r = await al("/api/hafiza/ara?q=" + encodeURIComponent(ara.value) + "&" + hafizaKanatQ()); }
     catch (e) { sonuc.replaceChildren(el("div", "hf-not", "aranamadı: " + e.message)); return; }
     sonuc.replaceChildren(el("div", "hf-bas", `ARAMA · ${r.sonuc.length} sonuç`));
     const TUR = { bilgi: "bilgi", ders: "ders", kural: "kural", karar: "karar" };
@@ -3949,7 +4022,7 @@ function hafizaKurallar(h) {
     const ok = el("button", "dugme olumlu", "ekle");
     ok.onclick = async () => {
       if (!mt.value.trim() || !gr.value.trim()) return bildir("kural ve gerekçe zorunlu", "kotu");
-      await eylem("/api/kural", { metin: mt.value, gerekce: gr.value }, "kural eklendi");
+      await eylem("/api/kural", { metin: mt.value, gerekce: gr.value, kanat: hafizaYazimKanati() }, "kural eklendi");
     };
     f.append(mt, gr, ok);
     ek.replaceWith(f);
@@ -3969,7 +4042,7 @@ function hafizaBilgiFormu() {
   ok.title = "Senin yazdığın bilgiyi ajan sessizce değiştiremez.";
   ok.onclick = async () => {
     if (!konu.value.trim() || !ic.value.trim()) return bildir("konu ve bilgi zorunlu", "kotu");
-    await eylem("/api/bilgi", { konu: konu.value, icerik: ic.value }, (r) =>
+    await eylem("/api/bilgi", { konu: konu.value, icerik: ic.value, kanat: hafizaYazimKanati() }, (r) =>
       r.durum === "ayni" ? `${r.konu}: zaten böyle — yeni sürüm açılmadı`
       : r.durum === "guncellendi" ? `${r.konu} güncellendi (eskisi geçmişte)`
       : `${r.konu} hafızaya yazıldı`);
@@ -4014,13 +4087,14 @@ function hafizaBelgeler() {
       r.onload = () => ok(String(r.result).split(",")[1] || "");
       r.readAsDataURL(f);
     });
-    await eylem("/api/belge", { ad: f.name, veri }, (r) => `${r.ad} yüklendi (${r.parca} parça)`);
+    await eylem("/api/belge", { ad: f.name, veri, kanat: hafizaYazimKanati() },
+                (r) => `${r.ad} yüklendi (${r.parca} parça)`);
   };
   b.append(el("div", "hf-eylem"));
   b.lastChild.append(yukle);
   (async () => {
     let j = { belgeler: [] };
-    try { j = await al("/api/belgeler"); } catch (_) { /* olculemedi */ }
+    try { j = await al("/api/belgeler?" + hafizaKanatQ()); } catch (_) { /* olculemedi */ }
     bas.textContent = `BELGELER · ${j.belgeler.length}`;
     if (!j.belgeler.length)
       liste.append(el("div", "hf-not", "Belge yok. Yüklediğin belgeden ajanlar ve lider kaynak göstererek cevap verir."));
@@ -4053,8 +4127,8 @@ function hafizaBirlesim(h) {
     const ta = el("button", "hf-mini", `"${x.a}" kalsın`);
     const tb = el("button", "hf-mini", `"${x.b}" kalsın`);
     ta.title = tb.title = "Tuttuğun konu kalır; öteki geçmişe gider ve adı tuttuğuna yönlenir.";
-    ta.onclick = () => eylem("/api/hafiza/birlestir", { asil: x.a, takma: x.b }, `birleştirildi: ${x.a}`);
-    tb.onclick = () => eylem("/api/hafiza/birlestir", { asil: x.b, takma: x.a }, `birleştirildi: ${x.b}`);
+    ta.onclick = () => eylem("/api/hafiza/birlestir", { asil: x.a, takma: x.b, kanat: D.hafizaKanat || "" }, `birleştirildi: ${x.a}`);
+    tb.onclick = () => eylem("/api/hafiza/birlestir", { asil: x.b, takma: x.a, kanat: D.hafizaKanat || "" }, `birleştirildi: ${x.b}`);
     ey.append(ta, tb);
     o.append(ey);
     b.append(o);
@@ -4080,6 +4154,9 @@ function hafizaBilgiler(h) {
     const ob = el("div", "oge-bas");
     ob.append(el("span", "hf-konu", f.konu));
     ob.append(el("span", "hf-rozet", f.kaynak || "-"));
+    // HANGI TAKIMIN: ajanlar yalniz kendi takimininkini + ortagi gorur.
+    if ((D.hafiza.kanatlar || []).length > 1 || f.kanat_id)
+      ob.append(el("span", "hf-rozet" + (f.kanat_id ? "" : " hf-ortak"), f.kanat_ad || "ortak"));
     if (f.surum > 1) ob.append(el("span", "hf-rozet", `${f.surum}. sürüm`));
     // GERI BAG: bu bilgiye baglanan bilgiler (rakipte "Bagli hafizalar").
     if ((f.geri || []).length) {
@@ -4101,17 +4178,17 @@ function hafizaBilgiler(h) {
     const yn = el("button", "hf-mini olumsuz", "yanlış");
     yn.title = "Bilgiyi kapat: ajanlara artık gitmez, ajan aynısını yeniden yazamaz. Geçmişte durur.";
     yn.onclick = () => satirSor(o, "Neden yanlış? (zorunlu)", "kapat",
-      (sebep) => eylem("/api/hafiza/yanlis", { konu: f.konu, sebep }, `${f.konu} yanlış diye kapatıldı`));
+      (sebep) => eylem("/api/hafiza/yanlis", { konu: f.konu, sebep, kanat: kanatAnahtari(f.kanat_id) }, `${f.konu} yanlış diye kapatıldı`));
     ey.append(dz, yn);
     if (f.surum > 1) {
       const gb = el("button", "hf-mini", "geçmiş");
-      gb.onclick = () => hafizaGecmis(o, f.konu, gb);
+      gb.onclick = () => hafizaGecmis(o, f.konu, gb, f.kanat_id);
       ey.append(gb);
     }
     const yk = el("button", "hf-mini", "kurala yükselt");
     yk.title = "Bu bilgi görevle ilgisine bakılmadan HER işe girer.";
     yk.onclick = () => satirSor(o, "Neden her işte geçerli olmalı? (zorunlu)", "yükselt",
-      (gerekce) => eylem("/api/kural", { olgu: f.konu, gerekce }, "kurala yükseltildi"));
+      (gerekce) => eylem("/api/kural", { olgu: f.konu, gerekce, kanat: kanatAnahtari(f.kanat_id) }, "kurala yükseltildi"));
     ey.append(yk);
     o.append(ey);
     b.append(o);
@@ -4153,11 +4230,12 @@ function hafizaIcerik(f) {
   return g;
 }
 
-async function hafizaGecmis(o, konu, dugme) {
+async function hafizaGecmis(o, konu, dugme, kanatId) {
   const var_ = o.querySelector(".hf-gecmis");
   if (var_) { var_.remove(); return; }
   let r;
-  try { r = await al("/api/hafiza/gecmis?konu=" + encodeURIComponent(konu)); }
+  try { r = await al("/api/hafiza/gecmis?konu=" + encodeURIComponent(konu)
+                     + "&kanat=" + encodeURIComponent(kanatAnahtari(kanatId))); }
   catch (e) { return bildir("geçmiş okunamadı", "kotu"); }
   const k = el("div", "hf-gecmis");
   for (const x of r.gecmis) {
@@ -5312,9 +5390,35 @@ function takimDuzenleAc(k) {
     const sira = el("div", "form-sira");
     formAlan(sira, "Takım adı", ad); formAlan(sira, "Renk", renk);
     c.append(sira);
+    // TAKIM KLASORU (06.10): takimin ajanlari bu klasorde calisir.
+    const klasor = el("input"); klasor.value = k.klasor || "";
+    klasor.placeholder = "boş = projenin klasörü";
+    const ks = el("div", "form-sira"); formAlan(ks, "Klasör", klasor); c.append(ks);
+    c.append(el("div", "hp-not", k.kendi_klasoru
+      ? "Takımın kendi klasörü. Çalışan işi varken değiştirilemez."
+      : "Takım şu an projenin klasörünü kullanıyor. Kendi klasörünü yazabilirsin."));
+    // TAKIM KITI (06.10): her iste kendiliginden; yasak kelime teslimde taranir.
+    const kit = k.kit || { bitti_tanimi: [], logo: "", renkler: "", ses_tonu: "", yasak: [] };
+    const bt = el("textarea"); bt.rows = 3; bt.value = (kit.bitti_tanimi || []).join("\n");
+    bt.placeholder = "her satır bir şart — örn. testler geçer · mobilde de çalışır";
+    const bs = el("div", "form-sira"); formAlan(bs, "Bitti tanımı (her işte)", bt); c.append(bs);
+    const ton = el("input"); ton.value = kit.ses_tonu || ""; ton.placeholder = "örn. samimi, siz diye hitap";
+    const rk = el("input"); rk.value = kit.renkler || ""; rk.placeholder = "örn. #1F6FEB lacivert, #F5A623 turuncu";
+    const lg = el("input"); lg.value = kit.logo || ""; lg.placeholder = "logo dosyasının yolu";
+    const ys = el("input"); ys.value = (kit.yasak || []).join(", "); ys.placeholder = "virgülle: ucuz, bedava";
+    const ms = el("div", "form-sira");
+    formAlan(ms, "Ses tonu", ton); formAlan(ms, "Renkler", rk);
+    c.append(ms);
+    const ms2 = el("div", "form-sira");
+    formAlan(ms2, "Logo", lg); formAlan(ms2, "Yasak kelimeler", ys);
+    c.append(ms2);
+    c.append(el("div", "hp-not", "Yasak kelime geçen teslimi lider geri gönderir: ofis işin dosyalarını ve kanıtlarını tarar."));
     const kaydet = el("button", "dugme olumlu", "Kaydet");
     kaydet.onclick = async () => {
-      if (await eylem(`/api/kanat/${k.id}/duzenle`, { ad: ad.value, renk: renk.value },
+      const govde = { ad: ad.value, renk: renk.value, bitti_tanimi: bt.value,
+                      marka: { ses_tonu: ton.value, renkler: rk.value, logo: lg.value, yasak: ys.value } };
+      if (klasor.value.trim() !== (k.klasor || "")) govde.klasor = klasor.value.trim();
+      if (await eylem(`/api/kanat/${k.id}/duzenle`, govde,
                       (x) => `takım: ${x.ad}`)) organizasyonAc(k.id);
     };
     const geri = el("button", "dugme", "Vazgeç"); geri.onclick = () => organizasyonAc(k.id);
@@ -5594,6 +5698,29 @@ async function gorevAc(no) {
       }
       ps.append(gr);
       c.append(ps);
+    }
+    if (g.onizleme) {
+      const ozs = el("div", "cek-eylem");
+      const oz = el("button", "dugme", "Önizlemeyi aç");
+      oz.title = "İşin klasöründeki site bu bilgisayarda açılır.";
+      oz.onclick = () => onizlemeAc(g.no);
+      ozs.append(oz); c.append(ozs);
+    }
+    // IS BASINA GIT KAYDI (06.10): projenin git deposunda bu isin kaydi.
+    if (g.git_kaydi) {
+      c.append(el("div", "cek-etiket", "GIT KAYDI"));
+      const gs = el("div", "cek-eylem");
+      gs.append(el("span", "etiket", g.git_kaydi.slice(0, 10)));
+      const gb = el("button", "dugme olumsuz", "Bu işi geri al");
+      gb.title = "git revert: işin değişikliklerini geri alan YENİ bir kayıt açar; geçmiş silinmez.";
+      gb.onclick = async () => {
+        if (!confirm(`#${g.no} işinin değişiklikleri geri alınsın mı?\n\nYeni bir git kaydı açılır, geçmiş silinmez.`)) return;
+        const r = await eylem(`/api/gorev/${g.no}/git_geri_al`, {},
+                              (r) => `#${g.no} geri alındı (${r.yeni_kayit.slice(0, 10)})`);
+        if (r) gorevAc(g.no);
+      };
+      gs.append(gb);
+      c.append(gs);
     }
     if (g.govde) cekAlan(c, "TARİF", g.govde);
     if (g.brifing)

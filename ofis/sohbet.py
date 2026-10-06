@@ -399,7 +399,10 @@ class Sohbet:
         satirlar = []
         # KUNYE ONCE: patronun mesajini "kapsam disi" bilmeden triyaj
         # etmek, yapilmayacak bir isi dagitmanin en kisa yolu.
-        kunye = self.ofis.brifing.kunye_ozeti()
+        # TAKIM GOZU (06.10.2026): lider yalniz kendi takiminin (+ ortak)
+        # hafizasini gorur. Takimsiz cagri (eski yol) yalniz ORTAGI gorur.
+        bel = self.ofis.bellek.kapsam(kanat_id or "")
+        kunye = self.ofis.brifing.kunye_ozeti(kanat_id or "")
         if kunye:
             satirlar += [kunye, ""]
         kadro = self.ofis.kadro.liste()
@@ -464,7 +467,7 @@ class Sohbet:
             for b in onaylar:
                 satirlar.append(f"- {b['isteyen']} onay istiyor: {b['eylem'][:160]}")
 
-        olgular = self.ofis.bellek.gecerli_olgular()
+        olgular = bel.gecerli_olgular()
         if olgular:
             satirlar += ["", "### Gecerli bilgiler"]
             for o in olgular[:25]:
@@ -472,7 +475,7 @@ class Sohbet:
             if len(olgular) > 25:
                 satirlar.append(f"- _(+{len(olgular) - 25} bilgi daha)_")
 
-        kararlar = self.ofis.bellek.son_kararlar(6)
+        kararlar = bel.son_kararlar(6)
         if kararlar:
             satirlar += ["", "### Son kararlar (BAGLAYICI)"]
             for k in kararlar:
@@ -586,7 +589,7 @@ class Sohbet:
         # diye sorabilmeli; lider belgeden KAYNAGIYLA cevaplar.
         from .belge import kaynakli_blok
         _belge = kaynakli_blok(self.db, self.proje_id, mesaj,
-                               baslik="PATRONUN BELGELERI")
+                               baslik="PATRONUN BELGELERI", kanat=kanat_id or "")
         if _belge:
             satirlar += ["", _belge.replace("## ", "# ", 1)]
 
@@ -834,10 +837,8 @@ class Sohbet:
                      "gerekce": (karar.get("gerekce") or "")
                      + " [ofis: aracsiz triyaj 'yapamam' dedi -> ajana verildi]"}
         if karar.get("karar") == "cevap":
-            with self.ofis.db.baglanti() as _c:
-                _r = _c.execute("SELECT kok_klasor FROM proje WHERE id = ?",
-                                (self.ofis.proje_id,)).fetchone()
-            _eksik = yazilacak_dosyalar(mesaj, (_r["kok_klasor"] or "").strip() if _r else "")
+            _eksik = yazilacak_dosyalar(
+                mesaj, self.ofis.tahta.kok_klasor(lider.get("kanat_id") or None).strip())
             if _eksik:
                 self.ofis.db.olay_yaz(
                     self.ofis.proje_id, "uyari",
@@ -855,8 +856,8 @@ class Sohbet:
         # sohbeti durdurmaz -- oneri bir kolaylik, kapi degil.
         if karar.get("bilgi"):
             try:
-                self.ofis.bellek.sohbet_onerileri(karar.get("bilgi"), mesaj,
-                                                  oneren=lider["ad"])
+                self.ofis.bellek.kapsam(lider.get("kanat_id") or "").sohbet_onerileri(
+                    karar.get("bilgi"), mesaj, oneren=lider["ad"])
             except Exception as exc:          # noqa: BLE001
                 self.ofis.db.olay_yaz(self.ofis.proje_id, "uyari",
                                       f"Hafiza onerisi islenemedi: {exc}",
@@ -866,7 +867,7 @@ class Sohbet:
         self.ofis.bellek.karar_yaz(
             f"Patron mesaji '{mesaj[:80]}' icin yol: {karar['karar']}.",
             karar.get("gerekce") or "(gerekce verilmedi)",
-            lider["ad"], tur="dagitim")
+            lider["ad"], tur="dagitim", kanat_id=lider.get("kanat_id") or "")
 
         if karar["karar"] == "cevap":
             cevap = (karar.get("cevap") or "").strip()[:CEVAP_SINIRI]

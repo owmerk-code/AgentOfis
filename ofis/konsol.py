@@ -42,12 +42,15 @@ class KonsolHatasi(RuntimeError):
 
 
 def _ofis_kokunde_mi(ofis, yol: Path) -> bool:
-    kok = ofis.tahta.kok_klasor()
-    if not kok:
-        return False
-    k = Path(kok).resolve()
+    """Projenin YA DA bir takimin kokunde mi (06.10.2026, takim klasoru)."""
     y = yol.resolve()
-    return y == k or k in y.parents
+    for kok in ofis.kokler():
+        if not kok:
+            continue
+        k = Path(kok).resolve()
+        if y == k or k in y.parents:
+            return True
+    return False
 
 
 def ac(ofis, klasor: str, motor: str = KABUK, *, fabrika=motor_ac,

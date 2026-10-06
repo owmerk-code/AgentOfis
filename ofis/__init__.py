@@ -138,14 +138,21 @@ class Ofis:
         db.olay_yaz(proje_id, "proje_acildi", ad)
         return cls(db, proje_id)
 
-    def kok_klasoru(self) -> str:
+    def kok_klasoru(self, kanat_id: str = None) -> str:
         """Ajanlarin ORTAK calisma koku (karar 18.09.2026).
+
+        TAKIM KLASORU (06.10.2026, patron: "her takim ayri"): takimin kendi
+        koku varsa o (`tahta.kanat_koku`, TEK yer); yoksa projenin koku.
 
         TEK YER: kabuk ve panel ikisi de bunu cagirir. Kural once yalniz
         kabukta yasiyordu (`_kok_klasor`); panele ikinci bir kopya
         yazilsaydi biri digerinden kayar ve iki yuzey ayni ajani farkli
         klasore alirdi. Kok tanimsizsa defterin yanindaki `calisma/`.
         """
+        from .tahta import kanat_koku
+        tk = kanat_koku(self.db, kanat_id)
+        if tk:
+            return tk
         with self.db.baglanti() as conn:
             row = conn.execute("SELECT kok_klasor FROM proje WHERE id = ?",
                                (self.proje_id,)).fetchone()
@@ -159,6 +166,90 @@ class Ofis:
                 r = conn.execute("SELECT ad FROM proje WHERE id = ?", (self.proje_id,)).fetchone()
             return str(varsayilan_proje_koku((r["ad"] if r else "") or "Proje"))
         return str(Path(self.db.yol).parent / "calisma")
+
+    def isin_koku(self, gorev_or_id) -> str:
+        """Bir isin calisma koku (`kok_klasoru` kurallariyla, isin TAKIMINA
+        gore). `tahta.gorev_koku`tan farki: koksuz projede bos degil, ajanlarin
+        gercekten calistigi yedek kok doner."""
+        g = gorev_or_id
+        if not isinstance(g, dict):
+            with self.db.baglanti() as c:
+                r = c.execute("SELECT kanat_id FROM gorev WHERE id = ?", (g,)).fetchone()
+            g = dict(r) if r else {}
+        return self.kok_klasoru(g.get("kanat_id") or None)
+
+    def kokler(self) -> list:
+        """Projenin ve takimlarinin butun kokleri (ek / belge ararken)."""
+        out = [self.kok_klasoru()]
+        with self.db.baglanti() as conn:
+            for r in conn.execute("SELECT klasor FROM kanat WHERE proje_id = ? AND klasor != ''",
+                                  (self.proje_id,)):
+                if r["klasor"] not in out:
+                    out.append(r["klasor"])
+        return out
+
+    def yeni_takim_koku(self, ad: str) -> str:
+        """Yeni takimin VARSAYILAN klasoru: gercek ofiste `Masaustu\\<ad>`;
+        sinama/ornek defterde projenin kokunun icinde (gercek masaustune
+        dokunulmaz)."""
+        from .yollar import ofis_icinde_mi, proje_klasor_adi, MASAUSTU
+        ata = MASAUSTU if _gercek_defter_mi(self.db) else Path(self.kok_klasoru())
+        temel = proje_klasor_adi(ad or "Takim")
+        # BASKASININ KOKU OLAMAZ: takim adi projenin ya da baska bir takimin
+        # klasoruyle (ya da ofisin kendi yeriyle) ayni dusebilir -- iki is
+        # ayni dosyalari habersiz paylasirdi. Bos ilk ad secilir.
+        with self.db.baglanti() as conn:
+            dolu = {str(Path(r[0]).resolve()).lower() for r in conn.execute(
+                "SELECT kok_klasor FROM proje WHERE kok_klasor != '' "
+                "UNION SELECT klasor FROM kanat WHERE klasor != ''")}
+        for i in range(1, 100):
+            aday = ata / (temel if i == 1 else f"{temel}-{i}")
+            if str(aday.resolve()).lower() not in dolu and not ofis_icinde_mi(aday):
+                return str(aday)
+        raise ValueError("Takim icin bos klasor adi bulunamadi.")
+
+    def takim_klasoru_ayarla(self, kanat_id: str, yol: str) -> dict:
+        """Takimin kokunu ayarlar; takimin ajanlari o koke tasinir.
+
+        Acik isi olan takimda DEGISMEZ (calisan isin kilitleri ve kanitlari
+        eski koke gore). Kok ofisin icinde olamaz (`ofis_icinde_mi`).
+        Bos yol = projenin koku (takim kendi klasorunu birakir).
+        """
+        from .yollar import ofis_icinde_mi
+        yol = (yol or "").strip()
+        if yol:
+            p = Path(yol).expanduser()
+            if not p.is_absolute():
+                raise ValueError("Takim klasoru MUTLAK yol olmali.")
+            if ofis_icinde_mi(p):
+                raise ValueError("Takim klasoru ofisin kendi yerinde olamaz.")
+        from .tahta import _kok_anahtari
+        eski = _kok_anahtari(self.kok_klasoru(kanat_id))
+        with self.db.baglanti() as conn:
+            acik = conn.execute(
+                "SELECT no FROM gorev WHERE proje_id = ? AND kanat_id = ? AND silindi = 0 "
+                "AND durum IN ('calisiyor', 'inceleme')", (self.proje_id, kanat_id)).fetchall()
+        if acik:
+            raise ValueError("Takimin calisan isi var (" + ", ".join(f"#{r[0]}" for r in acik)
+                             + "); is bitince klasor degistirilir.")
+        # Klasor ANCAK kapilar gectikten sonra acilir (reddedilen istek
+        # diskte iz birakmaz).
+        if yol:
+            p.mkdir(parents=True, exist_ok=True)
+            yol = str(p.resolve())
+        with self.db.baglanti() as conn:
+            conn.execute("UPDATE kanat SET klasor = ? WHERE id = ? AND proje_id = ?",
+                         (yol, kanat_id, self.proje_id))
+            yeni = self.kok_klasoru(kanat_id)
+            # Yalniz takimin kokunde calisanlar tasinir; KENDI klasoru olan
+            # (yalitilmis) ajanin klasoruna dokunulmaz.
+            for r in conn.execute("SELECT ad, klasor FROM ajan WHERE proje_id = ? AND kanat_id = ?",
+                                  (self.proje_id, kanat_id)).fetchall():
+                if _kok_anahtari(r["klasor"]) == eski:
+                    conn.execute("UPDATE ajan SET klasor = ? WHERE proje_id = ? AND ad = ?",
+                                 (yeni, self.proje_id, r["ad"]))
+        self.db.olay_yaz(self.proje_id, "takim_klasoru", f"{kanat_id}: {yeni}", ajan_ad="insan")
+        return {"kanat_id": kanat_id, "klasor": yeni}
 
     def kanat_ac(self, ad: str, onek: str, renk: str = "#E0785A") -> str:
         kanat_id = uuid.uuid4().hex

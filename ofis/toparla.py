@@ -47,11 +47,12 @@ def acilista_toparla(ofis) -> dict:
     # ajanlar ofisin kodunu/kurallarini gorur. Tasima: `kabuk tasi`.
     from .yollar import ofis_icinde_mi
     try:
-        if ofis_icinde_mi(ofis.kok_klasoru()):
-            ofis.db.olay_yaz(ofis.proje_id, "uyari",
-                             f"Bu projenin klasoru ({ofis.kok_klasoru()}) ofisin KENDI yerinde: "
-                             "ajanlar ofisin kodunu ve kurallarini gorur. Masaustune tasi: "
-                             "python -m ofis.kabuk tasi")
+        for _kok in ofis.kokler():   # proje + takim kokleri (06.10.2026)
+            if _kok and ofis_icinde_mi(_kok):
+                ofis.db.olay_yaz(ofis.proje_id, "uyari",
+                                 f"Bu projenin klasoru ({_kok}) ofisin KENDI yerinde: "
+                                 "ajanlar ofisin kodunu ve kurallarini gorur. Masaustune tasi: "
+                                 "python -m ofis.kabuk tasi")
     except Exception:                 # noqa: BLE001 -- uyari toparlamayi durdurmaz
         pass
     birakilan, yeniden, devam = [], 0, 0

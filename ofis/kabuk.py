@@ -127,7 +127,7 @@ def komut_ise_al(a) -> None:
     #
     # `--kendi-klasoru` ile ajan yine yalitilabilir -- disari acilmamasi
     # gereken bir is icin.
-    kok = _kok_klasor(ofis)
+    kok = ofis.kok_klasoru(kanat_id)
     if a.klasor:
         klasor = a.klasor
     elif a.kendi_klasoru:
@@ -1065,7 +1065,7 @@ def komut_gorsel(a) -> None:
         ofis = ofis_ac(a.db, a.proje)
         g = ofis.tahta.gorev(a.gorev)
         sahip = g["sahip"] or "insan"
-        kok = _P(ofis.kadro.ajan(sahip)["klasor"]) if g["sahip"] else _P(_kok_klasor(ofis))
+        kok = _P(ofis.kadro.ajan(sahip)["klasor"]) if g["sahip"] else _P(ofis.isin_koku(g))
         alanlar = g["yazma_alani"] or []
         try:
             hedef = medya_hedefi(kok, alanlar, a.ad or kaynak.name)
@@ -1263,6 +1263,22 @@ def komut_bilgi(a) -> None:
         yaz(f"- {o['konu']}: {o['icerik']}  ({o['kaynak'] or '-'})")
 
 
+def komut_eksikler(a) -> None:
+    """OFISIN KENDI EKSIKLERI (06.10.2026, K17): bekleyen oneriler ve patronun
+    ONAYLADIGI eksikler (gelistiricinin listesi, `ev/ofis_eksikleri.jsonl`)."""
+    from . import eksik
+    ofis = ofis_ac(a.db, a.proje)
+    bekleyen = eksik.topla(ofis)
+    yaz(f"bekleyen oneri: {len(bekleyen)}")
+    for o in bekleyen:
+        yaz(f"  [{o['anahtar']}] {o['baslik']} -- {o['oneri']}")
+    onayli = eksik.liste(ofis.proje_id)
+    yaz(f"onaylanmis eksik: {len(onayli)}")
+    for o in onayli:
+        yaz(f"  {o.get('an', '')[:16]} {o['baslik']} -- {o['oneri']}"
+            + (f" (not: {o['not']})" if o.get("not") else ""))
+
+
 def komut_izin(a) -> None:
     """IZINLER -- patronun onceden izin verdigi riskli eylemler.
 
@@ -1405,7 +1421,7 @@ def komut_video(a) -> None:
         ofis = ofis_ac(a.db, a.proje)
         g = ofis.tahta.gorev(a.gorev)
         sahip = g["sahip"] or "insan"
-        kok = _P(ofis.kadro.ajan(sahip)["klasor"]) if g["sahip"] else _P(_kok_klasor(ofis))
+        kok = _P(ofis.kadro.ajan(sahip)["klasor"]) if g["sahip"] else _P(ofis.isin_koku(g))
         alanlar = g["yazma_alani"] or []
         try:
             hedef = medya_hedefi(kok, alanlar, a.ad or kaynak.name)
@@ -2186,6 +2202,9 @@ def ayristirici() -> argparse.ArgumentParser:
     bl.add_argument("konu", nargs="?", default="")
     bl.add_argument("icerik", nargs="?", default="")
     bl.set_defaults(islev=komut_bilgi)
+
+    ek = alt.add_parser("eksikler", help="ofisin kendi eksik onerileri ve onaylananlar")
+    ek.set_defaults(islev=komut_eksikler)
 
     iz = alt.add_parser("izin", help="patronun onceden verdigi izinler (push, deploy...)")
     iz.add_argument("eylem", nargs="?", default="liste",

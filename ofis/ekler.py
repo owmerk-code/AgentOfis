@@ -57,17 +57,26 @@ def ad_temizle(ad: str) -> str:
     return (ad or "ek")[-80:]
 
 
-def klasor(ofis) -> Path:
-    return Path(ofis.kok_klasoru()).resolve() / KLASOR
+def klasor(ofis, kanat_id: str = None) -> Path:
+    """Eklerin klasoru: takimin kokunde (06.10.2026; ajan `[ek] .ofis/ekler/x`
+    satirini KENDI kokune gore okur)."""
+    return Path(ofis.kok_klasoru(kanat_id)).resolve() / KLASOR
 
 
-def kaydet(ofis, ad: str, veri: bytes, *, ajan_ad: str = "insan") -> dict:
+def _ajan_kanati(ofis, ajan_ad: str):
+    try:
+        return ofis.kadro.ajan(ajan_ad).get("kanat_id") or None
+    except Exception:                          # noqa: BLE001 -- insan / bilinmeyen: proje koku
+        return None
+
+
+def kaydet(ofis, ad: str, veri: bytes, *, ajan_ad: str = "insan", kanat_id: str = None) -> dict:
     if not veri:
         raise EkHatasi("Bos dosya eklenemez.")
     if len(veri) > AZAMI_BAYT:
         raise EkHatasi(f"Dosya cok buyuk ({len(veri) // 1024 // 1024} MB); "
                        f"sinir {AZAMI_BAYT // 1024 // 1024} MB.")
-    k = klasor(ofis)
+    k = klasor(ofis, kanat_id)
     k.mkdir(parents=True, exist_ok=True)
     temiz = time.strftime("%Y%m%d-%H%M%S-") + ad_temizle(ad)
     hedef = k / temiz
@@ -89,11 +98,13 @@ def dosya(ofis, ad: str) -> Path:
     temiz = Path(str(ad or "")).name
     if not temiz or temiz != ad or temiz.startswith("."):
         raise EkHatasi("Gecersiz ek adi.")
-    k = klasor(ofis)
-    yol = (k / temiz).resolve()
-    if yol.parent != k or not yol.is_file():
-        raise EkHatasi("Ek bulunamadi.")
-    return yol
+    # Ekler takimlarin koklerinde: hepsine bakilir (ad benzersiz uretilir).
+    for kok in ofis.kokler():
+        k = (Path(kok).resolve() / KLASOR)
+        yol = (k / temiz).resolve()
+        if yol.parent == k and yol.is_file():
+            return yol
+    raise EkHatasi("Ek bulunamadi.")
 
 
 def paylas(ofis, yol: str, *, ajan_ad: str = "") -> str:
@@ -105,7 +116,7 @@ def paylas(ofis, yol: str, *, ajan_ad: str = "") -> str:
     ham = str(yol or "").strip().strip("`'\"<>").strip()
     if not ham:
         raise EkHatasi("Bos yol.")
-    kok = Path(ofis.kok_klasoru()).resolve()
+    kok = Path(ofis.kok_klasoru(_ajan_kanati(ofis, ajan_ad))).resolve()
     p = Path(ham)
     if not p.is_absolute():
         p = kok / p
@@ -184,7 +195,7 @@ def gonderilmemisler(ofis, gorev_idleri, ek_metinler=()) -> list:
                            f"AND gorev_id IN ({soru})", (ofis.proje_id, *idler)):
             gidenler.update(ayikla(r["govde"] or "")[1])
         adaylar = []
-        kok = Path(ofis.kok_klasoru()).resolve()
+        kok = Path(ofis.isin_koku(idler[0])).resolve()
         for r in c.execute(f"SELECT tur, baslik, icerik FROM kanit WHERE gorev_id IN ({soru}) "
                            "ORDER BY rowid", idler):
             for y in _KANITTA_EK.findall(f"{r['baslik'] or ''} {r['icerik'] or ''}"):

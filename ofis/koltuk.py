@@ -224,17 +224,19 @@ class Koltuk:
         # "klasoru siz acin" diye sordu ve is durdu. Klasoru ofis acar --
         # yalniz kok TANIMLIYSA (bos kok bulunulan klasore acardi).
         try:
-            if self.ofis.kok_klasoru():
+            _g0 = self.ofis.tahta.gorev(no)
+            _gk = self.ofis.isin_koku(_g0)
+            if _gk:
                 from .ekler import klasor as _ek_klasor
-                _ek_klasor(self.ofis).mkdir(parents=True, exist_ok=True)
+                _ek_klasor(self.ofis, _g0.get("kanat_id") or None).mkdir(parents=True, exist_ok=True)
                 # `karalama/` da hazir: codex sistem eki yardimci betigi
                 # `[IO.File]::WriteAllText('karalama/x.py')` ile yazdirir;
                 # klasor yoksa o cagri hata verir (01.10.2026).
                 from .yollar import KARALAMA as _KARALAMA
-                (Path(self.ofis.kok_klasoru()) / _KARALAMA).mkdir(parents=True, exist_ok=True)
+                (Path(_gk) / _KARALAMA).mkdir(parents=True, exist_ok=True)
                 # Patronun projesi KENDI git deposunu kullaniyorsa `.ofis/`
                 # oraya girmesin (ofisin izi projeye karismaz).
-                _gi = Path(self.ofis.kok_klasoru()) / ".ofis" / ".gitignore"
+                _gi = Path(_gk) / ".ofis" / ".gitignore"
                 if not _gi.exists():
                     _gi.write_text("*\n", encoding="utf-8")
         except (OSError, Exception):             # noqa: BLE001 -- is durmasin
@@ -351,7 +353,7 @@ class Koltuk:
         #
         # Olcum turu OLDURMEZ: diskten okuma patlarsa tur yine kosar ve
         # bunu bir `uyari` soyler -- olcemedigimize "degismedi" demeyiz.
-        kok_klasor = self.ofis.tahta.kok_klasor()
+        kok_klasor = self.ofis.tahta.gorev_koku(gorev)
         try:
             _t0 = time.time()
             once_anlik = (degisim.anlik(kok_klasor,
