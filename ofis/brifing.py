@@ -214,6 +214,16 @@ class Brifing:
                     "Ihtiyacin olan bir bilgi burada yoksa UYDURMA -- "
                     "`durum` araciyla tamamini sor ya da lidere danis._"
                 )
+        # BELGELER (06.10.2026, E77): patronun yukledigi belgelerden BU ISE
+        # en ilgili parcalar, kaynagiyla. Metin her motorda akar; MCP
+        # konusan motor ayrica `belge_ara` ile arar.
+        if no is not None:
+            from .belge import kaynakli_blok
+            blok = kaynakli_blok(self.db, self.proje_id, anahtar,
+                                 baslik="Patronun belgeleri")
+            if blok:
+                satirlar += ["", blok.replace("## ", "### ", 1),
+                             "Daha fazlasi icin `belge_ara` aracini kullan (varsa)."]
         return "\n".join(satirlar)
 
     def k3_durum(self, haric_ajan: str = "") -> str:
@@ -472,20 +482,30 @@ class Brifing:
             # uymadi (ayar.txt'den portu okudu, rapora yazdi, bilgi_yaz'i
             # cagirmadi). DURUM ve KANIT satirlarinda odenen ders ucuncu
             # kez: kural bicimsiz verilmez -- TETIKLEYICI + sablon + ornek.
+            # 06.10.2026 OLCULDU: gercek defterde biten 20 isin YALNIZ
+            # BIRINDE isci hafizaya yazdi -- "tetikleyici olursa" ricasi
+            # yine tutmadi. DURUM satirinin yolu: arac degil METIN, ve
+            # ZORUNLU bir bitis satiri (yazmamak da bir cevaptir: `yok`).
+            # Ofis satiri kaydeder; lider KANITLA dogrulayip hafizaya yazar.
             satirlar += [
                 "",
-                "**BILGI YAZMAK -- tetikleyici olursa ZORUNLU.** Isin "
-                "sirasinda bir dosyadan, komuttan ya da kaynaktan projeye "
-                "dair bir DEGER ogrendiysen (port, surum, adres, fiyat, "
-                "hesap adi, klasor yolu) ve bu deger bu isten sonra da "
-                "gecerliyse `ofis.bilgi_yaz` ile yaz:",
+                "**HAFIZA SATIRI -- ISI BITIRIRKEN ZORUNLU.** Kanitini "
+                "ekledikten sonra cevap metninin SONUNA, ayri satirlarda, "
+                "ya projeye dair ogrendigin KALICI degerleri (port, surum, "
+                "adres, fiyat, hesap adi, klasor yolu, bir sonraki ajani "
+                "yakacak bir TUZAK) en fazla 5 satir olarak yaz:",
                 "",
-                "    konu: kisa ad       icerik: deger (nereden ogrendin)",
+                "    BILGI: <kisa konu> -> <deger (nereden ogrendin)>",
                 "",
-                "Ornek: konu `veritabani surumu`, icerik `PostgreSQL 16 "
-                "(docker-compose.yml)`. "
-                "Ilgili bilgiye `[[konu]]` ile bagla. Gecici is notu YAZMA "
-                "-- o DURUM satirina gider. Arac sende yoksa atla.",
+                "ya da kalici yeni bir sey yoksa TEK satir:",
+                "",
+                "    HAFIZA: yok",
+                "",
+                "Ornek: `BILGI: veritabani surumu -> PostgreSQL 16 "
+                "(docker-compose.yml)`. Gecici is notu YAZMA (o DURUM "
+                "satirina gider); satiri DOSYAYA degil cevap metnine yaz. "
+                "Lider kanitla dogrulayip hafizaya gecirir. Ilgili bilgiye "
+                "`[[konu]]` ile bagla.",
                 "",
                 "**BECERI ONERMEK (istege bagli).** " + _BECERI_KURALI,
             ]
@@ -663,10 +683,8 @@ class Brifing:
         yazildi = ""
         if hedef is not None:
             try:
-                hedef.parent.mkdir(parents=True, exist_ok=True)
-                gecici = hedef.with_name(hedef.name + ".part")
-                gecici.write_text(metin, encoding="utf-8")
-                gecici.replace(hedef)
+                from .dosya import atomik_yaz
+                atomik_yaz(hedef, metin)
                 yazildi = str(hedef)
             except OSError:
                 # Diske yazamamak brifingi gecersiz kilmaz; ajan yine de

@@ -773,20 +773,32 @@ KABUK_ARACLARI = frozenset({"Bash", "PowerShell"})
 #: olcumu denetler); yamadaki DOSYA SILME (`*** Delete File:`) sorulur.
 YAMA_ARACLARI = frozenset({"apply_patch"})
 _YAMA_SILME = re.compile(r"^\s*\*\*\*\s*delete file:\s*(.+)$", re.I | re.M)
+_YAMA_EKLE = re.compile(r"^\s*\*\*\*\s*add file:\s*(.+)$", re.I | re.M)
+
+
+def _yama_yolu(y: str) -> str:
+    return y.strip().strip("'\"").replace("\\", "/").lstrip("./").lower()
 
 
 def yama_degerlendir(arac: str, girdi: dict = None) -> dict | None:
     """Dosya yamasi: yazma/degistirme serbest, DOSYA SILME sorulur."""
     g = girdi or {}
     metin = str(g.get("command") or g.get("input") or g.get("patch") or "")
-    m = _YAMA_SILME.search(metin)
-    if not m:
+    # YENIDEN YAZMA silme degildir (06.10.2026 OLCULDU, gercek set G21 codex):
+    # codex README'yi ayni yamada "Delete File + Add File" diye yeniden yazdi,
+    # kapi "GERI ALINAMAZ SILME" deyip isi onaya dusurdu. Ayni yamada geri
+    # eklenen dosya kaybolmaz; yalniz geri EKLENMEYEN silme sorulur.
+    eklenen = {_yama_yolu(y) for y in _YAMA_EKLE.findall(metin)}
+    silinen = [y.strip() for y in _YAMA_SILME.findall(metin)
+               if _yama_yolu(y) not in eklenen]
+    if not silinen:
         return None
     ad, risk = SINIFLAR["silme"]
-    hedef = m.group(1).strip()[:200]
+    hedef = silinen[0][:200]
     return {
         "sinif": "silme", "ad": ad, "risk": risk, "esles": "*** Delete File",
         "arac": arac, "hedef": hedef, "element": hedef, "url": "",
+        "yama_hedefleri": silinen[:50],
         "sorulur": True, "eylem": f"{ad}: {hedef[:120]}",
         "sebep": (f"`{arac}` yamasi bir dosyayi SILIYOR ({hedef!r}). Yama "
                   "uygulanmadan once patrona soruluyor."),

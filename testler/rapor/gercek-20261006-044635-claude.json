@@ -1,0 +1,128 @@
+{
+ "ayar": {
+  "motor": "claude",
+  "kip": "gercek terminal",
+  "modeller": {
+   "lider": "sonnet",
+   "isci": "haiku"
+  },
+  "basla": "2026-10-06 04:45",
+  "sure_dk": 1.2,
+  "kota_farki": {
+   "claude": {
+    "5s": 0.0,
+    "7g": 0.0,
+    "7g_kapi": 0.0
+   }
+  }
+ },
+ "sonuclar": [
+  {
+   "no": "G21",
+   "ad": "Kalici bilgi hafizaya gecer (port)",
+   "motor": "claude",
+   "kip": "gercek",
+   "mesaj": "servis klasorundeki uygulama hangi portta calisiyor? servis/README.md dosyasina 'Calistirma' basligiyla nasil calistirilacagini ve portu yaz.",
+   "olcutler": [
+    {
+     "olcut": "servis/README.md portu yaziyor",
+     "gecti": true,
+     "not": "# Servis\n\n## Calistirma\n\nUygulamayı çalıştırmak için:\n\n```bash\npython app.py\n```\n\nUygulama **port 8742** üzerinde çalışır. Port ayarı `ayar.toml` dosyasında tan"
+    },
+    {
+     "olcut": "port HAFIZADA (bir sonraki is bilir)",
+     "gecti": true,
+     "not": "servis port=8742 (`servis/ayar.toml` `[sunucu]` bölü; servis çalıştırma tuzağı=app.py`, `ayar.toml` dosyasını göreli yo"
+    }
+   ],
+   "kalite": [
+    {
+     "olcut": "lider patrona cevap verdi",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "lider 'yapamam / sen yap' DEMEDI",
+     "gecti": true,
+     "not": "Servis uygulaması 8742 portunu kullanıyor. `servis/ayar.toml` dosyasındaki `[sunucu]` bölümünde `por"
+    },
+    {
+     "olcut": "rapor ic konusma / KANIT satiri tasimiyor",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "gereksiz ret yok",
+     "gecti": true,
+     "not": "0 ret"
+    },
+    {
+     "olcut": "sohbet temiz (en fazla 4 mesaj)",
+     "gecti": true,
+     "not": "2 mesaj: insan/sohbet, lale/cevap"
+    },
+    {
+     "olcut": "isci hafiza satirini yazdi (BILGI ya da HAFIZA: yok)",
+     "gecti": true,
+     "not": "#1: yazildi (servis port, servis çalıştırma tuzağı) | isci: onerdi"
+    }
+   ],
+   "durum": "gecti",
+   "sohbet": [
+    "insan/sohbet: servis klasorundeki uygulama hangi portta calisiyor? servis/README.md dosyasina 'Calistirma' basligiyla nasil calistirilacagini ve portu yaz.",
+    "lale/cevap: Servis uygulaması 8742 portunu kullanıyor. `servis/ayar.toml` dosyasındaki `[sunucu]` bölümünde `port = 8742` yazıyor. `servis/app.py` bu değeri `AYAR['sunucu']['port']` ile TOML'dan okuyor, kodda ayr"
+   ],
+   "sureler": {
+    "lider": [
+     14
+    ],
+    "isci": [
+     37
+    ],
+    "inceleme": [
+     13
+    ]
+   },
+   "bedel": {
+    "lider": {
+     "tur": 1,
+     "jeton": 25808,
+     "maliyet_usd": 0.0837,
+     "dokum": {
+      "girdi": 2,
+      "cikti": 1430,
+      "onbellek_okuma": 0,
+      "onbellek_yazma": 24376,
+      "onbellek_yazma_1sa": 0
+     }
+    },
+    "isci": {
+     "tur": 1,
+     "jeton": 196745,
+     "maliyet_usd": 0.0794,
+     "tahmini_tur": 1,
+     "dokum": {
+      "girdi": 42,
+      "cikti": 2344,
+      "onbellek_okuma": 153795,
+      "onbellek_yazma": 40564,
+      "onbellek_yazma_1sa": 0
+     }
+    },
+    "inceleme": {
+     "tur": 1,
+     "jeton": 77623,
+     "maliyet_usd": 0.0814,
+     "dokum": {
+      "girdi": 6,
+      "cikti": 1035,
+      "onbellek_okuma": 54284,
+      "onbellek_yazma": 22298,
+      "onbellek_yazma_1sa": 0
+     }
+    }
+   },
+   "sure_sn": 70.7
+  }
+ ]
+}

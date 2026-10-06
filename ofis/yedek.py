@@ -106,10 +106,8 @@ def ayar_oku() -> dict:
 
 
 def _atomik_yaz(yol: Path, metin: str) -> None:
-    yol.parent.mkdir(parents=True, exist_ok=True)
-    gecici = yol.with_name(yol.name + ".part")
-    gecici.write_text(metin, encoding="utf-8")
-    os.replace(gecici, yol)
+    from .dosya import atomik_yaz
+    atomik_yaz(yol, metin)
 
 
 def ayar_yaz(a: dict) -> None:

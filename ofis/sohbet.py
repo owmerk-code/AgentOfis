@@ -582,6 +582,14 @@ class Sohbet:
                 "Bakmadan icerigi hakkinda bir sey soyleme.",
             ]
 
+        # BELGELER (06.10.2026, E77): patron "iade politikamiz ne diyor"
+        # diye sorabilmeli; lider belgeden KAYNAGIYLA cevaplar.
+        from .belge import kaynakli_blok
+        _belge = kaynakli_blok(self.db, self.proje_id, mesaj,
+                               baslik="PATRONUN BELGELERI")
+        if _belge:
+            satirlar += ["", _belge.replace("## ", "# ", 1)]
+
         gecmis = self.gecmis()
         if gecmis:
             satirlar += ["", "# SON KONUSMALAR", ""]
@@ -663,6 +671,17 @@ class Sohbet:
             '  "plan": "karar=kendi ya da dagit ise ZORUNLU -- asagidaki PLAN bolumundeki JSON"',
             "}",
             "```",
+            "",
+            # 06.10.2026 (E31): patronun sohbette soyledigi KALICI bilgi
+            # hicbir yere yazilmiyordu. Lider ONERIR; patron "Yaz" der.
+            "ISTEGE BAGLI `bilgi` alani (her kararda): patron BU MESAJDA "
+            "projeye ya da kendine dair KALICI bir bilgi SOYLEDIYSE (fiyat, "
+            "adres, sure, hesap adi, bir TERCIHI -- 'iade suresi 30 gun', "
+            "'raporlari hep Excel isterim') en fazla 3 oneri: "
+            '`"bilgi": [{"konu": "kisa ad", "icerik": "deger", "alinti": '
+            '"patronun mesajindan KELIMESI KELIMESINE parca"}]`. '
+            "Soru, istek ya da gecici sey bilgi DEGILDIR; yoksa alani yazma. "
+            "Ofis patrona 'hafizaya yazayim mi' diye sorar.",
             "",
             "karar=zamanla ise `hedef` = vakti gelince yapilacak is (patronun",
             "sozuyle, zaman ifadesi CIKARILMIS), ve `zaman` su bicimlerden biri:",
@@ -831,6 +850,17 @@ class Sohbet:
         yield {"tur": "triyaj", "govde": karar["karar"],
                "ek": {"gerekce": karar.get("gerekce", ""),
                       "hedef": karar.get("hedef", "")}}
+        # HAFIZA ONERISI (06.10.2026, E31): patronun soyledigi kalici bilgi
+        # kart olur; kapi (alinti, uzunluk, koruma) bellekte. Patlamasi
+        # sohbeti durdurmaz -- oneri bir kolaylik, kapi degil.
+        if karar.get("bilgi"):
+            try:
+                self.ofis.bellek.sohbet_onerileri(karar.get("bilgi"), mesaj,
+                                                  oneren=lider["ad"])
+            except Exception as exc:          # noqa: BLE001
+                self.ofis.db.olay_yaz(self.ofis.proje_id, "uyari",
+                                      f"Hafiza onerisi islenemedi: {exc}",
+                                      ajan_ad=lider["ad"])
 
         # Karar bir KARARDIR: ajan kosturmamak da dahil, gerekcesiyle yazilir.
         self.ofis.bellek.karar_yaz(
@@ -965,10 +995,30 @@ class Sohbet:
         except Exception:                # noqa: BLE001 -- gosterim icin; is durmaz
             pass
 
+        # ON TAHMIN (06.10.2026, E74): karneden sure / jeton / kota yuzdesi;
+        # bilinmiyorsa BILINMIYOR der. Tahmin deftere, kapanista gercekle yan yana.
+        _tahmin_satiri = ""
+        try:
+            from . import tahmin as _tahmin
+            _parca = []
+            for g in plan["gorevler"]:
+                _a = self.ofis.kadro.ajan(g["sahip"]) if g.get("sahip") else None
+                if not _a:
+                    continue
+                _gg = self.ofis.tahta.gorev(g["no"])
+                _t = _tahmin.tahmin(self.db, self.proje_id, meslek=_a.get("meslek") or "",
+                                    zorluk=_gg.get("zorluk") or "", motor=_a.get("motor") or "")
+                _tahmin.kaydet(self.db, self.proje_id, _gg, _t, _a.get("motor") or "")
+                _parca.append(f"#{g['no']}: {_tahmin.metin(_t, _a.get('motor') or '')}")
+            if _parca:
+                _tahmin_satiri = "\nTahmin: " + " | ".join(_parca)
+        except Exception as exc:          # noqa: BLE001 -- tahmin isi durdurmaz
+            self.ofis.db.olay_yaz(self.ofis.proje_id, "uyari", f"Tahmin yapilamadi: {exc}")
         self._akis.not_yaz(_KARAR_ETIKET.get(karar["karar"], karar["karar"])
                            + " — ekip çalışıyor; bitince rapor buraya düşer. ("
                            + ", ".join(f"#{g['no']} {g['sahip'] or '-'}"
                                        for g in plan["gorevler"]) + ")"
+                           + _tahmin_satiri
                            + ("\nSorulmadan geçecek (senin sözün): "
                               + ", ".join(plan.get("izinler") or [])
                               if plan.get("izinler") else ""))

@@ -650,6 +650,72 @@ ISLER.update({
 })
 
 
+# G21 (06.10.2026): KALICI BILGI. Isin icinde projeye dair bir deger ogrenilir
+# (port, veritabani surumu); is bitince hafizada olmali -- bir sonraki ajan ayni
+# seyi bastan arastirmasin. Asama 2: iscinin zorunlu hafiza satiri.
+G21_PORT = "8742"
+
+
+def g21_fikstur(kok, bag):
+    _yaz(kok, "servis/ayar.toml", f"[sunucu]\nport = {G21_PORT}\n\n[veritabani]\nsurum = \"PostgreSQL 16.4\"\n")
+    _yaz(kok, "servis/app.py", "import tomllib\nAYAR = tomllib.load(open('ayar.toml','rb'))\n"
+                               "print('port', AYAR['sunucu']['port'])\n")
+
+
+def g21_dogrula(kok, ofis, bag):
+    r = (kok / "servis" / "README.md").read_text(encoding="utf-8", errors="replace") \
+        if (kok / "servis" / "README.md").exists() else ""
+    olgular = ofis.bellek.gecerli_olgular()
+    return [("servis/README.md portu yaziyor", G21_PORT in r, r[:160]),
+            ("port HAFIZADA (bir sonraki is bilir)", any(G21_PORT in o["icerik"] for o in olgular),
+             "; ".join(f"{o['konu']}={o['icerik'][:40]}" for o in olgular)[:300])]
+
+
+def _g21_iyi(k, o):
+    _yaz(k, "servis/README.md", f"## Calistirma\npython app.py (port {G21_PORT})\n")
+    o.bellek.bilgi_ekle("servis portu", f"{G21_PORT} (servis/ayar.toml)", yazan="lale", gorev_no=1)
+    o.db.olay_yaz(o.proje_id, "hafiza_adimi", "#1: yazildi | isci: onerdi", ajan_ad="lale")
+
+
+ISLER["G21"] = {"ad": "Kalici bilgi hafizaya gecer (port)",
+                "mesaj": lambda b: ("servis klasorundeki uygulama hangi portta calisiyor? servis/README.md "
+                                    "dosyasina 'Calistirma' basligiyla nasil calistirilacagini ve portu yaz."),
+                "fikstur": g21_fikstur, "dogrula": g21_dogrula,
+                "iyi": lambda k, o, b: _g21_iyi(k, o),
+                "kotu": lambda k, o, b: _yaz(k, "servis/README.md", "## Calistirma\npython app.py\n")}
+
+
+# G22 (06.10.2026): BELGEDEN KAYNAKLI CEVAP. Patron bir PDF yukledi; soruya
+# belgedeki (alisilmadik) degerle ve KAYNAGIYLA cevap verilmeli. 45 gun ve
+# "satici oder" bilerek siradan degerler degil: modelin tahmini tutmaz.
+def g22_fikstur_ofis(kok, ofis, bag):
+    from _pdf import pdf_yap
+    from ofis import belge as _b
+    _b.yukle(ofis, "iade_politikasi.pdf", pdf_yap([
+        "Semu Parfum musteri politikasi - genel",
+        "Iade suresi 45 gundur. Iade kargo ucretini satici oder.",
+        "Hediye paketi ucretsizdir."]))
+
+
+def g22_dogrula(kok, ofis, bag):
+    cev = _son_lider(ofis)
+    n = _norm(cev)
+    return [("cevap belgedeki iade suresini soyluyor (45)", "45" in cev, cev[:200]),
+            ("cevap kargo ucretini saticinin odedigini soyluyor", "satici" in n, ""),
+            ("cevap KAYNAGI gosteriyor (belge adi ya da sayfa)",
+             "iade_politikasi" in n or "iade politikasi" in n or "s.2" in n or "sayfa 2" in n
+             or "2. sayfa" in n, cev[:200])]
+
+
+ISLER["G22"] = {"ad": "Belgeden kaynakli cevap (PDF)",
+                "mesaj": lambda b: ("Bir musteri iade suresini ve iade kargosunu kimin odedigini soruyor. "
+                                    "Yukledigim belgeye gore cevapla, kaynagini da yaz."),
+                "fikstur": lambda k, b: None, "fikstur_ofis": g22_fikstur_ofis, "dogrula": g22_dogrula,
+                "iyi": lambda k, o, b: _lider_cevapla(
+                    o, "Iade suresi 45 gun; iade kargosunu satici oder (iade_politikasi.pdf, s.2)."),
+                "kotu": lambda k, o, b: _lider_cevapla(o, "Iade suresi 14 gun, kargoyu musteri oder.")}
+
+
 def _kapat_hepsini(o):
     with o.db.baglanti() as c:
         c.execute("UPDATE gorev SET durum='bitti' WHERE proje_id=?", (o.proje_id,))
@@ -703,6 +769,17 @@ def kalite(ofis, tanim, sure_sn: float) -> list:
         payi = 2 + SOHBET_EK_PAYI
         olcut.append((f"sohbet temiz (en fazla {payi} mesaj)", len(ak) <= payi,
                       f"{len(ak)} mesaj: " + ", ".join(f"{x['kimden']}/{x['tur']}" for x in ak)))
+    # ISCININ HAFIZA SATIRI (06.10.2026, Asama 2): kapanan her iste isci
+    # `BILGI:` ya da `HAFIZA: yok` yazmali. Kapanan is yoksa (lider dogrudan
+    # cevapladi) olculmez.
+    with ofis.db.baglanti() as c:
+        _ha = [r[0] for r in c.execute(
+            "SELECT govde FROM olay WHERE proje_id=? AND tur='hafiza_adimi' ORDER BY rowid",
+            (ofis.proje_id,))]
+    if _ha:
+        _atlayan = [h for h in _ha if "isci: atladi" in h]
+        olcut.append(("isci hafiza satirini yazdi (BILGI ya da HAFIZA: yok)", not _atlayan,
+                      " | ".join(_ha)[:300]))
     tavan = tanim.get("sure_tavani")
     if tavan:
         olcut.append((f"hizli (<= {tavan} sn)", sure_sn <= tavan, f"{sure_sn:.0f} sn"))
@@ -753,6 +830,8 @@ def is_kos(no: str, motor: str, *, kuru: str = "", zaman_asimi: int = 600,
     try:
         kok, ofis = _ofis_kur(ana, no, motor, bool(kuru))
         tanim["fikstur"](kok, bag)
+        if tanim.get("fikstur_ofis"):
+            tanim["fikstur_ofis"](kok, ofis, bag)
         mesaj = tanim["mesaj"](bag)
         sonuc["mesaj"] = mesaj
         if kuru:
@@ -832,6 +911,10 @@ def is_kos(no: str, motor: str, *, kuru: str = "", zaman_asimi: int = 600,
             from ofis.motor import tui
             for x in tui.acik_oturumlar():
                 tui.kapat(x["oturum_id"])
+            # Isin bekleyen (sicak) lider sureci BU isin gecici klasorunde
+            # yasar; sonraki is onu kullanamaz, klasor silinemez.
+            from ofis.motor import claude as _cl
+            _cl.sicaklari_kapat()
         except Exception:                       # noqa: BLE001
             pass
     sonuc["sure_sn"] = round(time.time() - t0, 1)

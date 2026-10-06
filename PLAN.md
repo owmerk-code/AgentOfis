@@ -20,12 +20,12 @@ işlevin gerektirdiği kadar (görünüş en sonda yeniden yapılacak).
 | K1 | ~~Kapı satır içi kodla yapılan silmeyi görmüyor~~ **BİTTİ (06.10):** dolaylı yazımlar (takma ad, `__import__`, `getattr`, alt süreç listesi) soruluyor | sahte ve gerçek motorda satır içi silme SORULUYOR; zararsız satır içi kod sorulmuyor |
 | K2 | Kişisel veri (müşteri adı/telefon/adres/e-posta) modele gitmeden maskelenmiyor (E79) | proje başına açık/kapalı; açıkken brifing ve araç çıktısında maskeli; ölçüldü |
 | K3 | ~~Gerçek bağlayıcı çağrısı kapıdan hiç geçmedi (E26)~~ **BİTTİ (06.10):** 271 gerçek araç adı sınıflandı, 4 yanlış düzeldi; gerçek Claude ajanında okuma geçti, tanınmayan araç kapıda durdu | gerçek bir claude.ai bağlayıcısında okuma serbest, yazma soruldu (ölçüm, yazma yapılmadan) |
-| K4 | İşçiler hafızaya az yazıyor (E30) | yazma uyumu ≥ %50 gerçek motorla |
-| K5 | Sohbette söylenen bilgi hafızaya geçmiyor (E31) | lider öneriyor, patron onaylıyor; ölçüldü |
-| K6 | Aynı olgunun farklı kayıtlarını birleştirme yok (E32) | aday listesi + birleştir; geçmiş kaybolmuyor |
-| K7 | Belge yükleme → parçalanıp hafızaya (PDF, Excel, Word, metin) (E77) | yüklenen belgeden soruya kaynaklı cevap |
-| K8 | Teslime 1–5 puan + gerekçe → ders ve karne (E78) | puan karneye ve derse giriyor |
-| K9 | İşe başlamadan tahmini kota ve süre (E74) | karneden tahmin; gerçekleşenle karşılaştırma |
+| K4 | ~~İşçiler hafızaya az yazıyor (E30)~~ **BİTTİ (06.10):** zorunlu `BILGI:`/`HAFIZA: yok` satırı; gerçek motorda 7/7 iş (eskiden 20'de 1) | yazma uyumu ≥ %50 gerçek motorla |
+| K5 | ~~Sohbette söylenen bilgi hafızaya geçmiyor (E31)~~ **BİTTİ (06.10):** lider önerir (alıntı denetimli), patron "Yaz" der | lider öneriyor, patron onaylıyor; ölçüldü |
+| K6 | ~~Birleştirme yok (E32)~~ **BİTTİ (06.10):** ölçülen aday + takma ad yönlendirmesi | aday listesi + birleştir; geçmiş kaybolmuyor |
+| K7 | ~~Belge yükleme (E77)~~ **BİTTİ (06.10):** PDF/Word/Excel/CSV/metin, kaynaklı parça; G22 iki motorda geçti | yüklenen belgeden soruya kaynaklı cevap |
+| K8 | ~~Teslime puan (E78)~~ **BİTTİ (06.10)** | puan karneye ve derse giriyor |
+| K9 | ~~Ön tahmin (E74)~~ **BİTTİ (06.10):** süre+jeton karneden; kota yüzdesi yalnız tutarlı ölçümde (bugün hesap dışarıda da kullanıldığı için "bilinmiyor") | karneden tahmin; gerçekleşenle karşılaştırma |
 | K10 | Bağlam doluluğu göstergesi + oturum tazeleme (E34) | iki motorda yüzde gösteriliyor, eşikte devir paketiyle tazeleme |
 | K11 | ~~Onay yorgunluğu (E80)~~ **BİTTİ (06.10):** onay kartında "Bu projede hep" (kalıcı dar izin; para/silme/şifre/masaüstü asla), günlük sayaç | patron kalıcı politika verir, sayaç görünür |
 | K12 | Proje/müşteri ayrımı: ayrı hafıza, bütçe, erişim (E40) | iki projeli senaryoda sızıntı 0 |

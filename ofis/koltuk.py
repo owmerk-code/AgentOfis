@@ -89,6 +89,13 @@ NABIZ_ARALIGI_S = 15.0
 #: metinde gecer; buyuk harf sablonun kendisidir.
 DURUM_DESENI = re.compile(r"DURUM\s*:\s*([^\n]+)")
 
+#: ISCININ HAFIZA SATIRI (06.10.2026): `BILGI: konu -> deger` ya da
+#: `HAFIZA: yok`. DURUM ile ayni sebeple satir basi ARANMAZ (metin parca
+#: parca akar) ve BUYUK HARF sarttir (sablonun kendisi).
+BILGI_ONERI_DESENI = re.compile(r"BILGI\s*:\s*([^\n]+?)\s*->\s*([^\n]+)")
+HAFIZA_YOK_DESENI = re.compile(r"HAFIZA\s*:\s*yok\b", re.IGNORECASE)
+AZAMI_BILGI_ONERISI = 5
+
 KANIT_DESENI = re.compile(
     r"^\s*KANIT\s+(terminal|diff|gorsel|dosya|baglanti)\s*:\s*(.+)$",
     re.IGNORECASE | re.MULTILINE,
@@ -966,6 +973,7 @@ class Koltuk:
                 # kesilen) yakalanir: devir paketinin en degerli parcasi
                 # tam da kesilen turun son notudur.
                 self._durum_notu_yaz(no, ajan_ad, gorev, tam_metin)
+                self._hafiza_satiri_yaz(no, ajan_ad, gorev, tam_metin)
 
             # DEVIR SEBEPLERI: kaynak tukenmesi (limit) ve HESABIN
             # kullanilamaz hale gelmesi (oturum sunucuda dustu, hesap askida
@@ -1676,6 +1684,41 @@ class Koltuk:
             return
         self.db.olay_yaz(self.proje_id, "durum_notu", yeni,
                          ajan_ad=ajan_ad, gorev_id=gorev["id"])
+
+    def _hafiza_satiri_yaz(self, no: int, ajan_ad: str, gorev: dict,
+                           tam_metin: list) -> None:
+        """Iscinin `BILGI:` / `HAFIZA: yok` satirlarini deftere gecirir.
+
+        Hafizaya DOGRUDAN yazmaz: isci sozudur, kanit kapisindan gecmedi.
+        `bilgi_onerisi` olayi incelemede lidere gosterilir; lider kanitla
+        dogrulayip kendi `BILGI:` satiriyla yazar (kapanan isin bilgisi
+        kanitla desteklidir -- `lider._bilgileri_yaz` kurali). Ayni oneri
+        tekrar yazilmaz.
+        """
+        metin = "".join(tam_metin or [])
+        oneriler = []
+        for konu, deger in BILGI_ONERI_DESENI.findall(metin):
+            konu, deger = konu.strip(" `*"), deger.strip(" `*")
+            if konu and deger and len(konu) <= 80:
+                s = f"{konu} -> {deger[:600]}"
+                if s not in oneriler:
+                    oneriler.append(s)
+        oneriler = oneriler[:AZAMI_BILGI_ONERISI]
+        if oneriler:
+            tur, govde = "bilgi_onerisi", "\n".join(oneriler)
+        elif HAFIZA_YOK_DESENI.search(metin):
+            tur, govde = "hafiza_yok", "HAFIZA: yok"
+        else:
+            return
+        with self.db.baglanti() as conn:
+            son = conn.execute(
+                "SELECT govde FROM olay WHERE proje_id = ? AND gorev_id = ?"
+                " AND tur = ? ORDER BY rowid DESC LIMIT 1",
+                (self.proje_id, gorev["id"], tur)).fetchone()
+        if son and son["govde"] == govde:
+            return
+        self.db.olay_yaz(self.proje_id, tur, govde, ajan_ad=ajan_ad,
+                         gorev_id=gorev["id"])
 
     def _birak(self, no: int, sebep: str) -> None:
         try:

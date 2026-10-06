@@ -610,11 +610,9 @@ class CodexMotoru(Motor):
             if f"[projects.'{anahtar}']" not in metin:
                 ekler.append(f"[projects.'{anahtar}']\ntrust_level = \"trusted\"\n")
             if ekler:
-                gecici = cfg.with_suffix(".tmp")
-                gecici.write_text(
-                    (metin.rstrip("\n") + "\n\n" if metin.strip() else "")
-                    + "\n".join(ekler), encoding="utf-8")
-                gecici.replace(cfg)        # yerinde yazma ATOMIK olmali
+                from ..dosya import atomik_yaz
+                atomik_yaz(cfg, (metin.rstrip("\n") + "\n\n" if metin.strip() else "")
+                           + "\n".join(ekler))
         except OSError:
             pass
         # OFISIN BECERILERI (02.10.2026): `$CODEX_HOME/skills` (olculdu,

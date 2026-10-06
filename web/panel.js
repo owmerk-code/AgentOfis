@@ -127,6 +127,16 @@ const OLAY = {
   tur_ozeti:     (o) => ["tur bitti", turOzeti(o.govde), ""],
   // Ajanin kendi notu -- devir paketi bunu okur. SOZDUR, olcum degil.
   durum_notu:    (o) => ["durum notu", o.govde, ""],
+  bilgi_onerisi: (o) => ["hafızaya önerdi", o.govde, ""],
+  hafiza_onerisi: (o) => ["hafıza önerisi (senin sözün)", o.govde, "bekleme"],
+  hafiza_onerisi_red: (o) => ["hafızaya yazılmadı", o.govde, ""],
+  birlesti:      (o) => ["bilgiler birleştirildi", o.govde, ""],
+  belge_yuklendi: (o) => ["belge yüklendi", o.govde, ""],
+  tahmin:        (o) => ["ön tahmin", tahminMetni(o.govde), ""],
+  puan:          (o) => ["patron puanladı", o.govde, "dikkat"],
+  tahmin_gercek: (o) => ["tahmin / gerçek", tahminMetni(o.govde), ""],
+  belge_kaldirildi: (o) => ["belge kaldırıldı", o.govde, ""],
+  hafiza_yok:    (o) => ["hafıza: yeni bilgi yok", "", ""],
   // Diskte OLCULEN degisiklik. "degisti" degil "diskte degisti" --
   // ajanin anlatisiyla karismasin diye.
   degisim:       (o) => ["diskte değişti", o.govde, "dikkat"],
@@ -2855,7 +2865,7 @@ async function cizBekleyenler() {
   on.uygulanan = on.uygulanan || [];
 
   const adet = b.sorular.length + b.onaylar.length + bulgular.length
-             + on.ekip.length + on.guncelleme.length;
+             + on.ekip.length + on.guncelleme.length + (on.hafiza || []).length;
   kap.innerHTML = "";
 
   const bas = el("div", "bekleyen-bas" + (adet ? "" : " sakin"));
@@ -2951,6 +2961,27 @@ async function cizBekleyenler() {
       eylem(`/api/ekip/${e.no}/red`, { sebep: girdi.value }, `ekip #${e.no} reddedildi`);
     };
     satir.append(girdi, kur, red);
+    d.append(satir);
+    kap.append(d);
+  }
+
+  // HAFIZA ONERISI (06.10): sohbette soyledigin kalici bilgi. Lider onerir,
+  // yazan SENSIN; alinti senin mesajindan aynen (ofis denetledi).
+  for (const h of (on.hafiza || [])) {
+    const d = el("div", "istek onay");
+    const ust = el("div", "istek-bas");
+    ust.append(el("span", "istek-kim", h.oneren || "lider"),
+               el("span", null, "hafızaya yazayım mı?"));
+    d.append(ust, el("div", "istek-govde", `${h.konu} → ${h.icerik}`));
+    d.append(el("div", "istek-ayrinti", `senin sözün: «${h.alinti}»`
+      + (h.simdiki ? ` · hafızada şu an: ${h.simdiki}` : "")));
+    const satir = el("div", "istek-eylem");
+    const yaz = el("button", "dugme olumlu", "Yaz");
+    yaz.title = "Bu bilgi senin bilgin olarak hafızaya girer; ajanlar ilgili işte görür.";
+    const yazma = el("button", "dugme olumsuz", "Yazma");
+    yaz.onclick = () => eylem(`/api/hafiza_onerisi/${h.id}`, { yaz: true }, `hafızaya yazıldı: ${h.konu}`);
+    yazma.onclick = () => eylem(`/api/hafiza_onerisi/${h.id}`, { yaz: false }, "yazılmadı");
+    satir.append(yaz, yazma);
     d.append(satir);
     kap.append(d);
   }
@@ -3848,6 +3879,8 @@ async function cizHafiza(kap) {
   if ((D.hafizaKip || "liste") === "cizge") {
     kap.append(hafizaCizgeBolumu(h));
   } else {
+    kap.append(hafizaBelgeler());
+    if ((h.birlesim || []).length) kap.append(hafizaBirlesim(h));
     kap.append(hafizaBilgiler(h));
   }
   if (h.dersler && h.dersler.length) kap.append(hafizaDersler(h));
@@ -3929,6 +3962,90 @@ function hafizaBilgiFormu() {
   };
   f.append(konu, ic, ok);
   return f;
+}
+
+/* ON TAHMIN (06.10, E74): karneden; bilinmeyen "?" kalir, uydurulmaz. */
+function tahminMetni(govde) {
+  let t = {};
+  try { t = JSON.parse(govde || "{}"); } catch (_) { return govde; }
+  const sure = (s) => s == null ? "?" : (s < 90 ? `${Math.round(s)} sn` : `${Math.round(s / 60)} dk`);
+  const bin = (j) => j == null ? "?" : `${Math.round(j / 1000)} bin`;
+  if ("gercek_sure_sn" in t)
+    return `süre ${sure(t.tahmin_sure_sn)} → ${sure(t.gercek_sure_sn)} · jeton ${bin(t.tahmin_jeton)} → ${bin(t.gercek_jeton)}`;
+  if (!t.ornek) return "tahmin yok (karnede bu tür iş henüz yok)";
+  return `~${sure(t.sure_sn)} · ~${bin(t.jeton)} jeton · `
+    + (t.yuzde_5s != null ? `~%${t.yuzde_5s} ${t.motor || ""} 5 saatlik kota` : "kota yüzdesi bilinmiyor")
+    + ` (${t.ornek} işten)`;
+}
+
+/* BELGELER (06.10, E77): yukledigin PDF/Word/Excel/metin parcalara bolunur;
+   ajanlar ve lider sorulara KAYNAGIYLA (belge, sayfa/bolum) cevap verir. */
+function hafizaBelgeler() {
+  const b = el("div", "hf-bolum");
+  const bas = el("div", "hf-bas", "BELGELER");
+  b.append(bas);
+  const liste = el("div");
+  b.append(liste);
+  const sec = el("input");
+  sec.type = "file";
+  sec.accept = ".pdf,.docx,.xlsx,.xlsm,.csv,.txt,.md";
+  const yukle = el("button", "hf-mini", "belge yükle");
+  yukle.title = "PDF, Word, Excel, CSV ya da metin. Taranmış (resim) PDF okunmaz.";
+  yukle.onclick = () => sec.click();
+  sec.onchange = async () => {
+    const f = sec.files && sec.files[0];
+    if (!f) return;
+    const veri = await new Promise((ok) => {
+      const r = new FileReader();
+      r.onload = () => ok(String(r.result).split(",")[1] || "");
+      r.readAsDataURL(f);
+    });
+    await eylem("/api/belge", { ad: f.name, veri }, (r) => `${r.ad} yüklendi (${r.parca} parça)`);
+  };
+  b.append(el("div", "hf-eylem"));
+  b.lastChild.append(yukle);
+  (async () => {
+    let j = { belgeler: [] };
+    try { j = await al("/api/belgeler"); } catch (_) { /* olculemedi */ }
+    bas.textContent = `BELGELER · ${j.belgeler.length}`;
+    if (!j.belgeler.length)
+      liste.append(el("div", "hf-not", "Belge yok. Yüklediğin belgeden ajanlar ve lider kaynak göstererek cevap verir."));
+    for (const d of j.belgeler) {
+      const o = el("div", "oge hf-bilgi");
+      const ob = el("div", "oge-bas");
+      ob.append(el("span", "hf-konu", d.ad), el("span", "hf-rozet", `${d.parca} parça`));
+      const k = el("button", "hf-mini olumsuz", "kaldır");
+      k.title = "Belge aramadan çıkar (dosya silinmez).";
+      k.onclick = () => eylem(`/api/belge/${d.id}/kaldir`, {}, `${d.ad} kaldırıldı`);
+      o.append(ob, k);
+      liste.append(o);
+    }
+  })();
+  return b;
+}
+
+/* AYNI BILGI IKI KONUDA (06.10, E32): ofis OLCER (ortak konu kelimesi +
+   ortak deger), karar senin. Tuttugun konu kalir; oteki gecmise gider ve
+   adi tuttuguna yonlenir (ajan eski adla yazsa da ayni yere duser). */
+function hafizaBirlesim(h) {
+  const b = el("div", "hf-bolum");
+  b.append(el("div", "hf-bas", `AYNI BİLGİ OLABİLİR · ${h.birlesim.length}`));
+  for (const x of h.birlesim) {
+    const o = el("div", "oge hf-bilgi");
+    o.append(el("div", "oge-govde", `${x.a}: ${x.a_icerik}`));
+    o.append(el("div", "oge-govde", `${x.b}: ${x.b_icerik}`));
+    o.append(el("div", "hf-not", x.sebep));
+    const ey = el("div", "hf-eylem");
+    const ta = el("button", "hf-mini", `"${x.a}" kalsın`);
+    const tb = el("button", "hf-mini", `"${x.b}" kalsın`);
+    ta.title = tb.title = "Tuttuğun konu kalır; öteki geçmişe gider ve adı tuttuğuna yönlenir.";
+    ta.onclick = () => eylem("/api/hafiza/birlestir", { asil: x.a, takma: x.b }, `birleştirildi: ${x.a}`);
+    tb.onclick = () => eylem("/api/hafiza/birlestir", { asil: x.b, takma: x.a }, `birleştirildi: ${x.b}`);
+    ey.append(ta, tb);
+    o.append(ey);
+    b.append(o);
+  }
+  return b;
 }
 
 function hafizaBilgiler(h) {
@@ -5442,6 +5559,28 @@ async function gorevAc(no) {
     if (g.izinler && g.izinler.length)
       c.append(el("div", "sonuk",
         "Para ve silme izinle açılmaz; her seferinde sorulur."));
+    // TESLIM PUANI (06.10, E78): biten is 1-5. 3 ve alti gerekce ister; gerekce
+    // ajanin dersi olur, puan karneye gider.
+    if (g.durum === "bitti") {
+      c.append(el("div", "cek-etiket", "PUANIN"));
+      const ps = el("div", "cek-eylem");
+      const gr = el("input");
+      gr.placeholder = "gerekçe (3 ve altı için zorunlu — ajan ders alır)";
+      if (g.puan) gr.value = g.puan.gerekce || "";
+      for (let n = 1; n <= 5; n++) {
+        const b = el("button", "dugme" + (g.puan && g.puan.puan === n ? " olumlu" : ""), String(n));
+        b.title = n <= 3 ? "Gerekçe zorunlu; ajanın ders siciline girer." : "İşe yaradı.";
+        b.onclick = async () => {
+          if (n <= 3 && !gr.value.trim()) { gr.focus(); return bildir("3 ve altı için gerekçe yaz", "uyari"); }
+          const r = await eylem(`/api/gorev/${g.no}/puan`, { puan: n, gerekce: gr.value },
+                                (r) => `#${g.no}: ${r.puan}/5` + (r.ders ? " — ajana ders olarak yazıldı" : ""));
+          if (r) gorevAc(g.no);
+        };
+        ps.append(b);
+      }
+      ps.append(gr);
+      c.append(ps);
+    }
     if (g.govde) cekAlan(c, "TARİF", g.govde);
     if (g.brifing)
       cekAlan(c, "BRİFİNG",

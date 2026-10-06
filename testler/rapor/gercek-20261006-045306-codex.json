@@ -1,0 +1,90 @@
+{
+ "ayar": {
+  "motor": "codex",
+  "kip": "gercek terminal",
+  "modeller": {
+   "lider": "gpt-6-luna",
+   "isci": "gpt-6-luna"
+  },
+  "basla": "2026-10-06 04:52",
+  "sure_dk": 0.2,
+  "kota_farki": {
+   "codex": {
+    "5s": 0.0,
+    "7g": 0.0
+   }
+  }
+ },
+ "sonuclar": [
+  {
+   "no": "G22",
+   "ad": "Belgeden kaynakli cevap (PDF)",
+   "motor": "codex",
+   "kip": "gercek",
+   "mesaj": "Bir musteri iade suresini ve iade kargosunu kimin odedigini soruyor. Yukledigim belgeye gore cevapla, kaynagini da yaz.",
+   "olcutler": [
+    {
+     "olcut": "cevap belgedeki iade suresini soyluyor (45)",
+     "gecti": true,
+     "not": "İade süresi 45 gündür. İade kargo ücretini satıcı öder. Kaynak: iade_politikasi.pdf, s. 2."
+    },
+    {
+     "olcut": "cevap kargo ucretini saticinin odedigini soyluyor",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "cevap KAYNAGI gosteriyor (belge adi ya da sayfa)",
+     "gecti": true,
+     "not": "İade süresi 45 gündür. İade kargo ücretini satıcı öder. Kaynak: iade_politikasi.pdf, s. 2."
+    }
+   ],
+   "kalite": [
+    {
+     "olcut": "lider patrona cevap verdi",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "lider 'yapamam / sen yap' DEMEDI",
+     "gecti": true,
+     "not": "İade süresi 45 gündür. İade kargo ücretini satıcı öder. Kaynak: iade_politikasi.pdf, s. 2."
+    },
+    {
+     "olcut": "rapor ic konusma / KANIT satiri tasimiyor",
+     "gecti": true,
+     "not": ""
+    },
+    {
+     "olcut": "gereksiz ret yok",
+     "gecti": true,
+     "not": "0 ret"
+    },
+    {
+     "olcut": "sohbet temiz (en fazla 4 mesaj)",
+     "gecti": true,
+     "not": "2 mesaj: insan/sohbet, lale/cevap"
+    }
+   ],
+   "durum": "gecti",
+   "sohbet": [
+    "insan/sohbet: Bir musteri iade suresini ve iade kargosunu kimin odedigini soruyor. Yukledigim belgeye gore cevapla, kaynagini da yaz.",
+    "lale/cevap: İade süresi 45 gündür. İade kargo ücretini satıcı öder. Kaynak: iade_politikasi.pdf, s. 2."
+   ],
+   "sureler": {
+    "lider": [
+     11
+    ]
+   },
+   "bedel": {
+    "lider": {
+     "tur": 1,
+     "jeton": 44144,
+     "maliyet_usd": 0.0,
+     "bilinmeyen_tur": 1
+    }
+   },
+   "sure_sn": 12.1
+  }
+ ]
+}

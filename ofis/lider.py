@@ -646,10 +646,14 @@ class Lider:
         """
         olgular = self.ofis.bellek.gecerli_olgular()
         if not olgular:
-            return []
+            oneri = self._isci_hafiza_onerisi(no)
+            return (["", "### HAFIZA (BILGI yazmadan once bak)", ""] + oneri) if oneri else []
         bu_is = [o for o in olgular
                  if str(o.get("kaynak") or "").endswith(f"#{no}")]
         satirlar = ["", "### HAFIZA (BILGI yazmadan once bak)", ""]
+        oneri = self._isci_hafiza_onerisi(no)
+        if oneri:
+            satirlar += oneri + [""]
         if bu_is:
             satirlar.append("Bu iste ZATEN yazilanlar (dogruysa tekrar yazma):")
             satirlar += [f"- {o['konu']}: {o['icerik']}" for o in bu_is]
@@ -669,6 +673,29 @@ class Lider:
                         + (f" (+{len(olgular) - len(adlar)} daha)"
                            if len(olgular) > len(adlar) else ""))
         return satirlar
+
+    def _isci_hafiza_onerisi(self, no: int) -> list:
+        """Iscinin bitirirken yazdigi `BILGI:` onerileri (ajanin SOZU).
+
+        06.10.2026: isci hafizaya nadiren yaziyordu (20 iste 1). Artik her
+        bitiste zorunlu satir yazar; ofis onu `bilgi_onerisi` olarak tutar.
+        Hafizaya giden yol yine liderin `BILGI:` satiridir -- dogrulanmamis
+        bir deger butun ofise yayilmasin.
+        """
+        g = self.ofis.tahta.gorev(no)
+        with self.db.baglanti() as c:
+            r = c.execute(
+                "SELECT tur, govde FROM olay WHERE proje_id = ? AND gorev_id = ? "
+                "AND tur IN ('bilgi_onerisi', 'hafiza_yok') ORDER BY rowid DESC LIMIT 1",
+                (self.proje_id, g["id"])).fetchone()
+        if not r:
+            return []
+        if r["tur"] == "hafiza_yok":
+            return ["Ajan 'HAFIZA: yok' dedi (kalici yeni bir sey gormedi)."]
+        return (["Ajanin HAFIZA ONERISI (ajanin SOZU -- kanitla ya da dosyadan "
+                 "dogruladiklarini kendi `BILGI:` satirinla AYNEN yaz, "
+                 "dogrulayamadigini yazma):"]
+                + [f"- {s}" for s in r["govde"].splitlines() if s.strip()])
 
     def incele(self, no: int, *, lider_ad: str = "", butce_usd: float = None,
                zaman_asimi: float = None) -> dict:
@@ -940,10 +967,14 @@ class Lider:
         from . import karne
         try:
             motor, model, sure = karne.isin_motoru(self.db, self.proje_id, gorev)
+            jeton = karne.isin_jetonu(self.db, self.proje_id, gorev)
             meslek = (self.ofis.kadro.ajan(isci_ad).get("meslek") or "") if isci_ad else ""
             karne.kaydet(meslek=meslek, zorluk=gorev.get("zorluk") or "", motor=motor,
                          model=model, gecti=gecti, ret=self.ofis.tahta.ret_sayisi(gorev["no"]),
-                         sure_sn=sure)
+                         sure_sn=sure, jeton=jeton, gorev_id=gorev["id"])
+            # TAHMININ OLCUMU (06.10.2026): dagitimda verilen tahmin gercekle yan yana.
+            from . import tahmin as _tahmin
+            _tahmin.gerceklesen_yaz(self.db, self.proje_id, gorev, sure_sn=sure, jeton=jeton)
         except Exception as exc:               # noqa: BLE001 -- karne isi durdurmaz
             self.db.olay_yaz(self.proje_id, "uyari", f"Karne yazilamadi: {exc}",
                              gorev_id=gorev["id"])
@@ -1007,8 +1038,17 @@ class Lider:
             # 20 iste 3 kez cagirdigi olculdu; adimin kendisi gorunur olmali.
             _hy = re.search(r"^\s*HAFIZA\s*:\s*yok\b", hukum or "", re.I | re.M)
             _durum = ("yazildi" if (yazilan or ders) else "yok" if _hy else "atlandi")
+            # ISCININ satiri da sayilir (06.10): onerdi / yok dedi / atladi.
+            with self.db.baglanti() as _c:
+                _io = _c.execute(
+                    "SELECT tur FROM olay WHERE proje_id = ? AND gorev_id = ? AND tur IN "
+                    "('bilgi_onerisi', 'hafiza_yok') ORDER BY rowid DESC LIMIT 1",
+                    (self.proje_id, guncel["id"])).fetchone()
+            _isci = {"bilgi_onerisi": "onerdi", "hafiza_yok": "yok"}.get(
+                _io["tur"] if _io else "", "atladi")
             self.db.olay_yaz(self.proje_id, "hafiza_adimi",
-                             f"#{no}: {_durum}" + (f" ({', '.join(yazilan)})" if yazilan else ""),
+                             f"#{no}: {_durum}" + (f" ({', '.join(yazilan)})" if yazilan else "")
+                             + f" | isci: {_isci}",
                              ajan_ad=lider_ad, gorev_id=guncel["id"])
             return {"hukum": "kapat", "gerekce": gerekce, "gorev_no": no,
                     "ders": bool(ders), "bilgi": yazilan,

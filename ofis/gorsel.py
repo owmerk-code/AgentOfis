@@ -156,10 +156,8 @@ def kota_yaz(uretici: str, gunluk: bool) -> None:
         if KOTA_DEFTERI.is_file():
             veri = json.loads(KOTA_DEFTERI.read_text(encoding="utf-8")) or {}
         veri[uretici] = {"an": time.time(), "gunluk": bool(gunluk)}
-        gecici = KOTA_DEFTERI.with_suffix(".json.tmp")
-        gecici.write_text(json.dumps(veri, ensure_ascii=False),
-                          encoding="utf-8")
-        gecici.replace(KOTA_DEFTERI)
+        from .dosya import atomik_yaz
+        atomik_yaz(KOTA_DEFTERI, json.dumps(veri, ensure_ascii=False))
     except (OSError, ValueError):
         # Hafiza tutulamiyorsa is DURMAZ -- bu bir kolaylik, bir kapi
         # degil. Yazamamak, uretimi engellememelidir.
@@ -233,10 +231,8 @@ def para_harca_ayarla(acik: bool) -> None:
     except (OSError, ValueError):
         veri = {}
     veri["para_harca"] = bool(acik)
-    AYAR_DEFTERI.parent.mkdir(parents=True, exist_ok=True)
-    gecici = AYAR_DEFTERI.with_suffix(".json.tmp")
-    gecici.write_text(json.dumps(veri, ensure_ascii=False), encoding="utf-8")
-    gecici.replace(AYAR_DEFTERI)
+    from .dosya import atomik_yaz
+    atomik_yaz(AYAR_DEFTERI, json.dumps(veri, ensure_ascii=False))
 
 
 #: Ucretli bir uretici para kilidi acikken istendiginde verilen metin.

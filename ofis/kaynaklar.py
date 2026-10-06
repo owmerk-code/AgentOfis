@@ -70,10 +70,8 @@ def _oku() -> dict:
 
 
 def _yaz(v: dict) -> None:
-    AYAR.parent.mkdir(parents=True, exist_ok=True)
-    g = AYAR.with_suffix(".json.tmp")
-    g.write_text(json.dumps(v, ensure_ascii=False, indent=1), encoding="utf-8")
-    g.replace(AYAR)
+    from .dosya import atomik_yaz
+    atomik_yaz(AYAR, json.dumps(v, ensure_ascii=False, indent=1))
 
 
 def kapalilar(grup: str) -> set:

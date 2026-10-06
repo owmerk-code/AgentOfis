@@ -67,7 +67,7 @@ def capraz_acik_mi(db, proje_id: str) -> bool:
 
 
 def kaydet(*, meslek: str, zorluk: str, motor: str, model: str, gecti: bool,
-           ret: int, sure_sn=None) -> None:
+           ret: int, sure_sn=None, jeton=None, gorev_id: str = "") -> None:
     """Kapanan (ya da birakilan) bir isin karne satiri. Yazilamazsa is durmaz."""
     if not motor:
         return
@@ -75,6 +75,12 @@ def kaydet(*, meslek: str, zorluk: str, motor: str, model: str, gecti: bool,
              "meslek": meslek or "", "zorluk": zorluk or "", "motor": motor,
              "model": model or "", "gecti": bool(gecti), "ret": int(ret or 0),
              "sure_sn": sure_sn}
+    # JETON (06.10.2026, on tahmin E74): isci turlarinin toplami; tahmin
+    # bunun ortancasindan kota yuzdesi cikarir (`ofis/tahmin.py`).
+    if jeton:
+        satir["jeton"] = int(jeton)
+    if gorev_id:
+        satir["gorev"] = gorev_id              # patronun puani buna baglanir
     try:
         with _KILIT:
             yol = _dosya()
@@ -85,10 +91,10 @@ def kaydet(*, meslek: str, zorluk: str, motor: str, model: str, gecti: bool,
         pass                                   # karne bir gosterge; is durmaz
 
 
-def satirlar() -> list:
+def _ham() -> list:
     try:
         with open(_dosya(), encoding="utf-8") as f:
-            ham = f.readlines()[-PENCERE:]
+            ham = f.readlines()[-PENCERE * 2:]
     except OSError:
         return []
     sonuc = []
@@ -97,9 +103,40 @@ def satirlar() -> list:
             v = json.loads(s)
         except ValueError:
             continue
-        if isinstance(v, dict) and v.get("motor"):
+        if isinstance(v, dict):
             sonuc.append(v)
     return sonuc
+
+
+def satirlar() -> list:
+    """Is satirlari (en yeni PENCERE). Patron PUANI dusukse (<= 2) is
+    `gecti` olsa da temiz sayilmaz: `puan` alani satira islenir."""
+    hepsi = _ham()
+    puan = {v["gorev"]: v["puan"] for v in hepsi
+            if v.get("tur") == "puan" and v.get("gorev") and v.get("puan")}
+    sonuc = []
+    for v in hepsi:
+        if v.get("tur") == "puan" or not v.get("motor"):
+            continue
+        if v.get("gorev") in puan:
+            v = dict(v, puan=puan[v["gorev"]])
+        sonuc.append(v)
+    return sonuc[-PENCERE:]
+
+
+def puan_yaz(*, gorev_id: str, puan: int, meslek: str, zorluk: str, motor: str, model: str) -> None:
+    """Patronun teslim puani karneye (ayni ise sonraki puan oncekini ezer)."""
+    satir = {"tur": "puan", "zaman": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+             "gorev": gorev_id, "puan": int(puan), "meslek": meslek or "", "zorluk": zorluk or "",
+             "motor": motor or "", "model": model or ""}
+    try:
+        with _KILIT:
+            yol = _dosya()
+            yol.parent.mkdir(parents=True, exist_ok=True)
+            with open(yol, "a", encoding="utf-8") as f:
+                f.write(json.dumps(satir, ensure_ascii=False) + "\n")
+    except OSError:
+        pass
 
 
 def ozet(meslek: str = "", zorluk: str = "", kayitlar=None) -> dict:
@@ -119,7 +156,8 @@ def ozet(meslek: str = "", zorluk: str = "", kayitlar=None) -> dict:
         for r in secilen:
             m = motorlar.setdefault(r["motor"], {"n": 0, "temiz": 0})
             m["n"] += 1
-            if r.get("gecti") and not r.get("ret"):
+            # Patronun dusuk puani (<= 2) lider kapatmis olsa da temiz degildir.
+            if r.get("gecti") and not r.get("ret") and not (r.get("puan") and r["puan"] <= 2):
                 m["temiz"] += 1
         for m in motorlar.values():
             m["oran"] = round(m["temiz"] / m["n"], 3) if m["n"] else 0.0
@@ -149,6 +187,26 @@ def isin_motoru(db, proje_id: str, gorev: dict) -> tuple:
         motor, model = v.get("motor") or motor, v.get("model") or model
         sure += float(v.get("sure_ms") or 0) / 1000
     return (motor or (gorev.get("motor_secimi") or ""), model, round(sure, 1) or None)
+
+
+def isin_jetonu(db, proje_id: str, gorev: dict) -> int:
+    """Isci turlarinin toplam jetonu (lider / inceleme turlari haric)."""
+    toplam = 0
+    try:
+        with db.baglanti() as c:
+            rows = c.execute(
+                "SELECT govde FROM olay WHERE proje_id = ? AND gorev_id = ? "
+                "AND tur = 'tur_ozeti'", (proje_id, gorev["id"])).fetchall()
+    except Exception:                          # noqa: BLE001
+        return 0
+    for r in rows:
+        try:
+            v = json.loads(r[0] or "{}")
+        except ValueError:
+            continue
+        if not v.get("yol"):
+            toplam += int(v.get("jeton") or 0)
+    return toplam
 
 
 def _doluluk(db, proje_id: str) -> dict:

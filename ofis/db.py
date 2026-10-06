@@ -494,6 +494,69 @@ CREATE INDEX IF NOT EXISTS ix_tur_anlik_proje
 -- YUKSELTILIR. Kaynagi tutulur (olgu konusu / ders kimligi).
 -- SILINMEZ, kaldirilir: ne zaman, neden -- gecmis okunur.
 -- ---------------------------------------------------------------------------
+-- HAFIZA ONERISI (06.10.2026, Asama 2 / E31): patron sohbette kalici bir
+-- bilgi soyledi ("iade suresi 30 gun"); lider onu ONERIR, patron "Yaz" der.
+-- `alinti` patronun mesajindan KELIMESI KELIMESINE (ofis denetler).
+CREATE TABLE IF NOT EXISTS hafiza_onerisi (
+    id              TEXT PRIMARY KEY,
+    proje_id        TEXT NOT NULL REFERENCES proje(id),
+    konu            TEXT NOT NULL,
+    icerik          TEXT NOT NULL,
+    alinti          TEXT NOT NULL,
+    oneren          TEXT NOT NULL,
+    durum           TEXT NOT NULL DEFAULT 'bekliyor',   -- bekliyor | yazildi | reddedildi
+    olusturuldu     TEXT NOT NULL,
+    cevaplandi      TEXT
+);
+
+-- KONU TAKMA ADI (06.10.2026, Asama 2 / E32): ayni bilgi iki konu adiyla
+-- yazilmisti ("servis portu" / "Servis port numarasi"); patron BIRLESTIRIR.
+-- Takma ada sonradan yazilan bilgi ve `[[takma]]` bagi ASIL konuya gider.
+CREATE TABLE IF NOT EXISTS konu_takma (
+    proje_id        TEXT NOT NULL REFERENCES proje(id),
+    takma_anahtar   TEXT NOT NULL,
+    asil            TEXT NOT NULL,
+    veren           TEXT NOT NULL,
+    olusturuldu     TEXT NOT NULL,
+    PRIMARY KEY (proje_id, takma_anahtar)
+);
+
+-- BELGE KUTUPHANESI (06.10.2026, Asama 2 / E77): patronun yukledigi belge
+-- parcalara bolunur, her parca YERINI (sayfa/bolum/satir) tasir; ajan ve
+-- lider sorulara kaynagiyla cevap verir (`ofis/belge.py`).
+CREATE TABLE IF NOT EXISTS belge (
+    id              TEXT PRIMARY KEY,
+    proje_id        TEXT NOT NULL REFERENCES proje(id),
+    ad              TEXT NOT NULL,
+    yol             TEXT NOT NULL,
+    ozet            TEXT NOT NULL,
+    tur             TEXT NOT NULL,
+    boyut           INTEGER NOT NULL DEFAULT 0,
+    parca           INTEGER NOT NULL DEFAULT 0,
+    ekleyen         TEXT NOT NULL DEFAULT 'insan',
+    olusturuldu     TEXT NOT NULL,
+    kaldirildi      TEXT
+);
+
+CREATE TABLE IF NOT EXISTS belge_parca (
+    belge_id        TEXT NOT NULL REFERENCES belge(id),
+    sira            INTEGER NOT NULL,
+    yer             TEXT NOT NULL,
+    metin           TEXT NOT NULL,
+    PRIMARY KEY (belge_id, sira)
+);
+
+-- TESLIM PUANI (06.10.2026, Asama 2 / E78): patron kapanan ise 1-5 verir;
+-- dusuk puanin gerekcesi ajanin dersi olur, puan karneye gider (`ofis/puan.py`).
+CREATE TABLE IF NOT EXISTS teslim_puani (
+    gorev_id        TEXT PRIMARY KEY REFERENCES gorev(id),
+    proje_id        TEXT NOT NULL REFERENCES proje(id),
+    puan            INTEGER NOT NULL,
+    gerekce         TEXT NOT NULL DEFAULT '',
+    veren           TEXT NOT NULL DEFAULT 'insan',
+    olusturuldu     TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS kural (
     id              TEXT PRIMARY KEY,
     proje_id        TEXT NOT NULL REFERENCES proje(id),

@@ -1193,6 +1193,33 @@ def komut_iptal(a) -> None:
     yaz(f"  sebep: {a.sebep}")
 
 
+def komut_belge(a) -> None:
+    """BELGE KUTUPHANESI (06.10.2026): yukle / liste / ara / kaldir.
+    Kural `ofis/belge.py`de; kabuk ve panel yalniz ulasan kapilar."""
+    from . import belge as B
+    ofis = ofis_ac(a.db, a.proje)
+    try:
+        if a.eylem == "yukle":
+            if not a.deger:
+                raise SystemExit("kullanim: belge yukle DOSYA_YOLU")
+            r = B.yukle_yoldan(ofis, a.deger)
+            yaz(f"{r['ad']} yuklendi: {r['parca']} parca ({r['yol']})")
+        elif a.eylem == "ara":
+            for b in B.ara(ofis.db, ofis.proje_id, a.deger, azami=5):
+                yaz(f"[{b['belge']} - {b['yer']}] {' '.join(b['metin'].split())[:200]}")
+        elif a.eylem == "kaldir":
+            r = B.kaldir(ofis, a.deger)
+            yaz(f"{r['ad']} kaldirildi (dosya silinmedi)")
+        else:
+            bl = B.liste(ofis.db, ofis.proje_id)
+            if not bl:
+                yaz("Belge yok. Yuklemek icin: belge yukle DOSYA_YOLU")
+            for b in bl:
+                yaz(f"{b['id'][:8]}  {b['ad']}  ({b['parca']} parca, {b['tur']})")
+    except B.BelgeHatasi as exc:
+        raise SystemExit(str(exc))
+
+
 def komut_bilgi(a) -> None:
     """Ofisin HAFIZASI: bilgi ekle, listele, gecmisini gor.
 
@@ -2145,6 +2172,13 @@ def ayristirici() -> argparse.ArgumentParser:
     gu.add_argument("--npm-yok", dest="npm_yok", action="store_true",
                     help="npm surum sorgusunu atla (cevrimdisi)")
     gu.set_defaults(islev=komut_guncelle)
+
+    be = alt.add_parser("belge", help="BELGELER -- PDF/Word/Excel yukle, ara, listele")
+    be.add_argument("eylem", nargs="?", default="liste",
+                    choices=["liste", "yukle", "ara", "kaldir"])
+    be.add_argument("deger", nargs="?", default="",
+                    help="yukle: dosya yolu · ara: sorgu · kaldir: belge kimligi")
+    be.set_defaults(islev=komut_belge)
 
     bl = alt.add_parser("bilgi", help="HAFIZA -- kalici bilgi ekle / listele")
     bl.add_argument("eylem", nargs="?", default="liste",

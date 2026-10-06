@@ -168,6 +168,22 @@ sina("kapi: `python temizle.py` (betik siliyor) -> REDDEDILIR",
 sina("kapi: `python rapor.py` (zararsiz betik) -> SERBEST",
      s.izin("Bash", "python rapor.py").get("behavior") == "allow")
 sina("kapi: `git status` -> SERBEST", s.izin("Bash", "git status").get("behavior") == "allow")
+# YAMA (06.10.2026, gercek set G21 codex): ayni yamada sil + yeniden ekle bir
+# YENIDEN YAZMADIR; ajanin bu iste yarattigi dosyayi yamayla silmesi kayda gecer.
+_P = lambda *x: "*** Begin Patch\n" + "\n".join(x) + "\n*** End Patch"
+sina("kapi: yama `Delete+Add rapor.py` (yeniden yazma) -> SERBEST",
+     s.izin("apply_patch", _P("*** Delete File: rapor.py", "*** Add File: rapor.py", "+print(1)")
+            ).get("behavior") == "allow")
+sina("kapi: yama `Delete temizle.py` (once vardi) -> REDDEDILIR",
+     s.izin("apply_patch", _P("*** Delete File: temizle.py")).get("behavior") == "deny")
+import time as _t
+_t.sleep(1.2)
+(D / "ara_not.md").write_text("gecici", encoding="utf-8")
+sina("kapi: yama ajanin BU ISTE yarattigi dosyayi siliyor -> SERBEST (kayitli)",
+     s.izin("apply_patch", _P("*** Delete File: ara_not.md")).get("behavior") == "allow")
+with db.baglanti() as c:
+    _k = c.execute("SELECT govde FROM olay WHERE tur='kendi_dosyasini_sildi'").fetchall()
+sina("  kendi dosyasini sildigi deftere yazildi", any("ara_not.md" in r[0] for r in _k), str(_k))
 with db.baglanti() as c:
     kart = c.execute("SELECT eylem FROM onay WHERE eylem LIKE '%temizle.py%'").fetchone()
 sina("  patrona giden onay kartinda betigin adi var", kart is not None, str(kart and kart[0]))

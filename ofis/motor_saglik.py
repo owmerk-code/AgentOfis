@@ -99,10 +99,8 @@ def olu_yaz(motor: str, kimlik: str, parmak_izi: str, kategori: str, *,
         d = _oku(defter)
         d[_anahtar(motor, kimlik)] = {"parmak_izi": parmak_izi,
                                        "kategori": kategori, "an": time.time()}
-        defter.parent.mkdir(parents=True, exist_ok=True)
-        gecici = defter.with_suffix(".tmp")
-        gecici.write_text(json.dumps(d, ensure_ascii=False), encoding="utf-8")
-        gecici.replace(defter)          # yerinde yazma ATOMIK
+        from .dosya import atomik_yaz
+        atomik_yaz(defter, json.dumps(d, ensure_ascii=False))
     except OSError:
         pass
 

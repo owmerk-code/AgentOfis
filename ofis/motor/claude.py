@@ -102,19 +102,31 @@ def _sicak_anahtar(komut: list, kok, ortam: dict) -> str:
 
 
 def _sicak_al(anahtar: str):
-    """Bekleyen surec -> (surec, oturum) ya da None. Bayat/olu olan kapatilir."""
+    """Bekleyen surec -> (surec, oturum, kafes) ya da None. Bayat/olu olan kapatilir."""
     with _SICAK_KILIT:
         k = _SICAK.pop(anahtar, None)
     if not k:
         return None
     if k["surec"].poll() is None and time.monotonic() - k["an"] < SICAK_OMUR_SN:
-        return k["surec"], k["oturum"]
-    _sicak_oldur(k["surec"])
+        return k["surec"], k["oturum"], k.get("kafes")
+    _sicak_oldur(k)
     return None
 
 
-def _sicak_oldur(surec) -> None:
+def _sicak_oldur(k) -> None:
+    """Bekleyen sureci AGACIYLA kapatir.
+
+    06.10.2026 OLCULDU: yalniz `claude.exe` oldurulunce acilista baslattigi
+    yan surecler (ofisin MCP sunucusu, tarayici araci) bir sure klasorde
+    acik kaldi; gercek set iki gecici klasoru silemedi. Panel her 10 dk'da
+    bekleyeni yeniler -- her seferinde yetim birakmamali. Kafes (is nesnesi)
+    surec dogar dogmaz kurulur, kapaninca icindeki HER SEY biter.
+    """
+    surec = k["surec"] if isinstance(k, dict) else k
+    kafes = k.get("kafes") if isinstance(k, dict) else None
     try:
+        if kafes is not None:
+            kafes.kapat()
         surec.kill()
         surec.wait(timeout=5)
     except Exception:                            # noqa: BLE001 -- zaten olmus olabilir
@@ -132,15 +144,19 @@ def _sicak_hazirla(anahtar: str, komut: list, kok, ortam: dict) -> None:
                                  creationflags=_PENCERE_YOK)
     except OSError:
         return
+    # KAFES HEMEN: bekleyen surec acilista yan surecler baslatir; sonradan
+    # kurulan kafes onlari kapsamaz.
+    kafes = SurecKafesi(surec)
     eskiler = []
     with _SICAK_KILIT:
         eski = _SICAK.pop(anahtar, None)
         if eski:
-            eskiler.append(eski["surec"])
-        _SICAK[anahtar] = {"surec": surec, "oturum": oturum, "an": time.monotonic()}
+            eskiler.append(eski)
+        _SICAK[anahtar] = {"surec": surec, "oturum": oturum, "an": time.monotonic(),
+                           "kafes": kafes}
         while len(_SICAK) > SICAK_AZAMI:
             en_eski = min(_SICAK, key=lambda x: _SICAK[x]["an"])
-            eskiler.append(_SICAK.pop(en_eski)["surec"])
+            eskiler.append(_SICAK.pop(en_eski))
     for s in eskiler:
         _sicak_oldur(s)
 
@@ -148,7 +164,7 @@ def _sicak_hazirla(anahtar: str, komut: list, kok, ortam: dict) -> None:
 def sicaklari_kapat() -> int:
     """Bekleyen butun surecleri kapatir (panel kapanisi, sinama)."""
     with _SICAK_KILIT:
-        hepsi = [k["surec"] for k in _SICAK.values()]
+        hepsi = list(_SICAK.values())
         _SICAK.clear()
     for s in hepsi:
         _sicak_oldur(s)
@@ -761,11 +777,12 @@ class ClaudeMotoru(Motor):
 
         basladi = time.monotonic()
         surec = None
+        sicak_kafes = None
         if sicak:
             anahtar = _sicak_anahtar(komut, kok, ortam)
             hazir = _sicak_al(anahtar)
             if hazir:
-                surec, oturum = hazir
+                surec, oturum, sicak_kafes = hazir
         try:
             if surec is None:
                 surec = subprocess.Popen(
@@ -788,7 +805,8 @@ class ClaudeMotoru(Motor):
             # saniyeler icinde gelir.
             _sicak_hazirla(anahtar, komut, kok, ortam)
         # KAFES: turun baslattigi HER SEY tur bitince biter (yetimler dahil).
-        kafes = SurecKafesi(surec)
+        # Sicak surec kendi kafesiyle gelir (dogdugu anda kuruldu).
+        kafes = sicak_kafes if sicak_kafes is not None else SurecKafesi(surec)
 
         yield MotorOlayi("basladi", f"{self.ad} turu basladi",
                          {"oturum_id": oturum, "devam": devam, "klasor": str(kok)})

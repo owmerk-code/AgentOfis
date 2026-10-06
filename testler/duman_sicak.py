@@ -47,8 +47,11 @@ import json, os, sys
 sys.stdout.reconfigure(encoding="utf-8"); sys.stdin.reconfigure(encoding="utf-8")
 kayit = os.path.join(os.path.dirname(__file__), "kayit.jsonl")
 argv = sys.argv[1:]
+import subprocess as _sp
+_yan = _sp.Popen([sys.executable, "-c", "import time; time.sleep(120)"],
+                 creationflags=getattr(_sp, "CREATE_NO_WINDOW", 0))
 with open(kayit, "a", encoding="utf-8") as f:
-    f.write(json.dumps({"pid": os.getpid(), "argv": argv}) + "\n")
+    f.write(json.dumps({"pid": os.getpid(), "argv": argv, "yan": _yan.pid}) + "\n")
 def yaz(m):
     sys.stdout.write(json.dumps(m, ensure_ascii=False) + "\n"); sys.stdout.flush()
 oturum = argv[argv.index("--session-id") + 1] if "--session-id" in argv else ""
@@ -144,10 +147,34 @@ time.sleep(0.5)
 sina("DEVAM eden (oturumlu) tur sicak kullanmaz ve hazirlamaz", surec_sayisi() == once + 1)
 
 kalan = [k["surec"] for k in CL._SICAK.values()]
+_kalan_pid = {k["surec"].pid for k in CL._SICAK.values()}
+_yanlar = [json.loads(x)["yan"] for x in kayit.read_text(encoding="utf-8").splitlines()
+           if json.loads(x)["pid"] in _kalan_pid]
+
+
+def _yasiyor(pid: int) -> bool:
+    """Windows: surec hala kosuyor mu (cikis kodu STILL_ACTIVE=259)."""
+    import ctypes
+    k32 = ctypes.WinDLL("kernel32")
+    k32.OpenProcess.restype = ctypes.c_void_p
+    h = k32.OpenProcess(0x1000, False, int(pid))      # QUERY_LIMITED_INFORMATION
+    if not h:
+        return False
+    kod = ctypes.c_ulong()
+    k32.GetExitCodeProcess(ctypes.c_void_p(h), ctypes.byref(kod))
+    k32.CloseHandle(ctypes.c_void_p(h))
+    return kod.value == 259
+
+
+sina("bekleyen surecin YAN sureci kapatmadan once yasiyor",
+     bool(_yanlar) and all(_yasiyor(p) for p in _yanlar), str(_yanlar))
 n = CL.sicaklari_kapat()
 time.sleep(0.3)
 sina("sicaklari_kapat hepsini kapatti", n == len(kalan) and n > 0
      and all(s.poll() is not None for s in kalan) and not CL._SICAK, f"{n}")
+time.sleep(0.5)
+sina("bekleyenin YAN SURECLERI de kapandi (yetim kalmadi -- kafes dogumda)",
+     _yanlar and not any(_yasiyor(p) for p in _yanlar), str([p for p in _yanlar if _yasiyor(p)]))
 
 print("\n2. PANELIN ONCEDEN ISITMASI = LIDERIN GERCEK TURU (ayni anahtar)")
 from ofis import Ofis, Veritabani
@@ -176,6 +203,11 @@ sina("lider_isit bekleyen sureci hazirladi", _isindi and len(CL._SICAK) == 1,
 sina("ikinci isitma TAZE olani bozmaz (yeni surec acmaz)",
      not _o.orkestra.lider_isit(_lider, butce_usd=0.5) and len(CL._SICAK) == 1)
 _pid = next(iter(CL._SICAK.values()))["surec"].pid
+# Sahte CLI kayit satirini yan sureci baslattiktan SONRA yazar: sayim o satir
+# dusmeden alinirsa bekleyenin satiri "yeni surec" sayilir.
+_bitis = time.time() + 5
+while not any(f'"pid": {_pid}' in x for x in kayit.read_text(encoding="utf-8").splitlines())         and time.time() < _bitis:
+    time.sleep(0.05)
 once = surec_sayisi()
 _cevap = _o.orkestra._lideri_kostur(_lider, "naber", 0.5, None)
 time.sleep(0.5)

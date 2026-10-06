@@ -81,10 +81,8 @@ def _kayit_oku() -> dict:
 
 
 def _kayit_yaz(v: dict) -> None:
-    y = _kok() / "kayit.json"
-    g = y.with_suffix(".json.tmp")
-    g.write_text(json.dumps(v, ensure_ascii=False, indent=1), encoding="utf-8")
-    g.replace(y)
+    from .dosya import atomik_yaz
+    atomik_yaz(_kok() / "kayit.json", json.dumps(v, ensure_ascii=False, indent=1))
 
 
 def _an() -> str:

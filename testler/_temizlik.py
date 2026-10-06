@@ -91,6 +91,44 @@ def _damgalar() -> dict:
 
 
 _BASTAKI_DAMGALAR = _damgalar()
+_BASLANGIC = time.time()
+
+
+def _brifing_artiklarini_sil() -> int:
+    """GERCEK EVLE kosan duzenegin (gercek set, deneme, matris) biraktigi
+    brifing kopyalari (`ev/brifing/<proje>/`) silinir.
+
+    OLCULDU (06.10.2026): gercek evde 366 brifing klasoru vardi, YALNIZ
+    BIRI gercek projenindi -- her gercek set isi gecici bir proje acar,
+    defteri silinir ama brifing kopyasi evde kalir. Silinen: bu SURECTE
+    acilmis ve gercek defterde OLMAYAN proje klasoru. Gercek projeye ve
+    surecten once var olana dokunulmaz.
+    """
+    if os.environ.get("OFIS_EV", "") != _GERCEK_EV:
+        return 0                     # gecici ev zaten butunuyle silinir
+    kok = os.path.join(_GERCEK_EV, "brifing")
+    if not os.path.isdir(kok):
+        return 0
+    import sqlite3
+    gercek = set()
+    defter = os.path.join(_KOK, "veri", "ofis.sqlite3")
+    try:
+        c = sqlite3.connect(f"file:{defter}?mode=ro", uri=True)
+        gercek = {r[0] for r in c.execute("SELECT id FROM proje")}
+        c.close()
+    except sqlite3.Error:
+        return 0                     # gercek defter okunamadiysa hicbir sey silinmez
+    silinen = 0
+    for ad in os.listdir(kok):
+        y = os.path.join(kok, ad)
+        try:
+            if (os.path.isdir(y) and ad not in gercek
+                    and os.stat(y).st_ctime >= _BASLANGIC - 1):
+                shutil.rmtree(y, ignore_errors=True)
+                silinen += 1
+        except OSError:
+            pass
+    return silinen
 
 
 
@@ -103,6 +141,16 @@ def _yazilabilir_yap(islev, yol, _hata):
 
 
 def temizle() -> list:
+    # SICAK BEKLEYEN SURECLER ONCE (06.10.2026 OLCULDU): gercek set her Claude
+    # isinde bir gecici klasoru silemedi -- liderin bekleyen sureci (ve MCP
+    # yan sureci, defteri acik) o klasorde yasiyordu; kapatma kancasi
+    # temizlikten SONRA kosabiliyordu.
+    _cl = sys.modules.get("ofis.motor.claude")
+    if _cl is not None:
+        try:
+            _cl.sicaklari_kapat()
+        except Exception:                 # noqa: BLE001 -- temizlik durmasin
+            pass
     gc.collect()
     kalan = []
     for yol in reversed(_ACILAN):
@@ -121,6 +169,7 @@ def temizle() -> list:
 
 def _cikista():
     kalan = temizle()
+    _brifing_artiklarini_sil()
     # BEKCI: sinama gercek hafizaya yazdiysa SESSIZ kalinmaz. Gercek ofis
     # (panel, kabuk) ayni anda calisiyorsa yanlis alarm olabilir -- bu
     # yuzden hangi dosyanin degistigi soylenir, karar okuyanin.

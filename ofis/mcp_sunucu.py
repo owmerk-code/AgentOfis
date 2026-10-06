@@ -198,6 +198,30 @@ def arac_kanit_ekle(oturum: Oturum, args: dict) -> str:
     return f"Kanit eklendi: [{tur}] {baslik} (#{g['no']} icin toplam {toplam} kanit)."
 
 
+def arac_belge_ara(oturum: Oturum, args: dict) -> str:
+    """Patronun yukledigi belgelerde arama -- parca + KAYNAGI (06.10.2026)."""
+    from ofis import belge as _belge
+    sorgu = str(args.get("sorgu") or "").strip()
+    if not sorgu:
+        return "HATA: sorgu bos."
+    try:
+        azami = max(1, min(int(args.get("azami") or 5), 10))
+    except (TypeError, ValueError):
+        azami = 5
+    belgeler = _belge.liste(oturum.ofis.db, oturum.proje_id)
+    if not belgeler:
+        return "Yuklu belge yok."
+    bulunan = _belge.ara(oturum.ofis.db, oturum.proje_id, sorgu, azami=azami)
+    if not bulunan:
+        return ("Belgelerde bu kelimelerle bir sey bulunamadi ("
+                + ", ".join(b["ad"] for b in belgeler[:10])
+                + "). Baska kelimelerle dene; yoksa 'belgede yok' de, UYDURMA.")
+    satir = ["Cevapta KAYNAGI yaz: (belge adi, yer)."]
+    for b in bulunan:
+        satir += ["", f"[{b['belge']} · {b['yer']}]", b["metin"][:1500]]
+    return "\n".join(satir)
+
+
 def arac_bilgi_yaz(oturum: Oturum, args: dict) -> str:
     """Olgu katmaninin ajana acilan kapisi.
 
@@ -290,9 +314,13 @@ SOHBET_AZAMI_HARF = 1200
 SOHBET_AZAMI_EK = 5
 
 
-def _kendi_yeni_dosyalari(ofis, gorev_id: str, girdi: dict) -> bool:
+def _kendi_yeni_dosyalari(ofis, gorev_id: str, girdi: dict, hedefler=None) -> bool:
     """Silme komutunun HER hedefi: kokun icinde, duz dosya, isin acilisindan
-    SONRA yaratilmis mi. Olcemedigimiz her durumda False (= sorulur)."""
+    SONRA yaratilmis mi. Olcemedigimiz her durumda False (= sorulur).
+
+    `hedefler` verilirse (yama: `*** Delete File:` yollari, koke gore) komut
+    ayristirilmaz -- 06.10.2026: kural yalniz kabukta vardi, codex'in yamayla
+    sildigi KENDI dosyasi patrona soruluyordu."""
     import datetime as _dt
     from pathlib import Path as _P
     # Sunucu betik olarak kosar; `riskli` modul duzeyinde YOK (kapi
@@ -302,7 +330,11 @@ def _kendi_yeni_dosyalari(ofis, gorev_id: str, girdi: dict) -> bool:
     from ofis import riskli
     try:
         kok = str(_P(ofis.kok_klasoru()).resolve())
-        hedefler = riskli.silme_hedefleri(str(girdi.get("command") or ""), kok)
+        if hedefler is not None:
+            cwd = str(girdi.get("workdir") or girdi.get("cwd") or kok)
+            hedefler = [riskli._yol_coz(h, cwd) for h in hedefler]
+        else:
+            hedefler = riskli.silme_hedefleri(str(girdi.get("command") or ""), kok)
         if not hedefler:
             return False
         with ofis.db.baglanti() as c:
@@ -322,7 +354,10 @@ def _kendi_yeni_dosyalari(ofis, gorev_id: str, girdi: dict) -> bool:
                 continue
             if not p.is_relative_to(kok) or not p.is_file() or ".git" in p.parts:
                 return False
-            if p.stat().st_ctime < acilis:
+            # Acilis SANIYEYE yuvarli (db.simdi); ayni saniyede ama isten ONCE
+            # yaratilan dosya "sonra" sayiliyordu (06.10, duman_kapi_kod
+            # yakaladi). Supheli saniye SORULUR: +1 sn.
+            if p.stat().st_ctime < acilis + 1:
                 return False
         return True
     except Exception:                  # noqa: BLE001 -- supheliyse SORULUR
@@ -1073,6 +1108,13 @@ def arac_izin_sor(oturum: Oturum, args: dict) -> str:
                          f"{arac} | {str(girdi.get('command') or '')[:200]}",
                          ajan_ad=oturum.ajan_ad, gorev_id=gorev_id)
         return izin()
+    if (bulgu.get("sinif") == "silme" and arac in riskli.YAMA_ARACLARI
+            and gorev_id and bulgu.get("yama_hedefleri")
+            and _kendi_yeni_dosyalari(ofis, gorev_id, girdi, bulgu["yama_hedefleri"])):
+        ofis.db.olay_yaz(oturum.proje_id, "kendi_dosyasini_sildi",
+                         f"{arac} | yama: {', '.join(bulgu['yama_hedefleri'])[:200]}",
+                         ajan_ad=oturum.ajan_ad, gorev_id=gorev_id)
+        return izin()
 
     # SORULMAYAN ama KAYDA GECEN sinif.
     if not bulgu.get("sorulur"):
@@ -1233,6 +1275,25 @@ ARACLAR = [
             "required": ["konu", "icerik"],
         },
         "islev": arac_bilgi_yaz,
+    },
+    {
+        "name": "belge_ara",
+        "description": (
+            "Patronun yukledigi belgelerde (PDF, Word, Excel, metin) arama "
+            "yapar; en ilgili parcalari KAYNAGIYLA (belge adi + sayfa/bolum/"
+            "satir) dondurur. Belgeden bir sey soyluyorsan kaynagi yaz; "
+            "belgede yoksa uydurma."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "sorgu": {"type": "string",
+                          "description": "Aranan sey, birkac kelime (orn. 'iade suresi kargo ucreti')."},
+                "azami": {"type": "integer", "description": "En fazla kac parca (1-10, varsayilan 5)."},
+            },
+            "required": ["sorgu"],
+        },
+        "islev": arac_belge_ara,
     },
     {
         "name": "beceri_oner",

@@ -247,27 +247,25 @@ class Bellek:
         if len(hepsi) <= esik:
             return {"secilen": hepsi, "elenen": 0, "secim_yapildi": False}
 
-        anahtar = _kelimeler(gorev_metni)
-        puanli = []
-        for o in hepsi:
-            kelimeler = _kelimeler(o["konu"] + " " + o["icerik"])
-            puanli.append((_ortak(kelimeler, anahtar), o))
-        # Yuksek puan once; esitlikte konu adina gore kararli sirala ki
-        # ayni girdi ayni ciktiyi versin.
-        puanli.sort(key=lambda p: (-p[0], p[1]["konu"]))
+        # SIRALAMA TEK KURAL (06.10.2026, `arama.sirala`; olculdu
+        # `olcum_anlamsal.py`): kelime kapisi + harf dizisi sirasi. Esitlikte
+        # konu adiyla kararli -- ayni girdi ayni ciktiyi versin.
+        from .arama import sirala
+        hepsi = sorted(hepsi, key=lambda o: o["konu"])
+        sira = sirala(gorev_metni, [o["konu"] + " " + o["icerik"] for o in hepsi])
 
-        # Sifir puanli olgu -- goreve deyen tek kelimesi bile yok -- KESILIR.
-        # Bu guvenli, cunku KALICI kurallar olgu degil PROJE alanidir
+        # Ilgisiz olgu -- goreve deyen kelimesi de harf benzerligi de yok --
+        # KESILIR. Bu guvenli, cunku KALICI kurallar olgu degil PROJE alanidir
         # (amac · basari_olcutu · kapsam_disi · kisitlar · sozluk) ve
         # K2'de kosulsuz duruyor. Dogrulandi.
-        ilgili = [o for puan, o in puanli if puan > 0][:azami]
+        ilgili = [hepsi[i] for i, _k, _h in sira][:azami]
         if ilgili:
             secilen = ilgili
         else:
             # Hicbiri deymiyorsa NE ILGILI OLDUGUNU BILMIYORUZ demektir.
             # O zaman bilmedigimizi biliyormus gibi davranmayiz: en
             # yakinlari koyariz ve brifing secim yapildigini soyler.
-            secilen = [o for puan, o in puanli[:azami]]
+            secilen = hepsi[:azami]
 
         # BAG BIR ADIM IZLENIR. Olculmus kayip (19.09.2026): gereken olgu
         # gorevle HIC ortak kelime tasimiyorsa eleniyordu ("lojistik
@@ -277,10 +275,12 @@ class Bellek:
         # agi butun hafizayi brifinge cekerdi.
         dizin = {konu_anahtari(o["konu"]): o for o in hepsi}
         secili = {konu_anahtari(o["konu"]) for o in secilen}
+        takma = self.takma_haritasi()
         eklenen = []
         for o in list(secilen):
             for b in baglar(o["icerik"]):
                 a = konu_anahtari(b)
+                a = konu_anahtari(takma[a]) if a in takma else a
                 if (a in dizin and a not in secili
                         and len(eklenen) < AZAMI_BAG_OLGU):
                     secili.add(a)
@@ -292,8 +292,15 @@ class Bellek:
     # -- bilgi: olgu katmaninin GIRIS kapisi -------------------------------
 
     def _konu_bul(self, konu: str) -> str:
-        """Ayni konu daha once yazildiysa ONUN yazilisi doner."""
+        """Ayni konu daha once yazildiysa ONUN yazilisi doner.
+
+        Birlestirilmis konunun TAKMA adi asil konuya gider (06.10.2026):
+        yoksa bir ajan eski adla yazip birlestirilmis bilgiyi ikiye bolerdi.
+        """
         a = konu_anahtari(konu)
+        asil = self.takma_haritasi().get(a)
+        if asil:
+            return asil
         with self.db.baglanti() as conn:
             rows = conn.execute(
                 "SELECT DISTINCT konu FROM olgu WHERE proje_id = ?",
@@ -367,6 +374,202 @@ class Bellek:
         r["durum"] = "guncellendi" if mevcut else "yeni"
         r["kaynak"] = kaynak
         return r
+
+    # -- birlestirme (06.10.2026, E32) ---------------------------------------
+
+    #: Birlestirme adayi listesinin tavani: bir oneri listesi, envanter degil.
+    AZAMI_BIRLESIM_ADAYI = 20
+
+    def takma_haritasi(self) -> dict:
+        """{takma konunun anahtari: asil konu adi}."""
+        try:
+            with self.db.baglanti() as conn:
+                rows = conn.execute("SELECT takma_anahtar, asil FROM konu_takma WHERE proje_id = ?",
+                                    (self.proje_id,)).fetchall()
+        except Exception:                         # noqa: BLE001 -- eski defter: tablo yok
+            return {}
+        return {r["takma_anahtar"]: r["asil"] for r in rows}
+
+    def birlesim_adaylari(self) -> list:
+        """AYNI bilgi iki konu adiyla mi duruyor -- OLCULEN aday, karar insanin.
+
+        Olculdu (24.09.2026, gercek haiku turu): isci `servis portu`, lider
+        ayni degeri `Servis port numarasi` diye yazdi. Aday olmanin iki
+        sarti birlikte aranir: konu adlari ortak (4+ harfli) bir kelime
+        tasir VE icerikler ya ayni ya da ortak bir DEGER (sayi ya da 4+
+        harfli kelime) tasir. Yalniz birinin tutmasi gurultudur: "iade
+        suresi" ile "iade adresi" ayni bilgi degildir.
+        """
+        olgular = self.gecerli_olgular()
+        adaylar = []
+        for i, a in enumerate(olgular):
+            ka = _kelimeler(a["konu"])
+            ia = " ".join(_sadelestir(a["icerik"]).split())
+            for b in olgular[i + 1:]:
+                if konu_anahtari(a["konu"]) == konu_anahtari(b["konu"]):
+                    continue
+                ortak_konu = _ortak(ka, _kelimeler(b["konu"]))
+                if not ortak_konu:
+                    continue
+                ib = " ".join(_sadelestir(b["icerik"]).split())
+                ayni = ia == ib
+                # Konu adlari yalniz SAYIYLA ayrisiyorsa (k1 / k2, "sube 3" /
+                # "sube 4") bunlar sira, ayni bilgi degil (sinama yakaladi).
+                if re.sub(r"\d+", "", konu_anahtari(a["konu"])) == re.sub(r"\d+", "", konu_anahtari(b["konu"])):
+                    continue
+                sa = set(re.findall(r"\d[\d.,:]*\d|\d", ia))
+                sb = set(re.findall(r"\d[\d.,:]*\d|\d", ib))
+                # Ikisi de SAYI tasiyor ve ortak sayi yoksa DEGERLER farklidir
+                # ("deger 0" / "deger 1"): ortak kelime bunu ortmez.
+                if sa and sb and not (sa & sb):
+                    continue
+                ortak_deger = (sa & sb) or (_kelimeler(ia) & _kelimeler(ib))
+                if not (ayni or ortak_deger):
+                    continue
+                sebep = ("icerik AYNI" if ayni else
+                         "ortak deger: " + ", ".join(sorted(ortak_deger))[:60])
+                adaylar.append({"a": a["konu"], "a_icerik": a["icerik"],
+                                "b": b["konu"], "b_icerik": b["icerik"],
+                                "sebep": sebep, "puan": (2 if ayni else 1) + ortak_konu})
+        adaylar.sort(key=lambda x: (-x["puan"], x["a"], x["b"]))
+        return adaylar[:self.AZAMI_BIRLESIM_ADAYI]
+
+    def birlestir(self, asil: str, takma: str, *, kim: str = KAYNAK_INSAN) -> dict:
+        """`takma` konusunu `asil`a katar: takmanin gecerli bilgisi kapanir
+        (silinmez, `gecersiz_kilan` = asil), takma adi asil konuya yonlenir.
+
+        Hangisinin icerigi kalir? ASIL olaninki -- patron hangisini
+        tutacagini secerek bunu da secmis olur. Yalniz insan birlestirir:
+        yanlis birlestirme iki ayri bilgiyi sessizce birine dusurur.
+        """
+        if kim != KAYNAK_INSAN:
+            raise BellekHatasi("Bilgileri yalniz patron birlestirir.")
+        k_asil, k_takma = self._konu_bul(asil), self._konu_bul(takma)
+        if not k_asil or not self.gecerli_olgular([k_asil]):
+            raise BellekHatasi(f"Gecerli bir '{asil}' bilgisi yok.")
+        if not k_takma or not self.gecerli_olgular([k_takma]):
+            raise BellekHatasi(f"Gecerli bir '{takma}' bilgisi yok.")
+        if konu_anahtari(k_asil) == konu_anahtari(k_takma):
+            raise BellekHatasi("Ayni konu kendisiyle birlestirilemez.")
+        an = simdi()
+        with self.db.baglanti() as conn:
+            asil_id = conn.execute(
+                "SELECT id FROM olgu WHERE proje_id = ? AND konu = ? AND gecerli_bitis IS NULL",
+                (self.proje_id, k_asil)).fetchone()["id"]
+            t = conn.execute(
+                "SELECT id, icerik FROM olgu WHERE proje_id = ? AND konu = ? AND gecerli_bitis IS NULL",
+                (self.proje_id, k_takma)).fetchone()
+            conn.execute("UPDATE olgu SET gecerli_bitis = ?, gecersiz_kilan = ? WHERE id = ?",
+                         (an, asil_id, t["id"]))
+            conn.execute(
+                "INSERT OR REPLACE INTO konu_takma (proje_id, takma_anahtar, asil, veren, olusturuldu) "
+                "VALUES (?,?,?,?,?)", (self.proje_id, konu_anahtari(k_takma), k_asil, kim, an))
+            # Daha once bu takmaya yonlenmis adlar da yeni asile gider (zincir olmasin).
+            conn.execute("UPDATE konu_takma SET asil = ? WHERE proje_id = ? AND asil = ?",
+                         (k_asil, self.proje_id, k_takma))
+        self.db.olay_yaz(self.proje_id, "birlesti",
+                         f"'{k_takma}' ({t['icerik'][:120]}) -> '{k_asil}' konusuna katildi",
+                         ajan_ad=kim)
+        return {"asil": k_asil, "takma": k_takma, "kapanan_icerik": t["icerik"]}
+
+    # -- sohbetten hafiza onerisi (06.10.2026, E31) --------------------------
+
+    #: Bir patron mesajindan en fazla kac oneri: hafiza cop kutusu degil.
+    AZAMI_SOHBET_ONERISI = 3
+
+    def sohbet_onerileri(self, oneriler, patron_sozu: str, *, oneren: str) -> list:
+        """Liderin triyajda cikardigi `bilgi` onerilerini KAPIDAN gecirir.
+
+        Olculdu: patronun sohbette soyledigi bilgi ("iade suresi 30 gun")
+        hicbir yere yazilmiyordu; bir sonraki iste ajan yine soruyordu.
+        Ama lider UYDURMASIN: oneri ancak patronun mesajinda KELIMESI
+        KELIMESINE gecen bir alintiya dayanirsa kart olur (izin kurali).
+        Yazan yine patrondur ("Yaz" dugmesi); lider yalniz onerir.
+        Gecersiz oneri SESSIZ atilmaz: `uyari` olayi.
+        """
+        if not oneriler:
+            return []
+        if not isinstance(oneriler, list):
+            oneriler = [oneriler]
+        soz = " ".join(_sadelestir(patron_sozu).split())
+        acilan = []
+        for o in oneriler[:self.AZAMI_SOHBET_ONERISI]:
+            if not isinstance(o, dict):
+                continue
+            konu = " ".join(str(o.get("konu") or "").split())
+            icerik = " ".join(str(o.get("icerik") or "").split())
+            alinti = " ".join(str(o.get("alinti") or "").split())
+            sebep = ""
+            if not konu or not icerik:
+                sebep = "konu ya da icerik bos"
+            elif len(konu) > AZAMI_KONU_HARF or len(icerik) > AZAMI_BILGI_HARF:
+                sebep = "cok uzun"
+            elif len(alinti) < 4 or " ".join(_sadelestir(alinti).split()) not in soz:
+                sebep = f"alinti ('{alinti[:60]}') patronun mesajinda kelimesi kelimesine gecmiyor"
+            if sebep:
+                self.db.olay_yaz(self.proje_id, "uyari",
+                                 f"Hafiza onerisi kart olmadi ({sebep}): {konu}", ajan_ad=oneren)
+                continue
+            try:
+                self.koruma_kapisi(oneren, "hafiza onerisi", f"{konu}: {icerik}")
+            except BellekHatasi:
+                continue
+            k = self._konu_bul(konu) or konu
+            mevcut = self.gecerli_olgular([k])
+            if mevcut and " ".join(mevcut[0]["icerik"].split()) == icerik:
+                continue                      # hafizada zaten AYNEN var
+            with self.db.baglanti() as conn:
+                ayni = conn.execute(
+                    "SELECT 1 FROM hafiza_onerisi WHERE proje_id = ? AND durum = 'bekliyor' "
+                    "AND konu = ? AND icerik = ?", (self.proje_id, k, icerik)).fetchone()
+                if ayni:
+                    continue
+                oid = uuid.uuid4().hex
+                conn.execute(
+                    "INSERT INTO hafiza_onerisi (id, proje_id, konu, icerik, alinti, oneren, "
+                    "durum, olusturuldu) VALUES (?,?,?,?,?,?,'bekliyor',?)",
+                    (oid, self.proje_id, k, icerik, alinti[:300], oneren, simdi()))
+            self.db.olay_yaz(self.proje_id, "hafiza_onerisi",
+                             f"{k} -> {icerik} (patron: \"{alinti[:120]}\")", ajan_ad=oneren)
+            acilan.append({"id": oid, "konu": k, "icerik": icerik, "alinti": alinti})
+        return acilan
+
+    def bekleyen_hafiza_onerileri(self) -> list:
+        with self.db.baglanti() as conn:
+            rows = conn.execute(
+                "SELECT * FROM hafiza_onerisi WHERE proje_id = ? AND durum = 'bekliyor' "
+                "ORDER BY olusturuldu, rowid", (self.proje_id,)).fetchall()
+        out = []
+        for r in rows:
+            d = dict(r)
+            m = self.gecerli_olgular([d["konu"]])
+            d["simdiki"] = m[0]["icerik"] if m else ""
+            out.append(d)
+        return out
+
+    def hafiza_onerisi_cevapla(self, oneri_id: str, *, yaz: bool,
+                               kim: str = KAYNAK_INSAN) -> dict:
+        """Patronun karari: `yaz` -> bilgi INSANIN bilgisi olarak yazilir."""
+        if kim != KAYNAK_INSAN:
+            raise BellekHatasi("Hafiza onerisini yalniz patron cevaplar.")
+        with self.db.baglanti() as conn:
+            r = conn.execute("SELECT * FROM hafiza_onerisi WHERE id = ? AND proje_id = ?",
+                             (oneri_id, self.proje_id)).fetchone()
+        if not r:
+            raise BellekHatasi(f"Oneri bulunamadi: {oneri_id}")
+        if r["durum"] != "bekliyor":
+            raise BellekHatasi(f"Bu oneri zaten '{r['durum']}'.")
+        sonuc = None
+        if yaz:
+            sonuc = self.bilgi_ekle(r["konu"], r["icerik"], yazan=KAYNAK_INSAN)
+        with self.db.baglanti() as conn:
+            conn.execute("UPDATE hafiza_onerisi SET durum = ?, cevaplandi = ? WHERE id = ?",
+                         ("yazildi" if yaz else "reddedildi", simdi(), oneri_id))
+        if not yaz:
+            self.db.olay_yaz(self.proje_id, "hafiza_onerisi_red",
+                             f"{r['konu']} -> {r['icerik']}", ajan_ad=kim)
+        return {"id": oneri_id, "durum": "yazildi" if yaz else "reddedildi",
+                "bilgi": sonuc}
 
     # -- yanlis / arama / geri bag (03.10.2026) ------------------------------
 

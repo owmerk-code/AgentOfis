@@ -165,12 +165,9 @@ def _diskten_oku() -> bool:
 def _diske_yaz() -> None:
     """Atomik: yarim yazilmis bir dosya bir sonraki acilisi yaniltmasin."""
     try:
-        yol = _disk_yolu()
-        yol.parent.mkdir(parents=True, exist_ok=True)
-        gecici = yol.with_suffix(".part")
-        gecici.write_text(json.dumps({"an": _ONBELLEK["an"], "veri": _ONBELLEK["veri"]},
-                                     ensure_ascii=False), encoding="utf-8")
-        os.replace(gecici, yol)
+        from .dosya import atomik_yaz
+        atomik_yaz(_disk_yolu(), json.dumps({"an": _ONBELLEK["an"], "veri": _ONBELLEK["veri"]},
+                                            ensure_ascii=False))
     except OSError:
         pass     # yazamamak isi DURDURMAZ -- bir sonraki olcum yine dener
 
@@ -421,10 +418,8 @@ def sorun_yaz(ad: str, mesaj: str) -> None:
         from .db import simdi
         defter[_anahtarla(ad)] = {"ad": ad, "an": simdi(),
                                   "mesaj": (mesaj or "")[:300]}
-        gecici = SORUN_DEFTERI.with_suffix(".tmp")
-        gecici.write_text(_json.dumps(defter, ensure_ascii=False, indent=1),
-                          encoding="utf-8")
-        gecici.replace(SORUN_DEFTERI)          # yerinde yazma ATOMIK olmali
+        from .dosya import atomik_yaz
+        atomik_yaz(SORUN_DEFTERI, _json.dumps(defter, ensure_ascii=False, indent=1))
     except (OSError, ValueError, TypeError):
         pass
 
@@ -466,10 +461,8 @@ def sorunu_temizle(ad: str) -> None:
         defter = _json.loads(SORUN_DEFTERI.read_text(encoding="utf-8"))
         if defter.pop(_anahtarla(ad), None) is None:
             return
-        gecici = SORUN_DEFTERI.with_suffix(".tmp")
-        gecici.write_text(_json.dumps(defter, ensure_ascii=False, indent=1),
-                          encoding="utf-8")
-        gecici.replace(SORUN_DEFTERI)
+        from .dosya import atomik_yaz
+        atomik_yaz(SORUN_DEFTERI, _json.dumps(defter, ensure_ascii=False, indent=1))
     except (OSError, ValueError, TypeError):
         pass
 

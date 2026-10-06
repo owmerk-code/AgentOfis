@@ -14524,3 +14524,55 @@ dala push da geçerdi — ölçüldü), sonrası dar izin. Günlük sayaç
 kabuk bulgusunu da tarayıcı gibi GEVŞEK eşliyordu (`element` taşıdığı için):
 "git push origin main" izni "git push origin canli"yi geçiriyordu → kabuk
 sıkı eşleşmede. duman_onay_yorgunlugu 33.
+
+## 06.10.2026 — Aşama 2 (hafıza ve zekâ) kapandı + yan bulgular
+
+K4 İŞÇİ HAFIZA SATIRI: sıfırlama öncesi gerçek defterde biten 20 işin YALNIZ 1'inde
+işçi hafızaya yazmıştı ("tetikleyici olursa bilgi_yaz" ricası). Yapı: brifingde
+ZORUNLU bitiş satırı (`BILGI: konu -> değer` ya da `HAFIZA: yok`), koltuk
+`bilgi_onerisi`/`hafiza_yok` kaydeder, lider incelemede görür ve doğruladığını
+yazar. GERÇEK: G03/G05/G21 claude + codex → 7/7 kapanan işte işçi satırı yazdı;
+G21'de port hafızaya girdi (claude ayrıca bir TUZAK yazdı). Sete G21 + kalite
+ölçütü "işçi hafıza satırını yazdı" eklendi.
+
+K5 SOHBETTEN ÖNERİ: triyaj JSON'una isteğe bağlı `bilgi` (en fazla 3); alıntı
+patronun mesajında kelimesi kelimesine geçmeli (Türkçe harf farkı tolere),
+hafızada aynen olan / bekleyen aynı öneri kart olmaz; "Yaz" → kaynak insan.
+
+K6 BİRLEŞTİRME: aday = konu adları ortak kelime + içerik ortak değer; yalnız
+sayıyla ayrışan konu adları (k1/k2) ve farklı sayılar aday değil (sınama
+yakaladı). Takma ad tablosu: eski adla yazılan bilgi ve `[[bağ]]` asıl konuya.
+
+K7 BELGE: `pypdf` kuruldu (PDF için tek yol). Kaynak keskin: sayfa/bölüm
+sınırında parça kesilir (iki küçük sayfa "s.1 - s.2" diye bulanıklaşıyordu).
+Metinsiz PDF, desteklenmeyen tür, aynı belge SESSİZ geçmez. GERÇEK G22 (45 gün,
+satıcı öder — model tahmini tutmaz): claude 7 sn, codex 12 sn, ikisi de
+"(iade_politikasi.pdf, s.2)" kaynağıyla.
+
+K9 ANLAMSAL ARAMA ÖLÇÜLDÜ (`olcum_anlamsal.py`, 40 bilgi/30 sorgu, 24 zor):
+kelime 13/30 · harf dizisi 16/30 (alakasızı ayıramıyor: "kedi maması markası"
+0,21) · kelime kapısı + harf sırası 15/30, alakasız boş → ALINDI (`arama.py`)
+· model2vec çok dilli 19/30 ama 1 GB + bağımlılık → ALINMADI, kaldırıldı.
+`olcum_hafiza` değerleri değişmedi.
+
+K10 PUAN / K11 TAHMİN: karne iş başına jeton + görev kimliği yazar; puan satırı
+ayrı (`tur: puan`), düşük puan temiz sayılmaz. Tahminde KOTA YÜZDESİ GERÇEK
+VERİDE TUTARSIZ ÇIKTI: aynı motorda jeton→% oranı 10 kat yayıldı, Claude 7 gün
+penceresi 5 saatlikten "hızlı" doluyor göründü — hesap ofis DIŞINDA da
+kullanılıyor (patronun Claude Code'u). Kapı: ≥5 çift ve q75/q25 ≤ 3 değilse
+yüzde verilmez ("bilinmiyor"); süre/jeton karneden verilir.
+
+YAN BULGULAR (gerçek koşu yakaladı):
+- EŞZAMANLI YAZMA: iki süreç `ev/beceriler/kayit.json`u aynı anda yazınca
+  `PermissionError [WinError 32]` (sabit `*.json.tmp`). Yedi kopya → tek
+  `dosya.atomik_yaz`; eski yöntem aynı yükte 6 süreçten 5'ini düşürdü, yeni 0.
+- SICAK SÜREÇ YETİMİ: bekleyen claude süreci öldürülünce açılışta başlattığı
+  yan süreçler (MCP) kafes dışında kalıyordu (kafes ancak kullanılınca
+  kuruluyordu) → panel her yenilemede yetim bırakırdı. Kafes doğumda kurulur.
+- BRİFİNG ARTIĞI: gerçek evde 366 brifing klasörü, 1'i gerçek projenin →
+  365 silindi; `_temizlik` gerçek evle koşan düzeneğin artığını siler.
+- CODEX YAMA: aynı yamada `Delete File + Add File` (yeniden yazma) "GERİ
+  ALINAMAZ SİLME" sayılıp G21'i onaya düşürdü → yeniden yazma serbest; ajanın
+  BU İŞTE yarattığı dosyayı yamayla silmesi kabuktaki gibi kayda geçer; işin
+  açılışı saniyeye yuvarlı olduğu için aynı saniyedeki eski dosya "yeni"
+  sayılıyordu → +1 sn (şüpheli saniye sorulur).

@@ -636,6 +636,10 @@ class EkGovdesi(BaseModel):
     veri: str = ""      # base64 (python-multipart bagimliligi eklenmesin)
 
 
+class HafizaOneriGovdesi(BaseModel):
+    yaz: bool
+
+
 class SebepGovdesi(BaseModel):
     """Ret ve iptal icin. Sebep ZORUNLU -- cekirdek zaten reddediyor;
     burada ayrica alan olmasi, panelin onu SORMASI icin."""
@@ -1298,6 +1302,8 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
         g["blokcular"] = ofis.tahta.blokcular(no)
         from . import izin as izin_mod
         g["izinler"] = izin_mod.liste(db, ofis.proje_id, gorev_id=g["id"])
+        from . import puan as _puan
+        g["puan"] = _puan.oku(db, ofis.proje_id, g["id"])
         g["brifing"] = dict(brifing) if brifing else None
         g["rapor"] = dict(rapor) if rapor else None
         return g
@@ -1364,7 +1370,17 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
                 "kurallar": ofis.bellek.kurallar(),
                 "kural_maliyeti": ofis.bellek.kural_maliyeti(),
                 "dersler": [dict(d, aday=d["id"] in adaylar) for d in dersler],
+                "birlesim": ofis.bellek.birlesim_adaylari(),
                 "secim_esigi": _bellek.OLGU_SECIM_ESIGI}
+
+    @uygulama.post("/api/hafiza/birlestir")
+    def api_hafiza_birlestir(govde: dict):
+        """Ayni bilginin iki konusu: `takma` -> `asil`. Yalniz insan (panel)."""
+        o = ofis_ac()
+        try:
+            return o.bellek.birlestir(str(govde.get("asil") or ""), str(govde.get("takma") or ""))
+        except BellekHatasi as exc:
+            raise HTTPException(400, str(exc))
 
     @uygulama.get("/api/hafiza/ara")
     def api_hafiza_ara(q: str = ""):
@@ -3003,9 +3019,66 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
         # Otomatik moddaki oneriler insana DUSMEZ; otomatik UYGULANANLAR
         # ise gorulene kadar kart olarak durur (Geri al dugmesiyle).
         return {"ekip": ofis.ekip.bekleyenler(),
+                "hafiza": ofis.bellek.bekleyen_hafiza_onerileri(),
                 "guncelleme": G.insana_dusenler(ofis.db, ofis.proje_id),
                 "uygulanan": G.gorulmemisler(ofis.db, ofis.proje_id),
                 "otomatik": G.otomatik_mi(ofis.db, ofis.proje_id)}
+
+    @uygulama.post("/api/gorev/{no}/puan")
+    def api_gorev_puan(no: int, govde: dict):
+        """Patronun teslim puani (1-5); dusukte gerekce zorunlu (`ofis/puan.py`)."""
+        from . import puan as _puan
+        try:
+            return _puan.ver(ofis_ac(), no, govde.get("puan"), str(govde.get("gerekce") or ""))
+        except _puan.PuanHatasi as exc:
+            raise HTTPException(400, str(exc))
+
+    @uygulama.get("/api/belgeler")
+    def api_belgeler():
+        from . import belge as _b
+        o = ofis_ac()
+        return {"belgeler": _b.liste(o.db, o.proje_id), "turler": list(_b.TURLER)}
+
+    @uygulama.post("/api/belge")
+    def api_belge(govde: EkGovdesi):
+        """Belge yukle (base64): parcalanir, kaynagiyla aranir (`ofis/belge.py`)."""
+        import base64
+        import binascii
+        from . import belge as _b
+        if len(govde.veri) > _b.AZAMI_BAYT * 4 // 3 + 16:
+            raise HTTPException(400, f"Belge cok buyuk; sinir {_b.AZAMI_BAYT // 1024 // 1024} MB.")
+        try:
+            veri = base64.b64decode(govde.veri, validate=True)
+        except (binascii.Error, ValueError):
+            raise HTTPException(400, "Dosya okunamadi (bozuk veri).")
+        try:
+            return _b.yukle(ofis_ac(), govde.ad, veri)
+        except _b.BelgeHatasi as exc:
+            raise HTTPException(400, str(exc))
+
+    @uygulama.post("/api/belge/{belge_id}/kaldir")
+    def api_belge_kaldir(belge_id: str):
+        from . import belge as _b
+        try:
+            return _b.kaldir(ofis_ac(), belge_id)
+        except _b.BelgeHatasi as exc:
+            raise HTTPException(400, str(exc))
+
+    @uygulama.get("/api/belge/ara")
+    def api_belge_ara(q: str = ""):
+        from . import belge as _b
+        o = ofis_ac()
+        return {"sorgu": q, "sonuc": _b.ara(o.db, o.proje_id, q, azami=10)}
+
+    @uygulama.post("/api/hafiza_onerisi/{oneri_id}")
+    def api_hafiza_onerisi(oneri_id: str, govde: HafizaOneriGovdesi):
+        """Patronun karari: lider sohbetteki bilgiyi onerdi -> yaz / yazma."""
+        from .bellek import BellekHatasi
+        ofis = ofis_ac()
+        try:
+            return ofis.bellek.hafiza_onerisi_cevapla(oneri_id, yaz=govde.yaz)
+        except BellekHatasi as exc:
+            raise HTTPException(400, str(exc))
 
     @uygulama.get("/api/sablonlar")
     def api_sablonlar():
