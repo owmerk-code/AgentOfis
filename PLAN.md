@@ -7,7 +7,58 @@
 > 5 Deneme seti · 6 Fazlar · 7 Çalışma düzeni · 8 Riskler ·
 > 9 Senden gereken kararlar
 
-## 0. KALAN EKSİKLER — SIRALI (06.10.2026, patron kararı)
+## 00. KALAN İŞLER — 08.10.2026 İNCELEMESİ (bağlayıcı liste)
+
+06.10'da konuşmada verilen 41 maddelik 7 aşamalı sıra (dosyaya yazılmamıştı)
+koddan ve günlükten TEK TEK doğrulandı. Aşama 1–4 BİTTİ; Aşama 5 (medya)
+büyük ölçüde bitti. **Patronun dışarıda tuttukları:** sesli orkestratör,
+arayüz tasarımı, uygulamaya çevirme. **Patronun notu (08.10):** "şuana kadar
+gerçek bir iş yapmadık, denemeler yaptık" — gerçek kullanım temiz başlangıçla
+başlar.
+
+| # | İş | Durum (08.10, doğrulandı) |
+|---|---|---|
+| **A — Gerçek kullanıma hazırlık** | | |
+| A1 | Güvenli sıfırlama (41-liste #38): silinecekler önce listelenir, patron YAZARAK onaylar, önce yedek | YOK (yalnız "düzeni sıfırla" var) |
+| A2 | Gerçek ofisi temiz başlangıca alma (deneme sohbetleri, karar/olgu, karnedeki 6 deneme kaydı) — A1 ile, patron onayıyla | bekliyor |
+| A3 | Belgeler: CLAUDE.md "Güncel durum" 29.09'da kalmış; Gemini satırı eski | eski |
+| **B — Ekranın işlevsel eksikleri (görünüş değil)** | | |
+| B1 | Karar ekranı: seçenekli soru, önerilen seçili, toplu kabul | YOK |
+| B2 | Her işin gerçek durumu tek ekranda (onay/kredi/giriş bekliyor, hangi adımda) | kısmen (kanban + iş kartı) |
+| B3 | Rapor + ona bağlı kararlar bir arada | kısmen (Raporlar sekmesi) |
+| B4 | Lider durum tablosu (kim çalışıyor, sırada ne var, neden) | YOK |
+| B5 | Değer panosu (haftalık iş, geri dönen iş, hesap başına kota) | YOK |
+| B6 | Bekleyen soru ilgili terminalin üstünde | doğrulanacak (yazma yeri var) |
+| B7 | Terminalde hangi HESAPLA çalıştığı | YOK (pencere yüzdesi var, hesap adı yok) |
+| **C — Medya ve tasarım (kalanlar)** | | |
+| C1 | Flow ile GÖRSEL uçtan uca (Nano Banana, ürün referanslı) | beceri var, canlı ölçülmedi |
+| C2 | Seslendirme (istenirse) + yapay zekâ müziği (patron: AI müzik); Flow müziği girişi/lisansı | YOK |
+| C3 | Flow 1080p "Yükseltilmiş" bedeli; teslim çözünürlüğü kararı | ölçülmedi |
+| C4 | Flow'u süren belirlenimci araç (Belle işi 1,21 M jeton / 48 dk; güç kısmaz, hız+kota) | YOK |
+| C5 | Tasarım akışı: bir istekten 3 seçenek, telefon/masaüstü önizlemesi, sürümler (41-liste #26) | YOK |
+| C6 | Codex ile görsel pahalı (~220k jeton) — düşür ya da gerekçeyi ölç (K20) | açık |
+| C7 | Kurgu kuralları (yazı ürüne binmez, temiz kapanış) gerçekte ölçülmedi | büyük işlerle testte |
+| C8 | Otomatik içerik hattı: uzun videodan klip → kurgu → paylaşım onaya (E89) | YOK |
+| **D — Bilgisayar** | | |
+| D1 | Bilgisayar kullanımı: fare/klavye ile masaüstü uygulaması; her riskli adım sorulur (41-liste #29, E47) | YOK (kapıda "masaüstü" sınıfı var, yetenek yok) |
+| **E — Kapanış ve sağlamlık** | | |
+| E1 | Kabinin ilk açılış ölümü: 20 açılışta tekrar etmediği ölçülecek (E12) | açık |
+| E2 | Gemini kota yüzdesi (`limit_oku` yok); Gemini gerçek terminal penceresi (isteğe bağlı) | YOK |
+| E3 | Düşen hafıza önerisi: işçinin önerisi lider "HAFIZA: yok" deyince kayboluyor → patrona kart (06.10 bulgu #7) | YOK |
+| E4 | Ajan koşularının Claude Code oturum çöpü: `~/.claude/projects`'te 1.365 geçici klasör kaydı (~220 MB) | temizlik + kalıcı çözüm |
+| E5 | Eski eksik listesinin (E01–E90) her maddesi kanıtla kapatılır (K23 / 41-liste #41) | açık |
+| **F — Büyük işlerle uçtan uca test** (patron bu kez dışarıda tutmadı) | | |
+| F1 | Her alandan gerçek iş (yazılım, içerik, araştırma, görsel/video, tarayıcı işi) iki motorda; "her işe hazır" ancak bundan sonra | en son |
+| **Bekleyen / dışarıdan** | | |
+| X1 | Kişisel veri maskeleme (K2) | patron sonraya bıraktı |
+| X2 | Aynı motorda hesap değişince oturum (K25) | ikinci hesap gelince |
+| X3 | Telefon: gerçek telefonla deneme | patron Tailscale kurunca |
+| X4 | ChatGPT Pro 5x geçişi | patron |
+
+Önerilen sıra: A → B → C → D → E → F (A1–A2 gerçek kullanımın önünde
+olduğu için başta).
+
+## 0 (eski, 06.10). KALAN EKSİKLER — SIRALI (06.10.2026, patron kararı)
 
 **EN SON dört iş:** büyük işlerle uçtan uca test · sesli orkestratör ·
 masaüstü uygulaması (Tauri) · panel görünüşü/arayüz. **Bunların dışında
