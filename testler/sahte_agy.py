@@ -20,6 +20,7 @@ kayit = {
     "argv": sys.argv[1:], "cwd": os.getcwd(),
     "USERPROFILE": os.environ.get("USERPROFILE", ""),
     "OFIS_AJAN": os.environ.get("OFIS_AJAN", ""),
+    "PSModuleAnalysisCachePath": os.environ.get("PSModuleAnalysisCachePath", ""),
     "OFIS_GOREV": os.environ.get("OFIS_GOREV", ""),
     "mesajlar": [],
 }

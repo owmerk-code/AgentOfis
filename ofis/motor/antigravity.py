@@ -151,6 +151,24 @@ def _girdi_ozeti(arac: str, param) -> str:
     return json.dumps(param, ensure_ascii=False)[:160]
 
 
+def _appdata_ortami(ev: Path) -> dict:
+    """AJANIN EVINDE AppData (07.10.2026, OLCULDU canli denemede): USERPROFILE
+    ajanin evine yonlendirilince Windows PowerShell 5.1 "yerel uygulama verisi"
+    klasorunu ORADAN turetiyor (`<ev>/AppData/Local`); klasor yoksa yol bos
+    donuyor ve modul onbellegi CALISMA KLASORUNE goreli yaziliyordu -- patronun
+    proje klasorunde `Microsoft/Windows/PowerShell/ModuleAnalysisCache`.
+    Klasorler kurulur ve onbellek yolu acikca verilir (agy ortami komutlara
+    tasiyor -- olculdu)."""
+    yerel = ev / "AppData" / "Local"
+    for k in (yerel, ev / "AppData" / "Roaming"):
+        try:
+            k.mkdir(parents=True, exist_ok=True)
+        except OSError:
+            pass
+    return {"PSModuleAnalysisCachePath": str(yerel / "Microsoft" / "Windows" / "PowerShell"
+                                             / "ModuleAnalysisCache")}
+
+
 class AntigravityMotoru(Motor):
     """Google Antigravity CLI (`agy`) uzerinden Gemini (ve Google limitindeki
     Claude/GPT-OSS) modelleri."""
@@ -298,6 +316,7 @@ class AntigravityMotoru(Motor):
         komut += ["--input-format", "stream-json"]
 
         ortam = ortam_hazirla(os.environ, ek={"USERPROFILE": str(ev), "HOME": str(ev),
+                                              **_appdata_ortami(ev),
                                               **mcp_ortam, **(ek_ortam or {})},
                               izinli=tuple(ek_ortam or ()) + tuple(mcp_ortam))
         sinir = float(zaman_asimi or self.zaman_asimi)

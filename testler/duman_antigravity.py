@@ -86,6 +86,12 @@ sina("modelin efor eki varken --effort verilmez", "--effort" not in argv)
 ev = ev_koku / "nova"
 sina("AJANIN kendi evi (USERPROFILE)", Path(g["USERPROFILE"]) == ev, g["USERPROFILE"])
 sina("kimlik surece gecti (MCP sunucusu ve kanca icin)", g["OFIS_AJAN"] == "nova" and g["OFIS_GOREV"] == "7")
+# 07.10.2026 canli: USERPROFILE yonlendirilince PowerShell 5.1 modul onbellegini
+# CALISMA KLASORUNE yaziyordu (ajanin evinde AppData yoktu) -- olculup duzeltildi.
+sina("PowerShell onbellegi AJANIN EVINDE (proje klasorune dusmez)",
+     g.get("PSModuleAnalysisCachePath", "").startswith(str(ev / "AppData" / "Local"))
+     and (ev / "AppData" / "Local").is_dir() and (ev / "AppData" / "Roaming").is_dir(),
+     g.get("PSModuleAnalysisCachePath", ""))
 h = json.loads((ev / ".gemini" / "config" / "hooks.json").read_text(encoding="utf-8"))
 kom = h["hooks"]["PreToolUse"][0]["hooks"][0]["command"]
 sina("kanca: PreToolUse -> kanca.py --agy", "kanca.py" in kom and kom.endswith("--agy"))
