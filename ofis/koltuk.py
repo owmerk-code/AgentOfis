@@ -168,6 +168,9 @@ class Koltuk:
         self._golge_once: dict = {}
         # Gorev kimligi -> turun basladigi an (atif belirsizligi icin).
         self._tur_basi: dict = {}
+        #: Turun ilk olay sirasi -- tur icinde gelen ONAY CEVABINI bulmak icin
+        #: (`_tur_basi` komsu-kosu olcumunde tuketilir, bu ayri).
+        self._tur_ilk_olay: dict = {}
 
     #: Ayar anahtari: ajanlar hangi kipte kosar. 'arka' (varsayilan,
     #: bugunku yapili akis) | 'gercek' (insanin kullandigi Claude/Codex
@@ -401,6 +404,7 @@ class Koltuk:
         with self.db.baglanti() as _c:
             self._tur_basi[gorev["id"]] = _c.execute(
                 "SELECT COALESCE(MAX(rowid), 0) FROM olay").fetchone()[0]
+        self._tur_ilk_olay[gorev["id"]] = self._tur_basi[gorev["id"]]
         if once_anlik is not None and kok_klasor:
             try:
                 self._golge_once[gorev["id"]] = geri_al.Golge(
@@ -1298,6 +1302,24 @@ class Koltuk:
             ajan_ad=ajan_ad, gorev_id=gorev["id"],
         )
 
+        # ONAY CEVABI BU TUR SURERKEN GELDI (07.10.2026, canli deneme):
+        # ajan onay isteyip turu bitirdi; patron tur bitmeden onayladi.
+        # Bekleyen onay kalmadigi ve paket kaniti oldugu icin is INCELEMEYE
+        # gitti, lider "uretim yok" deyip geri cevirdi -- iki kez, ikincisi
+        # kapi modeline yukseltildi. Ajan cevabi GORUP eyleme gecmeden is
+        # incelenmez: 'calisiyor' kalir, halka ajani cevapla uyandirir.
+        if self._tur_icinde_onay_cevabi(gorev):
+            yield self._olay(
+                "onay_geldi",
+                f"#{no}: onay cevabi bu tur surerken geldi; {ajan_ad} cevabi gorup "
+                "surdurecek (is incelemeye gitmedi).",
+                {"gorev_no": no}, ajan_ad=ajan_ad, gorev_id=gorev["id"])
+            self._olcum_yaz(ajan_ad, gorev, sonuc)
+            yield self._olay("tur_bitti", cevap,
+                             {"basarili": True, "gorev_no": no,
+                              "son_gorulen_olay_id": isaret, **sonuc})
+            return
+
         if self.ofis.tahta.kanitlar(no):
             guncel = self.ofis.tahta.gorev(no)
             try:
@@ -1322,6 +1344,18 @@ class Koltuk:
         yield self._olay("tur_bitti", cevap,
                          {"basarili": True, "gorev_no": no,
                           "son_gorulen_olay_id": isaret, **sonuc})
+
+    def _tur_icinde_onay_cevabi(self, gorev: dict) -> bool:
+        """Bu isin bir onayi (ajanin `onay_iste`si ya da kapinin karti) BU
+        TUR SURERKEN cevaplandi mi? Sira numarasiyla (saniye beraberligi yok)."""
+        bas = self._tur_ilk_olay.pop(gorev["id"], None)
+        if bas is None:
+            return False
+        with self.db.baglanti() as c:
+            return c.execute(
+                "SELECT 1 FROM olay WHERE proje_id = ? AND rowid > ? AND gorev_id = ? "
+                "AND tur = 'onay_cevabi' LIMIT 1",
+                (self.proje_id, bas, gorev["id"])).fetchone() is not None
 
     def _degisimi_olc(self, no, ajan_ad, gorev, once_anlik, kok_klasor):
         """Tur oncesi/sonrasi anlik goruntuyu karsilastirir ve yazar.

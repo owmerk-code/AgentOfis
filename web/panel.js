@@ -123,6 +123,7 @@ const OLAY = {
   uyari:         (o) => ["uyarı", o.govde, "dikkat"],
   arka_kip:      (o) => ["arka planda", o.govde, ""],
   kanitsiz_tur:  (o) => ["iş sürüyor", o.govde, ""],
+  onay_geldi:    (o) => ["onay geldi, sürüyor", o.govde, ""],
   brifing:       (o) => ["brifing okudu", o.govde, ""],
   rapor:         (o) => ["rapor verdi", raporTemiz(o.govde), ""],
   proje_acildi:  (o) => ["ofis açıldı", o.govde, ""],

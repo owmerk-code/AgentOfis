@@ -481,6 +481,38 @@ sina("devam metni 'patron durdurdu, araclarin calisiyor' diyor",
      "DURDURULDU" in _dm and "araclarin calisiyor" in _dm, _dm[:200])
 sina("durdurulmamis iste bu not YOK", "DURDURULDU" not in koltuk._devam_metni(g1["no"], "cinar"))
 
+print("\nONAY CEVABI TUR SURERKEN GELDI -> is INCELEMEYE GITMEZ (07.10.2026 canli)")
+# Ajan paket onayi istedi, patron ajanin turu bitmeden onayladi; bekleyen onay
+# kalmadigi ve kaniti oldugu icin is incelemeye gidiyor, lider "uretim yok"
+# deyip geri ceviriyordu (iki kez; ikincisi kapi modeline yukseltildi).
+_go = ofis.tahta.gorev_ac("onayli uretim", neden="n", ana_hedef="h",
+                          kabul_olcutu="k", yazma_alani=["onay/alan"])
+
+
+class _OnayliTur(SahteMotor):
+    """Tur surerken bu isin onayi istenir ve CEVAPLANIR (patron hizli)."""
+
+    def tur_kos(self, metin, **ayar):
+        _o = ofis.postane.onay_iste("cinar", "Flow paketi", ayrinti="120 kredi",
+                                    gorev_no=_go["no"])
+        ofis.postane.onay_cevapla(_o["id"], onayla=True)
+        yield from super().tur_kos(metin, **ayar)
+
+
+Koltuk(ofis, motor_fabrikasi=lambda ad, **kw: _OnayliTur(
+    cevap="Paket hazir.\nKANIT dosya: paket -> senaryo.md")).kos(_go["no"], "cinar")
+_g_son = ofis.tahta.gorev(_go["no"])
+with ofis.db.baglanti() as _c:
+    _og = [r["govde"] for r in _c.execute(
+        "SELECT govde FROM olay WHERE gorev_id = ? AND tur = 'onay_geldi'", (_g_son["id"],))]
+sina("tur icinde onay geldi: is INCELEMEYE GITMEDI (calisiyor)", _g_son["durum"] == "calisiyor",
+     _g_son["durum"])
+sina("  sebebi gorunur (onay_geldi olayi)", len(_og) == 1, str(_og))
+Koltuk(ofis, motor_fabrikasi=lambda ad, **kw: SahteMotor(
+    cevap="Uretildi.\nKANIT dosya: klip -> klip.mp4")).kos(_go["no"], "cinar")
+sina("  sonraki turda (onay yok) is incelemeye gider",
+     ofis.tahta.gorev(_go["no"])["durum"] == "inceleme", ofis.tahta.gorev(_go["no"])["durum"])
+
 print(f"\n== sonuc: {GECEN} gecti, {KALAN} kaldi ==")
 print(f"klasor: {kok}")
 sys.exit(1 if KALAN else 0)
