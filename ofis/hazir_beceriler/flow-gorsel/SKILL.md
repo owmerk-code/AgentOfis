@@ -13,6 +13,12 @@ description: Google Flow'da (Nano Banana; olculmus katalogda 0 kredi) gomulu tar
 Hizli ve urunsuz genel bir gorsel icin ofisin `gorsel_uret` araci da var;
 urune sadik, markali is icin bu beceri.
 
+## Adres
+**https://flow.google.com** (gomulu tarayici, `browser_navigate`); is icin YENI
+proje ac, patronun eski projelerinde uretme. Urun fotografini referans veren
+Flow uretimi urune en sadik yoldur (motorun kendi gorsel araci referanssiz
+olabilir -- urun gorunuyorsa Flow'u sec).
+
 ## Model ve bedel
 Brifingindeki FLOW KATALOGU: Resim kipinde Nano Banana Pro / 2.1 / 2 Lite,
 olculmus bedel 0 kredi (kapi sormaz). Varsayilan **Nano Banana Pro** (en
@@ -73,4 +79,6 @@ ayarlar, referans dosya.
 - Flow son ayari hatirlar: uretmeden once kip RESIM mi, model ve oran dogru mu bak.
 - "Diğer seçenekler" adli iki dugmeden biri projenin SIL menusunu acar; proje
   menulerine, cop kutusuna, paylasima, plan/odeme ekranina girme.
-- Hesap paneli Escape ile kapanmaz: bos perdeye tikla.
+- Acik pencere/menu Escape ile kapanmazsa bos perdeye `browser_click` ile tikla
+  (KODLA tiklama -- `browser_evaluate` icinde `.click()` -- kapida patrona sorulur,
+  is durur). Hesap paneline girmene gerek yok: kredi bakiyesi brifingde.

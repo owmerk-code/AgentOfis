@@ -152,6 +152,7 @@ sina("degisiklik olay olarak yazildi", len(ol) == 1 and "Veo 4 - Ultra" in ol[0]
 sina("gecmise yazildi", F.GECMIS.is_file() and "Veo 4 - Ultra" in F.GECMIS.read_text(encoding="utf-8"))
 oz = F.ozet_metni()
 sina("ozet: model, secenek ve kredi", "Veo 4 - Ultra" in oz and "150 kredi" in oz and "1046" in oz, oz)
+sina("ozet: Flow'un ADRESI yazili (07.10 canli: ajan adresi kodda aradi)", "https://flow.google.com" in oz)
 _veo = [x for x in oz.splitlines() if "Veo" in x]
 sina("ozet olcmedigi sureyi UYDURMAZ (Veo satirlarinda sure yok)",
      _veo and all("sure secenegi yok" in x and "sn" not in x.split("|")[0].replace("secenegi", "") for x in _veo),

@@ -264,11 +264,22 @@ def kipe_gore(db, proje_id: str, motor, *, ajan_ad: str = "",
     if butce_usd:
         return motor
     if not getattr(motor, "tui_destegi", False):
-        db.olay_yaz(proje_id, "uyari",
-                    f"{getattr(motor, 'ad', '?')} gercek terminal kipini "
-                    "desteklemiyor; bu tur ARKA PLANDA kosuyor.", ajan_ad=ajan_ad)
+        # BIR KEZ ve SAKIN (07.10.2026, patron: "bu uyarilar neden? terminal
+        # kipi ne?"): her turda sari "uyari" basiliyordu. Bir ariza degil --
+        # is ayni, yalniz gorunum farkli. Ajan basina panel omrunde bir kez.
+        _an = (proje_id, ajan_ad, getattr(motor, "ad", "?"))
+        if _an not in _ARKA_SOYLENDI:
+            _ARKA_SOYLENDI.add(_an)
+            db.olay_yaz(proje_id, "arka_kip",
+                        f"{ajan_ad or 'ajan'} {getattr(motor, 'ad', '?')} ile calisiyor; bu motor "
+                        "gercek terminal penceresinde acilmiyor, is ARKA PLANDA yuruyor "
+                        "(is ayni, yalniz gorunum farkli).", ajan_ad=ajan_ad)
         return motor
     return TuiMotoru(motor, ajan_ad=ajan_ad)
+
+
+#: Arka plan notu yazilmis (proje, ajan, motor) -- panel omrunde bir kez.
+_ARKA_SOYLENDI: set = set()
 
 
 def _bostakileri_kapat() -> None:

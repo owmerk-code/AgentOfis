@@ -156,10 +156,16 @@ db.ayar_yaz(ofis.proje_id, "terminal_kipi", "gercek")
 sina("gercek kipte sarilir", isinstance(kol._motor_ac("sahte-tui"), tui.TuiMotoru))
 m = kol._motor_ac("sahte")
 with db.baglanti() as c:
-    uy = c.execute("SELECT COUNT(*) FROM olay WHERE tur='uyari' AND govde LIKE "
-                   "'%gercek terminal kipini desteklemiyor%'").fetchone()[0]
-sina("desteklemeyen motor arkada + gorunur uyari",
+    uy = c.execute("SELECT COUNT(*) FROM olay WHERE tur='arka_kip' AND govde LIKE "
+                   "'%ARKA PLANDA%'").fetchone()[0]
+sina("desteklemeyen motor arkada + gorunur not",
      not isinstance(m, tui.TuiMotoru) and uy == 1)
+kol._motor_ac("sahte")
+with db.baglanti() as c:
+    uy2 = c.execute("SELECT COUNT(*) FROM olay WHERE tur='arka_kip'").fetchone()[0]
+    sari = c.execute("SELECT COUNT(*) FROM olay WHERE tur='uyari' AND govde LIKE '%terminal%'").fetchone()[0]
+sina("  her turda TEKRAR yazilmaz, sari uyari degil (07.10 patron: 'bu uyarilar neden')",
+     uy2 == 1 and sari == 0, f"{uy2} {sari}")
 
 print("\n-- 10. codex kancasi --")
 cevre = {a: v for a, v in os.environ.items() if not a.startswith("OFIS_") or a == "OFIS_EV"}

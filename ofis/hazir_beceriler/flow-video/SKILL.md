@@ -9,6 +9,9 @@ Once `reklam-kreatifi` ile SENARYO PAKETI hazirlanir ve patrona gider. Bu
 beceri paketteki sahneleri Flow'da uretip paylasmaya hazir videoya cevirir.
 
 ## On kosul
+- ADRES: **https://flow.google.com** (`browser_navigate`). Ana sayfada patronun
+  projeleri listelenir; is icin YENI proje ac ("Yeni proje"), patronun eski
+  projelerinde uretme. Ofisin kaynak kodunu okumana gerek yok -- her sey burada.
 - Yalniz GOMULU TARAYICI (kabin); patronun kisisel Chrome'u yok. Flow'a
   patron girmis olmali; giris ekrani gorursen `giris_iste`. Sifre yazma.
 - Paylasilan kabinde yeni sekme ACMA; ayni sekmede calis.
@@ -129,7 +132,9 @@ okunmuyorsa ya da sahne yanlissa plani duzeltip yeniden ciz.
 ## Olculmus tuzaklar
 - Ayni adli ("Diğer seçenekler") iki dugme var; biri projenin SIL menusunu
   acar. Proje menulerine, cop kutusuna, paylasima, plan/odeme ekranina girme.
-- Hesap paneli Escape ile kapanmaz: bos perdeye tikla.
+- Acik pencere/menu Escape ile kapanmazsa bos perdeye `browser_click` ile tikla
+  (KODLA tiklama -- `browser_evaluate` icinde `.click()` -- kapida patrona sorulur,
+  is durur). Hesap paneline girmene gerek yok: kredi bakiyesi brifingde.
 - Flow son ayari projede hatirlar: uretime baslamadan ayar penceresinde
   kip/tur/model/oran/adedi KONTROL ET.
 - Patronun eski projelerindeki medyayi silme/duzenleme.

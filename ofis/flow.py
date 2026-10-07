@@ -433,7 +433,8 @@ def ozet_metni(katalog: dict = None) -> str:
         return "FLOW KATALOGU: henuz OLCULMEDI (`python -m ofis.kabuk flow olc`)."
     yas = yas_saat(k)
     satir = [f"FLOW KATALOGU (patronun ekranindan olculdu, {round(yas) if yas is not None else '?'} sa once; "
-             f"kredi bakiyesi: {k.get('kredi_bakiyesi') if k.get('kredi_bakiyesi') is not None else 'BILINMIYOR'}):"]
+             f"kredi bakiyesi: {k.get('kredi_bakiyesi') if k.get('kredi_bakiyesi') is not None else 'BILINMIYOR'}; "
+             f"adres {ANA} -- gomulu tarayicida, is icin yeni proje):"]
     gorulen = set()
     for x in (k.get("video") or []) + (k.get("resim") or []):
         a = (x.get("kip"), x.get("model"))

@@ -1309,11 +1309,13 @@ class Koltuk:
                 yield self._olay("uyari", f"Incelemeye verilemedi: {exc}",
                                  {"gorev_no": no})
         else:
+            # SAKIN DIL (07.10.2026, patron: "bu uyarilar neden?"): ajanin
+            # turu kanitsiz bitti ama is BITMEDI -- ofis ajani yeniden uyandirir
+            # (halka). Sari "uyari" ariza gibi gorunuyordu.
             yield self._olay(
-                "uyari",
-                f"#{no} kanitsiz kaldi -- 'calisiyor' durumunda bekliyor. "
-                "Ajan KANIT bildirmedi.",
-                {"gorev_no": no},
+                "kanitsiz_tur",
+                f"#{no}: {ajan_ad} turunu bitirdi, henuz kanit yok -- is suruyor.",
+                {"gorev_no": no}, ajan_ad=ajan_ad, gorev_id=gorev["id"],
             )
 
         self._olcum_yaz(ajan_ad, gorev, sonuc)
