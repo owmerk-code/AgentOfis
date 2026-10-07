@@ -1279,6 +1279,39 @@ def komut_eksikler(a) -> None:
             + (f" (not: {o['not']})" if o.get("not") else ""))
 
 
+def komut_sifirla(a) -> None:
+    """GUVENLI SIFIRLAMA (08.10.2026): onaysiz yalniz LISTE (hicbir sey
+    silinmez); `--onay SIFIRLA` once yedek alip dogrular, sonra siler.
+    Kadro, ayarlar, hesaplar, girisler, beceriler ve patronun dosyalari kalir."""
+    from . import sifirla as S
+    ofis = ofis_ac(a.db, a.proje)
+    kalemler = S.plan(ofis)
+    secili = set(a.kategori or S.KATEGORILER)
+    kalemler = [k for k in kalemler if k["kategori"] in secili]
+    for kat, o in S.ozet(kalemler).items():
+        yaz(f"{kat}: {o['kalem']} kalem, {S.okunur_bayt(o['bayt'])} -- {o['aciklama']}")
+        if a.ayrinti:
+            for k in kalemler:
+                if k["kategori"] == kat:
+                    yaz(f"    {k['ad']}" + (f" ({k['adet']})" if k["adet"] > 1 else ""))
+    if not kalemler:
+        yaz("Silinecek bir sey yok; ofis temiz.")
+        return
+    if not a.onay:
+        yaz("")
+        yaz(f"HICBIR SEY SILINMEDI. Uygulamak icin: kabuk sifirla --onay {S.ONAY_METNI}"
+            " (once yedek alinir ve dogrulanir).")
+        return
+    try:
+        r = S.uygula(ofis, a.onay, kategoriler=a.kategori or None)
+    except S.SifirlaHatasi as exc:
+        raise SystemExit(str(exc))
+    yaz(f"yedek: {r['yedek']}")
+    yaz(f"silinen: {len(r['silinen'])} kalem")
+    for h in r["hatalar"]:
+        yaz(f"  SILINEMEDI: {h}")
+
+
 def komut_flow(a) -> None:
     """GOOGLE FLOW KATALOGU (07.10.2026): `olc` gomulu tarayicidaki Flow'u
     URETMEDEN olcer (model, secenek, kredi; ayarlar sonra geri konur), oncekiyle
@@ -2222,6 +2255,13 @@ def ayristirici() -> argparse.ArgumentParser:
 
     ek = alt.add_parser("eksikler", help="ofisin kendi eksik onerileri ve onaylananlar")
     ek.set_defaults(islev=komut_eksikler)
+
+    sf = alt.add_parser("sifirla", help="TEMIZ BASLANGIC -- denemelerin izini sil (once liste, sonra yedek + onay)")
+    sf.add_argument("--onay", default="", help="SIFIRLA yazilirsa uygulanir; yoksa yalniz liste")
+    sf.add_argument("--kategori", action="append", default=[],
+                    help="yalniz bu kategori (birden cok verilebilir)")
+    sf.add_argument("--ayrinti", action="store_true", help="her kalemi tek tek yaz")
+    sf.set_defaults(islev=komut_sifirla)
 
     fl = alt.add_parser("flow", help="GOOGLE FLOW katalogu -- modeller, secenekler, kredi (uretim yok)")
     fl.add_argument("eylem", nargs="?", default="goster", choices=["goster", "olc"])

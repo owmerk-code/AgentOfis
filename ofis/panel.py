@@ -605,6 +605,10 @@ class EforGovdesi(BaseModel):
     mod: str
 
 
+class SifirlaGovdesi(BaseModel):
+    onay: str = ""
+
+
 class OnayGovdesi(BaseModel):
     """`kapsam`: `eylem` (bir kez, VARSAYILAN) ya da `is` (bu gorev boyunca).
 
@@ -1852,6 +1856,38 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
             except Exception as exc:          # noqa: BLE001 -- sebebiyle soylenir
                 o.db.olay_yaz(o.proje_id, "hata", f"Yedek alinamadi: {exc}", ajan_ad="insan")
         threading.Thread(target=_al, daemon=True).start()
+        return {"basladi": True}
+
+    @uygulama.get("/api/sifirla")
+    def api_sifirla_plan():
+        """Temiz baslangicin LISTESI -- hicbir sey silinmez."""
+        from . import sifirla as _s
+        k = _s.plan(ofis_ac())
+        return {"onay_metni": _s.ONAY_METNI,
+                "ozet": [{"kategori": kat, **o, "boyut": _s.okunur_bayt(o["bayt"])}
+                         for kat, o in _s.ozet(k).items()],
+                "kalemler": [{"kategori": x["kategori"], "ad": x["ad"], "adet": x["adet"]} for x in k]}
+
+    @uygulama.post("/api/sifirla")
+    def api_sifirla(govde: SifirlaGovdesi):
+        """Patron onay metnini AYNEN yazdiysa: yedek + dogrulama + silme arkada;
+        sonuc olay olarak duser. Onay ve mesgul denetimi BURADA (hemen cevap)."""
+        from . import guncelleme as _g
+        from . import sifirla as _s
+        o = ofis_ac()
+        onay = govde.onay or ""
+        if onay.strip() != _s.ONAY_METNI:
+            raise HTTPException(400, f"Onay için tam olarak {_s.ONAY_METNI} yazılmalı.")
+        m = _g.mesgul(o.db)
+        if m:
+            raise HTTPException(409, f"Ofis şu an çalışıyor ({m}); iş bitince sıfırla.")
+
+        def _uygula():
+            try:
+                _s.uygula(o, onay)
+            except Exception as exc:          # noqa: BLE001 -- sebebiyle soylenir
+                o.db.olay_yaz(o.proje_id, "hata", f"Sifirlama yapilmadi: {exc}", ajan_ad="insan")
+        threading.Thread(target=_uygula, daemon=True).start()
         return {"basladi": True}
 
     @uygulama.get("/api/efor")

@@ -669,4 +669,41 @@ async function ayarYedek(kap, v) {
   ayarAltBaslik(kap, "Bu ofis neyi yapabilir");
   const d = el("div"); kap.append(d);
   await cizYetenek(d);
+  ayarAltBaslik(kap, "Temiz başlangıç");
+  const s = el("div"); kap.append(s);
+  cizSifirla(s);
+}
+
+/* GUVENLI SIFIRLAMA (08.10): once LISTE; patron onay metnini aynen yazar;
+   uygulamadan once yedek alinir. Kural sunucuda (ofis/sifirla.py). */
+async function cizSifirla(kap) {
+  kap.append(el("div", "form-ipucu",
+    "Denemelerin izini siler: işler, sohbetler, kararlar, hafıza, karne, eski yedekler, ajan oturum kayıtları. " +
+    "Ajanlar, takımlar, ayarlar, hesaplar, girişler, beceriler ve senin dosyaların KALIR. Önce yedek alınır."));
+  const b = el("button", "dugme", "Neler silinir? (liste)");
+  kap.append(b);
+  b.onclick = async () => {
+    b.disabled = true;
+    let p;
+    try { p = await al("/api/sifirla"); }
+    catch (e) { bildir(String(e.message || e), "kotu"); b.disabled = false; return; }
+    const liste = el("div");
+    if (!p.ozet.length) liste.append(el("div", "bos-yazi", "Silinecek bir şey yok; ofis temiz."));
+    for (const o of p.ozet)
+      ayarSatir(liste, o.aciklama, `${o.kalem} kalem`, el("span", "ayar-deger", o.boyut));
+    kap.append(liste);
+    if (!p.ozet.length) return;
+    const g = el("input", "form-alan");
+    g.placeholder = `onaylamak için ${p.onay_metni} yaz`;
+    const u = el("button", "dugme tehlike", "Yedekle ve sıfırla");
+    u.disabled = true;
+    g.oninput = () => { u.disabled = g.value.trim() !== p.onay_metni; };
+    u.onclick = async () => {
+      u.disabled = true;
+      try { await yolla("/api/sifirla", { onay: g.value.trim() });
+            bildir("yedek alınıyor, sonra silinecek — bitince günlükte görünür", "iyi"); }
+      catch (e) { bildir(String(e.message || e), "kotu"); u.disabled = false; }
+    };
+    kap.append(g, u);
+  };
 }
