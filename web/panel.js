@@ -709,10 +709,13 @@ function panoKur(a, secenek) {
   // bilgisidir. Olculmus kayittan gelir (`tur_ozeti`), ajanin
   // AYARINDAN degil -- zincir devrettiginde ayar YANLIS cevabi verir.
   const sonTur = (a.sicil || {}).son_tur || {};
-  const motorAd = [sonTur.motor, sonTur.model].filter(Boolean).join(" ");
+  // ILK TUR (06.10, patron: "hangi model yazmiyor"): olcum ancak tur bitince
+  // gelir; o zamana kadar ajanin AYARINDAKI model yazilir (ve oyle soylenir).
+  const olculen = [sonTur.motor, sonTur.model].filter(Boolean).join(" ");
+  const motorAd = olculen || [a.motor, a.model].filter(Boolean).join(" ");
   if (motorAd) {
     const m = el("span", "pano-motor", motorAd.replace("claude-", ""));
-    m.title = "son turda olculen motor/model";
+    m.title = olculen ? "son turda ölçülen motor/model" : "ajanın ayarı (tur bitince ölçülen yazılır)";
     bas.append(m);
   }
   // BAGLAM (06.10, E34): ajanin aklinin ne kadari dolu. Olculmediyse YOK;
@@ -829,11 +832,11 @@ function panoKur(a, secenek) {
   // devam eder, kip degisince geri gelir.
   const tu = !s.gecmis && (D.tui || {})[a.ad];
   if (tu) {
+    // Ayri "gercek terminal" etiketi YOK (06.10, patron: gereksiz kalabalik);
+    // terminalin kendisi zaten Claude/Codex'in terminali.
     p.classList.add("gercek-terminal");
-    const r = el("span", "pano-gercek", "gerçek terminal");
-    r.title = "Ajan Claude/Codex'in kendi terminalinde çalışıyor. İçine yazabilirsin; " +
+    p.title = "Ajan Claude/Codex'in kendi terminalinde çalışıyor. İçine yazabilirsin; " +
               "riskli adımlar yine ofis kapısından geçer.";
-    bas.insertBefore(r, bas.children[3] || null);
     p.append(terminalAlani("t:" + tu.oturum, `/ws/tui/${encodeURIComponent(tu.oturum)}`,
                            "[ajanın terminali kapandı]"));
     if (a.gorev_no) p.append(notSatiri(a));
@@ -2976,11 +2979,16 @@ async function cizBekleyenler() {
     const satir = el("div", "istek-eylem");
     const girdi = el("input");
     girdi.placeholder = "Ret gerekçesi (ret için zorunlu)";
-    const kur = el("button", "dugme olumlu", "Kur");
-    kur.title = "Önerilen kadroyu işe al. Kimse sen onaylamadan işe alınmaz.";
+    const kur = el("button", "dugme olumlu", "Kur ve işi başlat");
+    kur.title = "Önerilen kadroyu işe al; bu öneriyi doğuran isteğin lidere geri gider ve iş başlar.";
+    const yalniz = el("button", "dugme", "Yalnız kur");
+    yalniz.title = "Kadroyu işe al ama işi başlatma (isteği sonra kendin yazarsın).";
     const red = el("button", "dugme olumsuz", "Reddet");
-    kur.onclick = () => eylem(`/api/ekip/${e.no}/kur`, {},
-      (r) => `ekip #${e.no} kuruldu: ` + (r.alinan || []).map(x => x.ad).join(", "));
+    const kurulan = (r) => `ekip #${e.no} kuruldu: ` + (r.alinan || []).map(x => x.ad).join(", ");
+    kur.onclick = () => eylem(`/api/ekip/${e.no}/kur`, { baslat: true },
+      (r) => kurulan(r) + (r.baslatildi ? " — istek lidere gitti, iş başlıyor"
+                           : r.baslatilamadi ? ` — iş başlatılamadı: ${r.baslatilamadi}` : ""));
+    yalniz.onclick = () => eylem(`/api/ekip/${e.no}/kur`, { baslat: false }, kurulan);
     red.onclick = () => {
       if (!girdi.value.trim()) {
         girdi.placeholder = "Gerekçe zorunlu — lider aynı öneriyi tekrar getirmesin";
@@ -2988,7 +2996,7 @@ async function cizBekleyenler() {
       }
       eylem(`/api/ekip/${e.no}/red`, { sebep: girdi.value }, `ekip #${e.no} reddedildi`);
     };
-    satir.append(girdi, kur, red);
+    satir.append(girdi, kur, yalniz, red);
     d.append(satir);
     kap.append(d);
   }

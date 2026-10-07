@@ -376,6 +376,60 @@ _ipid = int((_KOK / "inatci.pid").read_text())
 sina("  CLI SURECI de kapatildi (arkada acik kalmadi)",
      _surec._olusma(_ipid)[1] is False, str(_surec._olusma(_ipid)))
 
+print("\n-- 16c. YAVAS ACILIS: guven sorusu gec gelir, brifing ustune YAPISTIRILMAZ (06.10) --")
+# OLCULDU (06.10.2026, patronun ofisinin kopyasi): claude yavas acildi, ekran
+# bos durdu, acilis dongusu 4. sn'de "durgun" deyip cikti; guven sorusu SONRA
+# geldi, brifing onun ustune yapistirildi ve lider turu "gonderilmedi" diye
+# dustu. Sahne: CLI 6 sn hic cizmez, sonra guven sorusu (imlec "No"da), asagi
+# okla "Yes"e gecer, Enter'la giris kutusunu cizer ve sahte CLI olarak calisir.
+_yavas = _KOK / "yavas_guven.py"
+_yavas.write_text(
+    "import msvcrt, runpy, sys, time\n"
+    "time.sleep(6)\n"
+    "def ciz(evet):\n"
+    "    sys.stdout.write('\\nQuick safety check: do you trust this folder?\\n' + "
+    "('  No, exit\\n\\u276f Yes, I trust this folder\\n' if evet else "
+    "'\\u276f No, exit\\n  Yes, I trust this folder\\n'))\n"
+    "    sys.stdout.flush()\n"
+    "evet = False\n"
+    "ciz(evet)\n"
+    "while True:\n"
+    "    ch = msvcrt.getwch()\n"
+    "    if ch in ('\\xe0', '\\x00'):\n"
+    "        if msvcrt.getwch() == 'P':\n"
+    "            evet = True; ciz(evet)\n"
+    "    elif ch == '\\x1b':\n"
+    "        a = msvcrt.getwch(); b = msvcrt.getwch()\n"
+    "        if a == 'O' and b == 'B':\n"
+    "            evet = True; ciz(evet)\n"
+    "    elif ch == '\\r':\n"
+    "        if evet: break\n"
+    "        sys.exit(1)\n"
+    "sys.stdout.write('\\n' + '\\u2500' * 30 + '\\n\\u276f \\n'); sys.stdout.flush()\n"
+    f"runpy.run_path(r'{Path(__file__).resolve().parent / 'sahte_tui.py'}', run_name='__main__')\n",
+    encoding="utf-8")
+
+
+class _YavasGuven(SahteTui):
+    def tui_plani(self, **k):
+        p = super().tui_plani(**k)
+        p.update(argv=[sys.executable, str(_yavas), p["argv"][2]], guven_isareti="trust",
+                 guven_evet="Yes, I trust",
+                 hazir_mi=lambda e: "\u276f" in e[-500:] and "\u2500" * 10 in e[-900:])
+        return p
+
+
+_ol = list(tui.TuiMotoru(_YavasGuven(), ajan_ad="yavas").tur_kos(
+    "YAVAS_ACILIS brifingi", klasor=str(_KOK), zaman_asimi=120))
+_son = _ol[-1] if _ol else None
+sina("yavas acilista guven sorusu CEVAPLANDI ve tur BASARILI",
+     _son is not None and _son.tur == "bitti" and _son.ek.get("basarili") is True,
+     str([(o.tur, o.govde[:80]) for o in _ol if o.tur in ("hata", "bitti")]))
+sina("  'gonderilmedi' hatasi YOK", not any(o.tur == "hata" and "GONDERILMEDI" in o.govde for o in _ol))
+for _x in tui.acik_oturumlar():
+    if _x["ajan"] == "yavas":
+        tui.kapat(_x["oturum_id"])
+
 print("\n-- 17. yapistirmanin ardina SAHIP satiri ELLE yazilir (30.09) --")
 _st = _SahteT()
 tui._yapistir(_st, "plan istemi")

@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="tr"><head><meta charset="utf-8"><title>Google Flow - Sahte (sinama)</title></head>
+<body>
+<!-- Flow'un ayar penceresini TAKLIT eder (07.10.2026 olculen rol/ad yapisi).
+     duman_flow.py: katalog araci bunu okur; "Oluşturmaya başla"ya basarsa
+     window.URETILDI = true olur ve sinama KALIR. -->
+<button aria-label="Hesap ayrıntıları" id="hesap">O</button>
+<div id="hesapPanel" hidden>omer C movie_filter_auto 1.046 Google Flow kredisi Yükselt</div>
+<button aria-label="Diğer seçenekler" id="tehlike">⋮</button>
+<button aria-label="Ayarlar tetikleyicisi" id="ayar">ayarlar</button>
+<div id="panel" hidden></div>
+<button aria-label="Oluşturmaya başla" id="olustur">→</button>
+<script>
+window.URETILDI = false;
+window.TEHLIKE = false;
+document.getElementById("olustur").onclick = () => { window.URETILDI = true; fetch("/URETILDI"); };
+document.getElementById("tehlike").onclick = () => { window.TEHLIKE = true; fetch("/TEHLIKE"); };
+// Gercek Flow (07.10 olculdu): hesap paneli Escape ile KAPANMAZ; saydam
+// perde butun sayfayi kaplar, yalniz perdeye tiklayinca kapanir.
+document.getElementById("hesap").onclick = () => {
+  document.getElementById("hesapPanel").hidden = false;
+  const perde = document.createElement("div");
+  perde.className = "cdk-overlay-backdrop cdk-overlay-backdrop-showing";
+  perde.style.cssText = "position:fixed;inset:0;z-index:999;background:transparent";
+  perde.onclick = () => { perde.remove(); document.getElementById("hesapPanel").hidden = true; };
+  document.body.append(perde);
+};
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") menuKapat(); });
+const VIDEO = { "Omni 1.1 Flash": "omni", "Veo 3.1 - Lite": 10, "Veo 3.1 - Fast": 20, "Veo 3.1 - Quality": 100 };
+const RESIM = ["🍌 Nano Banana Pro", "🍌 Nano Banana 2 Lite", "🍌 Nano Banana 2.1"];
+const OMNI = { "360p": { "4 sn.": 4, "6 sn.": 5, "8 sn.": 6, "10 sn.": 7 },
+               "720p": { "4 sn.": 7, "6 sn.": 10, "8 sn.": 12, "10 sn.": 15 } };
+// Flow son ayari HATIRLAR (07.10 olculdu): durum sayfa kapaninca da kalir.
+// Baslangic bilerek varsayilan DEGIL; olcum sonunda buna geri donulmeli.
+const D = (() => { try { const x = JSON.parse(localStorage.getItem("flowD")); if (x) return x; } catch (e) {}
+  return { kip: "Video", tur: "İçerik öğeleri", oran: "16:9", model: "Omni 1.1 Flash", coz: "720p", sure: "10 sn.", adet: "x2" }; })();
+function sakla() { localStorage.setItem("flowD", JSON.stringify(D)); }
+function kredi() {
+  const n = parseInt(D.adet.slice(1));
+  if (D.kip === "Resim") return 0;
+  const v = VIDEO[D.model];
+  return (v === "omni" ? OMNI[D.coz][D.sure] : v) * n;
+}
+function radyo(ham, alan, deger) {
+  const r = document.createElement("div");
+  r.setAttribute("role", "radio");
+  r.setAttribute("aria-label", ham);
+  r.setAttribute("aria-checked", D[alan] === deger ? "true" : "false");
+  r.textContent = ham;
+  r.onclick = () => {
+    if (alan === "kip" && D.kip !== deger) D.model = deger === "Resim" ? RESIM[2] : "Omni 1.1 Flash";
+    D[alan] = deger; sakla(); ciz();
+  };
+  return r;
+}
+function ciz() {
+  const p = document.getElementById("panel");
+  p.innerHTML = "";
+  p.append(radyo("image Resim", "kip", "Resim"), radyo("videocam Video", "kip", "Video"));
+  if (D.kip === "Video") p.append(radyo("crop_free Kareler", "tur", "Kareler"),
+                                  radyo("chrome_extension İçerik öğeleri", "tur", "İçerik öğeleri"));
+  const oranlar = D.kip === "Video" ? ["16:9", "9:16"] : ["16:9", "4:3", "1:1", "3:4", "9:16"];
+  for (const o of oranlar) p.append(radyo("crop_" + o.replace(":", "_") + " " + o, "oran", o));
+  if (D.kip === "Video" && VIDEO[D.model] === "omni") {
+    p.append(radyo("360p info", "coz", "360p"), radyo("720p", "coz", "720p"));
+    for (const s of ["4 sn.", "6 sn.", "8 sn.", "10 sn."]) p.append(radyo(s, "sure", s));
+  }
+  for (const a of ["x1", "x2", "x3", "x4"]) p.append(radyo(a, "adet", a));
+  const m = document.createElement("button");
+  m.setAttribute("aria-label", "Model ailesi seçin");
+  m.textContent = "volume_up " + D.model + " arrow_drop_down";
+  m.onclick = menuAc;
+  p.append(m);
+  const k = document.createElement("div");
+  k.textContent = `Üretme işlemi için ${kredi()} kredi kullanılır`;
+  p.append(k);
+}
+function menuKapat() { const x = document.getElementById("menu"); if (x) x.remove(); }
+function menuAc() {
+  menuKapat();
+  const menu = document.createElement("div");
+  menu.id = "menu"; menu.setAttribute("role", "menu");
+  for (const ad of (D.kip === "Video" ? Object.keys(VIDEO) : RESIM)) {
+    const o = document.createElement("div");
+    o.setAttribute("role", "menuitem");
+    o.textContent = "volume_up\n" + ad;
+    o.onclick = () => { D.model = ad; sakla(); menuKapat(); ciz(); };
+    menu.append(o);
+  }
+  document.body.append(menu);
+}
+document.getElementById("ayar").onclick = () => {
+  const p = document.getElementById("panel"); p.hidden = false; ciz(); };
+</script>
+</body></html>

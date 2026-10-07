@@ -3372,12 +3372,27 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
             raise HTTPException(400, str(exc))
 
     @uygulama.post("/api/ekip/{no}/kur")
-    def api_ekip_kur(no: int):
+    def api_ekip_kur(no: int, govde: dict = None):
+        """Kadroyu kurar; `baslat` (varsayilan ACIK) ise oneriyi doguran patron
+        mesajini AYNEN lidere geri gonderir -- is kendiliginden surer."""
         from .ekip import EkipHatasi
+        from . import kuyruk as _kuyruk
+        ofis = ofis_ac()
         try:
-            return {"alinan": ofis_ac().ekip.kur(no)}
+            alinan = ofis.ekip.kur(no)
         except EkipHatasi as exc:
             raise HTTPException(400, str(exc))
+        out = {"alinan": alinan, "baslatildi": False}
+        if (govde or {}).get("baslat", True):
+            dm = ofis.ekip.devam_mesaji(no)
+            if dm:
+                try:
+                    _kuyruk.ekle(ofis, dm[1], dm[0], kaynak="ekip")
+                    out["baslatildi"] = True
+                    _kuyrugu_baslat(db.yol, proje_ad)
+                except _kuyruk.KuyrukHatasi as exc:
+                    out["baslatilamadi"] = str(exc)
+        return out
 
     @uygulama.post("/api/ekip/{no}/red")
     def api_ekip_red(no: int, govde: SebepGovdesi):
@@ -3788,6 +3803,7 @@ def kos(adres: str = "127.0.0.1", kapi: int = 8900, db_yolu=None,
     _limit_tazele_arkada(db_yolu, proje_ad)
     _guncelleme_arkada(db_yolu, proje_ad)
     _lider_isit_arkada(db_yolu, proje_ad)
+    _flow_katalog_arkada(db_yolu, proje_ad)
     uvicorn.run(uygulama, host=adres, port=kapi, log_level="warning")
 
 
@@ -3863,6 +3879,41 @@ def _guncelleme_arkada(db_yolu, proje_ad=None) -> None:
             time.sleep(600)
 
     threading.Thread(target=dongu, name="guncelleme", daemon=True).start()
+
+
+#: Flow katalogu bakis araligi (sn). Asil karar `flow.gerekirse_olc` icinde:
+#: katalog 24 saatten eskiyse, gomulu tarayici aciksa ve ofis bossa.
+FLOW_BAKIS_SN = 1800
+
+
+def _flow_katalog_arkada(db_yolu, proje_ad=None) -> None:
+    """FLOW KATALOGU GUNCEL (07.10.2026, patron: "ileride guncellenecegini
+    unutma"). Flow'un modelleri ve kredileri degisir; ajanlar model secimini
+    olculmus kataloga gore yapar. Yarim saatte bir bakilir; tarayici ACILMAZ
+    (yalniz acikken), ofis mesgulken olculmez. Degisiklik `flow_degisti`
+    olayi olur. Yalniz GERCEK defterde (sinama paneli patronun Flow'una
+    dokunmasin)."""
+    import threading
+    import time
+    from . import flow
+    from . import yedek as Y
+    from .db import VARSAYILAN_YOL
+    if not Y.gercek_defter_mi(db_yolu or VARSAYILAN_YOL):
+        return
+
+    def dongu():
+        time.sleep(120)          # panel ve kabin once ayaga kalksin
+        while True:
+            try:
+                db = Veritabani(db_yolu or VARSAYILAN_YOL)
+                pid = _proje_id_bul(db, proje_ad)
+                if pid is not None:
+                    flow.gerekirse_olc(db, pid)
+            except Exception:     # noqa: BLE001 -- panel olmesin
+                pass
+            time.sleep(FLOW_BAKIS_SN)
+
+    threading.Thread(target=dongu, name="flow-katalog", daemon=True).start()
 
 
 #: Sicak lider tazeleme araligi (sn). Bekleyen surecin omru 10 dk, tazeleme

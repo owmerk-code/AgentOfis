@@ -946,7 +946,7 @@ class Sohbet:
             try:
                 oneri = self.ekip.oner(
                     hedef, lider_ad=lider["ad"], butce_usd=butce_usd,
-                    zaman_asimi=zaman_asimi)
+                    zaman_asimi=zaman_asimi, patron_mesaji=mesaj)
             except EkipHatasi as exc:
                 not_ = f"Kadro onerisi alinamadi: {exc}"
                 self.ofis.postane.cevapla(kayit["id"], not_,
@@ -1128,6 +1128,19 @@ class Sohbet:
                 ek_metinler=(mesaj,))
         except Exception:                        # noqa: BLE001 -- rapor yine yazilir
             _gitmemis = []
+        # TESLIM RAPORDA (06.10.2026 gosteri): ajanlarin sohbete gonderdigi
+        # teslim dosyalari da raporda tekrar yer alir -- patron raporu okur.
+        try:
+            from .ekler import teslim_ekleri as _teslim
+            _teslimler = _teslim(self.ofis, [self.ofis.tahta.gorev(g0["no"])["id"]
+                                             for g0 in plan["gorevler"]])
+        except Exception:                        # noqa: BLE001
+            _teslimler = []
+        if _teslimler:
+            satirlar += ["# TESLIM DOSYALARI (ajanlar gonderdi; raporunda AYRI SATIRDA "
+                         "`[ek] <yol>` olarak MUTLAKA tekrar ver -- patron raporu okur)", ""]
+            satirlar += [f"- {y}" for y in _teslimler]
+            satirlar.append("")
         if _gitmemis:
             satirlar += ["# PATRONA HENUZ GITMEMIS DOSYALAR (ofisin olcumu)", ""]
             satirlar += [f"- {y}" for y in _gitmemis]
@@ -1169,6 +1182,12 @@ class Sohbet:
                                   butce_usd, zaman_asimi,
                                   akis=getattr(self, "_akis", None))
         metin = (ham or "").strip()[:CEVAP_SINIRI] or "(Lider rapor yazmadi.)"
+        # TESLIM GARANTISI (yapi, rica degil): lider teslim satirini yazmasa da
+        # ofis ekler -- patron raporu okur (06.10.2026 gosteri).
+        _eksik = [y for y in _teslimler if y not in metin]
+        if _eksik:
+            from .ekler import satirlar as _ek_satirlari
+            metin += "\n\n" + _ek_satirlari(_eksik)
         return self._ekleri_hazirla(metin, lider["ad"]) + self._gercek_durum(plan)
 
     def _taslaktan_rapor(self, plan: dict, mesaj: str = "") -> str:
@@ -1198,11 +1217,17 @@ class Sohbet:
         if not r or not (r["govde"] or "").strip():
             return ""
         metin = r["govde"].strip()
-        from .ekler import gonderilmemisler, satirlar as ek_satirlari
+        from .ekler import gonderilmemisler, satirlar as ek_satirlari, teslim_ekleri
         try:
             gitmemis = gonderilmemisler(self.ofis, [g["id"]], ek_metinler=(metin, mesaj))
         except Exception:                        # noqa: BLE001
             gitmemis = []
+        # TESLIM RAPORDA (06.10.2026 gosteri): ajanin once gonderdigi video/
+        # gorsel de son raporda tekrar durur -- patron raporu okur.
+        try:
+            gitmemis = [y for y in teslim_ekleri(self.ofis, [g["id"]]) if y not in metin] + gitmemis
+        except Exception:                        # noqa: BLE001
+            pass
         if gitmemis:
             metin += "\n\n" + ek_satirlari(gitmemis)
         return self._ekleri_hazirla(metin[:CEVAP_SINIRI], r["ajan_ad"] or "")

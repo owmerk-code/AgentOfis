@@ -143,8 +143,17 @@ class Ekip:
             "",
             f"{', '.join(musait) if musait else '(hicbiri kurulu degil)'}",
             "",
-            "Model yazma: rolun kademesi motora gore dogru modeli secer.",
-            "Farkli bir model istiyorsan gerekcesini `gerekce` alanina yaz.",
+            "MOTOR VE MODEL YAZMA: meslek katalogu her meslege motoru ve",
+            "modeli kendisi verir (patronun karari). Yalniz patron ACIKCA",
+            "baska bir motor/model istediyse `motor`/`model` yaz ve gerekceye",
+            "patronun sozunu koy. Katalog (meslek -> motor/model):",
+        ]
+        try:
+            _kat = roller.meslek_katalogu(self.db, self.proje_id)
+            satir += [f"- {ad}: {v['motor']}/{v['model']}" for ad, v in sorted(_kat.items())]
+        except Exception:                        # noqa: BLE001 -- katalog okunamazsa kural yine gecerli
+            pass
+        satir += [
             "",
             "# KARARIN",
             "",
@@ -163,7 +172,7 @@ class Ekip:
             "{",
             '  "gerekce": "kadro NICIN boyle -- bir iki cumle",',
             '  "uyeler": [',
-            '    {"ad": "selin", "rol": "arayuz", "motor": "claude",',
+            '    {"ad": "selin", "rol": "arayuz",',
             '     "gerekce": "ekran isi var, kadroda arayuz rolu yok"}',
             "  ]",
             "}",
@@ -240,7 +249,7 @@ class Ekip:
 
     def oner(self, hedef: str, *, lider_ad: str = "", kanat_id: str = None,
              butce_usd: float = None, zaman_asimi: float = None,
-             deneme: int = 2) -> dict:
+             deneme: int = 2, patron_mesaji: str = "") -> dict:
         """Lideri kadro onermeye iter, kapilardan gecirir, SAKLAR.
 
         Saklamak sart: `oner` ile `kur` arasinda insan dusunur. Oneri
@@ -274,7 +283,8 @@ class Ekip:
             raise EkipHatasi(
                 f"Lider gecerli bir kadro oneremedi. Son sebep: {hata}")
 
-        return self._sakla(hedef, oneri, lider["ad"], kanat_id)
+        return self._sakla(hedef, oneri, lider["ad"], kanat_id,
+                           patron_mesaji=patron_mesaji)
 
     def sablondan(self, sablon_ad: str, *, kanat_id: str = None) -> dict:
         """SABLONDAN oneri: lider CAGRILMAZ, jeton yanmaz, sonuc kararli.
@@ -311,7 +321,8 @@ class Ekip:
         return self._sakla(f"Sablon: {s.baslik}", oneri, f"sablon:{s.ad}",
                            kanat_id)
 
-    def _sakla(self, hedef: str, oneri: dict, oneren: str, kanat_id) -> dict:
+    def _sakla(self, hedef: str, oneri: dict, oneren: str, kanat_id,
+               patron_mesaji: str = "") -> dict:
         # Model bos birakildiysa rolun kademesinden doldurulur -- ise
         # alma aninda degil SIMDI, cunku insan onizlemede hangi modelin
         # kosacagini GORMELI. Onizlemede gorunmeyen bir secim, onay
@@ -336,6 +347,14 @@ class Ekip:
                 "gerekce": u["gerekce"].strip(),
                 "uyari": r.uyari,
             })
+            # KATALOG DISI SECIM GORUNUR (06.10.2026 gosteri: ornek JSON'daki
+            # `"motor": "claude"` kopyalaniyordu; video ajani Gemini yerine
+            # Claude ile onerildi). Patron kartta gorur, isterse reddeder.
+            _km = (k_motor, k_model)
+            _secilen = (uyeler[-1]["motor"], uyeler[-1]["model"])
+            if _secilen != _km:
+                uyeler[-1]["uyari"] = ((uyeler[-1]["uyari"] + " · ") if uyeler[-1]["uyari"] else "") + (
+                    f"KATALOG DISI: katalog {_km[0]}/{_km[1]}, oneri {_secilen[0]}/{_secilen[1]}")
 
         with self.db.baglanti() as conn:
             son = conn.execute(
@@ -344,11 +363,12 @@ class Ekip:
             no = int(son) + 1
             conn.execute(
                 "INSERT INTO ekip_onerisi (id, proje_id, no, kanat_id, hedef, "
-                "gerekce, uyeler, oneren, durum, olusturuldu) "
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'bekliyor', ?)",
+                "gerekce, uyeler, oneren, durum, olusturuldu, patron_mesaji) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'bekliyor', ?, ?)",
                 (uuid.uuid4().hex, self.proje_id, no, kanat_id, hedef,
                  oneri["gerekce"].strip(),
-                 json.dumps(uyeler, ensure_ascii=False), oneren, simdi()))
+                 json.dumps(uyeler, ensure_ascii=False), oneren, simdi(),
+                 (patron_mesaji or "").strip()))
 
         self.db.olay_yaz(
             self.proje_id, "ekip_onerildi",
@@ -382,6 +402,26 @@ class Ekip:
         return out
 
     # -- 5. insanin karari --------------------------------------------------
+
+    def devam_mesaji(self, no: int):
+        """Kadro kurulunca isi SURDURECEK mesaj: (lider, metin) ya da None.
+
+        OLCULDU (06.10.2026, patronun ofisinin kopyasi, canli gosteri): lider
+        kadro onerdi, patron "Kur" dedi, ajanlar ise alindi -- ve hicbir sey
+        olmadi; asil istek sirada "bitti" diye kapanmisti. Patron ajanlarin
+        bekledigini gordu. Kadroyu doguran patron mesaji AYNEN lidere doner.
+        Sablondan kurulan takim (istek yok) devam ettirilmez.
+        """
+        with self.db.baglanti() as conn:
+            r = conn.execute("SELECT oneren, patron_mesaji, durum FROM ekip_onerisi "
+                             "WHERE proje_id = ? AND no = ?", (self.proje_id, no)).fetchone()
+        if not r or r["durum"] != "kuruldu":
+            return None
+        metin = (r["patron_mesaji"] or "").strip()
+        oneren = (r["oneren"] or "").strip()
+        if not metin or not oneren or oneren.startswith("sablon:"):
+            return None
+        return oneren, metin
 
     def kur(self, no: int, *, klasor: str = "") -> list:
         """ONAYLANDI: onerilen kadroyu gercekten ise alir.

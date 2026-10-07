@@ -387,6 +387,7 @@ class TuiMotoru(Motor):
             yield MotorOlayi("basladi", "gercek terminal", {"oturum_id": oturum_id})
             # Acilis: guven sorusu + ekranin durulmasi.
             son_boy, durgun, bas = -1, 0.0, time.monotonic()
+            hazir = plan.get("hazir_mi")
             while time.monotonic() - bas < ACILIS_SN and t.canli():
                 ekran = duz_metin(t.gecmis())
                 if plan.get("guven_isareti") and plan["guven_isareti"] in ekran.lower() \
@@ -420,11 +421,32 @@ class TuiMotoru(Motor):
                     break
                 if len(ekran) == son_boy:
                     durgun += 0.5
-                    if durgun >= 2.0 and time.monotonic() - bas > 4:
+                    # HAZIR ISARETI VARSA durgunluk tek basina YETMEZ (06.10.2026
+                    # OLCULDU, patronun ofisinin kopyasi): claude yavas acildi,
+                    # ekran bos durdu, dongu 4. sn'de cikti; guven sorusu SONRA
+                    # geldi ve brifing onun ustune yapistirildi -> tur dustu.
+                    esik = 4 if hazir is None else ACILIS_SN / 2
+                    if durgun >= 2.0 and time.monotonic() - bas > esik:
                         break
                 else:
                     son_boy, durgun = len(ekran), 0.0
                 time.sleep(0.5)
+            # SON BAKIS: dongu durgunlukla/zamanla ciktiysa ve guven sorusu
+            # SIMDI ekrandaysa brifing onun ustune YAPISTIRILMAZ -- once cevap.
+            _son = duz_metin(t.gecmis())
+            if (plan.get("guven_isareti") and plan.get("guven_evet")
+                    and not kayit.get("guvenildi") and t.canli()
+                    and plan["guven_isareti"] in _son[-900:].lower()):
+                if _guven_sec(t, plan["guven_evet"]):
+                    kayit["guvenildi"] = True
+                    _bas2 = time.monotonic()
+                    while time.monotonic() - _bas2 < 10 and t.canli():
+                        _e = duz_metin(t.gecmis())
+                        if hazir is not None and hazir(_e) and "trust" not in _e[-900:].lower():
+                            break
+                        time.sleep(0.5)
+                else:
+                    kayit["guven_cevapsiz"] = _son[-1500:]
         t = kayit["terminal"]
         plan = kayit["plan"]
         if kayit.pop("guven_cevapsiz", None) is not None:

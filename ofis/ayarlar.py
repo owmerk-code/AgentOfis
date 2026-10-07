@@ -35,6 +35,7 @@ BILDIRIM_TURLERI = {
     "zamanli": ("Zamanlanmış iş başladı", True),
     "kesinti": ("Ofis kaldığı yerden sürüyor", True),
     "kota": ("Takımın kota payı doldu", True),
+    "flow": ("Flow'da model / kredi değişti", True),
 }
 BILDIRIM_KAPALI = "bildirim_kapali"
 

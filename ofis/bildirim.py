@@ -106,7 +106,8 @@ def tur_anahtari(baslik: str) -> str:
             "Ajan bir beceri önerdi": "beceri", "Hafızada bir hata dolanması": "hafiza",
             "Zamanlanmış iş başladı": "zamanli",
             "Ofis kaldığı yerden sürüyor": "kesinti",
-            "Takımın kota payı doldu": "kota"}.get(baslik, "")
+            "Takımın kota payı doldu": "kota",
+            "Flow değişti": "flow"}.get(baslik, "")
 
 
 class Izleyici:
@@ -114,7 +115,7 @@ class Izleyici:
 
     OLAYLAR = ("onay_istendi", "donus_raporu", "kesinti_toparlandi", "hata",
                "zamanli_calisti", "takildi", "hafiza_reddi", "beceri_taslagi", "hata_suphesi",
-               "kota_payi_dolu")
+               "kota_payi_dolu", "flow_degisti")
 
     def __init__(self, ofis, adres: str = ""):
         self.ofis, self.adres = ofis, adres
@@ -156,6 +157,10 @@ class Izleyici:
                 elif r["tur"] == "kota_payi_dolu":
                     # Sondaki [takim:pencere] isareti tekrar onlemek icin; patrona gitmez.
                     ogeler.append(("Takımın kota payı doldu", g.rsplit(" [", 1)[0]))
+                elif r["tur"] == "flow_degisti":
+                    # Flow'a yeni model geldi / fiyat degisti: patron bilsin,
+                    # ajanlar zaten yeni katalogu goruyor (07.10.2026).
+                    ogeler.append(("Flow değişti", g))
                 elif r["tur"] == "hata" and g.startswith("Siradaki is dustu"):
                     ogeler.append(("Bir iş düştü", g))
             for r in c.execute(

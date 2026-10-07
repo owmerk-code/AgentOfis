@@ -14705,3 +14705,76 @@ sn tamam — yani bu sürümde codex varsayılanı kısa DEĞİL; açık 15 dk s
 (claude `MCP_TOOL_TIMEOUT`, codex `tool_timeout_sec`) yine de kondu: CLI
 güncellenince sessizce kısalmasın. duman_kurgu 29 (gerçek çizim; 2 mutasyon).
 KALAN: Flow ile gerçek uçtan uca (patronun girişli kabini + kredi onayı).
+
+## 07.10.2026 — Canlı gösteri (Flow uçtan uca), bulgular ve Flow kataloğu
+
+CANLI GÖSTERİ (patron izledi; panel 8911 defter kopyasıyla, kabin gerçek
+profille 9399): "semuparfum.com Belle için Reels" → lider kadro önerdi (video
+ajanı) → kurulunca iş başladı → ajan siteden ürün fotoğrafını aldı → Flow'da
+Omni 1.1 Flash 360p 4 sn (4 kredi; Veo Lite 10 yerine kendisi seçti) → indirme
+→ `video_denetle` → sohbete → Codex çapraz inceleme → kapandı. Etiket korundu;
+sıvının rengi kaydı (istemde "sabitler" yoktu). Bedel: video ajanının turu
+6,5 M jeton (6,37 M önbellek okuma, 80 araç çağrısı) → Flow'u süren
+belirlenimci araç gerekçesi.
+
+GÖSTERİDE ÇIKANLAR (düzeltildi; `duman_gosteri_bulgulari` 22):
+1. Lider gerçek terminalde güven sorusunda kaldı (erken durgunluk kırılması)
+   → tui `hazir_mi` döngüden önce okunur; duman_tui 16c.
+2. Kadro onayından sonra iş BAŞLAMADI → `ekip.devam_mesaji`, panelde "Kur ve
+   işi başlat" (patronun ilk mesajı kuyruğa).
+3. Takımın ekleri "gizli" sayıldı → `ekler.paylas` takım klasörüyle.
+4. Lider videoyu reddetti (medya bloğu "otomatik üretim mümkün değil")
+   → Flow birinci sınıf üretici satırı.
+5. Video rapora girmedi → `ekler.teslim_ekleri`, raporda TESLIM DOSYALARI ve
+   eksik `[ek]` satırları; sohbette video boyu.
+6. Lider kadro önerisinde motoru "claude" yazdı (istemdeki örnek JSON'dan)
+   → örnekten motor çıktı, katalog dışı seçim uyarılır.
+7. Model rozeti ölçümden önce boştu; "gerçek terminal" rozeti kalktı (patron).
+8. İndirmeler patronun İndirilenler'ine düşüyordu → `kabin.IndirmeYeri`:
+   `Browser.setDownloadBehavior` YALNIZ ayarı yapan bağlantı açıkken geçerli
+   (hipotezle ölçüldü); tutucu iplik iş boyunca açık tutar, iş bitince Chrome
+   eski davranışa döner; hedef `.ofis/indirilenler/`. duman_indirme 11.
+9. Kopya aracı takım klasörlerini GERÇEK masaüstüne yazıyordu
+   (`genel-agentofis`) → `ofis_kopyasi` takım klasörünü kopyaya çevirir.
+10. AÇIK: lider "HAFIZA: yok" yazdı, işçinin önerisi (Flow fiyatları) düştü →
+    ileride düşen öneri patrona kart olarak.
+
+FLOW KATALOĞU (`ofis/flow.py`): ayar menüsü gezilir, ÜRETİM YOK; `YASAK`
+listesi üretim/silme/para/paylaşım düğmelerine basmaz — keşifte aynı adlı
+("Diğer seçenekler") iki düğmeden biri projenin Sil menüsünü açtı (hiçbir şey
+seçilmedi, Escape). Ölçülen (07.10, bakiye 1046): Video · Omni 1.1 Flash
+360p 4/6/8/10 sn = 4/5/6/7 kredi, 720p = 7/10/12/15; Veo 3.1 Lite 10, Fast 20,
+Quality 100 (Veo'da süre seçeneği YOK — resmî yardım 4/6/8 sn diyor, ekran
+kazanır); video oranı 16:9/9:16; Resim · Nano Banana Pro / 2.1 / 2 Lite 0
+kredi, 5 oran; x1–x4 adet krediyi katlar. İndirme menüsü (patronun videosu):
+270p GIF / 720p Orijinal / 1080p ve 4K Yükseltilmiş (bedeli ÖLÇÜLMEDİ —
+tıklamak kredi harcayabilir).
+- Ölçülmüş iki tuzak: (a) Flow son ayarı projede HATIRLIYOR → ölçüm önceki
+  ayarı geri koyar ve döndüğünü ÖLÇER (dönmezse uyarı olayı); (b) hesap
+  paneli Escape ile KAPANMIYOR, saydam perdesi ayar düğmesinin önünü kesti
+  (30 sn bekleyip düştü) → perdeye tıklanır. İkisi de sahte sayfaya eklendi,
+  mutasyonla yakalanıyor.
+- Tazeleme: panel yarım saatte bir bakar; katalog 24 sa'ten eski + kabin
+  AÇIK (ofis açmaz) + ofis boş (`guncelleme.mesgul`) ise ölçer; başarısızsa 6
+  sa bekler; değişiklik `flow_degisti` olayı + bildirim ("Flow değişti",
+  Ayarlar'dan kapatılır) + `ev/flow_katalog_gecmis.jsonl`. `kabuk flow
+  olc|goster`. İlk gerçek ölçüm gösterinin açtığı projede yapıldı, ayarlar
+  geri kondu (ölçüldü).
+- Görünürlük: video/tasarım/reklam brifinginde TAM katalog (~160 jeton);
+  liderin medya bloğunda TEK satır. Blok her triyajda koşar (sınır ~350
+  jeton); Flow + kurgu + katalogla sınır aşıldı (386) → kurallar aynı anlamla
+  kısaltıldı (boş katalogla 325, gerçekçi katalogla ~378, sınama <400).
+  duman_flow 47 (gerçek başsız Chrome + sahte Flow; 2 mutasyon).
+
+PATRONUN KENDİ FLOW VİDEOLARI (salt okuma; 1 proje, 11 video, 9'unun istemi
+okundu): hepsi tek çekim, 10 sn, 9:16, "no cuts". Ortak kalıp: ürün KİMLİK
+KİLİDİ (boyut, şişe biçimi, kapak rengi, etiketteki yazılar tırnakta), ÖLÇEK
+KİLİDİ ("elinin boyunu geçmez, parmak uçlarında"), DURUM KİLİDİ ("kapak
+çıkarılmış, çekim boyunca öyle kalır, değişirken gösterme"), sıralı eylem,
+kamera (yavaş yaklaşma, sığ alan derinliği), ışık/renk, kuyruk ("label stays
+sharp, correct and readable; stable face; no morphing, no warping"), ses
+satırı (Türkçe replik tırnakta + "accurate lip-sync" ya da "ambient music,
+no dialogue"). Aynı sahnenin iki sürümünde ölçek kilidi SONRADAN eklenmiş
+(ilkinde şişe büyük çıkmış olmalı). Bu kalıp genel istem tarifine girer.
+
+Sınamalar 4949/4949 (93 dosya).

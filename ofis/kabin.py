@@ -187,6 +187,69 @@ def cdp_kapat(kapi: int = tarayici.KABIN_KAPISI, bekle_sn: float = 8.0) -> bool:
     return not acik_mi(kapi)
 
 
+class IndirmeYeri:
+    """Kabinin indirmelerini bir klasore yonlendirir -- BAGLANTI ACIK KALDIKCA.
+
+    06.10.2026 canli gosteri OLCTU: ajanin Flow'dan indirdigi video patronun
+    KENDI `Indirilenler` klasorune dustu; ajan oradan kopyalarken klasorun
+    listesini de okudu. 07.10 OLCULDU: `Browser.setDownloadBehavior` yalniz
+    onu kuran CDP baglantisi ACIKKEN gecerli -- baglanti kapaninca Chrome
+    varsayilana doner (ilk surum ayarlayip baglantiyi kapatiyordu; sinama
+    dosyasi patronun Indirilenler'ine dustu). Baglanti tur boyunca bir
+    iplikte tutulur; `bitir()` kapatir (Chrome kendiliginden geri doner).
+    """
+
+    def __init__(self, cdp: str, yol: str) -> None:
+        import re as _re
+        import threading as _th
+        self.tamam = False
+        self._dur = _th.Event()
+        self._hazir = _th.Event()
+        m = _re.search(r":(\d+)", str(cdp or ""))
+        s = _surum(int(m.group(1))) if m else None
+        if not s:
+            return
+        self._ip = _th.Thread(target=self._tut, args=(s["webSocketDebuggerUrl"], str(yol)),
+                              name="kabin-indirme", daemon=True)
+        self._ip.start()
+        self._hazir.wait(8)
+
+    def _tut(self, ws_url: str, yol: str) -> None:
+        try:
+            from websockets.sync.client import connect
+            with connect(ws_url, open_timeout=5, max_size=None, origin=None) as ws:
+                ws.send(json.dumps({"id": 1, "method": "Browser.setDownloadBehavior",
+                                    "params": {"behavior": "allow", "downloadPath": yol,
+                                               "eventsEnabled": False}}))
+                for _ in range(20):
+                    c = json.loads(ws.recv(timeout=5))
+                    if c.get("id") == 1:
+                        self.tamam = "error" not in c
+                        break
+                self._hazir.set()
+                while not self._dur.is_set():
+                    try:
+                        ws.recv(timeout=1.0)
+                    except TimeoutError:
+                        continue
+        except Exception:                # noqa: BLE001 -- indirme yeri isi durdurmaz
+            pass
+        finally:
+            self._hazir.set()
+
+    def bitir(self) -> None:
+        self._dur.set()
+        ip = getattr(self, "_ip", None)
+        if ip is not None:
+            ip.join(5)
+
+
+def indirme_yeri(cdp: str, yol: str):
+    """Kabin indirmelerini `yol`a yonlendiren tutucu; kurulamazsa None (is durmaz)."""
+    t = IndirmeYeri(cdp, yol)
+    return t if t.tamam else None
+
+
 #: Kabin acilinca ve yeni sekmede gidilen sayfa (02.10.2026, patron:
 #: "chrome gibi google ile acilsa").
 ACILIS_SAYFASI = "https://www.google.com/"

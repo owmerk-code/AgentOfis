@@ -116,7 +116,8 @@ def paylas(ofis, yol: str, *, ajan_ad: str = "") -> str:
     ham = str(yol or "").strip().strip("`'\"<>").strip()
     if not ham:
         raise EkHatasi("Bos yol.")
-    kok = Path(ofis.kok_klasoru(_ajan_kanati(ofis, ajan_ad))).resolve()
+    _kanat = _ajan_kanati(ofis, ajan_ad)
+    kok = Path(ofis.kok_klasoru(_kanat)).resolve()
     p = Path(ham)
     if not p.is_absolute():
         p = kok / p
@@ -128,7 +129,9 @@ def paylas(ofis, yol: str, *, ajan_ad: str = "") -> str:
                        "dosya gonderilir.")
     # `.ofis/ekler` gizli ama OFISIN eki: oradan paylasmak serbest. Baska
     # gizli yer (`.env`, `.git/...`) REDDEDILIR.
-    ek_mi = p.parent == klasor(ofis)
+    # TAKIMIN eki (06.10.2026 canli gosteri OLCTU): once projenin klasorune
+    # bakiliyordu; takim kokundeki `.ofis/ekler/` "gizli" sayilip reddedildi.
+    ek_mi = p.parent == klasor(ofis, _kanat)
     if not ek_mi and any(parca.startswith(".") for parca in goreli.parts):
         raise EkHatasi(f"'{ham}' gizli dosya/klasor; sohbete gonderilmez.")
     if not p.is_file():
@@ -139,7 +142,8 @@ def paylas(ofis, yol: str, *, ajan_ad: str = "") -> str:
                        f"sinir {AZAMI_BAYT // 1024 // 1024} MB.")
     if ek_mi and _SATIR.fullmatch(f"[ek] {KLASOR}/{p.name}"):
         return f"{KLASOR}/{p.name}"
-    return kaydet(ofis, p.name, p.read_bytes(), ajan_ad=ajan_ad or "ajan")["yol"]
+    return kaydet(ofis, p.name, p.read_bytes(), ajan_ad=ajan_ad or "ajan",
+                  kanat_id=_kanat)["yol"]
 
 
 #: Liderin cevabindaki ek satiri: `[ek] <herhangi bir yol>`.
@@ -295,6 +299,34 @@ def _klasor_ozleri(klasor_: Path) -> set:
         return {_oz(p) for p in klasor_.iterdir() if p.is_file()} - {""}
     except OSError:
         return set()
+
+
+#: Teslim sayilan ek turleri (rapor tekrar tasir): medya ve belge.
+TESLIM_UZANTI = (".mp4", ".mov", ".webm", ".m4v", ".png", ".jpg", ".jpeg", ".webp", ".gif",
+                 ".pdf", ".docx", ".xlsx", ".pptx", ".mp3", ".wav", ".m4a")
+
+
+def teslim_ekleri(ofis, gorev_idleri) -> list:
+    """Islerin ajanlarca SOHBETE GONDERILMIS teslim dosyalari (video, gorsel,
+    belge), gonderilis sirasiyla.
+
+    06.10.2026 canli gosteri OLCTU: video ajanin ara mesajinda kaldi, liderin
+    SON raporu yalniz "gonderildi" diyordu -- patron raporu okudu, videoyu
+    bulamadi ("sohbete gizli atmis gibi"). Rapor teslimi KENDI tasir; kare
+    ozeti gibi yardimci dosyalar (`-kareler.`) tasinmaz."""
+    idler = [g for g in (gorev_idleri or []) if g]
+    if not idler:
+        return []
+    soru = ",".join("?" * len(idler))
+    out = []
+    with ofis.db.baglanti() as c:
+        for r in c.execute(f"SELECT govde FROM olay WHERE proje_id = ? AND tur = 'ajan_sohbet' "
+                           f"AND gorev_id IN ({soru}) ORDER BY rowid", (ofis.proje_id, *idler)):
+            for y in ayikla(r["govde"] or "")[1]:
+                ad = y.lower()
+                if ad.endswith(TESLIM_UZANTI) and "-kareler." not in ad and y not in out:
+                    out.append(y)
+    return out
 
 
 def satirlar(yollar) -> str:

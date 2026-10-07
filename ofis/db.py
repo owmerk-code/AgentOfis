@@ -907,6 +907,8 @@ class Veritabani:
         ("kanat", "marka_kiti", "TEXT NOT NULL DEFAULT ''"),
         # DENEME / CANLI (06.10.2026): 0 = deneme kipi (canli eylem reddedilir).
         ("kanat", "canli", "INTEGER NOT NULL DEFAULT 0"),
+        # KADRO SONRASI DEVAM (06.10.2026): oneriyi doguran patron mesaji AYNEN.
+        ("ekip_onerisi", "patron_mesaji", "TEXT NOT NULL DEFAULT ''"),
     )
 
     def _veri_goc(self, conn) -> None:

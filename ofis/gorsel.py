@@ -928,30 +928,59 @@ def lider_blogu() -> str:
 
     g_satir, g_var = _grup("gorsel", musait_ureticiler())
     v_satir, v_var = _grup("video", _video.musait_ureticiler())
-    satir += g_satir + v_satir + [""]
+    # FLOW BIRINCI SINIF URETICI (06.10.2026, gosteride OLCULDU): blok once
+    # "otomatik uretim MUMKUN DEGIL, IS ACMA" diyor, Flow'u en sonda not
+    # olarak geciyordu; lider "video yapilamaz" diye cevapladi. Flow para
+    # kilidine takilmaz (patronun abonelik kredisi, gomulu tarayici).
+    flow = _flow_durumu()
+    v_satir.append(f"  {'flow':11} {flow['metin']}")
+    v_var = v_var or flow["var"]
+    from . import kurgu as _kurgu
+    _kd = _kurgu.hazir_mi()
+    satir += g_satir + v_satir + [
+        "kurgu:",
+        "  " + ("video_kurgula KULLANILABILIR (klip/gorselden paylasmaya hazir "
+                "video: 9:16, 4:5, 1:1; yazi, altyazi, muzik)"
+                if all(_kd.values()) else
+                "video_kurgula KURULU DEGIL ("
+                + ", ".join(k for k, v in _kd.items() if not v) + ")"),
+        ""]
 
     if not (g_var or v_var):
         satir.append("Su an OTOMATIK medya uretimi MUMKUN DEGIL.")
     satir += [
         "KURALLAR:",
-        "- Uretim mumkun degilse IS ACMA. Patrona NE YAPMASI gerektigini",
-        "  soyle (kilidi acmak, anahtar eklemek, ya da kotanin yenilenmesi).",
-        "- UCUNCU BIR YOL VAR ve genelde en dogrusu: `gorsel_iste` /",
-        "  `video_iste`. Istemi AJAN yazar (isin zor kismi zaten odur),",
-        "  patron kendi aracinda uretip tahtaya koyar. PARA HARCANMAZ.",
-        "- Para kilidini SEN ACAMAZSIN. Para karari patronundur; sen",
-        "  yalnizca durumu ve secenegi soylersin.",
-        "- Gorseli ajana OFISIN `gorsel_uret` araciyla urettir; CLI'i",
-        "  elle cagirtma (kapiyi atlar, ~800 bin jeton yakti). Ureticiyi",
-        "  patron istemedikce kabul olcutune YAZMA.",
-        "- `codex` gorseli ABONELIKTEN uretir (fatura yok) ama Codex",
-        "  kotasini gorselsiz bir turdan ~3-5 kat hizli yer ve o kota",
-        "  codex'li ajanlarla ORTAK. Toplu gorsel isini buna gore planla.",
-        "",
+        "- Uretim mumkun degilse IS ACMA; patrona ne yapmasi gerektigini soyle",
+        "  (kilit, anahtar, kota). Para kilidini SEN ACAMAZSIN (karar patronun).",
+        "- Ucuncu yol: `gorsel_iste` / `video_iste` -- istemi AJAN yazar, patron",
+        "  kendi aracinda uretir. PARA HARCANMAZ.",
+        "- Gorseli `gorsel_uret` araciyla urettir; CLI'i elle cagirtma (~800 bin",
+        "  jeton yakti). Ureticiyi patron istemedikce olcute YAZMA.",
+        "- `codex` gorseli abonelikten (fatura yok) ama Codex kotasini ~3-5 kat",
+        "  hizli yer; codex'li ajanlarla ORTAK.",
         # FLOW (04.10.2026, patron karari): abonelikte VIDEO icin programatik
         # yol yok (Antigravity'de video araci yok, olculdu); patron gomulu
         # tarayiciya Flow hesabiyla girdi ve videonun ajanca uretilmesini istedi.
-        "VIDEO: gomulu tarayicida Google Flow (abonelik kredisi). Isi `video`",
-        "  rolune ya da tarayicili ajana ver; `flow-video` becerisi. Flow yoksa `video_iste`.",
+        "VIDEO: gomulu tarayicida Google Flow (abonelik kredisi, PARA KILIDINE",
+        "  TAKILMAZ): `video` rolu (yoksa kadro oner), `flow-video` becerisi,",
+        "  sonra `video_kurgula`. Kredi harcayan uretim patrona sorulur.",
     ]
+    # FLOW KATALOGU (07.10.2026): lider toplam krediyi ve sahne basina modeli
+    # ezberden degil OLCULMUS katalogdan yazar (tek satir; tamami ajanda).
+    from . import flow as _flow
+    satir.append(_flow.kisa_ozet())
     return "\n".join(satir)
+
+
+def _flow_durumu() -> dict:
+    """Flow kullanilabilir mi -- OLCULEBILEN kadari: gomulu tarayicinin profili
+    dolu mu. Girisin gecerliligi tur kosmadan olculemez; bu soylenir."""
+    try:
+        from pathlib import Path as _P
+        from .kabin import profil_yolu
+        if not (_P(profil_yolu()) / "Default").is_dir():
+            return {"var": False, "metin": "gomulu tarayici profili BOS -- patron Flow'a girmeli"}
+    except Exception as exc:                  # noqa: BLE001 -- olculemedi, soylenir
+        return {"var": False, "metin": f"gomulu tarayici durumu okunamadi ({exc})"}
+    return {"var": True, "metin": "KULLANILABILIR -- gomulu tarayicida patronun Flow hesabi "
+                                  "(giris ekrani cikarsa `giris_iste`)"}

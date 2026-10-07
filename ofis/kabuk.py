@@ -1279,6 +1279,23 @@ def komut_eksikler(a) -> None:
             + (f" (not: {o['not']})" if o.get("not") else ""))
 
 
+def komut_flow(a) -> None:
+    """GOOGLE FLOW KATALOGU (07.10.2026): `olc` gomulu tarayicidaki Flow'u
+    URETMEDEN olcer (model, secenek, kredi; ayarlar sonra geri konur), oncekiyle
+    karsilastirip kaydeder; `goster` son olcumu yazar. Panel acikken katalog
+    24 saatte bir kendiliginden tazelenir (tarayici acik ve ofis bosken)."""
+    from . import flow
+    if a.eylem == "olc":
+        ofis = ofis_ac(a.db, a.proje)
+        r = flow.gerekirse_olc(ofis.db, ofis.proje_id, cdp=a.cdp, zorla=True)
+        if not r["yapildi"]:
+            raise SystemExit(f"olculmedi: {r['sebep']}")
+        yaz("olculdu." + (" DEGISIKLIK:" if r["fark"] else " Oncekiyle ayni (ya da ilk olcum)."))
+        for x in r["fark"]:
+            yaz(f"  {x}")
+    yaz(flow.ozet_metni())
+
+
 def komut_izin(a) -> None:
     """IZINLER -- patronun onceden izin verdigi riskli eylemler.
 
@@ -2205,6 +2222,11 @@ def ayristirici() -> argparse.ArgumentParser:
 
     ek = alt.add_parser("eksikler", help="ofisin kendi eksik onerileri ve onaylananlar")
     ek.set_defaults(islev=komut_eksikler)
+
+    fl = alt.add_parser("flow", help="GOOGLE FLOW katalogu -- modeller, secenekler, kredi (uretim yok)")
+    fl.add_argument("eylem", nargs="?", default="goster", choices=["goster", "olc"])
+    fl.add_argument("--cdp", default="", help="tarayici adresi (bos: gomulu tarayici)")
+    fl.set_defaults(islev=komut_flow)
 
     iz = alt.add_parser("izin", help="patronun onceden verdigi izinler (push, deploy...)")
     iz.add_argument("eylem", nargs="?", default="liste",

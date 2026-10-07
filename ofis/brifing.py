@@ -101,6 +101,12 @@ class Brifing:
         # ve tahmin, bu projede defalarca yanlis is uretti.
         try:
             satirlar += ["", roller.brifing_blogu(ajan["meslek"])]
+            # FLOW KATALOGU (07.10.2026, patron: "ajanlar hangi modeli
+            # kullanacagini bilmeli"): model secimi ezberden degil, patronun
+            # ekranindan OLCULMUS katalogdan.
+            if roller.rol(ajan["meslek"]).ad in roller.FLOW_ROLLERI:
+                from . import flow
+                satirlar += ["", flow.ozet_metni()]
         except RolHatasi:
             # Kutuphane oncesi yazilmis, cozulemeyen bir meslek. Brifing
             # yine de uretilir -- eski bir kayit yuzunden ajanin isini

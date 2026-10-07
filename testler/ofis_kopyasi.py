@@ -81,17 +81,38 @@ def kopya_kur(yer: str = "") -> tuple:
     for r in hedef.execute("SELECT id, kok_klasor FROM proje").fetchall():
         if (r[1] or "").lower().replace("\\", "/").rstrip("/") == gercek:
             hedef.execute("UPDATE proje SET kok_klasor=? WHERE id=?", (str(calisma), r[0]))
+    # TAKIM KLASORLERI de kopyaya (06.10.2026 canli gosteri OLCTU): Asama 4'ten
+    # beri takimin kendi koku var (`kanat.klasor`); yalniz proje koku cevrilince
+    # gosterinin ajani patronun GERCEK `Masaustu\\genel-agentofis` klasorune yazdi.
+    gercekler = [gercek]
+    _kols = [c[1] for c in hedef.execute("PRAGMA table_info(kanat)")]
+    if "klasor" in _kols:
+        for kid, kad, kk in hedef.execute("SELECT id, ad, klasor FROM kanat WHERE klasor != ''").fetchall():
+            kaynak_t = Path(kk)
+            kopya_t = ana / f"takim-{kid[:8]}"
+            if kaynak_t.is_dir():
+                shutil.copytree(kaynak_t, kopya_t,
+                                ignore=shutil.ignore_patterns(".pytest_cache", "__pycache__"))
+            else:
+                kopya_t.mkdir(parents=True, exist_ok=True)
+            anahtar = str(kaynak_t.resolve()).lower().replace("\\", "/").rstrip("/")
+            gercekler.append(anahtar)
+            hedef.execute("UPDATE kanat SET klasor=? WHERE id=?", (str(kopya_t), kid))
+            for r in hedef.execute("SELECT ad, klasor FROM ajan").fetchall():
+                if (r[1] or "").lower().replace("\\", "/").rstrip("/") == anahtar:
+                    hedef.execute("UPDATE ajan SET klasor=? WHERE ad=?", (str(kopya_t), r[0]))
     # Kalan her gercek-kok izi SOYLENIR (sessiz kalan yol, gercek klasore yazar).
     for (tablo,) in hedef.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall():
         sutunlar = [c[1] for c in hedef.execute(f"PRAGMA table_info({tablo})")]
         for sut in sutunlar:
-            try:
-                n = hedef.execute(f"SELECT COUNT(*) FROM {tablo} WHERE lower(replace(CAST({sut} AS TEXT),'\\','/')) "
-                                  f"LIKE ?", (gercek + "%",)).fetchone()[0]
-            except sqlite3.Error:
-                continue
-            if n and tablo not in ("olay", "kanit", "gorev", "karar", "mesaj"):
-                print(f"UYARI: kopyada gercek koku gosteren {n} kayit: {tablo}.{sut}")
+            for _g in gercekler:
+                try:
+                    n = hedef.execute(f"SELECT COUNT(*) FROM {tablo} WHERE lower(replace(CAST({sut} AS TEXT),'\\','/')) "
+                                      f"LIKE ?", (_g + "%",)).fetchone()[0]
+                except sqlite3.Error:
+                    continue
+                if n and tablo not in ("olay", "kanit", "gorev", "karar", "mesaj"):
+                    print(f"UYARI: kopyada gercek klasoru gosteren {n} kayit: {tablo}.{sut} ({_g})")
     # Kopyada yarim kalmis is/onay patronun gercek kuyrugunu taklit etmesin.
     hedef.execute("UPDATE gorev SET durum='iptal' WHERE durum IN ('bekliyor','hazir','calisiyor','inceleme')")
     hedef.commit()

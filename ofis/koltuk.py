@@ -207,11 +207,22 @@ class Koltuk:
 
     # -- ana akis ----------------------------------------------------------
 
-    def akit(self, no: int, ajan_ad: str, *, butce_usd: float = None,
-             mcp_yapilandirma: str = "", zaman_asimi: float = None,
-             tarayici_profili: str = "", tarayici_gorunur: bool = False,
-             tarayici_kabini: str = "", kabin_izleme: bool = False,
-             izinli_araclar: tuple = ()):
+    def akit(self, no: int, ajan_ad: str, **ayar):
+        """`_akit`in sarmalayicisi: tur NASIL biterse bitsin (dusme, durdurma,
+        yarida birakilan akis) kabinin indirme klasoru eski haline doner.
+        Tutucu yerel: paralel islerde koltuk ortak, durum orneğe yazilmaz."""
+        tutucu = {}
+        try:
+            yield from self._akit(no, ajan_ad, _indirme=tutucu, **ayar)
+        finally:
+            if tutucu.get("indirme") is not None:
+                tutucu["indirme"].bitir()
+
+    def _akit(self, no: int, ajan_ad: str, *, butce_usd: float = None,
+              mcp_yapilandirma: str = "", zaman_asimi: float = None,
+              tarayici_profili: str = "", tarayici_gorunur: bool = False,
+              tarayici_kabini: str = "", kabin_izleme: bool = False,
+              izinli_araclar: tuple = (), _indirme: dict = None):
         """Gorevi kostur, panelin okuyacagi olaylari akit.
 
         Akan sozlukler `{tur, govde, ek}` bicimindedir -- motorun olay
@@ -683,6 +694,22 @@ class Koltuk:
                             yazma=self._tarayici_yazar(gorev),
                             kabin_izleme=kabin_izleme and not alan),
                         ajan_ad=ajan_ad, gorev_id=gorev["id"])
+                    # INDIRMELER ISIN KLASORUNE (06.10.2026 canli gosteri):
+                    # kabin patronun profiliyle calisir; indirme yeri
+                    # verilmezse dosya patronun `Indirilenler`ine duser.
+                    if kabinde and _indirme is not None:
+                        from . import kabin as _kabin
+                        _iy = Path(self.ofis.isin_koku(gorev)) / ".ofis" / "indirilenler"
+                        try:
+                            _iy.mkdir(parents=True, exist_ok=True)
+                            _t = _kabin.indirme_yeri(tarayici_kabini, str(_iy))
+                            if _t is not None:
+                                _indirme["indirme"] = _t
+                                metin = (metin + "\n\nINDIRMELER: gomulu tarayicidan "
+                                         "indirdigin dosyalar `.ofis/indirilenler/` klasorune "
+                                         "duser (patronun kendi klasorune DEGIL); oradan al.")
+                        except OSError:
+                            pass
             mcp_yapilandirma = mcp_yapilandirmasi(
                 str(self.db.yol), self.proje_id, ajan_ad, no,
                 ek_sunucular=ek_sunucular)

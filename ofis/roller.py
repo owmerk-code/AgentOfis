@@ -847,6 +847,12 @@ def ozet_satiri(r: Rol) -> str:
     return "  ".join(parca)
 
 
+#: Google Flow'u (gomulu tarayici) kullanan roller: brifinglerine OLCULMUS
+#: Flow katalogu (model -> secenek -> kredi) girer. Ilgisiz role girmez;
+#: her brifinge ~400 jeton binerdi (07.10.2026).
+FLOW_ROLLERI = ("video", "tasarim", "reklam")
+
+
 def brifing_blogu(ad: str) -> str:
     """Rolun brifinge (K1) giren hali.
 
