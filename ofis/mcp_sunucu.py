@@ -471,6 +471,10 @@ def arac_soru_sor(oturum: Oturum, args: dict) -> str:
             "Cevap gelince kaldigin yerden surdurulecek.")
 
 
+#: Kredi paketi onayinin `ayrinti` ilk satiri -- TEK KAYNAK `tarayici`.
+from ofis.tarayici import KREDI_PAKETI_ISARETI  # noqa: E402
+
+
 def arac_onay_iste(oturum: Oturum, args: dict) -> str:
     """Riskli adim insana takilir. Tam otonomi ISTENMEZ."""
     eylem = str(args.get("eylem") or "").strip()
@@ -479,9 +483,31 @@ def arac_onay_iste(oturum: Oturum, args: dict) -> str:
     risk = str(args.get("risk") or "orta").strip() or "orta"
     if risk not in ("dusuk", "orta", "yuksek"):
         return f"HATA: risk 'dusuk', 'orta' ya da 'yuksek' olmali ({risk} degil)."
+    ayrinti = str(args.get("ayrinti") or "")
+    # KREDI PAKETI (07.10.2026, canli deneme): ajan paketi onay_iste ile
+    # sordu, patron onayladi -- ve kapi gercek "Olusturmaya basla"da AYNI
+    # seyi IKINCI KEZ sordu (paket onayi kapiya bagli degildi). Paket onayi
+    # artik `uretim` kadar kredili tiklamayi acar; fazlasi yine sorulur.
+    kredi, uretim = args.get("kredi"), args.get("uretim")
+    if kredi not in (None, "") or uretim not in (None, ""):
+        try:
+            kredi, uretim = int(kredi), int(uretim)
+        except (TypeError, ValueError):
+            return ("HATA: kredi paketi icin `kredi` (toplam kredi) ve `uretim` (kredili "
+                    "uretim tiklamasi sayisi, yeniden cekim payi dahil) TAM SAYI olmali.")
+        if kredi <= 0 or uretim <= 0:
+            return "HATA: `kredi` ve `uretim` sifirdan buyuk olmali."
+        if oturum.gorev_no is None:
+            return "HATA: kredi paketi bir ise baglidir; bu turda gorev yok."
+        eylem = f"KREDI PAKETI ({kredi} kredi, {uretim} uretim): {eylem}"
+        ayrinti = f"{KREDI_PAKETI_ISARETI} kredi={kredi} uretim={uretim}\n" + ayrinti
     oturum.ofis.postane.onay_iste(
-        oturum.ajan_ad, eylem, ayrinti=str(args.get("ayrinti") or ""),
+        oturum.ajan_ad, eylem, ayrinti=ayrinti,
         risk=risk, gorev_no=oturum.gorev_no)
+    if kredi not in (None, ""):
+        return ("Kredi paketi onaya gonderildi. Patron onaylarsa bu isteki kredili "
+                f"uretimlerden {uretim} tanesi kapida TEKRAR SORULMAZ; fazlasi sorulur.\n"
+                "SIMDI DUR: uretme, turu burada bitir.")
     return ("Onay istegi kaydedildi, insan cevabi bekleniyor.\n"
             "SIMDI DUR: eylemi YAPMA, turu burada bitir.")
 
@@ -1602,6 +1628,12 @@ ARACLAR = [
                 "ayrinti": {"type": "string", "description": "Kapsam, tutar, etki."},
                 "risk": {"type": "string",
                          "description": "dusuk | orta | yuksek (varsayilan orta)"},
+                "kredi": {"type": "integer",
+                          "description": "KREDI PAKETI (Flow vb.): paketin TOPLAM kredisi."},
+                "uretim": {"type": "integer",
+                           "description": "KREDI PAKETI: kredili uretim tiklamasi sayisi "
+                                          "(yeniden cekim payi dahil). Onaylanirsa bu kadar "
+                                          "uretim kapida tekrar sorulmaz."},
             },
             "required": ["eylem"],
         },

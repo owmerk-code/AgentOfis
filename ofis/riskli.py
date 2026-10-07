@@ -437,7 +437,14 @@ def uretim_ayari(harita: dict) -> str:
         s = str(v or "")
         j = s.lower().find("ayarlar tetikleyicisi")
         if j >= 0:
-            return s[j + len("ayarlar tetikleyicisi"):].strip(" :")
+            s = s[j + len("ayarlar tetikleyicisi"):]
+            # 07.10 canli: MCP goruntusunde alt ogeler ve komsu dugme de
+            # geliyordu ("generic text: Video · 720p · 8 sn. img : crop_9_16
+            # text: x1 button Oluşturmaya başla ...") -> kart okunmuyordu.
+            s = re.split(r"\bbutton\b", s)[0]
+            s = re.sub(r"\b(?:generic|text|img|paragraph|group)\b\s*:?", " ", s)
+            s = re.sub(r"\b[a-z]+(?:_[a-z0-9]+)+\b", " ", s)     # simge adlari (crop_9_16)
+            return re.sub(r"\s+", " ", s).strip(" :")
     return ""
 
 

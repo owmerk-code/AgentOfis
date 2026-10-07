@@ -194,10 +194,56 @@ try:
     v2.istegi_isle(cagri("browser_click", {"element": "Oluşturmaya başla", "target": "e35"}, 8))
     sina("'bir kez' onayi TUKENIR (ikinci klip yeniden sorulur)",
          len(v2.cocuga) == 1 and len(o.postane.bekleyen_onaylar("vera")) == 1, f"{len(v2.cocuga)}")
+    print("\n7. KREDI PAKETI: onaylanan paket kapida IKINCI KEZ sorulmaz (07.10 canli)")
+    from ofis import mcp_sunucu as S  # noqa: E402
+    g3 = o.tahta.gorev_ac("Paketli reels", neden="s", ana_hedef="s", kabul_olcutu="y", yazma_alani=["z"])
+
+    class _Ot:
+        ofis, ajan_ad, gorev_no = o, "vera", g3["no"]
+
+    sina("paket: uretim sayisi YOKSA ret", "HATA" in S.arac_onay_iste(_Ot(), {"eylem": "x", "kredi": 120}))
+    cev = S.arac_onay_iste(_Ot(), {"eylem": "Belle reels paketi", "ayrinti": "sahneler...",
+                                   "kredi": 120, "uretim": 2})
+    pk = [b for b in o.postane.bekleyen_onaylar("vera") if "KREDI PAKETI" in b["eylem"]]
+    sina("paket karti: kredi ve uretim sayisi kartta", pk and "120 kredi, 2 uretim" in pk[0]["eylem"]
+         and pk[0]["ayrinti"].startswith("KREDI_PAKETI: kredi=120 uretim=2") and "SORULMAZ" in cev, str(pk)[:200])
+    os.environ["OFIS_GOREV"] = str(g3["no"])
+    v3 = SahteVekil(dict(_h))
+    v3.durum.sonuctan_ogren(f"- Page URL: {FLOW}\n")
+    v3.istegi_isle(cagri("browser_click", {"element": "Oluşturmaya başla", "target": "e35"}, 9))
+    sina("paket ONAYLANMADAN uretim sorulur", not v3.cocuga)
+    for b in o.postane.bekleyen_onaylar("vera"):
+        if "KREDI PAKETI" not in b["eylem"]:
+            o.postane.onay_cevapla(b["id"], onayla=False, not_="sinama: paket bekleniyor")
+    if pk:
+        o.postane.onay_cevapla(pk[0]["id"], onayla=True)
+    v4 = SahteVekil(dict(_h))
+    v4.durum.sonuctan_ogren(f"- Page URL: {FLOW}\n")
+    for i in (10, 11):
+        v4.istegi_isle(cagri("browser_click", {"element": "Oluşturmaya başla", "target": "e35"}, i))
+    sina("onaylanan paket: 2 uretim SORULMADAN gecti", len(v4.cocuga) == 2, f"{len(v4.cocuga)}")
+    once = len(o.postane.bekleyen_onaylar("vera"))
+    v4.istegi_isle(cagri("browser_click", {"element": "Oluşturmaya başla", "target": "e35"}, 12))
+    # Paket hakki bitti: 3. uretim GECMEZ; ajan durdurulur (yeni kart ya da bu
+    # isteki onceki ret -- "ret ogretir"; ajan yeni paket ister).
+    sina("paketin FAZLASI gecmez (3. uretim durduruldu)", len(v4.cocuga) == 2
+         and any(k in son_metin(v4) for k in ("ONAY", "REDDEDILDI")), son_metin(v4)[:120])
+    os.environ["OFIS_GOREV"] = str(g["no"])
+    v5 = SahteVekil(dict(_h))
+    v5.durum.sonuctan_ogren(f"- Page URL: {FLOW}\n")
+    v5.harita["e34"] = "button Ayarlar tetikleyicisi : " + VIDEO_AYARI
+    _once5 = len(v5.cocuga)
+    # g'nin 'bu is boyunca' onayi var (6. bolum); paket baska iste kullanilmaz -> g3 paketi g'ye tasinmaz
+    sina("paket BASKA ISE tasinmaz (g3'un paketi g'de sayilmaz)",
+         not v5.ofis._kredi_paketi({"sinif": "kredi", "arac": "browser_click", "hedef": "x"}))
+    sina("MCP anlik goruntusu ayiklanir (okunur kart)",
+         riskli.uretim_ayari({"e2": "button Ayarlar tetikleyicisi : generic text: Video · 720p · 8 sn. "
+                                      "img : crop_9_16 text: x1 button Oluşturmaya başla img : arrow_forward"})
+         == "Video · 720p · 8 sn. x1")
 finally:
     for a in ("OFIS_DB", "OFIS_PROJE", "OFIS_AJAN", "OFIS_GOREV"):
         os.environ.pop(a, None)
-    for x in [v] + ([v2] if "v2" in dir() else []):
+    for x in [y for y in (globals().get(n) for n in ("v", "v2", "v3", "v4", "v5")) if y is not None]:
         try:
             x.cocuk.stdin.close()
             x.cocuk.wait(timeout=5)

@@ -198,6 +198,9 @@ class TarayiciHatasi(Exception):
 #: Iki uc AYNI sabiti kullanir -- iki ayri yazim ayrisirsa onaylanan site
 #: bir sonraki turda sessizce acilmazdi.
 KAYNAK_ISARETI = "KAYNAK:"
+#: Kredi paketi onayinin `ayrinti` ilk satiri (07.10.2026). Yazan MCP
+#: `onay_iste(kredi, uretim)`, okuyan tarayici kapisi.
+KREDI_PAKETI_ISARETI = "KREDI_PAKETI:"
 
 
 def kaynak_normalle(deger: str) -> str:

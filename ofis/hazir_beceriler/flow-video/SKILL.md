@@ -22,9 +22,14 @@ beceri paketteki sahneleri Flow'da uretip paylasmaya hazir videoya cevirir.
 ## 1. Kredi kurali (kapida yapiyla durur)
 Kredili her uretim tiklamasi (Olusturmaya basla, Enter ile gonderme,
 1080p/4K buyutme) ofisin kapisinda DURUR ve patrona sorulur. Bu yuzden:
-paketi (sahneler, model, toplam kredi, taslak kareler) ONCE `sohbete_yaz`
-ile gonder, sonra uret. Patron "Bu is boyunca" onaylarsa ayni isteki
-uretimler bir daha sorulmaz. Resim uretimi (katalogda 0 kredi) sorulmaz.
+1. paketi (sahneler, model, toplam kredi, taslak kareler) `sohbete_yaz` ile
+   gonder;
+2. `onay_iste(eylem="... paketi", ayrinti=<paket ozeti>, kredi=<TOPLAM>,
+   uretim=<kredili tiklama sayisi, yeniden cekim payi dahil>)` ile sor ve
+   turu bitir;
+3. patron onaylayinca uret: paketteki `uretim` kadar tiklama kapida TEKRAR
+   SORULMAZ; fazlasi sorulur (gerekirse yeni paket iste).
+Resim uretimi (katalogda 0 kredi) hic sorulmaz.
 
 ## 2. Model secimi (sonuca gore; katalogdaki fiyatlarla)
 - **Konusan insan, Turkce replik + dudak senkronu (UGC):** patronun kendi

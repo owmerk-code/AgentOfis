@@ -66,10 +66,11 @@ olur -- urun ve kompozisyon boylece korunur.
 ## 7. Senaryo paketi -> patron
 `sohbete_yaz` ile: kisa brif, fikir, sahne listesi (model + kredi), TOPLAM
 kredi (+ yeniden cekim payi), kredi bakiyesi, varsayimlar; `ekler`de taslak
-kareler (en cok 5; fazlasi tek bir kontak gorselinde). Sonra uretime gec:
-Flow'daki ilk kredili uretim kapida DURUR, patron paketi gorup onaylar ("Bu is
-boyunca" derse paketteki uretimler bir daha sorulmaz). Patron duzeltme
-isterse paketi guncelle (kredi harcamaz) ve yeniden gonder.
+kareler (en cok 5; fazlasi tek bir kontak gorselinde). Ardindan
+`onay_iste(..., kredi=<TOPLAM>, uretim=<kredili tiklama sayisi>)` ile TEK
+onay iste ve turu bitir: onaylanan paket o kadar uretimi kapida bir daha
+sordurmaz (cift onay yok). Patron duzeltme isterse paketi guncelle (kredi
+harcamaz) ve yeniden gonder.
 
 ## 8. Paylasim metni (teslimle birlikte)
 Aciklama (2-3 cumle, ilk satir kanca, sonda CTA), 5-10 ilgili etiket, kapak

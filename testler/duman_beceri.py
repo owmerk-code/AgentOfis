@@ -185,7 +185,7 @@ for _ad in _hazir:
          _b.get("name") == _ad and len(_b.get("description", "")) > 40, str(_b)[:120])
 _fv = (beceri.HAZIR_KOK / "flow-video" / "SKILL.md").read_text(encoding="utf-8")
 sina("flow-video: patronun istemlerinden kilitler + kredi kapisi + teslim",
-     all(k in _fv for k in ("KIMLIK KILIDI", "OLCEK KILIDI", "DURUM KILIDI", "Bu is boyunca",
+     all(k in _fv for k in ("KIMLIK KILIDI", "OLCEK KILIDI", "DURUM KILIDI", "kredi=<TOPLAM>", "uretim=",
                             "video_kurgula", "video_denetle", "Başlat")))
 _rk = (beceri.HAZIR_KOK / "reklam-kreatifi" / "SKILL.md").read_text(encoding="utf-8")
 sina("reklam-kreatifi: uc istek bicimi + kimlik karti + senaryo paketi",

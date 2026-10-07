@@ -354,6 +354,10 @@ class OfisBagi:
             izin_mod.gecti_kaydi(self.db, self.proje_id, izin=iz, bulgu=bulgu,
                                  ajan_ad=self.ajan, gorev_id=self.gorev_id)
             return {"izin": True}
+        if bulgu.get("sinif") == "kredi":
+            paket = self._kredi_paketi(bulgu)
+            if paket:
+                return {"izin": True}
         im = self.imza(bulgu)
         for kayit in self._ayni_imzalar(im):
             # KAPSAM 'is' (07.10.2026): "bu is boyunca" onayi TUKETILMEZ --
@@ -379,6 +383,34 @@ class OfisBagi:
         onay = self.postane_onay(bulgu, im)
         return {"izin": False, "metin": self._bekle_metni(
             bulgu, onay["id"], yeni=True)}
+
+    def _kredi_paketi(self, bulgu: dict) -> bool:
+        """Bu ISIN onaylanmis KREDI PAKETI (`onay_iste(kredi, uretim)`) var ve
+        uretim hakki bitmediyse bir hak tuketilir, tiklama SORULMADAN gecer.
+
+        OLCULDU (07.10.2026, canli deneme): ajan paketi sordu, patron 120
+        krediyi onayladi; kapi gercek "Olusturmaya basla"da AYNI seyi ikinci
+        kez sordu. Paket isin TAMAMINA (hangi ajan tiklarsa) aittir; hak
+        sayisi patronun kartta gordugu sayidir, fazlasi yine sorulur."""
+        if not self.gorev_id:
+            return False
+        isaret = tarayici.KREDI_PAKETI_ISARETI
+        with self.db.baglanti() as conn:
+            paketler = [dict(r) for r in conn.execute(
+                "SELECT * FROM onay WHERE proje_id = ? AND gorev_id = ? AND durum = 'onaylandi' "
+                "AND ayrinti LIKE ? ORDER BY olusturuldu, rowid",
+                (self.proje_id, self.gorev_id, isaret + "%")).fetchall()]
+        for p in paketler:
+            m = re.search(r"uretim=(\d+)", (p.get("ayrinti") or "").splitlines()[0])
+            hak = int(m.group(1)) if m else 0
+            with self.db.baglanti() as conn:
+                kullanilan = conn.execute(
+                    "SELECT COUNT(*) FROM olay WHERE proje_id = ? AND tur = 'onay_kullanildi' "
+                    "AND govde LIKE ?", (self.proje_id, p["id"] + "%")).fetchone()[0]
+            if kullanilan < hak:
+                self._kullan(p["id"], bulgu)
+                return True
+        return False
 
     def postane_onay(self, bulgu: dict, im: str) -> dict:
         kutu = _SahteOfis(self.db, self.proje_id, self.gorev_no)
@@ -450,9 +482,12 @@ class OfisBagi:
                 "PAKETINE bakarak verir.\n\n"
                 "SIMDI NE YAP: paketi henuz gondermediysen SIMDI `sohbete_yaz` ile "
                 "gonder (sahne listesi, her sahnenin modeli ve kredisi, TOPLAM "
-                "kredi, taslak kareler `ekler`de). Bu uretimi baska yoldan "
-                "tetiklemeye calisma (Enter, kod). Yaptiklarini `kanit_ekle` ile "
-                "yaz ve turu bitir; patron onaylayinca is kaldigi yerden surer. "
+                "kredi, taslak kareler `ekler`de) ve `onay_iste(eylem, ayrinti, "
+                "kredi=<toplam>, uretim=<kredili tiklama sayisi, yeniden cekim payi "
+                "dahil>)` ile sor -- onaylanan paket o kadar uretimi bir daha "
+                "sordurmaz. Bu uretimi baska yoldan tetiklemeye calisma (Enter, "
+                "kod). Yaptiklarini `kanit_ekle` ile yaz ve turu bitir; patron "
+                "onaylayinca is kaldigi yerden surer. "
                 + KART_ACILDI)
         return (
             f"{bas} -- SIMDI DUR.\n\n"
