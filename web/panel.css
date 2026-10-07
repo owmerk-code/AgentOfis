@@ -347,6 +347,8 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
   border: 1px solid var(--cizgi); border-radius: 4px; padding: 0 5px;
   white-space: nowrap;
 }
+/* Son tur ajanin kendi modeliyle kosmadi (hakem / zincir devri), 07.10. */
+.pano-motor.farkli { border-style: dashed; font-style: italic; }
 .pano-gecmis {
   font-size: var(--yz-mikro); color: var(--uyari);
   border: 1px solid var(--uyari); border-radius: 4px; padding: 0 5px;

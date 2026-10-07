@@ -715,11 +715,26 @@ function panoKur(a, secenek) {
   // ILK TUR (06.10, patron: "hangi model yazmiyor"): olcum ancak tur bitince
   // gelir; o zamana kadar ajanin AYARINDAKI model yazilir (ve oyle soylenir).
   const olculen = [sonTur.motor, sonTur.model].filter(Boolean).join(" ");
-  const motorAd = olculen || [a.motor, a.model].filter(Boolean).join(" ");
+  const ayar = [a.motor, a.model].filter(Boolean).join(" ");
+  // AJANIN KENDI MODELI vs SON TUR (07.10.2026, patron: "lider neden fable
+  // 5.1, tiklayinca opus 5.5 gorunuyor?"): son tur kapi modeline (hakem)
+  // yukseltilmis inceleme ya da hesap zinciri devriyse rozet yalniz olculeni
+  // yazinca ajanin modeli degismis sanildi. Ana rozet ajanin modeli; farkli
+  // turda ikinci rozet "son tur: ..." ve sebebi.
+  const farkli = olculen && ayar && !modelAyni(a.motor, a.model, sonTur.motor, sonTur.model);
+  const motorAd = farkli ? ayar : (olculen || ayar);
   if (motorAd) {
     const m = el("span", "pano-motor", motorAd.replace("claude-", ""));
-    m.title = olculen ? "son turda ölçülen motor/model" : "ajanın ayarı (tur bitince ölçülen yazılır)";
+    m.title = farkli ? "ajanın kendi motoru/modeli"
+      : olculen ? "son turda ölçülen motor/model" : "ajanın ayarı (tur bitince ölçülen yazılır)";
     bas.append(m);
+  }
+  if (farkli) {
+    const s2 = el("span", "pano-motor farkli", "son tur: " + olculen.replace("claude-", ""));
+    s2.title = "Bu tur ajanın kendi modeliyle koşmadı: iş iki kez geri dönünce inceleme kapı "
+      + "modeline (hakem) yükseltilir ya da hesap zinciri başka hesaba/motora devretmiştir. "
+      + "Ajanın modeli değişmedi.";
+    bas.append(s2);
   }
   // BAGLAM (06.10, E34): ajanin aklinin ne kadari dolu. Olculmediyse YOK;
   // sinir bilinmiyorsa yalniz jeton. %80'de bir sonraki tur temiz oturumla
@@ -3436,6 +3451,17 @@ function kalinYaz(kap, metin) {
     if (!p) return;
     kap.append(i % 2 && i < parca.length - 1 ? el("b", null, p) : document.createTextNode(p));
   });
+}
+
+// Ajanin AYARI ile son turda OLCULEN ayni model mi? Ayar takma ad olabilir
+// ("opus"), olcum tam kimlik ("claude-opus-5-5"): takma ad kimligin parcasiysa
+// ayni sayilir. Motor farkliysa (zincir devri) farklidir.
+function modelAyni(motorA, modelA, motorO, modelO) {
+  if (motorA && motorO && motorA !== motorO) return false;
+  const a = String(modelA || "").replace(/^claude-/, "").toLowerCase();
+  const o = String(modelO || "").replace(/^claude-/, "").toLowerCase();
+  if (!a || !o) return true;
+  return o === a || o.startsWith(a + "-") || o.includes(a);
 }
 
 function sureYazi(sn) {
