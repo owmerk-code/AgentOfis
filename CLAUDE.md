@@ -119,6 +119,7 @@ motor matrisinden geçmeden deftere girmez.
   (Ayarlar > Entegrasyonlar'da kart + Bağla), bağlamayı kullanıcı gerektiğinde
   kendisi yapar (02.10 kararı; "ertelendi" diye hatırlatılmaz). Para/yayın
   eylemleri yine kapıda sorulur. Tauri F9'u bekler.
+- **Güç kısan kısıt yok** (07.10, patron): ajanın çalışmasını/çıktısını kısan kural, araç kapatma, bağlam kırpma konmaz; kapı yalnız patronun istediği yerde (para, silme, kredi öncesi senaryo paketi); tasarruf güç pahasına yapılmaz.
 - Commit sonu: `Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>`.
 - Sıra kararı: **sesli orkestratör ve panel görünüşü EN SON** (kullanıcı,
   29.09); görünüş için önce 2–3 tasarım yönü gösterilir, kullanıcı seçer.
@@ -202,7 +203,7 @@ matrisin ölçümüyle karşılaştırır.
 | `ofis/kurgu.py` · `medya/remotion/` | VİDEO KURGU (06.10, patron): yapay zekâ videosu Flow'da (kabin, `flow-video` becerisi); ajan `video_kurgula`ya PLAN yazar (sahne/yazı/altyazı/geçiş/müzik/kapanış; 9:16 · 4:5 · 1:1 · 16:9, Instagram güvenli alanı), ofis tek Remotion şablonuyla çizer (`--color-space=bt709` → H.264 yuv420p) ve ÖLÇER (ffprobe; siyah ekran, sessizlik, kare özeti, kapak) — ölçüm otomatik kanıt. ffmpeg ofisin evinde (`ev/araclar/ffmpeg`, ajan PATH'ine eklenir). Uzun araç: iki motora açık 15 dk (ölçüldü: 200 sn'lik çağrı iki motorda da tamam). |
 | `ofis/flow.py` | FLOW KATALOĞU (07.10, patron: "ölç, ileride güncellenecek"): gömülü tarayıcıdaki Flow'un modelleri/seçenekleri/kredileri ÜRETMEDEN ölçülür (`YASAK` düğme listesi; ölçüm patronun ayarını geri koyar ve döndüğünü ölçer), `ev/flow_katalog.json` + geçmiş + `flow_degisti` olayı/bildirimi; panel 24 sa'te bir tazeler (kabin açık + ofis boşken; ofis kabin AÇMAZ); `kabuk flow olc|goster`. Video/tasarım/reklam brifinginde TAM katalog, liderde TEK satır. |
 | `ofis/kaynaklar.py` | Motorlardan gelenler: Claude/Codex hesabında ne varsa ajanlara da (ertelenmiş yükleme, ölçüldü +5k jeton/tur); eklentiler `--plugin-dir`, kendi MCP'ler (playwright hariç), kapatılan bağlayıcı `--disallowedTools`; kancalı eklenti sorulur; Codex'in kendi tarayıcıları kapalı; tarayıcı tek: gömülü. |
-| `ofis/beceri.py` | Beceri deposu (`ev/beceriler`, aynı zamanda Claude eklentisi): GENEL, tek tek kapatılır; Claude'a `--plugin-dir`, Codex evine işaretli kopya; ajan `beceri_oner` ile kanıtlı TASLAK yazar, patron onaylar. |
+| `ofis/beceri.py` | Beceri deposu (`ev/beceriler`, aynı zamanda Claude eklentisi): GENEL, tek tek kapatılır; Claude'a `--plugin-dir`, Codex ve GEMİNİ evine (`~/.gemini/config/skills`, 07.10 ölçüldü — o güne dek Gemini ajanına hiç beceri gitmiyordu) işaretli kopya; ajan `beceri_oner` ile kanıtlı TASLAK yazar, patron onaylar. Ofisin KENDİ becerileri kodla gelir (`ofis/hazir_beceriler/`: `reklam-kreatifi` istekten senaryo paketine, `flow-video`, `flow-gorsel`; patronun Flow istemlerinden kimlik/ölçek/durum kilitleri) ve depoya eşitlenir; patron kapatırsa kapalı, silerse bir daha gelmez. |
 | `ofis/ayarlar.py` · `entegrasyon.py` · `web/ayarlar.js` | Ayarlar ekranı (⚙): tek okuma + İZİNLİ yazma, kural evinde · entegrasyon kartları (claude.ai bağlayıcıları `claude mcp list`, gh, vercel; bağla/kopar KOMUTU söylenir, giriş insanın) · takım başına bağlayıcı izni (lider izinliyi kola yazar, `lider.dagit` verir). |
 | `ofis/karne.py` | KARNE (03.10): kapanan her iş `ev/karne.jsonl`'a (rol, zorluk, motor, model, ret); işin motoru ilk turda karne + limit dengesiyle seçilir (deneme payı, temiz oran, eşik), `gorev.motor_secimi`; çapraz kontrol (yapanın tersi inceler). Ayar `motor_secimi` (VARSAYILAN `ajan`: her ajanın sabit motoru, patron kararı 04.10 "Murat gibi"; `karne` yalnız bilerek), `capraz_inceleme` (açık). Lider planda ajanın motor/modelini görür. |
 | `ofis/ekip.py` · `sablon.py` | Ekip önerisi (lider önerir, insan onaylar) · takım şablonları (9 hazır: mağaza, mobil, SaaS, web, bot, içerik, stüdyo, araştırma, bilgisayar + patronun kaydettikleri `sablon_ozel`). |
@@ -230,6 +231,7 @@ matrisin ölçümüyle karşılaştırır.
   satırlı komut çevrilmez; tanınmayan bağlayıcı aracı yalnız ADIYLA açılır,
   lider bunu plana yazamaz). Panelde günlük sayaç (`izin.gun_sayaci`).
   Kabuk izni SIKI eşleşir (gevşek eşleşme yalnız tarayıcı tıklamasında).
+  **Üretim kredisi (07.10, patron: "videoyu üretmeden önce bana gelsin"):** kredi sitesinde (Flow) üretim tıklaması / Enter / büyütme indirmesi HER ZAMAN sorulur (patronun sözü ve "bu projede hep" açmaz); kart üretim ayarını (ekrandan) gösterir; "bu iş boyunca" onayı o işin üretimlerini açar (tarayıcı kapısı bu kapsamı o güne dek tanımıyordu, her tıklamada yeniden soruyordu). Ölçülmüş katalogda 0 kredi olan resim üretimi (taslak kareler) sorulmaz. `duman_kredi`.
 - **Tarayıcı:** her işte serbest; riskli tıklama ve beyan edilmemiş site
   (daraltılmış işte) sorulur; sayfadaki gizli talimat işaretlenir.
 - **Zincir:** limit/oturum düşünce aynı turda sıradaki hesaba devreder, devir
@@ -270,28 +272,14 @@ matrisin ölçümüyle karşılaştırır.
 - **F5 "ben yokken" altyapısı (01.10):** kuyruk + dönüş raporu, kesintiden devam, masaüstü bildirimi, zamanlayıcı — dördü canlı (8911, gerçek motor) ölçüldü. Kalan F5: telefon, onay yorgunluğu (E80), bağlam göstergesi, ses (en son).
 - **Güncelleme hemen:** 30 dakikada bir ölçer, uyguladıktan sonra yeniden
   ölçer (`olc_ve_ilerle`). CLI güncellemesinin deneme turu, ofis gerçek terminal kipindeyse terminalde de koşar (30.09).
-- **Sınamalar:** **4949/4949** (07.10; 93 dosya; tam takım ÇIKIŞ KODUYLA koşulur — kod 3 = artık klasör) + gerçek set (`gercek_set.py`, her gece 03:30). Deneme seti 15/15
+- **Sınamalar:** **4995/4995** (07.10; 94 dosya; tam takım ÇIKIŞ KODUYLA koşulur — kod 3 = artık klasör) + gerçek set (`gercek_set.py`, her gece 03:30). Deneme seti 15/15
   (Claude ve Codex, işçi+lider).
 - **MALİYET (03.10, `testler/carpan.py`):** basit iş ofiste doğrudan Claude'un **~1,6–1,8×**'i (sabah 3,9×). Claude önbelleği 5 dakika (`CLAUDE_CODE_PROMPT_CACHE_TTL=5m`, ~%30 ucuz lider turu); RET ÖLÇÜTE BAĞLI (`lider.ret_dayanagi`: `OLCUT:` alıntısı ya da `BOZULDU:`, yoksa bir kez sorulur). Liderin triyaj+planı TEK TUR (`hedef_ver(hazir_plan=)`, geçmezse plan turu); "anlattı yapmadı" koruması (`yazilacak_dosyalar`); her tur `jeton_dokumu`, terminal turuna ölçülmüş birimden `maliyet_tahmini_usd` (`ev/fiyat_olcumu.json`). Asıl sabit bedel: Claude her yeni oturumda ~12k (Haiku)/~23k (Sonnet) jetonu 1 sa önbelleğe yazar. Yalın lider (güç kısar) ve çatal/`--fork-session` (Sonnet'te önbellek kullanmıyor, ölçüldü) DENENDİ, GERİ ALINDI. Araştırma `docs/arastirma/`. KARMA (karne + çapraz kontrol, varsayılan): 20 işlik sette 19/20, gereksiz ret 0, Claude payı yalnız-Claude'a göre %40 az (Codex Plus 5 sa +26 puan). Ofis köke bırakılan YENİ yardımcı dosyayı `.ofis/` altına taşır (`degisim.yardimcilari_topla`). Sıradaki: Ponytail ölçümü, Caveman (muhtemelen faydasız).
 - **Kullanıcının belirttiği eksikler (29.09):** her panoda her zaman açık
   yazma yeri; sesli orkestratör;
   seçenekli karar ekranı; "her iş gerçek
   durumuyla" ekranı; gece otopilotu.
-- **Karar bekleyen (kullanıcı):** ajan panoları **gerçek Claude/Codex
-  terminali mi** olsun, yoksa bugünkü yapılı akış CLI'a benzetilsin mi.
-  Öneri: önce yapılı akışı CLI görünümüne yaklaştır, paralelde gerçek
-  terminali ucuza ölç (kanca `rm`'i durduruyor mu, oturum `.jsonl`'dan
-  kanıt/jeton/limit okunuyor mu, yazılan not ulaşıyor mu).
-  **Claude yarısı ÖLÇÜLDÜ (29.09): kanca rm'i durdurdu, not tur
-  sürerken ulaştı, döküm yapılı veri veriyor; limit yüzdesi dökümde yok
-  (limit_oku var). Codex terminali de ÖLÇÜLDÜ: kanca Remove-Item'ı
-  durdurdu, not ulaştı, döküm limit yüzdesini bile taşıyor; AMA kanca
-  düşerse Codex AÇIK kalıyor (rm koştu).** Ayrıntı: günlük sonu.
-  **Yerleşik izin kipleri de ölçüldü (29.09): Claude Auto (sonnet) git
-  push + rm + dışarı POST'u SORMADAN yaptı; Codex "Approve for me" rm'i
-  sormadan yaptı, POST'u sandbox kesti (sormadı). İki motorda da kanca
-  her komutu gördü. Karar: gerçek terminal kipinde de KARAR ofisin kancası
-  (riskli.py); yerleşik kip tek başına yetmez. Haiku'da Auto yok.**
+- **Gerçek terminal kararı (29.09, ölçüldü):** iki motorda kanca riskli komutu durdurdu, not tur sürerken ulaştı; yerleşik izin kipleri (Claude Auto, Codex "Approve for me") push/rm'i SORMADAN yaptı → gerçek terminalde de karar ofisin kancası. Ayrıntı günlükte.
 
 ## Kalıcı dersler (ilkeler)
 

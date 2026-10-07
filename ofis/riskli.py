@@ -372,6 +372,8 @@ SINIFLAR = {
     # 30.09: patronun kendi tarayicisini acmak, masaustu pencerelerine
     # tus gondermek, ekrani yakalamak. Bkz. KABUK_KURALLARI "masaustu".
     "masaustu": ("PATRONUN MASAUSTU / TARAYICISI", "yuksek"),
+    # 07.10: abonelik URETIM KREDISINI (Google Flow) harcayan tiklama.
+    "kredi":    ("URETIM KREDISI", "yuksek"),
 }
 
 #: Kimlik alani: sifre, dogrulama kodu, kart. Dile bagli ama alan adi
@@ -401,6 +403,42 @@ DENETLENEN = {
     "browser_handle_dialog", "browser_evaluate",
     "browser_run_code_unsafe",
 }
+
+
+#: URETIM KREDISI (07.10.2026, patron: "videoyu uretmeden once bana gelsin").
+#: Abonelikle gelen uretim kredisini harcayan tiklama. Para kilidi bunu
+#: GORMEZ (fatura yok) ama kredi patronundur ve geri gelmez. OLCULDU
+#: (06.10 gosteri): Flow'da "Oluşturmaya başla" kapidan SORULMADAN gecti,
+#: ajan 4 krediyi kendisi harcadi. Yalniz bu sitelerde aranir.
+KREDI_SITELERI = ("flow.google.com", "labs.google")
+#: Uretimi tetikleyen yazilar (sadelestirilmis). "1080p Yükseltilmiş" /
+#: "4K Yükseltilmiş" indirme secenekleri BUYUTME yapar -- bedeli olculmedi,
+#: sorulur.
+KREDI_TETIK = _kur((
+    r"\bolusturmaya basla", r"\bolustur\b", r"\byeniden olustur", r"\btekrar olustur",
+    r"\bgenerate\b", r"\bregenerate\b", r"\bcreate\b", r"\btekrar dene\b", r"\bretry\b",
+    r"\buzat\b", r"\bextend\b", r"\byukseltilmis\b", r"\bupscale",
+))
+#: Kredi sitesinde tek basina "Yukselt" PLAN yukseltmedir: PARA.
+KREDI_PARA = _kur((r"\byukselt\b", r"\bupgrade\b"))
+
+
+def kredi_sitesi_mi(url: str) -> bool:
+    m = re.match(r"^https?://([^/?#:]+)", (url or "").strip(), re.I)
+    host = m.group(1).lower() if m else ""
+    return bool(host) and any(host == s or host.endswith("." + s) for s in KREDI_SITELERI)
+
+
+def uretim_ayari(harita: dict) -> str:
+    """Flow'un istem cubugundaki uretim ayari (`Ayarlar tetikleyicisi`
+    dugmesinin yazisi, orn. "Video · 720p · 10 sn. x1"). 07.10'da OLCULDU:
+    anlik goruntude `button "Ayarlar tetikleyicisi": <ayar>` satiri."""
+    for v in (harita or {}).values():
+        s = str(v or "")
+        j = s.lower().find("ayarlar tetikleyicisi")
+        if j >= 0:
+            return s[j + len("ayarlar tetikleyicisi"):].strip(" :")
+    return ""
 
 
 def _yol_riskli(url: str) -> bool:
@@ -453,7 +491,8 @@ def _kod_metni(argumanlar: dict) -> str:
 
 
 def degerlendir(arac: str, argumanlar: dict, *, url: str = "",
-                baglam: str = "", sayfa_metni: str = "") -> dict | None:
+                baglam: str = "", sayfa_metni: str = "",
+                uretim_ayari: str = "") -> dict | None:
     """Bu eylem insan onayi ister mi?
 
     `None` -> serbest, aynen gecer.
@@ -510,6 +549,34 @@ def degerlendir(arac: str, argumanlar: dict, *, url: str = "",
                           "kendisi yapar (`giris_iste`). Yazilan deger bu "
                           "karta bilerek konmadi.")
             return b
+
+    # URETIM KREDISI: kredi sitesinde uretimi tetikleyen tiklama ya da
+    # Enter. Adres bilinmiyorsa (vekil o turda henuz sonuc gormedi) Flow'un
+    # kendi dugme adi yeter. Ucretsiz uretim (olculmus katalogda 0 kredi:
+    # Nano Banana taslak kareleri) SORULMAZ -- senaryo paketi onlarla kurulur.
+    if kredi_sitesi_mi(url) or (not url and "olusturmaya basla" in okunur):
+        bulunan = _esles(okunur, KREDI_PARA)
+        if bulunan:
+            return _bulgu("para", bulunan, arac, hedef, url, kimlik)
+        a = argumanlar or {}
+        bulunan = _esles(okunur, KREDI_TETIK)
+        if not bulunan and (
+                (arac == "browser_press_key" and sadelestir(a.get("key")) == "enter")
+                or (arac == "browser_type" and a.get("submit"))):
+            bulunan = "Enter (istemi gonderir)"
+        if bulunan:
+            from ofis import flow as _flow       # vekil betik olarak kosar: mutlak
+            if not _flow.ucretsiz_mi(uretim_ayari):
+                b = _bulgu("kredi", bulunan, arac,
+                           hedef + (f" | ayar: {uretim_ayari}" if uretim_ayari else ""),
+                           url, kimlik)
+                b["sebep"] = (
+                    "Bu tiklama patronun URETIM KREDISINI harcar"
+                    + (f" (ayar: {uretim_ayari})" if uretim_ayari else "") + ". "
+                    "Once senaryo paketi (sahneler, taslak kareler, model, toplam "
+                    "kredi) sohbette olmali. 'Bu is boyunca' onayi bu isteki ayni "
+                    "uretimleri bir daha sormaz.")
+                return b
 
     for sinif, kaliplar in (("para", PARA), ("silme", SILME),
                             ("yayin", YAYIN), ("gonderim", GONDERIM)):

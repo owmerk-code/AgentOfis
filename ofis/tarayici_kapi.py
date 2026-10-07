@@ -356,6 +356,11 @@ class OfisBagi:
             return {"izin": True}
         im = self.imza(bulgu)
         for kayit in self._ayni_imzalar(im):
+            # KAPSAM 'is' (07.10.2026): "bu is boyunca" onayi TUKETILMEZ --
+            # `izin_sor`daki kuralin aynisi. Tarayici kapisi bunu bilmiyordu:
+            # senaryo paketi onaylanan Flow isinde her klip yeniden sorulurdu.
+            if kayit["durum"] == "onaylandi" and (kayit.get("kapsam") or "eylem") == "is":
+                return {"izin": True}
             if kayit["durum"] == "onaylandi" and not self._kullanildi_mi(
                     kayit["id"]):
                 self._kullan(kayit["id"], bulgu)
@@ -434,6 +439,21 @@ class OfisBagi:
     @staticmethod
     def _bekle_metni(bulgu: dict, onay_id: str, *, yeni: bool) -> str:
         bas = ("ONAY ISTENDI" if yeni else "ONAY ZATEN BEKLIYOR")
+        if bulgu.get("sinif") == "kredi":
+            # Kredi karti patronun SENARYO PAKETINE bakarak verecegi karardir.
+            return (
+                f"{bas} -- SIMDI DUR.\n\n"
+                f"Sinif : {bulgu['ad']}\n"
+                f"Eylem : {bulgu['eylem']}\n"
+                f"Onay  : {onay_id}\n\n"
+                "Bu uretim patronun kredisini harcar. Patron karari SENARYO "
+                "PAKETINE bakarak verir.\n\n"
+                "SIMDI NE YAP: paketi henuz gondermediysen SIMDI `sohbete_yaz` ile "
+                "gonder (sahne listesi, her sahnenin modeli ve kredisi, TOPLAM "
+                "kredi, taslak kareler `ekler`de). Bu uretimi baska yoldan "
+                "tetiklemeye calisma (Enter, kod). Yaptiklarini `kanit_ekle` ile "
+                "yaz ve turu bitir; patron onaylayinca is kaldigi yerden surer. "
+                + KART_ACILDI)
         return (
             f"{bas} -- SIMDI DUR.\n\n"
             f"Sinif : {bulgu['ad']}\n"
@@ -503,6 +523,9 @@ class Vekil:
         # F3 / E22: bu turda gorulen TALIMAT SUPHELI icerik (alintilar).
         # Doluysa denetlenen her tarayici eylemi patrona sorulur.
         self.suphe: list = []
+        # Son karar icin alinan anlik goruntu (`ref -> metin`); kredi sitesinde
+        # uretim ayarini okumak icin ayni goruntu yeniden istenmez.
+        self._son_harita = None
         self.cocuk = subprocess.Popen(
             cocuk_argv, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
             stderr=None, text=True, encoding="utf-8", errors="replace",
@@ -652,7 +675,20 @@ class Vekil:
         harita = self.sayfa_haritasi()
         if harita is None:
             return None
+        self._son_harita = harita
         return " | ".join(harita.get(r, "") for r in refler if harita.get(r))
+
+    def _uretim_ayari(self, arac: str, url: str, sayfa_metni: str) -> str:
+        """Kredi sitesinde (Flow) uretimin su anki ayari -- kapi ucretsiz
+        uretimi (katalogda 0 kredi) bundan tanir. Okunamazsa '' (SORULUR)."""
+        if arac not in riskli.DENETLENEN or not (
+                riskli.kredi_sitesi_mi(url)
+                or "olusturmaya basla" in riskli.sadelestir(sayfa_metni)):
+            return ""
+        harita = self._son_harita
+        if harita is None:
+            harita = self.sayfa_haritasi()
+        return riskli.uretim_ayari(harita or {})
 
     # -- ajandan gelen -----------------------------------------------------
 
@@ -700,6 +736,7 @@ class Vekil:
             return
 
         # Karar icin SAYFANIN metni: ajanin yazdigi aciklama bir beyandir.
+        self._son_harita = None
         sayfa_metni = self._sayfa_metni(arac, argumanlar)
         if sayfa_metni is None:
             self._ajana(_hata_sonucu(istek_id, (
@@ -708,8 +745,9 @@ class Vekil:
                 "`browser_snapshot` al ve tekrar dene.")))
             return
         try:
-            bulgu = riskli.degerlendir(arac, argumanlar, url=url,
-                                       baglam=dialog, sayfa_metni=sayfa_metni)
+            bulgu = riskli.degerlendir(
+                arac, argumanlar, url=url, baglam=dialog, sayfa_metni=sayfa_metni,
+                uretim_ayari=self._uretim_ayari(arac, url, sayfa_metni or ""))
         except Exception as exc:
             # Kapi patlarsa KAPALI kalir. Acik kalsaydi, kapinin
             # bozulmasi sessizce her seyi serbest birakirdi.

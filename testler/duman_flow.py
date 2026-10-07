@@ -226,9 +226,9 @@ _lb = _gorsel.lider_blogu()
 sina("liderin medya blogunda Flow katalogu (tek satir: model -> kredi)",
      "FLOW KATALOGU" in _lb and "Veo 3.1 - Quality 100" in _lb and "Omni 1.1 Flash 4-15" in _lb,
      _lb[-400:])
-# Blok HER triyajda koşar: olculmus katalogla da sinirli kalmali (bos
-# katalogla ~325; tam katalog lidere girseydi ~490 olurdu).
-sina("olculmus katalogla lider blogu ~400 jetonun altinda", len(_lb) // 4 < 400, f"(~{len(_lb) // 4})")
+# Blok HER triyajda koşar: olculmus katalogla da sinirli kalmali. Tavan
+# SISMEYI yakalar, bilgi kesmek icin degil (07.10 patron: guc kisma).
+sina("olculmus katalogla lider blogu ~450 jetonun altinda", len(_lb) // 4 < 450, f"(~{len(_lb) // 4})")
 ofis.kadro.ise_al("Vera", "video", motor="sahte")
 ofis.kadro.ise_al("Bora", "backend", motor="sahte")
 _bk = ofis.brifing

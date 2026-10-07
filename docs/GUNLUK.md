@@ -14778,3 +14778,72 @@ no dialogue"). Aynı sahnenin iki sürümünde ölçek kilidi SONRADAN eklenmiş
 (ilkinde şişe büyük çıkmış olmalı). Bu kalıp genel istem tarifine girer.
 
 Sınamalar 4949/4949 (93 dosya).
+
+## 07.10.2026 — Kredi kapısı, profesyonel video/görsel tarifi, Gemini'ye beceri
+
+PATRON KURALI (07.10): "GÜCÜ KISACAK BİRŞEY YAPMA, AI AJANLARI ETKİLEYECEK
+ÇALIŞMAYI ÇIKTILARI ETKİLEYECEK KISITLAMALARDAN KAÇIN." Kapı yalnız patronun
+açıkça istediği yerde; tasarruf güç pahasına yapılmaz (hafızaya yazıldı).
+
+KREDİ KAPISI (patron: "videoyu üretmeden önce bana gelsin"). ÖLÇÜLDÜ:
+gösteride Flow'un "Oluşturmaya başla"sı kapıdan SORULMADAN geçti, ajan 4
+krediyi kendisi harcadı — kural ricayla duruyordu. Şimdi yapı: `riskli`
+yeni sınıf `kredi` (kredi siteleri flow.google.com, labs.google; üretim
+yazıları, Enter / `submit`, "Yükseltilmiş" büyütme; sitede tek başına
+"Yükselt" PARA). Vekil üretim ayarını sayfanın anlık görüntüsünden okur
+(07.10 gerçek ekranda ölçüldü: `button "Ayarlar tetikleyicisi": Video ·
+720p · 10 sn. x1`; resim kipinde model adı yazar) ve ölçülmüş katalogda 0
+kredi olan üretimi (Nano Banana taslak kareleri) SORMAZ; katalog yoksa ya da
+ayar okunamazsa sorar. Kredi `HER_ZAMAN_SORULUR`da (patronun sözü ve "bu
+projede hep" açmaz). Tarayıcı kapısı "bu iş boyunca" (kapsam `is`) onayını
+TANIMIYORDU (her tıklamada tüketiyordu; `izin_sor`da vardı) → aynı kural.
+Ajana dönen metin: paketi `sohbete_yaz` ile gönder, Enter/kodla dolanma.
+`duman_kredi` 33 (3 mutasyon: kapı sökülünce 17 kaldı, "iş boyunca"
+sökülünce 3, "her model ücretsiz" → yeni sınama eklendi ve yakaladı).
+Kapıya dokunan eski sınamalar (riskli 262, güvenlik 69, tarayıcı 156,
+mcp 157 …) temiz.
+
+GEMİNİ'YE BECERİ GİTMİYORDU: beceri deposu yalnız Claude (`--plugin-dir`)
+ve Codex (`$CODEX_HOME/skills`) için eşitleniyordu; video rolünün
+varsayılan motoru Gemini olduğu halde `flow-video` ona HİÇ ulaşmıyordu.
+Antigravity belgesi (`agy-customizations`): genel kök `~/.gemini/config/`.
+ÖLÇÜLDÜ (gerçek agy, flash-low, boş geçici ev, 9 sn): `config/skills/<ad>/
+SKILL.md` becerisini `view_file` ile açıp doğru cevap verdi → ajan evine
+işaretli kopya (`beceri.ev_esitle`, Codex'le tek kural).
+
+OFİSİN KENDİ BECERİLERİ kodla gelir (`ofis/hazir_beceriler/`, git'te; ev
+kaybolsa da kaybolmaz): `reklam-kreatifi` (üç istek biçimi — kısa sohbet /
+hazır istem / ayrıntılı brif; ürün kimlik kartı; brif, fikir, sahne listesi,
+taslak kareler 0 kredi, SENARYO PAKETİ → patron; paylaşım metni;
+profesyonel ölçüt), `flow-video` (ölçülmüş katalogdan model seçimi —
+UGC/replik Omni 720p 10 sn (patronun kendi ayarı), ürün yakın planı Veo
+Quality/Fast ikisi pakette, fark ölçülmedi; taslak kareden video:
+"Başlat" ilk kare → "Çerçeve resmi seçin" → "İsteme ekle", "Bitir" son kare,
+"Medya menüsü ekle → Yükle / Karakter oluştur"; patronun istemlerinden
+10 adımlı istem tarifi; indirme 720p kredisiz, 1080p/4K büyütme kapıda;
+klip denetimi; kurgu; teslim), `flow-gorsel` (Nano Banana Pro varsayılan,
+ürün fotoğrafı referans, x4 varyasyon, 4:5 için 3:4 + ffmpeg kırpma,
+sonradan yazı `drawtext`). 04.10'da depoya elle konan `flow-video` ("agent
+sistemi") benimsenip güncellendi; patron kapatırsa kapalı, silerse gelmez,
+başka kaynaklı aynı adlıya dokunulmaz. Gerçek depoya eşitlendi (kayıt
+yedeği alındı). `duman_beceri` 48 (1 mutasyon).
+
+FLOW ARAYÜZÜ (gösterinin projesinde salt okuma): istem çubuğu "Başlat" /
+"İlk ve son kareyi değiştir" / "Bitir" (kareler), "Medya menüsü ekle" (Yükle,
+Yeni koleksiyon, Karakter oluştur, Yeni sahne), Flow'un kendi "Ajan" kipi
+("Ajan talimatları", "İçerik öğelerini istem kutusuna ekle") — açılıp
+okundu, eski hâline döndürüldü; yetenekleri ÖLÇÜLMEDİ.
+
+ROL METİNLERİ: video (önce senaryo paketi, kapı), tasarım (ürün/marka
+görseli Flow'da, `gorsel_uret` hızlı genel görselde), reklam ("bağlayıcı
+verme yolu HENÜZ AÇIK DEĞİL" BAYATTI — takım başına bağlayıcı izni var;
+bayat "yapamazsın" ajanı boşuna durdurur → düzeltildi). Liderin medya
+bloğu: VİDEO/GÖRSEL akışı + "patronun istemini/senaryosunu işe AYNEN koy";
+blok ~409 jeton (gerçekçi katalogla) → sınama tavanı 350/400 → 450 (tavan
+şişmeyi yakalar, bilgi kesmek için değil).
+
+KENDİ HATAM: mutasyonu geri alırken `git checkout -- ofis/flow.py` kullandım;
+commit'ten sonra eklenen `ucretsiz_mi` silindi, hemen geri yazıldı (fark
+yalnız o işlevdi). Ders: mutasyon geri alma YEDEK kopyadan, git'ten değil.
+
+Sınamalar 4995/4995 (94 dosya; `duman_video` uyarı sözleşmesi kredi kapısına çevrildi).

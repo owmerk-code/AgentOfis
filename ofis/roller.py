@@ -418,8 +418,13 @@ ROLLER = {r.ad: r for r in (
                      "hangi olcumden geldigi belirtildi.",
        kademe="standart",
        butce_alt_siniri=0.40,
-       uyari="Baglayici gerekiyor: Meta Reklamlar. Ajanlara baglayici "
-             "verme yolu HENUZ ACIK DEGIL (olculdu: 131.543 jeton)."),
+       # 07.10.2026: "baglayici verme yolu HENUZ ACIK DEGIL" yaziyordu --
+       # BAYATTI (takim basina baglayici izni, `lider.dagit`). Bayat "yapamazsin"
+       # cumlesi ajani bosuna durdurur.
+       uyari="Kreatif uretimi: `reklam-kreatifi` (plan, senaryo paketi), "
+             "`flow-gorsel` ve `flow-video` (gomulu tarayicida Flow). Meta "
+             "Reklamlar baglayicisi takima izinliyse kullan; para ve yayin "
+             "eylemleri kapida sorulur."),
 
     # --------------------------------------------- YONETIM (ek, 20.09.2026)
     _r("urun", "YONETIM",
@@ -510,9 +515,13 @@ ROLLER = {r.ad: r for r in (
        # yaziyordu -- 25.09'dan beri BAYATTI (gorsel ChatGPT aboneliginden
        # uretiliyor). Codex ajan cumleyi kelimesi kelimesine uyguladi ve
        # gorseli insana sordu; Claude gormezden gelip uretmisti.
-       uyari="Gorseli ONCE `gorsel_uret` ile KENDIN uret (abonelikten, "
-             "para kilidine takilmaz). `gorsel_iste` yalniz `gorsel_uret` "
-             "uretici yok / kota dolu derse."),
+       # 07.10.2026: urune sadik / markali gorsel icin Flow (Nano Banana,
+       # olculmus 0 kredi) eklendi; `gorsel_uret` hizli genel gorselde kalir.
+       uyari="Urun ya da marka gorselini gomulu tarayicida Google Flow ile "
+             "uret (`flow-gorsel` becerisi, urun fotografi referans; Nano "
+             "Banana 0 kredi); plan icin `reklam-kreatifi`. Hizli genel "
+             "gorselde `gorsel_uret` (abonelikten). `gorsel_iste` yalniz "
+             "ikisi de uretemezse."),
 
     _r("video", "ICERIK",
        "Hareketli icerik: reklam klibi, sosyal medya videosu, urun "
@@ -543,11 +552,15 @@ ROLLER = {r.ad: r for r in (
        # 04.10.2026 patron karari: video gomulu tarayicida Google Flow ile,
        # patronun KENDI girdigi hesapla (abonelik kredisi). `video_uret`
        # ucretli API'dir; para kilidi "sadece free" oldugu icin kapali kalir.
-       uyari="Klipleri gomulu tarayicida Google Flow ile uret (`flow-video` "
-             "becerisi; patronun abonelik kredisi), `.ofis/ekler/`e indir; "
-             "PAYLASMAYA HAZIR videoyu `video_kurgula` ile yap (plan yaz, "
-             "ofis cizer ve olcer; ffmpeg PATH'te). Kredi harcayan uretim "
-             "`onay_iste` ile sorulur. `video_uret` ucretli API'dir."),
+       # 07.10.2026 patron: "videoyu uretmeden once bana gelsin" -> once
+       # senaryo paketi; kredili tiklama kapida YAPIYLA durur (`riskli` kredi).
+       uyari="Once `reklam-kreatifi` ile SENARYO PAKETI (brif, sahneler, "
+             "model + kredi, taslak kareler -- 0 kredi) `sohbete_yaz` ile "
+             "patrona; sonra klipleri gomulu tarayicida Google Flow ile uret "
+             "(`flow-video`; kredili uretim kapida sorulur, 'bu is boyunca' "
+             "onayi paketi acar). PAYLASMAYA HAZIR videoyu `video_kurgula` "
+             "ile yap (plan yaz, ofis cizer ve olcer; ffmpeg PATH'te). "
+             "`video_uret` ucretli API'dir."),
 
     # ------------------------------------------ BILGISAYAR (ek, 05.10.2026)
     # Patron: "PC kullanimi, sitelerde islem". Ajan gomulu tarayicida

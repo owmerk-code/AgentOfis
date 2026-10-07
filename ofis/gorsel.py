@@ -961,9 +961,11 @@ def lider_blogu() -> str:
         # FLOW (04.10.2026, patron karari): abonelikte VIDEO icin programatik
         # yol yok (Antigravity'de video araci yok, olculdu); patron gomulu
         # tarayiciya Flow hesabiyla girdi ve videonun ajanca uretilmesini istedi.
-        "VIDEO: gomulu tarayicida Google Flow (abonelik kredisi, PARA KILIDINE",
-        "  TAKILMAZ): `video` rolu (yoksa kadro oner), `flow-video` becerisi,",
-        "  sonra `video_kurgula`. Kredi harcayan uretim patrona sorulur.",
+        "VIDEO/GORSEL: gomulu tarayicida Google Flow (abonelik kredisi, PARA",
+        "  KILIDINE TAKILMAZ): `video`/`tasarim` rolu (yoksa kadro oner);",
+        "  beceriler `reklam-kreatifi` -> `flow-video`/`flow-gorsel` ->",
+        "  `video_kurgula`. Kredili uretimden ONCE senaryo paketi patrona gider",
+        "  (kapi sorar). Patronun istemini/senaryosunu ise AYNEN koy.",
     ]
     # FLOW KATALOGU (07.10.2026): lider toplam krediyi ve sahne basina modeli
     # ezberden degil OLCULMUS katalogdan yazar (tek satir; tamami ajanda).

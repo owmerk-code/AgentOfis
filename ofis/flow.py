@@ -383,6 +383,24 @@ def gerekirse_olc(db, proje_id: str, cdp: str = "", zorla: bool = False, olcer=N
     return {"yapildi": True, "sebep": "olculdu", "fark": d}
 
 
+def ucretsiz_mi(ayar_metni: str, katalog: dict = None) -> bool:
+    """Flow'un su anki uretim ayari (istem cubugundaki `Ayarlar tetikleyicisi`
+    yazisi: "Video · 720p · 10 sn. x1" ya da "🍌 Nano Banana 2.1 · 9:16 · x1")
+    KREDISIZ mi -- OLCULMUS kataloga gore. Video kipinde yazida model adi
+    yok; bilinmeyen ya da katalogsuz her durum False (kapi SORAR)."""
+    t = (ayar_metni or "").lower()
+    if not t:
+        return False
+    k = katalog if katalog is not None else oku()
+    uyan = [x for x in (k.get("video") or []) + (k.get("resim") or [])
+            if x.get("model") and x["model"].lower() in t]
+    if not uyan:
+        return False
+    x = max(uyan, key=lambda y: len(y["model"]))
+    kr = [b.get("kredi") for b in x.get("bedel") or []]
+    return bool(kr) and all(v == 0 for v in kr)
+
+
 def kisa_ozet(katalog: dict = None) -> str:
     """Liderin TEK satiri: model -> kredi araligi. Lider blogu her triyajda
     kosar (~350 jeton siniri); tam katalog video ajaninin brifingindedir."""

@@ -177,9 +177,10 @@ if r:
          all(k in roller.GECERLI_KANITLAR for k in r.kanit_turleri))
     sina("  olcut GERCEK maliyeti istiyor",
          "maliyet" in r.olcut_sablonu.lower())
-    # 04.10.2026: video Flow ile (abonelik kredisi); kredi harcayan uretim sorulur.
-    sina("  uyari Flow + kredi sorusu + ucretli API ayrimi",
-         all(x in (r.uyari or "") for x in ("Flow", "onay_iste", "ucretli")))
+    # 04.10.2026: video Flow ile (abonelik kredisi). 07.10: kredi artik KAPIDA
+    # yapiyla sorulur (`riskli` kredi sinifi); once SENARYO PAKETI patrona.
+    sina("  uyari Flow + senaryo paketi + kapi + ucretli API ayrimi",
+         all(x in (r.uyari or "") for x in ("Flow", "SENARYO PAKETI", "kapida", "ucretli")))
 
 print(f"\n== sonuc: {GECEN} gecti, {KALAN} kaldi ==")
 sys.exit(1 if KALAN else 0)

@@ -76,6 +76,9 @@ HER_ZAMAN_SORULUR = {
     # 30.09: kullanicinin kurali -- canli masaustu ve kendi tarayicisi
     # onaysiz surulmez; "tarayiciyi ac" demek masaustunu surme izni degil.
     "masaustu": "PATRONUN MASAUSTU / TARAYICISI",
+    # 07.10: patron "videoyu uretmeden once bana gelsin" -- sozu bile
+    # ("video yap") senaryo paketini atlatmaz; "bu is boyunca" onayi acar.
+    "kredi": "URETIM KREDISI (once senaryo paketi)",
 }
 
 #: TEK ARAC ADIYLA acilabilen sinif (06.10.2026, onay yorgunlugu E80).

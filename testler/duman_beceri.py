@@ -60,6 +60,11 @@ def beceri_klasoru(ad: str, aciklama: str = "Deneme becerisi.") -> Path:
     return p
 
 
+# 1-5 GENEL duzenegi sinar (bos depoyla); ofisin kodla gelen becerileri
+# 6. bolumde. Yoksa her depoya onlar da girer ve "bos" hali olculemez.
+_GERCEK_HAZIR = beceri.HAZIR_KOK
+beceri.HAZIR_KOK = Path(tempfile.mkdtemp(prefix="ofis-beceri-hazir-bos-"))
+
 print("== beceri duman testi ==\n")
 sina("depo GECICI evde (gercek eve dokunmaz)", str(beceri.KOK).startswith(os.environ["OFIS_EV"]))
 
@@ -166,6 +171,67 @@ _y = _json.loads(S.yapilandirma(str(_d / "o.sqlite3"), ofis.proje_id, "cinar", 1
 _env = _y["mcpServers"]["ofis"]["env"]
 sina("MCP sunucusuna EVIN yolu gecer (gecici evle kosan ofis gercek eve dusmez -- olculdu)",
      _env.get("OFIS_EV") == os.environ["OFIS_EV"], str(_env))
+
+print("\n6. ofisin kendi becerileri (kodla gelir) ve Gemini ajani (07.10.2026)")
+import json as _json  # noqa: E402
+import shutil as _sh  # noqa: E402
+import time as _t  # noqa: E402
+beceri.HAZIR_KOK = _GERCEK_HAZIR
+_hazir = sorted(p.name for p in beceri.HAZIR_KOK.iterdir() if (p / "SKILL.md").exists())
+sina("kodla gelen uc beceri var", {"reklam-kreatifi", "flow-video", "flow-gorsel"} <= set(_hazir), str(_hazir))
+for _ad in _hazir:
+    _b = beceri.on_bilgi(beceri.HAZIR_KOK / _ad / "SKILL.md")
+    sina(f"  {_ad}: basligin adi klasorle ayni, aciklama var",
+         _b.get("name") == _ad and len(_b.get("description", "")) > 40, str(_b)[:120])
+_fv = (beceri.HAZIR_KOK / "flow-video" / "SKILL.md").read_text(encoding="utf-8")
+sina("flow-video: patronun istemlerinden kilitler + kredi kapisi + teslim",
+     all(k in _fv for k in ("KIMLIK KILIDI", "OLCEK KILIDI", "DURUM KILIDI", "Bu is boyunca",
+                            "video_kurgula", "video_denetle", "Başlat")))
+_rk = (beceri.HAZIR_KOK / "reklam-kreatifi" / "SKILL.md").read_text(encoding="utf-8")
+sina("reklam-kreatifi: uc istek bicimi + kimlik karti + senaryo paketi",
+     all(k in _rk for k in ("Kisa sohbet", "Hazir istem", "Ayrintili brif", "kimlik karti",
+                            "SENARYO PAKETI", "TOPLAM")))
+# 04.10'da elle konan flow-video ("agent sistemi") BENIMSENIR ve guncellenir
+_eski = beceri._kok() / "skills" / "flow-video"
+if _eski.exists():
+    _sh.rmtree(_eski)
+_eski.mkdir(parents=True)
+(_eski / "SKILL.md").write_text("---\nname: flow-video\ndescription: eski\n---\neski\n", encoding="utf-8")
+_k = beceri._kayit_oku()
+_k["flow-video"] = {"kaynak": "agent sistemi (04.10)", "eklendi": "2026-10-04T19:24:42"}
+beceri._kayit_yaz(_k)
+_yeni = beceri.hazir_esitle()
+sina("eksik ofis becerileri depoya geldi", {"reklam-kreatifi", "flow-gorsel"} <= set(_yeni), str(_yeni))
+sina("elle konan eski flow-video GUNCELLENDI ve benimsendi",
+     "KIMLIK KILIDI" in (_eski / "SKILL.md").read_text(encoding="utf-8")
+     and beceri._kayit_oku()["flow-video"]["kaynak"] == beceri.HAZIR)
+# patron kapatirsa kapali kalir; silerse geri gelmez
+beceri.kapat("flow-gorsel")
+beceri.hazir_esitle()
+sina("kapatilan ofis becerisi KAPALI kalir", beceri._yer("flow-gorsel")[0] == "kapali")
+beceri.ac("flow-gorsel")
+beceri.sil("reklam-kreatifi")
+beceri.hazir_esitle()
+sina("silinen ofis becerisi GERI GELMEZ", beceri._yer("reklam-kreatifi")[0] is None)
+# patronun ayni adli kendi becerisine (baska kaynak) dokunulmaz
+_kendi = beceri._kok() / "skills" / "flow-gorsel"
+(_kendi / "SKILL.md").write_text("---\nname: flow-gorsel\ndescription: patronun\n---\npatron\n", encoding="utf-8")
+_k = beceri._kayit_oku()
+_k["flow-gorsel"] = {"kaynak": "patron", "surum": 0}
+beceri._kayit_yaz(_k)
+beceri.hazir_esitle()
+sina("baska kaynakli ayni adli beceriye DOKUNULMAZ",
+     "patron" in (_kendi / "SKILL.md").read_text(encoding="utf-8"))
+# Gemini (Antigravity): ajanin evine esitlenir (olculdu: agy oradan okuyor)
+from ofis.motor.antigravity import AntigravityMotoru  # noqa: E402
+_d = Path(tempfile.mkdtemp(prefix="ofis-beceri-agy-"))
+_m = AntigravityMotoru(calistirilabilir=[sys.executable, "-c", "pass"], ev_koku=str(_d))
+_m._evi_hazirla(_m.ev("nova"), {})
+_hedef = _m.ev("nova") / ".gemini" / "config" / "skills"
+_var = sorted(p.name for p in _hedef.iterdir()) if _hedef.is_dir() else []
+sina("Gemini ajaninin evine acik beceriler geldi (isaretli kopya)",
+     "flow-video" in _var and (_hedef / "flow-video" / beceri.ISARET).exists(), str(_var))
+sina("Gemini evine kapali/silinen beceri GITMEZ", "reklam-kreatifi" not in _var)
 
 print(f"\n== sonuc: {GECEN} gecti, {KALAN} kaldi ==")
 sys.exit(1 if KALAN else 0)

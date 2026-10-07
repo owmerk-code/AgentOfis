@@ -28,6 +28,17 @@ o an acar (olculdu: 22 yerlesik beceri + Task/Skill araclari tur basina
   kullanici katmani beceri koku). Ofisin Codex evi ofisindir; acik
   beceriler oraya ESITLENIR (isaretli kopya), kapali/silinen kaldirilir.
   Ofisin isaretlemedigi klasore DOKUNULMAZ. Patronun `~/.codex`'i salt okunur.
+* **Gemini (Antigravity, 07.10.2026):** `~/.gemini/config/skills/<ad>/` --
+  ajan basina evde (`gemini_ev/<ajan>`), Codex'le ayni isaretli kopya.
+  OLCULDU (gercek agy, flash-low): beceriyi `view_file` ile acip kullandi.
+  Bu tarihe kadar Gemini ajanlarina HICBIR beceri ulasmiyordu -- video
+  rolunun varsayilan motoru Gemini oldugu halde `flow-video` dahil.
+
+## Ofisin kendi becerileri (`ofis/hazir_beceriler/`, 07.10.2026)
+
+Kodla birlikte gelir (git'te izlenir, ev kaybolsa da kaybolmaz), depoya
+kopyalanir ve kod guncellenince depodaki kopya da guncellenir. Patron
+kapatirsa kapali kalir; silerse bir daha gelmez.
 
 Beceri yalniz TALIMATTIR: icindeki her arac cagrisi onay kapisindan gecer.
 """
@@ -204,6 +215,11 @@ VARSAYILAN_KAPALI = {"chrome-browser": "kisisel Chrome'u surer (ofiste tarayici:
 ESITLEME_ARALIGI_SN = 300
 
 
+#: Kodla gelen ofis becerileri ve depodaki kaynak adlari.
+HAZIR_KOK = Path(__file__).resolve().parent / "hazir_beceriler"
+HAZIR = "ofis-hazir"
+
+
 def _kaynak_surumu(p: Path) -> float:
     try:
         return max((f.stat().st_mtime for f in p.rglob("*") if f.is_file()), default=0.0)
@@ -211,8 +227,45 @@ def _kaynak_surumu(p: Path) -> float:
         return 0.0
 
 
+def hazir_esitle() -> list:
+    """Ofisin KENDI becerilerini (kodla gelen) depoya getirir/gunceller.
+    Doner: yeni eklenenler. 04.10'da depoya elle konan `flow-video`
+    ("agent sistemi" kaynakli) bu kaynaga BENIMSENIR."""
+    if not HAZIR_KOK.is_dir():
+        return []
+    kayit = _kayit_oku()
+    silinen = set(kayit.get("_silinen") or [])
+    eklenen, degisti = [], False
+    for src in sorted(p for p in HAZIR_KOK.iterdir() if (p / "SKILL.md").exists()):
+        ad = src.name
+        if ad in silinen:
+            continue
+        surum = _kaynak_surumu(src)
+        durum, p = _yer(ad)
+        k = kayit.get(ad) or {}
+        bizim = k.get("kaynak") == HAZIR or str(k.get("kaynak") or "").startswith("agent sistemi")
+        try:
+            if durum is None:
+                shutil.copytree(src, _kok() / "skills" / ad,
+                                ignore=shutil.ignore_patterns("__pycache__", ".git", ISARET))
+                kayit[ad] = {"kaynak": HAZIR, "eklendi": _an(), "surum": surum}
+                eklenen.append(ad)
+                degisti = True
+            elif durum != "taslak" and bizim and float(k.get("surum") or 0) < surum:
+                shutil.rmtree(p)
+                shutil.copytree(src, p, ignore=shutil.ignore_patterns("__pycache__", ".git", ISARET))
+                kayit[ad] = {**k, "kaynak": HAZIR, "surum": surum}
+                degisti = True
+        except OSError:
+            continue                    # bir beceri bozuksa digerleri gelir
+    if degisti:
+        _kayit_yaz(kayit)
+    return eklenen
+
+
 def claude_esitle(*, zorla: bool = False) -> list:
     """Patronun Claude becerilerini depoya getirir. Doner: yeni eklenenler."""
+    hazir_esitle()
     if not zorla and time.time() - _ESITLEME["an"] < ESITLEME_ARALIGI_SN:
         return []
     _ESITLEME["an"] = time.time()
@@ -262,7 +315,7 @@ def sil(ad: str) -> None:
         raise BeceriHatasi(f"'{ad}' diye bir beceri yok.")
     shutil.rmtree(p)
     kayit = _kayit_oku()
-    if (kayit.pop(p.name, None) or {}).get("kaynak") == OTOMATIK:
+    if (kayit.pop(p.name, None) or {}).get("kaynak") in (OTOMATIK, HAZIR):
         # Patron otomatik geleni SILDI: bir daha getirilmez.
         kayit["_silinen"] = sorted(set(kayit.get("_silinen") or []) | {p.name})
     _kayit_yaz(kayit)
@@ -364,13 +417,20 @@ def claude_eklentisi() -> str:
 
 
 def codex_esitle(codex_evi) -> list:
-    """Acik becerileri ofisin Codex evine esitler. Doner: oradaki ofis becerileri.
+    """Acik becerileri ofisin Codex evine esitler. Doner: oradaki ofis becerileri."""
+    return ev_esitle(Path(codex_evi) / "skills")
+
+
+def ev_esitle(hedef) -> list:
+    """Acik becerileri bir motorun beceri klasorune esitler (Codex
+    `$CODEX_HOME/skills`, Gemini `~/.gemini/config/skills`). Doner: oradaki
+    ofis becerileri.
 
     Yalniz ISARETLI (ofisin koydugu) klasorler silinir/guncellenir; baska bir
     yoldan konmus beceriye dokunulmaz. Hata isi DURDURMAZ (beceri yardimcidir);
     cagiran bos listeyle devam eder.
     """
-    hedef = Path(codex_evi) / "skills"
+    hedef = Path(hedef)
     claude_esitle()
     try:
         acik = {p.name: p for p in (_kok() / "skills").iterdir() if (p / "SKILL.md").exists()}

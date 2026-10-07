@@ -492,9 +492,11 @@ if _myk_eski is None:
 else:
     os.environ["GEMINI_API_KEY"] = _myk_eski
 
-# JETON SINIRI: triyaj HER `konus` mesajinda kosar.
-sina("blok sinirli kaliyor (~350 jetonun altinda)",
-     len(_myb) // 4 < 350, f"(~{len(_myb)//4} jeton)")
+# JETON SINIRI: triyaj HER `konus` mesajinda kosar. Tavan SISMEYI yakalar,
+# bilgi kesmek icin degil (07.10.2026 patron: "gucu kisacak bir sey yapma");
+# Flow + kurgu + katalog + beceri akisiyla 350'den 450'ye.
+sina("blok sinirli kaliyor (~450 jetonun altinda)",
+     len(_myb) // 4 < 450, f"(~{len(_myb)//4} jeton)")
 
 # BLOK TRIYAJ METNINE ULASIYOR MU -- modulu yazmak yetmez.
 # (Bugun `video.py` tam bu yuzden ajana ulasmiyordu.)

@@ -217,6 +217,14 @@ class AntigravityMotoru(Motor):
             encoding="utf-8")
         (cfg / "mcp_config.json").write_text(json.dumps({"mcpServers": sunucular},
                                                         ensure_ascii=False), encoding="utf-8")
+        # BECERILER (07.10.2026, OLCULDU: agy `~/.gemini/config/skills/<ad>/`
+        # becerisini acip kullandi). O gune kadar Gemini ajanina hicbiri
+        # gitmiyordu. Hata turu durdurmaz: beceri yardimcidir.
+        try:
+            from .. import beceri as _beceri
+            _beceri.ev_esitle(cfg / "skills")
+        except Exception:                       # noqa: BLE001
+            pass
         izin = ["command(*)"] + [f"mcp({ad}/*)" for ad in sunucular]
         (cli / "settings.json").write_text(json.dumps({"permissions": {"allow": izin}}),
                                            encoding="utf-8")
