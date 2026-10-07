@@ -294,6 +294,43 @@ def uygula(ofis, onay: str, *, kategoriler=None, yedek_al: bool = True,
     bilinmeyen = secili - set(KATEGORILER)
     if bilinmeyen:
         raise SifirlaHatasi(f"Bilinmeyen kategori: {', '.join(sorted(bilinmeyen))}")
+    # GUNCELLEME KILIDI (08.10, gercek ofiste olculdu): otomatik CLI
+    # guncellemesinin deneme turu sifirlamayla AYNI SANIYEDE basladi; deneme
+    # turunun yeni kayitlari silinenlerin arasina karisti. Sifirlama surerken
+    # guncelleme baslamaz; guncelleme surerken sifirlama yapilmaz.
+    sahip = f"sifirla:{os.getpid()}"
+    if not guncelleme._kilit_al(ofis.db, ofis.proje_id, sahip):
+        raise SifirlaHatasi("Otomatik guncelleme su an deneme turu kosuyor; birkac dakika sonra sifirla.")
+    try:
+        return _uygula(ofis, secili, yedek_al, yedek_secenek)
+    finally:
+        guncelleme._kilit_birak(ofis.db, ofis.proje_id, sahip)
+
+
+def _sil(p: Path) -> None:
+    """Salt okunur dosyayi da siler. OLCULDU (08.10): golge depolarin git
+    nesneleri Windows'ta salt okunurdur; duz `rmtree` onlarda dustu ve
+    gercek ofiste iki golge depo silinemedi."""
+    import stat
+
+    def _yazilabilir_yap(islev, yol, _hata):
+        os.chmod(yol, stat.S_IWRITE)
+        islev(yol)
+
+    if p.is_dir():
+        try:
+            shutil.rmtree(p, onexc=_yazilabilir_yap)
+        except TypeError:                           # Python < 3.12
+            shutil.rmtree(p, onerror=_yazilabilir_yap)
+    elif p.exists():
+        try:
+            p.unlink()
+        except PermissionError:
+            os.chmod(p, stat.S_IWRITE)
+            p.unlink()
+
+
+def _uygula(ofis, secili, yedek_al, yedek_secenek) -> dict:
     rapor = {"yedek": None, "silinen": [], "hatalar": []}
     if yedek_al:
         from . import yedek as _y
@@ -318,13 +355,10 @@ def uygula(ofis, onay: str, *, kategoriler=None, yedek_al: bool = True,
         p = Path(k["yol"])
         try:
             if k["tur"] == "sil":
-                if p.is_dir():
-                    shutil.rmtree(p)
-                elif p.exists():
-                    p.unlink()
+                _sil(p)
             elif k["tur"] == "icini_sil":
                 for q in list(p.iterdir()):
-                    shutil.rmtree(q) if q.is_dir() else q.unlink()
+                    _sil(q)
             elif k["tur"] == "dosya_bosalt":
                 p.write_text("", encoding="utf-8")
             elif k["tur"] == "codex_guven":
@@ -334,7 +368,8 @@ def uygula(ofis, onay: str, *, kategoriler=None, yedek_al: bool = True,
             rapor["hatalar"].append(f"{k['ad']}: {exc}")
     ofis.db.olay_yaz(ofis.proje_id, "sifirlandi",
                      f"Guvenli sifirlama: {len(rapor['silinen'])} kalem silindi"
-                     + (f", {len(rapor['hatalar'])} kalem silinemedi" if rapor["hatalar"] else "")
+                     + (f", {len(rapor['hatalar'])} kalem silinemedi ({'; '.join(rapor['hatalar'][:5])})"
+                        if rapor["hatalar"] else "")
                      + (f"; yedek {Path(rapor['yedek']).name}" if rapor["yedek"] else ""),
                      ajan_ad="insan")
     return rapor

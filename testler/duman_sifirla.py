@@ -70,6 +70,8 @@ yaz(EV / "ofis_eksikleri.jsonl", '{"baslik": "x"}\n')
 yaz(EV / "brifing" / "abc" / "lale.md")
 from ofis.geri_al import golge_koku  # noqa: E402
 yaz(golge_koku() / "eski.git" / "HEAD")
+_nesne = yaz(golge_koku() / "eski.git" / "objects" / "ab" / "cdef")
+os.chmod(_nesne, 0o444)          # git nesneleri Windows'ta salt okunur (olculdu 08.10)
 yaz(EV / "arsiv" / "eski-kok" / "a.txt")
 yaz(EV / "gemini_ev" / "ada" / ".gemini" / "x.json")              # kadroda yok
 yaz(EV / "gemini_ev" / "ece" / ".gemini" / "oauth_creds.json")    # kadroda: KALIR
@@ -170,12 +172,24 @@ try:
 except S.SifirlaHatasi:
     sina("bilinmeyen kategori reddedilir", True)
 
+from ofis import guncelleme as G  # noqa: E402
+G._kilit_al(db, P, "guncelleme-deneme")
+try:
+    S.uygula(ofis, "SIFIRLA", yedek_al=False)
+    sina("guncelleme surerken sifirlanmaz", False)
+except S.SifirlaHatasi as exc:
+    sina("guncelleme surerken sifirlanmaz", "guncelleme" in str(exc) and all(p.exists() for p in yollar), str(exc))
+G._kilit_birak(db, P, "guncelleme-deneme")
+
 print("\n3. dogru onay: once yedek, sonra yalniz plan")
 ajan_once = [a["ad"] for a in ofis.kadro.liste()]
 r = S.uygula(ofis, "SIFIRLA", yedek_secenek=YS)
 sina("yedek alindi ve dogrulandi", r["yedek"] and Y.dogrula(Path(r["yedek"]))["tamam"], str(r.get("yedek")))
 sina("yeni yedek silinmedi", Path(r["yedek"]).exists())
-sina("hata yok", not r["hatalar"], str(r["hatalar"]))
+sina("hata yok (salt okunur git nesnesi dahil)", not r["hatalar"] and not (golge_koku() / "eski.git").exists(),
+     str(r["hatalar"]))
+with db.baglanti() as c:
+    sina("kilit birakildi", not c.execute("SELECT 1 FROM ayar WHERE anahtar = ?", (G.ANAHTAR_KILIT,)).fetchone())
 with db.baglanti() as c:
     sayi = {t: c.execute(f"SELECT COUNT(*) FROM {t}").fetchone()[0]
             for t in ("gorev", "mesaj", "olgu", "kuyruk", "karar")}
