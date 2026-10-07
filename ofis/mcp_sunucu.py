@@ -636,6 +636,74 @@ def arac_video_denetle(oturum: Oturum, args: dict) -> str:
             + "\nKanit otomatik yazildi.")
 
 
+def arac_medya_isle(oturum: Oturum, args: dict) -> str:
+    """YEREL MEDYA ARACLARI (07.10.2026, `ofis/medya_arac.py`): gorsel buyutme
+    (Real-ESRGAN), altyazi (Whisper; replik verilirse yazim replikten), arka
+    plan silme (rembg). Yerelde kosar, KREDI HARCAMAZ; cikti olculur, kanit
+    otomatik yazilir."""
+    import json as _json
+    from pathlib import Path as _P
+    from ofis import medya_arac as _m
+    if oturum.gorev_no is None:
+        return "HATA: bu turda acik bir gorev yok."
+    islem = str(args.get("islem") or "").strip()
+    g = oturum.gorev()
+    kok = _P(oturum.ofis.isin_koku(g)).resolve()
+
+    def _ic(ham: str):
+        p = _P(str(ham or "").strip())
+        if not str(p) or str(p) == ".":
+            return None
+        if not p.is_absolute():
+            p = kok / p
+        try:
+            p.resolve().relative_to(kok)
+        except ValueError:
+            raise _m.MedyaHatasi(f"{ham} isin klasorunun disinda; once klasore al.")
+        return p
+
+    ekler = kok / ".ofis" / "ekler"
+    try:
+        p = _ic(args.get("dosya"))
+        if p is None or not p.is_file():
+            return f"HATA: dosya bulunamadi: {args.get('dosya')!r}"
+        cikti = _ic(args.get("cikti"))
+        if islem == "gorsel_buyut":
+            uz = p.suffix.lower() if p.suffix.lower() in (".png", ".jpg", ".jpeg") else ".png"
+            d = _m.gorsel_buyut(p, cikti or ekler / f"{p.stem}-buyuk{uz}",
+                                olcek=int(args.get("olcek") or 2), en=int(args.get("en") or 0))
+            ozet = (f"BUYUTULDU (ofisin olcumu): {d['kaynak_boyut'][0]}x{d['kaynak_boyut'][1]} -> "
+                    f"{d['boyut'][0]}x{d['boyut'][1]}, {d['sure_sn']} sn, siyah degil\n"
+                    f"cikti: {_goreli(d['cikti'], kok)}")
+        elif islem == "altyazi":
+            d = _m.altyazi(p, replik=str(args.get("replik") or ""),
+                           srt=cikti or ekler / f"{p.stem}.srt")
+            ozet = ("ALTYAZI (ofisin olcumu)"
+                    + (f", replikle uyum %{round(d['uyum'] * 100)}" if d["uyum"] is not None else "")
+                    + f"\nduyulan: {d['duyulan'] or '(konusma yok)'}\n"
+                    + (f"UYARI: {d['uyari']}\n" if d["uyari"] else "")
+                    + f"srt: {_goreli(d['srt'], kok)}\n"
+                    + "video_kurgula plani icin \"altyazi\" (klibin kendi zamani; sahne "
+                      "kurguda baska yerdeyse kaydir):\n"
+                    + _json.dumps(d["satirlar"], ensure_ascii=False))
+        elif islem == "arka_plan":
+            d = _m.arka_plan(p, cikti or ekler / f"{p.stem}-arkasiz.png",
+                             model=str(args.get("model") or "birefnet-general-lite"))
+            ozet = (f"ARKA PLAN SILINDI (ofisin olcumu): on plan %{round(d['on_plan_orani'] * 100)}, "
+                    f"{d['sure_sn']} sn, model {d['model']}\n"
+                    + (f"UYARI: {d['uyari']}\n" if d["uyari"] else "")
+                    + f"cikti: {_goreli(d['cikti'], kok)} (saydam PNG)")
+        else:
+            return "HATA: islem 'gorsel_buyut', 'altyazi' ya da 'arka_plan' olmali."
+    except _m.MedyaHatasi as exc:
+        return f"HATA: {exc}"
+    except (ValueError, TypeError) as exc:
+        return f"HATA: {exc}"
+    oturum.ofis.tahta.kanit_ekle(oturum.gorev_no, "dosya", f"medya: {islem} {_goreli(str(p), kok)}",
+                                 ozet, oturum.ajan_ad)
+    return ozet + "\nKanit OTOMATIK yazildi; ayrica kanit_ekle CAGIRMA."
+
+
 def _medya_hedefi(kok, alanlar, ad):
     """Tek kaynak `tahta.medya_hedefi`; burada yalniz ice aktarma (betik
     kipinde mutlak -- goreli ice aktarma bu sunucuda bir kez patladi)."""
@@ -1608,6 +1676,33 @@ ARACLAR = [
             "required": ["dosya"],
         },
         "islev": arac_video_denetle,
+    },
+    {
+        "name": "medya_isle",
+        "description": (
+            "YEREL medya araclari -- kredi/para HARCAMAZ, cikti olculur, kanit otomatik. "
+            "islem: 'gorsel_buyut' (gorseli yapay zekayla buyutur, Real-ESRGAN; `olcek` 2-4 "
+            "ya da `en` piksel; ~1 dk. VIDEO buyutmez), 'altyazi' (video/sesten Turkce "
+            "altyazi, Whisper; `replik` verirsen yazim replikten zaman sesten -- marka adi "
+            "dogru cikar -- ve ses repligi yanlis soyluyorsa UYARIR; cikti video_kurgula'nin "
+            "\"altyazi\" bicimi + .srt; ~15 sn/8 sn klip), 'arka_plan' (gorselin arka "
+            "planini siler, saydam PNG; `model` birefnet-general-lite ince kenar ~20 sn / "
+            "isnet-general-use hizli). Dosyalar isin klasorunde; cikti varsayilan `.ofis/ekler/`."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "islem": {"type": "string", "description": "gorsel_buyut | altyazi | arka_plan"},
+                "dosya": {"type": "string", "description": "Isin klasorune gore girdi yolu."},
+                "cikti": {"type": "string", "description": "Istege bagli cikti yolu."},
+                "replik": {"type": "string", "description": "altyazi: klipte soylenmesi gereken metin."},
+                "olcek": {"type": "integer", "description": "gorsel_buyut: 2, 3 ya da 4 (varsayilan 2)."},
+                "en": {"type": "integer", "description": "gorsel_buyut: hedef genislik (piksel)."},
+                "model": {"type": "string", "description": "arka_plan modeli."},
+            },
+            "required": ["islem", "dosya"],
+        },
+        "islev": arac_medya_isle,
     },
     {
         "name": "gorsel_uret",

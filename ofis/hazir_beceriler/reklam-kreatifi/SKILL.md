@@ -26,7 +26,8 @@ Kaynaklar sirasiyla: patronun eki -> urunun sayfasi (site, gomulu tarayici)
 - Renkler: govde, kapak, ICERIK (sivi rengi -- 06.10 denemesinde kaydi)
 - Etiket/logoda yazan HER kelime, yeri ve rengi (tirnak icinde, harfi harfine)
 - Degismez ayrintilar (kapak acik mi kapali mi, kutu var mi)
-- Urun fotograflari: `.ofis/` altina indir/kopyala, yollarini yaz
+- Urun fotograflari: `.ofis/` altina indir/kopyala, yollarini yaz (arka plan
+  kalabaliksa `medya_isle` arka_plan ile temiz bir kopya cikar)
 Fotograf bulamazsan once ara; yine yoksa `soru_sor` ile patrondan iste.
 
 ## 3. Brif (paketin ilk bolumu, kisa)
@@ -72,7 +73,8 @@ isterse paketi guncelle (kredi harcamaz) ve yeniden gonder.
 
 ## 8. Paylasim metni (teslimle birlikte)
 Aciklama (2-3 cumle, ilk satir kanca, sonda CTA), 5-10 ilgili etiket, kapak
-karesi. Patron baska dil istemedikce Turkce.
+karesi. Patron baska dil istemedikce Turkce. Konusmali videoda altyazi
+(`medya_isle` altyazi, replikle) -- Reels cogu zaman sessiz izlenir.
 
 ## Profesyonel olcut (teslimden once kendine sor)
 - Ilk 2 saniye kaydirmayi durduruyor mu?

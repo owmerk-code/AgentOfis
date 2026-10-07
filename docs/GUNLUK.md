@@ -14847,3 +14847,57 @@ commit'ten sonra eklenen `ucretsiz_mi` silindi, hemen geri yazıldı (fark
 yalnız o işlevdi). Ders: mutasyon geri alma YEDEK kopyadan, git'ten değil.
 
 Sınamalar 4995/4995 (94 dosya; `duman_video` uyarı sözleşmesi kredi kapısına çevrildi).
+
+## 07.10.2026 — Yerel medya araçları (Real-ESRGAN, Whisper, rembg) ve `medya_isle`
+
+PATRON KARARI (07.10): üçü de kurulsun; gösteri artıkları silinsin; uçtan
+uca sınama Quality karşılaştırmalı (~150 kredi tavan). Artıklar silindi —
+ama `Masaüstü\genel-agentofis` gerçek defterde GENEL takımının klasörü
+(ölçüldü), klasör KALDI, içi (yalnız 06.10 22:49-22:56 gösteri dosyaları)
+silindi; İndirilenler'deki klip silindi.
+
+MAKİNE: GTX 1050 Ti 4 GB, i7-7700K, 16 GB, 25,6 GB boş disk.
+
+AYRI ORTAM: `pip install faster-whisper rembg[cpu]` sistem Python'unda
+numpy 2.2.6→2.5.3, numba, llvmlite yükseltecekti (kuru koşu raporu);
+patronun başka programları (çalışan `scorai` sunucusu) aynı ortamı
+kullanıyor → `ev/araclar/medya-py` venv (635 MB). Sistem paketleri
+değişmedi (ölçüldü).
+
+REAL-ESRGAN (resmî v0.2.5.0 ncnn, özet yayımlanmamış; boyut birebir):
+varsayılan parça (0=oto) ve 256'da çıktı TAMAMEN SİYAH — `vkQueueSubmit
+failed -4`, çıkış kodu 0, dosya yazılmış. Parça 128 doğru. x4plus 720×1280
+kare ~54 sn (araçla 1080×1920 73 sn). Hızlı video modeli
+(animevideov3 ×2, ~2,2 sn/kare) ten dokusunu MUMLAŞTIRIYOR (aynı karede
+göz karşılaştırması) → video yerelde büyütülmez; Flow'un 1080p'si ya da
+kurgu ölçeklemesi.
+
+WHISPER (large-v3-turbo, CPU int8, model 1,6 GB): faster-whisper 1.2.1 +
+av 19 uyumsuz (`metadata_errors`) → ses ffmpeg ile çözülüp verilir.
+Patronun iki Flow klibinde (8 sn): ~15 sn; klip 0 neredeyse kusursuz,
+klip 1'de marka "semubeyleyi". Repliğe hizalama (yazım replikten, zaman
+sesten; bitişik yazım eşleşir): uyum %100 ve %83, "Semu Belle." doğru;
+yanlış replik uyum %0 + uyarı. Bilgisayarda Türkçe TTS sesi yok (yalnız
+Zira en-US) — sınama sesi patronun klibinden (indirme menüsünden "720p
+Orijinal", kredisiz; betiğin Playwright bağlantısı indirmeyi kendisi
+yakalıyor, `expect_download` ile alındı; İndirilenler'e düşmedi).
+
+REMBG: isnet ~2,6 sn, birefnet-general-lite ~18-26 sn (saç kenarı daha
+ince) → varsayılan birefnet (sonuç önce).
+
+BULGULAR: patronun klipleri VEO ile (karede sağ altta "Veo" filigranı;
+720×1280, 8,0 sn, ses 48 kHz) — becerideki "Omni 10 sn" cümlem YANLIŞTI,
+düzeltildi; filigran kaldırılmaz, yazı/CTA o köşeye konmaz. ffmpeg
+`drawtext` Türkçe harfleri doğru çiziyor ama satıra sığmayanı taşırıyor
+(beceriye not). Resim kipinde istem çubuğu "🍌 Nano Banana Pro x1" yazıyor →
+kredi kapısı ücretsiz tanıyor (gerçek ekranda doğrulandı; ölçüm betiği
+ikinci adımda takıldı, deneme projesinin ayarı elle geri kondu, açık kalan
+sekme kapatıldı).
+
+`medya_isle` (MCP, 20. araç): gorsel_buyut / altyazi (video_kurgula
+`altyazi` biçimi + .srt) / arka_plan; klasör dışı ret, kanıt otomatik.
+Beceriler güncellendi (flow-video altyazı adımı, video büyütme yok;
+flow-gorsel büyütme + arka plan; reklam-kreatifi altyazı). `duman_medya` 30
+(2 mutasyon: siyah denetimi, bitişik yazım eşleşmesi).
+
+Sınamalar 5025/5025 (95 dosya).

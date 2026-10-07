@@ -24,8 +24,11 @@ ile gonder, sonra uret. Patron "Bu is boyunca" onaylarsa ayni isteki
 uretimler bir daha sorulmaz. Resim uretimi (katalogda 0 kredi) sorulmaz.
 
 ## 2. Model secimi (sonuca gore; katalogdaki fiyatlarla)
-- **Konusan insan, Turkce replik + dudak senkronu, 10 sn tek cekim (UGC):**
-  Omni 1.1 Flash, 720p, 10 sn. Patronun kendi UGC videolari bu ayarda.
+- **Konusan insan, Turkce replik + dudak senkronu (UGC):** patronun kendi
+  UGC klipleri VEO ile (karede "Veo" filigrani; 720x1280, 8 sn, sesli --
+  07.10 olculdu) ve Turkce replik dogru seslendirilmis (altyazi araci %83-100
+  uyum olctu). Omni 1.1 Flash 4-10 sn secilebilir; aralarindaki fark
+  olculene kadar pakette ikisini kredisiyle oner.
 - **Urun yakin plani, etiket okunurlugu, sinematik isik:** Veo 3.1 -
   Quality en guclu adaydir; Veo 3.1 - Fast daha ucuz. Aralarindaki kalite
   farki henuz OLCULMEDI: pakette ikisini kredisiyle yaz, patron secsin.
@@ -93,6 +96,9 @@ istemlerinde olcek kilidi, sise buyuk cikinca sonradan eklenmis).
   "Yükseltilmiş" buyutmedir: bedeli olculmedi, kapida sorulur -- teslim
   kalitesi icin patron onaylarsa kullan.
 - Indirilenler kendiliginden isin `.ofis/indirilenler/` klasorune duser.
+- VIDEO icin yerel yapay zeka buyutme YOK (olculdu: hizli model yuzu
+  mumlastiriyor, gercekci model 10 sn klipte saatler). 1080p teslim:
+  Flow'un "1080p Yükseltilmiş"i (kapida kredi) ya da kurgunun olceklemesi.
 
 ## 6. Klip denetimi (her klip, kurgudan once)
 - `video_denetle`: sure, oran, ses, siyah kare.
@@ -102,13 +108,20 @@ istemlerinde olcek kilidi, sise buyuk cikinca sonradan eklenmis).
 - Kusurlu klip: kusuru ve duzeltilmis istemi yaz. Paketteki yeniden cekim
   payi icindeyse yeniden uret; degilse patrona sor.
 
-## 7. Kurgu (paylasmaya hazir)
+## 7. Altyazi (konusmali klipte)
+`medya_isle(islem="altyazi", dosya=<klip>, replik="<senaryodaki replik>")`:
+yazim replikten (marka adi dogru), zaman sesten; video_kurgula'nin
+`altyazi` bicimini dondurur (klibin kendi zamani -- kurgudaki sahne
+basina gore kaydir). UYARI gelirse (uyum dusuk) ses repligi yanlis
+soyluyordur: klibi dinle, gerekiyorsa yeniden uret.
+
+## 8. Kurgu (paylasmaya hazir)
 `video_kurgula` ile PLAN yaz (sahne sirasi, kirpma, ekran yazisi, altyazi,
 gecis, muzik ya da Flow sesi, kapanis karti + CTA). Bicim: 9:16 / 4:5 / 1:1 /
 16:9; reklamsa uc bicim. Cizim kredi harcamaz: kare ozetine bak, yazi
 okunmuyorsa ya da sahne yanlissa plani duzeltip yeniden ciz.
 
-## 8. Teslim
+## 9. Teslim
 - `sohbete_yaz(ekler=[video(lar), kapak])`: kullanilan modeller ve
   HARCANAN kredi (bakiye once/sonra), paylasim aciklamasi + etiketler.
 - `kanit_ekle`: her klibin tam istemi, ayarlari, kredisi; denetim sonucu.
@@ -120,3 +133,5 @@ okunmuyorsa ya da sahne yanlissa plani duzeltip yeniden ciz.
 - Flow son ayari projede hatirlar: uretime baslamadan ayar penceresinde
   kip/tur/model/oran/adedi KONTROL ET.
 - Patronun eski projelerindeki medyayi silme/duzenleme.
+- Flow ciktisinin sag alt kosesinde "Veo" FILIGRANI var (olculdu). Kaldirmaya
+  calisma; ekran yazisini, logoyu ve CTA'yi o koseye KOYMA.

@@ -25,6 +25,9 @@ Oranlar: 16:9, 4:3, 1:1, 3:4, 9:16. Adet x1-x4: varyasyon icin x4 kullan.
   Resim kipindeki ekleme dugmesinin adi OLCULMEDI: `browser_snapshot` ile
   bul, okuyarak tikla.
 - Ayni kisi birden cok gorselde: "Medya menüsü ekle" -> "Karakter oluştur".
+- Urun fotografinin arka plani kalabaliksa once temizle:
+  `medya_isle(islem="arka_plan", dosya=<foto>)` -> saydam PNG (daha temiz
+  referans; urunu yeni bir sahneye koymak icin de).
 
 ## 2. Istem tarifi (Ingilizce, tek paragraf)
 1. Gorselin turu ve orani ("Premium product photograph, vertical 9:16").
@@ -50,11 +53,15 @@ harfi harfine kontrol et; tutmazsa yaziyi sonradan ekle (asagida).
   duser. Teslim edilecekleri `.ofis/ekler/`e anlamli adla koy.
 
 ## 4. Boyutlar ve son dokunus (ffmpeg PATH'te)
+- Buyutme (kaynak hedeften kucukse): `medya_isle(islem="gorsel_buyut",
+  dosya=<gorsel>, en=1080)` -- yerel yapay zeka (Real-ESRGAN), ~1 dk, kredi yok.
 - Instagram gonderi 4:5 (1080x1350): 3:4 uret, kirp:
   `ffmpeg -i girdi.png -vf "crop=iw:iw*5/4,scale=1080:1350" cikti.png`
 - Hikaye/Reels kapagi 9:16 (1080x1920), kare 1:1 (1080x1080).
 - Sonradan yazi: `ffmpeg -i girdi.png -vf "drawtext=fontfile='C\:/Windows/Fonts/segoeuib.ttf':text='YENI SEZON':fontsize=96:fontcolor=white:x=(w-tw)/2:y=h*0.12" cikti.png`
-  (Turkce harfler calisir; yaziyi bos alana koy, kontrasti kontrol et).
+  (Turkce harfler calisir -- olculdu. Satira SIGMAZSA tasar, kendisi
+  bolmez: `fontsize`i kucult ya da iki drawtext ile iki satir yap; sonucu
+  AC ve bak. Yaziyi bos alana koy, kontrasti kontrol et).
 - Reklam kreatifi istendiyse ayni gorseli UC bicimde ver (9:16, 4:5, 1:1).
 
 ## 5. Teslim
