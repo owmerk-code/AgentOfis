@@ -232,7 +232,7 @@ matrisin ölçümüyle karşılaştırır.
   satırlı komut çevrilmez; tanınmayan bağlayıcı aracı yalnız ADIYLA açılır,
   lider bunu plana yazamaz). Panelde günlük sayaç (`izin.gun_sayaci`).
   Kabuk izni SIKI eşleşir (gevşek eşleşme yalnız tarayıcı tıklamasında).
-  **Üretim kredisi (07.10, patron: "videoyu üretmeden önce bana gelsin"):** kredi sitesinde (Flow) üretim tıklaması / Enter / büyütme indirmesi HER ZAMAN sorulur (patronun sözü ve "bu projede hep" açmaz); kart üretim ayarını (ekrandan) gösterir; "bu iş boyunca" onayı o işin üretimlerini açar (tarayıcı kapısı bu kapsamı o güne dek tanımıyordu, her tıklamada yeniden soruyordu). Ölçülmüş katalogda 0 kredi olan resim üretimi (taslak kareler) sorulmaz. `duman_kredi`.
+  **Üretim kredisi (07.10, patron: "videoyu üretmeden önce bana gelsin"):** kredi sitesinde (Flow) üretim tıklaması / Enter / büyütme indirmesi HER ZAMAN sorulur (patronun sözü ve "bu projede hep" açmaz); kart üretim ayarını (ekrandan) gösterir; "bu iş boyunca" onayı o işin üretimlerini açar (tarayıcı kapısı bu kapsamı o güne dek tanımıyordu, her tıklamada yeniden soruyordu). Ölçülmüş katalogda 0 kredi olan resim üretimi (taslak kareler) sorulmaz. Ajanın `onay_iste(kredi, uretim)` paketi onaylanınca o kadar üretim tıklaması sorulmaz (çift onay yok); onay ajanın turu sürerken gelirse iş incelemeye gitmez (`onay_geldi`). `duman_kredi`.
 - **Tarayıcı:** her işte serbest; riskli tıklama ve beyan edilmemiş site
   (daraltılmış işte) sorulur; sayfadaki gizli talimat işaretlenir.
 - **Zincir:** limit/oturum düşünce aynı turda sıradaki hesaba devreder, devir
@@ -271,7 +271,7 @@ matrisin ölçümüyle karşılaştırır.
 - **F5 "ben yokken" altyapısı (01.10):** kuyruk + dönüş raporu, kesintiden devam, masaüstü bildirimi, zamanlayıcı — dördü canlı (8911, gerçek motor) ölçüldü. Kalan F5: telefon, onay yorgunluğu (E80), bağlam göstergesi, ses (en son).
 - **Güncelleme hemen:** 30 dakikada bir ölçer, uyguladıktan sonra yeniden
   ölçer (`olc_ve_ilerle`). CLI güncellemesinin deneme turu, ofis gerçek terminal kipindeyse terminalde de koşar (30.09).
-- **Sınamalar:** **5025/5025** (07.10; 95 dosya; tam takım ÇIKIŞ KODUYLA koşulur — kod 3 = artık klasör) + gerçek set (`gercek_set.py`, her gece 03:30). Deneme seti 15/15
+- **Sınamalar:** **5047/5047** (07.10; 95 dosya; tam takım ÇIKIŞ KODUYLA koşulur — kod 3 = artık klasör) + gerçek set (`gercek_set.py`, her gece 03:30). Deneme seti 15/15
   (Claude ve Codex, işçi+lider).
 - **MALİYET (03.10, `testler/carpan.py`):** basit iş ofiste doğrudan Claude'un **~1,6–1,8×**'i (sabah 3,9×). Claude önbelleği 5 dakika (`CLAUDE_CODE_PROMPT_CACHE_TTL=5m`, ~%30 ucuz lider turu); RET ÖLÇÜTE BAĞLI (`lider.ret_dayanagi`: `OLCUT:` alıntısı ya da `BOZULDU:`, yoksa bir kez sorulur). Liderin triyaj+planı TEK TUR (`hedef_ver(hazir_plan=)`, geçmezse plan turu); "anlattı yapmadı" koruması (`yazilacak_dosyalar`); her tur `jeton_dokumu`, terminal turuna ölçülmüş birimden `maliyet_tahmini_usd` (`ev/fiyat_olcumu.json`). Asıl sabit bedel: Claude her yeni oturumda ~12k (Haiku)/~23k (Sonnet) jetonu 1 sa önbelleğe yazar. Yalın lider (güç kısar) ve çatal/`--fork-session` (Sonnet'te önbellek kullanmıyor, ölçüldü) DENENDİ, GERİ ALINDI. Araştırma `docs/arastirma/`. KARMA (karne + çapraz kontrol, varsayılan): 20 işlik sette 19/20, gereksiz ret 0, Claude payı yalnız-Claude'a göre %40 az (Codex Plus 5 sa +26 puan). Ofis köke bırakılan YENİ yardımcı dosyayı `.ofis/` altına taşır (`degisim.yardimcilari_topla`). Sıradaki: Ponytail ölçümü, Caveman (muhtemelen faydasız).
 - **Kullanıcının belirttiği eksikler (29.09):** her panoda her zaman açık
@@ -346,5 +346,5 @@ python testler/deneme.py --hizli                   # gerçek motor (kota!)
 python testler/matris.py --kuru                    # motor matrisi, $0
 ```
 
-Tam takımdan sonra `%TEMP%`'te `ofis-*` artığı kalmamalı; ofisin gerçek
+Sınama kabini her süreçte işletim sisteminden BOŞ kapı alır (07.10: sabit 9399 canlı gösterinin kapısıydı, sınama canlı kabinin indirme ayarını bozdu). Tam takımdan sonra `%TEMP%`'te `ofis-*` artığı kalmamalı; ofisin gerçek
 evi değişmemeli (bekçi çıkış kodu 3 verir).
