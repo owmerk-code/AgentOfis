@@ -80,6 +80,8 @@ karesi. Patron baska dil istemedikce Turkce. Konusmali videoda altyazi
 ## Profesyonel olcut (teslimden once kendine sor)
 - Ilk 2 saniye kaydirmayi durduruyor mu?
 - Urun her karede KIMLIK KARTINA uyuyor mu (yazi, renk, bicim, olcek)?
+- Ekran yazisi urunun/etiketin ustune biniyor mu, okunuyor mu (kontrast)?
+  Kapanis temiz bir kart mi (urun griye bogulmadan)?
 - Tek mesaj net mi, CTA var mi; yazilar guvenli alanda ve okunuyor mu?
 - Ses/muzik var mi, sessiz ya da siyah bosluk yok mu (`video_denetle`)?
 - Istenen bicim(ler)in hepsi teslim edildi mi?

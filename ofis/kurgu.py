@@ -227,6 +227,49 @@ def _tara(video, filtre: str, anahtar: str) -> list:
     return [s for s in metin.splitlines() if anahtar in s]
 
 
+#: Kare ozetindeki kutu sayisi ve genisligi.
+OZET_KARE = 6
+OZET_EN = 300
+
+
+def _kare_ozeti(video: Path, hedef: Path, sure: float) -> bool:
+    """6 kareli ozet: videonun 6 esit diliminin ORTASINDAN birer kare.
+
+    OLCULDU (07.10.2026, canli deneme): eski "her `adim` saniyede bir kare
+    sec" filtresi Remotion ciktisindaki zaman damgasi sicramasinda kaydi
+    (2,5'ten hemen sonra 2,92 secildi), kareler eksik kalinca son kutu
+    SIYAH cizildi -- video siyahla bitiyormus gibi gorundu (olcum: siyah
+    yok). Yanlis gosteren gosterge: her kare tek tek alinir; alinamayan
+    kare siyah degil GRI ve "okunamadi" yazili kutu olur. Donus: hepsi
+    alindi mi."""
+    import tempfile
+    from PIL import Image, ImageDraw
+    tamam = True
+    kutular = []
+    with tempfile.TemporaryDirectory(prefix="ofis-kare-") as gec:
+        for i in range(OZET_KARE):
+            t = sure * (i + 0.5) / OZET_KARE
+            y = Path(gec) / f"k{i}.jpg"
+            subprocess.run([arac("ffmpeg"), "-v", "error", "-y", "-ss", f"{t:.3f}", "-i", str(video),
+                            "-frames:v", "1", "-vf", f"scale={OZET_EN}:-2", "-q:v", "3", str(y)],
+                           capture_output=True, timeout=60, creationflags=_pencere_yok())
+            if y.is_file():
+                with Image.open(y) as im:
+                    kutular.append(im.convert("RGB").copy())
+            else:
+                kutular.append(None)
+                tamam = False
+        boy = max((k.height for k in kutular if k is not None), default=OZET_EN * 16 // 9)
+        sayfa = Image.new("RGB", (OZET_EN * OZET_KARE, boy), (128, 128, 128))
+        for i, k in enumerate(kutular):
+            if k is None:
+                ImageDraw.Draw(sayfa).text((i * OZET_EN + 10, boy // 2), "okunamadi", fill=(255, 255, 255))
+            else:
+                sayfa.paste(k, (i * OZET_EN, 0))
+        sayfa.save(hedef, quality=88)
+    return tamam
+
+
 def denetle(video, bicim: str = "") -> dict:
     """Paylasmaya hazir mi? Doner: {olcum, sorunlar, uyarilar, kareler, kapak}.
 
@@ -273,15 +316,9 @@ def denetle(video, bicim: str = "") -> dict:
     kapak = video.with_name(video.stem + "-kapak.jpg")
     try:
         sure = max(o.get("sure") or 0.1, 0.1)
-        # Esit aralikla 6 kare: ilk kare + her `adim` saniyede bir (pencereli
-        # secim kare hizina denk gelmeyince bos karo birakiyordu -- olculdu).
-        adim = sure / 6.0
-        r = subprocess.run([arac("ffmpeg"), "-v", "error", "-y", "-i", str(video), "-vf",
-                            f"select='isnan(prev_selected_t)+gte(t-prev_selected_t\\,{adim:.3f})'"
-                            + ",scale=300:-2,tile=6x1", "-frames:v", "1", "-fps_mode", "vfr",
-                            str(kareler)], capture_output=True, timeout=120,
-                           creationflags=_pencere_yok())
-        if r.returncode != 0 or not kareler.is_file():
+        if not _kare_ozeti(video, kareler, sure):
+            uyari.append("kare ozetinde okunamayan kare var (gri kutu)")
+        if not kareler.is_file():
             uyari.append("kare ozeti cikarilamadi")
             kareler = None
         r = subprocess.run([arac("ffmpeg"), "-v", "error", "-y", "-ss", f"{min(1.0, sure / 3):.2f}",

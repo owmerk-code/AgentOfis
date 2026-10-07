@@ -106,6 +106,24 @@ sina("ses var (muzik)", o["ses"])
 sina("sorun yok", r["sorunlar"] == [], str(r["sorunlar"]))
 sina("cikti .ofis/ekler altinda", Path(r["video"]).parent == (d / ".ofis" / "ekler").resolve())
 sina("kapak ve kare ozeti cikti", Path(r["kapak"]).is_file() and Path(r["kareler"]).is_file())
+
+
+def _kutu_parlakliklari(yol):
+    from PIL import Image, ImageStat
+    with Image.open(yol) as im:
+        en = im.width // 6
+        return [max(ImageStat.Stat(im.crop((i * en, 0, (i + 1) * en, im.height)).convert("RGB")).mean)
+                for i in range(6)]
+
+
+# 07.10 canli: gercek Remotion ciktisinda kare ozetinin son kutusu SIYAHTI
+# (video siyahla bitmiyordu -- olculdu). Son kart (#111) koyu: esik 5.
+# DURUST NOT: eski secim filtresi hatayi YALNIZ o gercek final videosunda
+# uretti (elle olculdu: kutular 189/184/175/161/90/0); bu ve asagidaki yapay
+# sicrama sinamasi eski kodla da geciyor -- genel bekci, eski hatanin kaniti degil.
+_kp = _kutu_parlakliklari(r["kareler"]) if r.get("kareler") else []
+sina("gercek Remotion ciktisinda 6 kutu da dolu (bos/siyah kutu yok)",
+     len(_kp) == 6 and min(_kp) > 5, str([round(x, 1) for x in _kp]))
 r2 = K.kurgula(dict(plan, bicim="1:1", muzik=None, son_kart=None), d, "reels deneme")
 o2 = r2["olcum"]
 sina("1:1 = 1080x1080, ayni adla ikinci cizim USTUNE YAZMAZ",
@@ -161,6 +179,24 @@ sina("codex: ofis araclarinin zaman asimi uzun (video cizimi kesilmesin)",
      any("tool_timeout_sec=900" in x for x in satir), str(satir))
 K.yola_ekle()
 sina("ffmpeg ajan turlarinin PATH'inde", str(K.ffmpeg_klasoru()).lower() in os.environ["PATH"].lower())
+
+print("\nKARE OZETI zaman damgasi sicramasinda bos (siyah) kutu birakmaz (07.10 canli)")
+# Remotion ciktisinda 2,5 sn'de zaman damgasi sicradi; eski secim filtresi kaydi
+# ve son kutu SIYAH cizildi -- video siyahla bitiyormus gibi gorundu (olcum: yok).
+_sv = d / "sicrama.mp4"
+subprocess.run([K.arac("ffmpeg"), "-v", "error", "-y", "-f", "lavfi", "-i",
+                "testsrc2=size=360x640:rate=24:duration=15", "-vf",
+                "setpts='if(gte(N\\,60)\\,PTS+0.4/TB\\,PTS)'", "-pix_fmt", "yuv420p", str(_sv)],
+               capture_output=True, timeout=120)
+_od = K.denetle(_sv)
+from PIL import Image, ImageStat  # noqa: E402
+_kut = []
+if _od.get("kareler"):
+    with Image.open(_od["kareler"]) as _im:
+        _en = _im.width // 6
+        _kut = [max(ImageStat.Stat(_im.crop((i * _en, 0, (i + 1) * _en, _im.height)).convert("RGB")).mean)
+                for i in range(6)]
+sina("6 kutunun HEPSI dolu (siyah kutu yok)", len(_kut) == 6 and min(_kut) > 20, str([round(x) for x in _kut]))
 
 print(f"\n== sonuc: {GECEN} gecti, {KALAN} kaldi ==")
 sys.exit(1 if KALAN else 0)

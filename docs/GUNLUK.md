@@ -14901,3 +14901,72 @@ flow-gorsel büyütme + arka plan; reklam-kreatifi altyazı). `duman_medya` 30
 (2 mutasyon: siyah denetimi, bitişik yazım eşleşmesi).
 
 Sınamalar 5025/5025 (95 dosya).
+
+## 07.10.2026 — UÇTAN UCA CANLI DENEME: Belle Reels (Veo Quality ve Fast karşılaştırmalı)
+
+Patronun mesajı (8911, gerçek ofisin taze kopyası, gerçek kabin profili):
+"semuparfum.com'daki Belle parfümü için Instagram Reels'e 15 saniyelik
+profesyonel ürün tanıtım videosu yap. Ürünün yakın plan sahnesini bir Veo
+Quality, bir Veo Fast ile çek, karşılaştıralım. Toplam kredi 150'yi geçmesin."
+
+AKIŞ (hepsi gerçek): lider Arda kadro önerdi (deniz video, ece tasarım, mert
+metin -- üçü Gemini) → patron "Kur ve başlat" → deniz BECERİLERİ OKUDU
+(Gemini'ye ilk kez ulaştı) → ürün sayfası + ürün fotoğrafı → 9:16 taslak kare →
+senaryo paketi sohbete + `onay_iste` (120 kredi) → patron onay → Flow'da yeni
+proje, başlangıç karesi, kilitli istem → KREDİ KAPISI durdurdu → onay → Veo
+Quality üretim → indirme → `video_denetle` → Fast (kapı, onay) → `video_kurgula`
+→ final 1080×1920, 15,0 sn, sesli → karşılaştırma raporu + kredi dökümü →
+teslim → lider kapattı. 48,5 dk, 1,21 M jeton, 120 kredi (1046 → 926, pakete
+birebir).
+
+BULGULAR (hepsi düzeltildi; panel 8911 ESKİ kodla koştuğu için bir kısmı bu
+koşuda etkin değildi):
+1. Kadro kurulunca patronun mesajı sohbete ikinci kez "sen" diye düştü
+   (mesaj.kaynak='ekip', ofis notu) -- 570a2ab.
+2. Ajan Flow'un ADRESİNİ bilmediği için ofisin kodunda aradı (kapı reddetti)
+   → adres katalog özetinde ve becerilerde -- 782be6d.
+3. Her turda sarı "gerçek terminal kipini desteklemiyor" ve "kanıtsız kaldı"
+   → ajan başına bir kez sakin not / "iş sürüyor" -- 782be6d.
+4. Ajan açık pencereyi KODLA kapattı (beceri cümlem "perdeye tıkla"ydı) →
+   kodla tıklama kartı; beceri `browser_click` diyor -- 782be6d.
+5. ÇİFT KREDİ ONAYI: patron paketi (120) onayladı, kapı gerçek tıklamada aynı
+   şeyi yine sordu → `onay_iste(kredi, uretim)` paketi `uretim` kadar tıklamayı
+   açar, fazlası sorulur; kart metni okunur -- 3f8e524.
+6. ERKEN İNCELEME: onay ajanın turu bitmeden geldi; bekleyen onay kalmayınca
+   iş paket kanıtıyla incelemeye gitti, lider "üretim yok" deyip 3 KEZ geri
+   çevirdi, ikisi FABLE'a yükseltildi (boşa) → tur içinde onay cevabı geldiyse
+   iş incelenmez, ajan uyandırılır (`onay_geldi`) -- 6cad0af.
+7. Lider rozeti "fable-5-1", ayar "Opus 5.5" (yükseltilmiş inceleme turu) →
+   ana rozet ajanın modeli, farklı tur "son tur: …" -- abb0fbb.
+8. Takım klasöründe `Microsoft/Windows/PowerShell/ModuleAnalysisCache`:
+   USERPROFILE yönlendirilince Windows PowerShell 5.1 yerel uygulama verisini
+   oradan türetiyor, klasör yoksa önbelleği çalışma klasörüne yazıyor
+   (YENİDEN ÜRETİLDİ) → ajan evinde AppData + PSModuleAnalysisCachePath -- 02de0eb.
+9. QUALITY KLİBİ PATRONUN İNDİRİLENLER'İNE DÜŞTÜ (Fast doğru yere): kök sebep
+   SINAMA YALITIMI -- `_temizlik` sınama kabin kapısını sabit 9399 yapıyordu,
+   canlı gösteri de 9399'da (gerçek profil). Gösteri sürerken koşan sınamalar
+   canlı kabine bağlanıp kendi indirme tutucusunu kurup kapattı; Chrome ayarı
+   varsayılana döndü. Gerçek Playwright MCP ile ölçüldü: tutucu MCP bağlıyken
+   de, 75 sn sonra da çalışıyor. Sınama kapısı artık işletim sisteminden BOŞ
+   alınıyor -- 491b15e. (06.10 düzeltmesinin sınaması gerçek MCP'siz olduğu
+   için bu sınırı hiç görmemişti.)
+10. Kare özetinin son kutusu SİYAH (video siyahla bitmiyor -- blackdetect
+    yok): eski "her N sn'de seç" filtresi bu gerçek Remotion çıktısında
+    kaydı (elle yeniden üretildi: 189/184/175/161/90/0). Kareler tek tek,
+    eşit dilimlerin ortasından alınıyor; alınamayan gri "okunamadı". Yapay
+    sınamalar eski kodla da geçiyor (genel bekçi, kanıt değil).
+11. KURGU KALİTESİ: "Çilek · Yasemin · Sıcak Amber" küçük, açık zeminde beyaz,
+    şişeye biniyor; ajan kapanışı kendi ffmpeg'iyle ürünü griye boğup üstüne
+    yazı basarak yaptı ("Şimdi Keşfet" etiketin BELLE'sinin üstünde). Şablonun
+    temiz `son_kart`ı kullanılmadı → becerilerde profesyonel kurgu kuralları.
+
+QUALITY ve FAST (tek örnek, kare özetleriyle gözle): ikisinde de etiket
+(SEMU / BELLE / EXTRAIT DE PARFUM 50 ml) baştan sona doğru ve okunur, şişe
+bozulmadı. Fast'te orta karelerde kapakta güneş parlaması; Quality'de
+yaklaşma sonunda kapak kadraj dışı. Ajanın raporundaki "Fast'te şakayık
+yapraklarında form genişlemesi" karelerde GÖRÜLMEDİ (abartı). Bu örnekte ürün
+yakın planı için Fast (20) yeterli görünüyor; Quality'nin 5× bedeli açık bir
+karşılık bulmadı -- tek örnek, genelleme değil.
+
+AÇIK: Flow'un 1080p büyütme bedeli ölçülmedi (ajan 720p indirdi, kurgu 1080'e
+ölçekledi); taslak kare agy'nin kendi görsel aracıyla (Flow Nano Banana değil).

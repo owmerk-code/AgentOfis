@@ -124,6 +124,15 @@ basina gore kaydir). UYARI gelirse (uyum dusuk) ses repligi yanlis
 soyluyordur: klibi dinle, gerekiyorsa yeniden uret.
 
 ## 8. Kurgu (paylasmaya hazir)
+PROFESYONEL KURGU KURALLARI (07.10 canli denemeden):
+- Ekran yazisi URUNUN ve ETIKETIN USTUNE BINMEZ: bos alana (ust ya da alt
+  ucte bir, guvenli alan icinde) koy; kucuk ve acik zeminde beyaz yazi
+  okunmaz -- `video_kurgula`nin golgeli yazisini kullan, buyuk ve kisa tut.
+- Kapanis: `son_kart` (duz marka rengi zemin + marka/site + CTA). Urun
+  cekimini griye/karanliga bogup ustune yazi basma; urunu son karede
+  GORMEK istiyorsan temiz bir urun karesi + altinda ayri yazi.
+- Kendi ffmpeg efektini (gri, karartma, drawtext) kullanabilirsin ama
+  sonucu kare ozetinde AC ve yazi-urun cakismasini KONTROL ET.
 `video_kurgula` ile PLAN yaz (sahne sirasi, kirpma, ekran yazisi, altyazi,
 gecis, muzik ya da Flow sesi, kapanis karti + CTA). Bicim: 9:16 / 4:5 / 1:1 /
 16:9; reklamsa uc bicim. Cizim kredi harcamaz: kare ozetine bak, yazi
