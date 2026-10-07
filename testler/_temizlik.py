@@ -53,8 +53,18 @@ if not os.environ.get("OFIS_GOLGE_KOK"):
 # yonlendirmeyi bir bolumde UNUTMUSTU. Tek kokle unutmak mumkun degil.
 # PATRONUN KABINI (9222) sinamaya KAPALI: "ajanlar kabinde" varsayilan
 # acik; sinama ofisi kendi (bos) kapisina bakar.
+#
+# HER SUREC BOS BIR KAPI (07.10.2026, OLCULDU canli denemede): sabit 9399,
+# canli gosterinin (`ofis_kopyasi`, patronun GERCEK kabin profili) kapisiyla
+# AYNIYDI. Gosteri surerken kosan sinamalar CANLI kabine baglandi, kendi
+# indirme tutucusunu kurup kapatti; Chrome ayari varsayilana dondurdu ve
+# patronun Flow klibi kendi Indirilenler'ine dustu. Kapi isletim
+# sisteminden BOS alinir: acik bir kabine baglanmak mumkun degil.
 if not os.environ.get("OFIS_KABIN_KAPI"):
-    os.environ["OFIS_KABIN_KAPI"] = "9399"
+    import socket as _soket
+    with _soket.socket() as _s:
+        _s.bind(("127.0.0.1", 0))
+        os.environ["OFIS_KABIN_KAPI"] = str(_s.getsockname()[1])
 
 # Patronun Claude klasoru yerine BOS klasor (02.10.2026): becerileri ve
 # MCP'leri otomatik getiren kod sinamada gercek klasoru okumasin.

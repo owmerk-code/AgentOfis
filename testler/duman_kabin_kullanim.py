@@ -192,6 +192,11 @@ sina("kilidi tutan Chrome'u oldurmez (taskkill / kill YOK)", "taskkill" not in _
 
 print("\n7. sinama patronun kabin kapisina bakmaz")
 sina("sinamada kabin kapisi 9222 DEGIL", tarayici.KABIN_KAPISI != 9222, str(tarayici.KABIN_KAPISI))
+# 07.10 canli: sabit 9399 canli gosterinin (gercek profil) kapisiydi; sinama
+# oraya baglanip indirme ayarini bozdu. Sinama kapisi BOS ve gosteriden AYRI.
+sina("  sinama kapisi canli gosterinin kapisi (9399) DEGIL ve BOS alinir",
+     tarayici.KABIN_KAPISI not in (9222, 9399) and not kabin.acik_mi(tarayici.KABIN_KAPISI),
+     str(tarayici.KABIN_KAPISI))
 sina("  kapi ortamdan ayarlanir", 'os.environ.get("OFIS_KABIN_KAPI")' in
      (KOK / "ofis" / "tarayici.py").read_text(encoding="utf-8"))
 sina("  ofis_kopyasi da ayri kapi kullanir",
