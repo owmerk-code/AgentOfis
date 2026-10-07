@@ -358,7 +358,8 @@ def _kuyrugu_kostur(db_yolu, proje_ad: str) -> None:
                                               butce_usd=PANEL_TUR_TAVANI_USD,
                                               tarayici_alani=k["tarayici_alani"] or None,
                                               tarayici_kabini=kabin_cdp,
-                                              atanan=k["atanan"]):
+                                              atanan=k["atanan"],
+                                              kaynak=("ekip" if k.get("kaynak") == "ekip" else "")):
                         if _durdurulduysa(o, "Lider turu"):
                             break
                     _kuyruk.bitir(o, k["id"], "bitti")
@@ -3666,7 +3667,7 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
         with ofis.db.baglanti() as conn:
             rows = conn.execute(
                 "SELECT m.id, m.alici, m.govde, m.cevap, m.olusturuldu, "
-                "m.cevaplandi, g.no AS gorev_no FROM mesaj m "
+                "m.cevaplandi, m.kaynak, g.no AS gorev_no FROM mesaj m "
                 "LEFT JOIN gorev g ON g.id = m.gorev_id "
                 "WHERE m.proje_id = ? AND m.gonderen = 'insan' "
                 "AND m.mod = 'uyandiran' ORDER BY m.rowid DESC LIMIT ?",
@@ -3674,7 +3675,10 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
         from .sohbet import akislar
         akan = akislar(ofis.db, ofis.proje_id)
         mesajlar = [dict(r) for r in reversed(rows)]
+        from . import takim as _takim
         for m in mesajlar:
+            if m.get("kaynak") == "ekip":
+                m["govde"] = _takim.devam_metni(m["govde"])
             # Cevabi dusmus mesajin akisi GOSTERILMEZ (kayit silinmemis
             # olsa bile): yarim metin, tam cevabin yerini almaz.
             m["akis"] = "" if m["cevap"] else akan.get(str(m["id"]), "")

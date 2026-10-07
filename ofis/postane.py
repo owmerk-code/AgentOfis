@@ -181,7 +181,7 @@ class Postane:
     # -- sorular -----------------------------------------------------------
 
     def soru_sor(self, gonderen: str, alici: str, govde: str, *,
-                 gorev_no=None, mod: str = "bekleyen") -> dict:
+                 gorev_no=None, mod: str = "bekleyen", kaynak: str = "") -> dict:
         govde = (govde or "").strip()
         if not govde:
             raise PostaneHatasi("Bos soru sorulamaz.")
@@ -206,10 +206,10 @@ class Postane:
         with self.db.baglanti() as conn:
             conn.execute(
                 "INSERT INTO mesaj (id, proje_id, gonderen, alici, govde, mod, "
-                "gorev_id, cevap, cevaplandi, okundu, olusturuldu) "
-                "VALUES (?, ?, ?, ?, ?, ?, ?, '', NULL, 0, ?)",
+                "gorev_id, cevap, cevaplandi, okundu, olusturuldu, kaynak) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, '', NULL, 0, ?, ?)",
                 (mesaj_id, self.proje_id, gonderen, alici, govde, mod,
-                 gorev_id, simdi()),
+                 gorev_id, simdi(), kaynak or ""),
             )
         self.db.olay_yaz(self.proje_id, "soru",
                          f"{gonderen} -> {alici}: {govde[:200]}",

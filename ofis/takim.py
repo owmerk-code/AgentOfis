@@ -324,6 +324,17 @@ def istek_durumlari(ofis, istek_idleri) -> dict:
     return out
 
 
+def devam_metni(istek: str) -> str:
+    """Kadro kurulunca suren istegin sohbetteki OFIS NOTU (07.10.2026).
+
+    Patron: "Kur ve baslat dedikten sonra ayni mesaji neden bir daha sohbete
+    atiyor? Claude Code / Codex boyle mi calisiyor?" -- onaydan sonra is
+    kaldigi yerden surer, mesaj ikinci kez patronun agzindan yazilmaz.
+    Lidere giden metin degismez (patronun sozu, izin alintisi ona dayanir)."""
+    kisa = " ".join((istek or "").split())
+    return "Kadro kuruldu, iş başlıyor: «" + (kisa[:90] + ("…" if len(kisa) > 90 else "")) + "»"
+
+
 def akis(ofis, *, kanat_id=None, adet: int = 80) -> list:
     """Takimin konusmasi -- yeni en altta. Her oge:
 
@@ -372,9 +383,10 @@ def akis(ofis, *, kanat_id=None, adet: int = 80) -> list:
             tur = "sohbet"
         else:
             tur = "soru"
+        devam = (m.get("kaynak") or "") == "ekip"
         ogeler.append({"an": m["olusturuldu"], "sira": (m["sira"], 0),
-                       "kimden": m["gonderen"], "kime": m["alici"],
-                       "tur": tur, "metin": _kes(m["govde"]),
+                       "kimden": "ofis" if devam else m["gonderen"], "kime": m["alici"],
+                       "tur": tur, "metin": devam_metni(m["govde"]) if devam else _kes(m["govde"]),
                        "gorev_no": m["gorev_no"], "id": m["id"],
                        "istek": m["id"] if tur == "sohbet" else (m["gorev_istek"] or ""),
                        "bekliyor": (tur != "not" and not m["cevaplandi"]),

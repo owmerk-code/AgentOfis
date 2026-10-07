@@ -73,6 +73,28 @@ sina("  patron mesaji AYNEN lidere sirada", r.json().get("baslatildi") is True
      and any(k["metin"] == MESAJ and k["lider_ad"] == "arda" and k["kaynak"] == "ekip" for k in bek),
      str([(k["metin"][:30], k["kaynak"]) for k in bek]))
 sina("  sira BASLATILDI", len(_basladi) == 1)
+# SOHBETTE IKINCI KEZ "sen" YAZILMAZ (07.10.2026, patron: "Kur'dan sonra ayni
+# mesaji neden bir daha sohbete atiyor?"). Sira isi sohbetten GERCEKTEN gecer
+# (triyaj sahte: cevap); lidere giden metin AYNEN, gorunen ofis notu.
+from ofis import takim as _takim  # noqa: E402
+_ek = next(k for k in bek if k["kaynak"] == "ekip")
+_soh = ofis.sohbet
+_soh._triyaj = lambda *a, **kw: {"karar": "cevap", "cevap": "Ise basliyorum.", "gerekce": "s"}
+list(_soh.konus(_ek["metin"], lider_ad="arda", kaynak="ekip"))
+with db.baglanti() as _c:
+    _m = dict(_c.execute("SELECT govde, gonderen, kaynak FROM mesaj ORDER BY rowid DESC LIMIT 1").fetchone())
+sina("  lidere giden mesaj AYNEN (patronun sozu degismez), kaynak 'ekip'",
+     _m["govde"] == MESAJ and _m["gonderen"] == "insan" and _m["kaynak"] == "ekip", str(_m))
+_og = [x for x in _takim.akis(ofis) if x["tur"] in ("sohbet", "cevap")]
+sina("  sohbette 'sen' balonu DEGIL ofis notu",
+     _og and _og[-2]["kimden"] == "ofis" and _og[-2]["metin"].startswith("Kadro kuruldu, iş başlıyor"),
+     str([(x["kimden"], x["metin"][:40]) for x in _og]))
+sina("  liderin cevabi yine patrona", _og and _og[-1]["kimden"] == "arda" and _og[-1]["kime"] == "insan")
+_ap = ist.get("/api/sohbet").json()["mesajlar"]
+sina("  eski sohbet gorunumu de ayni", _ap and _ap[-1]["govde"].startswith("Kadro kuruldu"), str(_ap[-1:])[:200])
+import inspect as _insp  # noqa: E402
+sina("  panelin sira iscisi kaynagi sohbete tasiyor",
+     'kaynak=("ekip" if k.get("kaynak") == "ekip" else "")' in _insp.getsource(_panel._kuyrugu_kostur))
 r = ist.post(f"/api/ekip/{o2['no']}/kur", json={"baslat": False})
 sina("'Yalniz kur': is baslatilmaz", r.status_code == 200 and r.json().get("baslatildi") is False
      and not any(k["metin"] == "baska istek" for k in Q.bekleyenler(ofis)))

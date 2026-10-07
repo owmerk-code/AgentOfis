@@ -755,7 +755,7 @@ class Sohbet:
                zaman_asimi=None, azami_tik: int = 8, paralel: int = 3,
                izinli_araclar: tuple = (), ek_klasorler=None,
                tarayici_alani=None, tarayici_kabini: str = "",
-               atanan: str = ""):
+               atanan: str = "", kaynak: str = ""):
         mesaj = (mesaj or "").strip()
         if not mesaj:
             raise SohbetHatasi("Bos mesaj gonderilemez.")
@@ -786,7 +786,8 @@ class Sohbet:
                     "liderine ver.")
         kayit = self.ofis.postane.soru_sor(
             "insan", lider["ad"],
-            (f"@{atanan} is: {mesaj}" if atanan else mesaj), mod="uyandiran")
+            (f"@{atanan} is: {mesaj}" if atanan else mesaj), mod="uyandiran",
+            kaynak=kaynak)
         self._akis = AkisYazici(self.db, self.proje_id, kayit["id"])
 
         if ekler:
