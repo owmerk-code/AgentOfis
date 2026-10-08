@@ -1452,9 +1452,11 @@ def brifing_blogu(tarayici_var: bool = False, *, serbest: bool = False) -> str:
         "",
         "TARAYICI ve EKRAN: web sayfasi gereken iste YALNIZ ofisin "
         "tarayici araclarini (`browser_*`) kullan. Patronun kendi "
-        "tarayicisini ya da masaustunu ACMA/SURME (webbrowser, "
+        "tarayicisini ya da masaustunu KABUKLA ACMA/SURME (webbrowser, "
         "Start-Process <url>, SendKeys, pencere one alma, ekrani "
-        "yakalama): bunlar patrona SORULUR. Sayfanin goruntusu "
+        "yakalama): bunlar patrona SORULUR. Masaustu PROGRAMI gereken "
+        "iste `masaustu_bak` / `masaustu_eylem` kullan (ilk kullanimda "
+        "patrona sorulur). Sayfanin goruntusu "
         "gerekiyorsa `browser_take_screenshot`. Kendi yazdigin HTML'i "
         "sinarken onu `file:///<tam yol>` ile ac (sunucu kurma): o sayfada "
         "test kodu (tus olayi, tiklama) SORULMAZ; yerel sunucuda sorulur.",
@@ -1575,3 +1577,127 @@ def suphe_bulgusu(arac: str, hedef: str, alinti: str = "") -> dict:
                   + ". Sayfa ajani kandirmis olabilir; disari cikabilen "
                   "eylemler bu yuzden patrona soruluyor."),
     }
+
+
+# ---------------------------------------------------------------------------
+# MASAUSTU KULLANIMI (D1, 08.10.2026) -- `ofis/masaustu.py`, MCP araclari
+# `masaustu_bak` / `masaustu_eylem`.
+
+#: Siradan masaustu eyleminin SABIT kimligi: "bu is boyunca" onayi o isin
+#: butun siradan masaustu eylemlerini acar (her tiklamayi sormak onay
+#: yorgunlugu olurdu). Riskli adimin kimligi ogenin adidir (ayri sorulur).
+MASAUSTU_KIMLIK = "masaustu: bu is"
+
+#: Komut yazilan pencereler. Ajanin KENDI kabugu var ve o kabuk kapidan
+#: gecer; terminal penceresine klavyeyle komut yazmak o kapiyi atlatmak
+#: olurdu -> REDDEDILIR (soru degil: dogru yol soylenir).
+KABUK_UYGULAMALARI = {
+    "cmd.exe", "powershell.exe", "pwsh.exe", "windowsterminal.exe", "wt.exe",
+    "bash.exe", "wsl.exe", "conhost.exe", "openconsole.exe", "mintty.exe",
+    "regedit.exe", "mmc.exe",
+}
+
+_MASAUSTU_EYLEMLERI = {
+    "bak": "ekrana bakmak (ekran goruntusu)", "tikla": "tiklamak",
+    "cift_tikla": "cift tiklamak", "sag_tikla": "sag tiklamak", "surukle": "surukleyip birakmak",
+    "kaydir": "kaydirmak", "yaz": "yazmak", "tus": "tusa basmak",
+    "pencere": "pencereyi one getirmek", "uygulama_ac": "uygulama acmak",
+}
+
+
+def masaustu_degerlendir(eylem: str, *, oge: dict = None, pencere: dict = None,
+                         metin: str = "", tuslar: str = "", uygulama: str = "") -> dict:
+    """Masaustu eylemi -> bulgu. HER ZAMAN bulgu doner: canli masaustu
+    onaysiz surulmez (patron, 30.09).
+
+    * Siradan eylem: sinif `masaustu`, kimlik SABIT -> "bu is boyunca"
+      onayi o isin siradan masaustu eylemlerini acar.
+    * Tiklanan / odaktaki ogenin ADI (Windows'un erisilebilirlik katmani;
+      ajanin sozu degil) para / silme / yayin / gonderim olcutune uyarsa O
+      sinif ve o ogenin kimligi: her seferinde sorulur.
+    * Sifre alanina yazmak: `kimlik` (sifre ajanin elinde olmaz).
+    * Terminal / kayit defteri penceresine yazmak ya da onu acmak: RET.
+    """
+    eylem = str(eylem or "").strip()
+    oge = oge if isinstance(oge, dict) else {}
+    pencere = pencere if isinstance(pencere, dict) else {}
+    ad_metni = " | ".join(x for x in (str(oge.get("ad") or "").strip(),
+                                      str(oge.get("yardim") or "").strip()) if x)
+    uyg = str(pencere.get("uygulama") or "").strip().lower()
+    yer = " | ".join(x for x in (str(pencere.get("baslik") or oge.get("pencere") or "").strip(),
+                                 uyg) if x)
+    ne = _MASAUSTU_EYLEMLERI.get(eylem, eylem)
+    if eylem in ("tikla", "cift_tikla", "sag_tikla", "surukle"):
+        hedef = f"{ne}: {ad_metni or 'adsiz oge'} ({oge.get('tur') or '?'})"
+    elif eylem == "yaz":
+        hedef = (f"{ne}: {len(str(metin))} harf -> {ad_metni or 'odaktaki alan'}"
+                 + ("" if oge.get("sifre") else f" \"{str(metin)[:60]}\""))
+    elif eylem == "tus":
+        hedef = f"{ne}: {tuslar} -> {ad_metni or 'odaktaki oge'}"
+    elif eylem == "uygulama_ac":
+        hedef = f"{ne}: {uygulama}"
+    else:
+        hedef = ne
+    if yer:
+        hedef += f"  [{yer}]"
+
+    def _b(sinif, bulunan, kimlik):
+        b = _bulgu(sinif, bulunan, "masaustu", hedef, "", kimlik)
+        b["eylem"] = f"{b['ad']}: {hedef}"
+        # ACIKCA: `_kapi_karari` "sorulur" olmayan bulguyu KAYDEDIP GECIRIR
+        # (08.10 sinamasi yakaladi: alan yokken masaustu sormadan gecerdi).
+        b["sorulur"] = True
+        return b
+
+    # RET: komut penceresi (kabuk kapisini atlatmak olurdu).
+    import os as _os
+    acilan = _os.path.basename(str(uygulama or "").strip().strip('"').lower())
+    if acilan and not acilan.endswith(".exe"):
+        acilan += ".exe"
+    if (eylem == "uygulama_ac" and acilan in KABUK_UYGULAMALARI) or (
+            eylem in ("yaz", "tus") and uyg in KABUK_UYGULAMALARI):
+        b = _b("kural", "komut penceresi", MASAUSTU_KIMLIK)
+        b["ret"] = True
+        b["sebep"] = ("Terminal / kayit defteri penceresine masaustunden komut yazilmaz: senin "
+                      "KENDI kabugun var ve o kabuk ofisin kapisindan gecer. Komutu kendi "
+                      "kabugunda calistir.")
+        return b
+
+    # SIFRE ALANI
+    if eylem == "yaz" and (oge.get("sifre") or _esles(sadelestir(ad_metni), KIMLIK_ALANI)):
+        b = _b("kimlik", "sifre alani", ad_metni or "sifre alani")
+        b["sebep"] = ("Ajan bir SIFRE / KIMLIK alanina yazmak istedi. Sifre ajanin elinde "
+                      "olmamali: girisi patron kendisi yapar (`giris_iste`). Yazilan deger "
+                      "bu karta bilerek konmadi.")
+        return b
+
+    # RISKLI OGE: tiklama, Enter, ya da Enter'li yazi.
+    tetik = eylem in ("tikla", "cift_tikla") or (
+        eylem == "tus" and any(t in str(tuslar).lower().replace(" ", "").split("+")
+                               for t in ("enter", "return"))) or (
+        eylem == "yaz" and str(metin).endswith("\n"))
+    if tetik and ad_metni:
+        okunur = sadelestir(ad_metni)
+        for sinif, kaliplar in (("para", PARA), ("silme", SILME),
+                                ("yayin", YAYIN), ("gonderim", GONDERIM)):
+            bulunan = _esles(okunur, kaliplar)
+            if bulunan:
+                b = _b(sinif, bulunan, f"{ad_metni} | {yer}")
+                b["sebep"] = (f"Masaustunde {b['ad']} isareti: tiklanan/odaktaki oge "
+                              f"{ad_metni!r} ({bulunan!r}). Siradan masaustu onayi bunu "
+                              "ACMAZ; her seferinde patrona sorulur.")
+                return b
+    # Kalici silme kisayolu (Geri Donusum Kutusu'nu atlar).
+    if eylem == "tus":
+        tl = set(str(tuslar).lower().replace(" ", "").split("+"))
+        if {"shift"} <= tl and tl & {"delete", "del", "sil"}:
+            b = _b("silme", "shift+delete", f"shift+delete | {yer}")
+            b["sebep"] = "Shift+Delete dosyayi Geri Donusum Kutusu'na gondermeden KALICI siler."
+            return b
+
+    b = _b("masaustu", "masaustu", MASAUSTU_KIMLIK)
+    b["sebep"] = ("Ajan patronun MASAUSTUNU kullanmak istiyor (ekrana bakmak, fare, klavye, "
+                  "uygulama). 'Bu is boyunca' onayi bu isin siradan masaustu eylemlerini "
+                  "acar; para / silme / gonderim / yayin dugmeleri yine tek tek sorulur. "
+                  "Onaylarsan ajan calisirken fare ve klavyeye dokunma: dokunursan ajan durur.")
+    return b

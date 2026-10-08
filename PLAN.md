@@ -41,7 +41,7 @@ başlar.
 | C9 | Kurgu/montaj araçları (08.10 patron: hazır videoyu sohbetten düzenle) | BİTTİ 08.10: video eki 2 GB akışla; medya_isle sahneler/kes/ses_ayir/sessizlik_kes/kare_ara (RIFE)/vokal_ayir (MDX-Net); kurgu hız/bulanık dolgu/odak/filtre/seslendirme+müzik kısma/logo/geçişler; beceri `video-duzenle` |
 | C8 | Otomatik içerik hattı: uzun videodan klip → kurgu → paylaşım onaya (E89) | İPTAL 08.10 (patron: YouTube yayını yok) |
 | **D — Bilgisayar** | | |
-| D1 | Bilgisayar kullanımı: fare/klavye ile masaüstü uygulaması; her riskli adım sorulur (41-liste #29, E47) | YOK (kapıda "masaüstü" sınıfı var, yetenek yok) |
+| D1 | Bilgisayar kullanımı: fare/klavye ile masaüstü uygulaması; her riskli adım sorulur (41-liste #29, E47) | KOD BİTTİ 08.10 (`masaustu.py`, `masaustu_bak`/`masaustu_eylem`, 38 sınama); CANLI deneme patronun izniyle bekliyor (`testler/canli_masaustu.py --evet` + üç motorla tek tur) |
 | **E — Kapanış ve sağlamlık** | | |
 | E1 | Kabinin ilk açılış ölümü: 20 açılışta tekrar etmediği ölçülecek (E12) | BİTTİ 08.10: 20/20 temiz açılış; kayıttaki 8 ölümün hepsi profil başka kabinde açıktı (çıkış 21; biri gösteri kabininin kilidi → Job Object); kayıt artık çıkış kodunu yazar |
 | E2 | Gemini kota yüzdesi (`limit_oku` yok); Gemini gerçek terminal penceresi (isteğe bağlı) | BİTTİ 08.10: `agy -p /usage` modelsiz (3 sn, 0 jeton), haftalık + 5 saatlik; sürüm koruması (eski agy'de modele soru olurdu); terminal 08.10'da yapılmıştı |

@@ -490,6 +490,53 @@ ConvertTo-Json -InputObject @($l) -Compress -Depth 4
     return sonuc if isinstance(sonuc, list) else []
 
 
+# -- tek surucu (kira kilidi) ---------------------------------------------------
+
+#: Masaustu TEK: iki ajan ayni anda fareyi surerse birbirinin tiklamasini
+#: bozar (Yasa 1: yazma tek iplikli). Kira her eylemde yenilenir; sahibi
+#: susarsa KIRA_SN sonra duser (cokmus ajan masaustunu kilitli birakmasin).
+KIRA_SN = 300
+
+
+def _kilit_yolu() -> Path:
+    from .yollar import ofis_evi
+    return Path(ofis_evi()) / "masaustu_kilit.json"
+
+
+_KIRA_KILIDI = threading.Lock()
+
+
+def kira_al(sahip: str, *, simdi: float = None) -> str | None:
+    """Kirayi alir ya da yeniler. Doner: None = sende; metin = su an suren."""
+    simdi = time.time() if simdi is None else simdi
+    yol = _kilit_yolu()
+    with _KIRA_KILIDI:
+        try:
+            k = json.loads(yol.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            k = {}
+        if k.get("sahip") and k.get("sahip") != sahip and simdi - float(k.get("zaman") or 0) < KIRA_SN:
+            return str(k["sahip"])
+        from .dosya import atomik_yaz
+        yol.parent.mkdir(parents=True, exist_ok=True)
+        atomik_yaz(yol, json.dumps({"sahip": sahip, "zaman": simdi}))
+        return None
+
+
+def kira_birak(sahip: str) -> None:
+    yol = _kilit_yolu()
+    with _KIRA_KILIDI:
+        try:
+            k = json.loads(yol.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return
+        if k.get("sahip") == sahip:
+            try:
+                yol.unlink()
+            except OSError:
+                pass
+
+
 # -- uygulama acma ------------------------------------------------------------
 
 def uygulama_ac(komut: str, argumanlar: list = None) -> int:

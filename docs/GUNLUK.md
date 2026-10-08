@@ -15402,3 +15402,44 @@ birikmiş 1.365 kayıt temizlendi) bitti.
 
 CLAUDE.md 42 → 38,3 bin harf (organizasyon ve terminal satırları kısaldı;
 ayrıntı bu günlükte, 05.10 ve 08.10).
+
+## 08.10.2026 — D1: MASAÜSTÜ KULLANIMI (kod bitti, canlı deneme izin bekliyor)
+
+**Ölçüm önce.** Codex 0.161'de `computer_use` bayrağı açık ama ucuz modelle
+(luna, düşük efor, boş klasör) sorulan araç listesinde 14 aracın hiçbiri
+masaüstü değil (exec, wait, image_gen, web, collaboration…; ~19 bin girdi
+jetonu). Claude CLI'da yalnız `--chrome` (patronun kendi Chrome'u, ofiste
+kapalı). 26.09 ölçümüyle aynı: iki CLI da ajana masaüstü vermiyor → araç
+ofisin MCP'sinde (üç motorda aynı, tek kapıdan).
+
+**Yapılan.** `ofis/masaustu.py`: ekran görüntüsü (PIL, uzun kenar 1568,
+koordinat görüntü pikseliyle; DPI farkında), fare/klavye `SendInput`
+(Türkçe harf KEYEVENTF_UNICODE ile, klavye düzeninden bağımsız), pencereler
+(EnumWindows + süreç adı), öğe adları Windows UI Automation (PowerShell,
+yeni paket yok; ~0,6 sn), uygulama açma. MCP: `masaustu_bak` (görüntü
+modele MCP `image` olarak gider + pencere ve öğe listesi, merkez
+koordinatlarıyla) ve `masaustu_eylem` (tıkla/çift/sağ, sürükle, kaydır,
+yaz, tuş, pencere, uygulama_aç, bekle; ardından yeni görüntü).
+
+**Kapı (tek yer).** `izin_sor`'un karar kısmı `_kapi_karari`na ayrıldı;
+masaüstü araçları onu kendi içinde çağırır (ofis araçları CLI kancasından
+serbest geçtiği için). `riskli.masaustu_degerlendir`: her eylem bulgu
+(bakmak dahil — ekranda ne varsa ajan görür); sıradan eylemin kimliği
+SABİT → "bu iş boyunca" onayı o işin sıradan masaüstü eylemlerini açar;
+tıklanan/odaktaki öğenin Windows'taki ADI gönder/sil/öde/yayınla ölçütüne
+uyarsa o sınıf, her seferinde; şifre alanı `kimlik` (değer karta girmez);
+Shift+Delete silme; terminal/kayıt defteri penceresi RET (ajanın kendi
+kabuğu kapıdan geçer). Frenler: patron ofisin son eyleminden sonra
+fare/klavyeye dokunduysa eylem yapılmaz; 120 sn'den eski görüntüyle
+tıklanmaz; TEK SÜRÜCÜ (ofisin evinde 5 dk'lık kira; ikinci ajan "X
+kullanıyor" cevabı alır).
+
+**Sınamanın yakaladığı açık.** Tarayıcı bulgusunda "sorulur" alanı yok;
+ortak karar işlevi alanı görmeyince eylemi KAYDEDİP GEÇİRİYOR. Masaüstü
+bulgusu bunu açıkça taşır; koparma denemesinde üç sınama ateş etti.
+
+`duman_masaustu.py` 38 sınama (gerçek masaüstü SÜRÜLMEZ: düşük düzey
+sahte; kapı, onay, fren, kira, MCP görsel bloğu gerçek). Canlı deneme
+(`testler/canli_masaustu.py --evet`: Not Defteri aç, Türkçe yaz, Windows'tan
+geri oku, kapat) ve üç motorla gerçek tur patronun izniyle yapılacak —
+kural: canlı masaüstü onaysız sürülmez.

@@ -144,7 +144,7 @@ motor matrisinden geçmeden deftere girmez.
 
 ```
 YÜZEYLER    panel · kabuk (CLI) · telefon(sonra) · ses(sonra)
-PROTOKOL    ofis MCP sunucusu (stdio JSON-RPC, 20 araç)
+PROTOKOL    ofis MCP sunucusu (stdio JSON-RPC, 22 araç)
 ÇEKİRDEK    kadro · DAG tahta · yazma kilidi · kanıt kapısı · karar günlüğü
             orkestra (halka) · lider (3 kapı) · sohbet (ön kapı) · takım
 BELLEK      olay · olgu (çift-zamanlı) · bilgi/kural/ders · brifing K1–K4
@@ -186,13 +186,14 @@ matrisin ölçümüyle karşılaştırır.
 | `ofis/zamanlayici.py` | Zamanlayıcı (F5/4): sohbetten kurulur (triyaj `karar=zamanla`, saati ofis doğrular ve cevabı ofis kurar); gunluk/haftalik/bir_kez/aralik; vakti gelen iş kuyruğa; kaçırılan birikmez, bir kez koşar. |
 | `ofis/postane.py` | Soru/onay, patronun notu (`NOT_KURALI`), imza/kapsam ile onay eşleştirme. |
 | `ofis/danisma.py` | Ajana sorulan soruyu teslim eder (araçsız, salt okunur); cevaplanamazsa insana yükseltir. |
-| `ofis/mcp_sunucu.py` | Ofis MCP: durum · kanit_ekle · karar_yaz · sohbete_yaz · soru_sor · onay_iste · bilgi_yaz · gorev_ac · gorsel_uret/iste · video_uret/durum/iste · video_kurgula · video_denetle · medya_isle · izin_sor (kanca) · giris_iste. Kimlik ORTAMDAN gelir. |
+| `ofis/mcp_sunucu.py` | Ofis MCP: durum · kanit_ekle · karar_yaz · sohbete_yaz · soru_sor · onay_iste · bilgi_yaz · gorev_ac · gorsel_uret/iste · video_uret/durum/iste · video_kurgula · video_denetle · medya_isle · masaustu_bak/eylem · izin_sor (kanca) · giris_iste. Kimlik ORTAMDAN gelir. Riskli bulgunun kararı TEK yerde: `_kapi_karari` (izin_sor + masaüstü). Araç sözlük dönerse sonuçta görsel (MCP `image`). |
 | `ofis/motor/tui.py` | GERÇEK TERMİNAL KİPİ — TEK KİP `gercek` (08.10, patron; `arka` yalnız sınamada; kural `kipe_gore`): iç motor (claude/codex/agy) ConPTY'de gerçek CLI; brifing yapıştırılır, olaylar CLI'ın oturum dosyasından, terminal turlar arası açık. Not ulaştı mı CLI'ın KAYDINDAN (`tui_kullanici_metni`; sıradaki not için tur sonunda 20 sn). CLI'ın kendi sorusu (agy "Allow access…") `ekran_sorusu` ile reddedilir + devam mesajı. Tur terminali sahiplendiği an "koşuyor" (08.10: aynı liderin paralel iki incelemesinde açılan terminal kapatılıyordu). Çağıran bırakırsa CLI durur. Geçici dosyalar `ev/tui` (2 günde süpürülür). İstisna: tavanlı şartname turu. |
 | `ofis/kanca.py` | Gerçek terminal (TUI) kancası: CLI'ın her araç çağrısını arka plan kipindeki AYNI kapıya sorar; hata = deny; `--oz-sinama`. |
 | `ofis/izin.py` | Patronun ACIKCA istedigi riskli eylem (push, deploy) sorulmaz: lider planda patronun sozunden KELIMESI KELIMESINE alintiyla izin yazar, ofis sinifi olcer, olumsuz cumleyi reddeder; is basina ve kalici (insan). Para ve silme izinle acilmaz. |
 | `ofis/riskli.py` | Riskli eylem ölçütü (geri alınabilir mi · dışarı çıkıyor mu · para var mı) + sert durak; kabuk kuralları; araç adı polaritesi (okuma serbest, tanınmayan sorulur); şifre/kart alanı. |
 | `ofis/tarayici.py` · `tarayici_kapi.py` | Playwright MCP'yi bağlar (varsayılan serbest, riskli tıklama vekilde sorulur, sayfadaki gerçek adı okur); kabin CDP. |
 | `ofis/kabin.py` | Panelin içindeki paylaşılan başsız Chrome (kare akışı), öğe seçici. `IndirmeYeri` (07.10): indirmeler `.ofis/indirilenler/`e (CDP ayarı yalnız bağlantı açıkken geçerli; tutucu iplik). Panel süreci ölünce kabin de kapanır (Job Object, 08.10). İlk açılış "ölümleri" = profil başka kabinde açık (çıkış 21, kayda yazılır); 20/20 temiz açılış ölçüldü. |
+| `ofis/masaustu.py` | MASAÜSTÜ (D1, 08.10): iki CLI da masaüstü aracı vermiyor (ölçüldü) → ofisin MCP'sinde `masaustu_bak` (ekran görüntüsü görsel olarak + pencereler + öğe adları) ve `masaustu_eylem` (tıkla/sürükle/kaydır/yaz/tuş/pencere/uygulama aç). Fare/klavye SendInput (Türkçe harf), öğe adları UI Automation (PowerShell, paketsiz). Kapı `riskli.masaustu_degerlendir`: ilk eylem (bakmak dahil) sorulur, "bu iş boyunca" açar; gönder/sil/öde/yayınla düğmesi ve şifre alanı her seferinde; terminal penceresi RET; patron fareye/klavyeye dokunduysa ajan durur. |
 | `ofis/giris.py` | Giriş isteği: şifre ajana geçmez, insan kabinde girer, iş onun oturumuyla sürer. |
 | `ofis/motor/tip.py` | Motor sözleşmesi: olay akışı, bayraklar, `durum_notu`, `limit_oku`, `TurKanali`, `SurecKafesi` (Job Object), `etkilesimli_komut`. |
 | `ofis/motor/claude.py` · `codex.py` · `antigravity.py` · `sahte.py` · `gemini.py` | Adaptörler (`sahte` yalnız `OFIS_SINAMA_MOTORU=1` iken kayıtlı; `_temizlik` koyar; ürün onu hiç görmez). Claude: `.exe` doğrudan, `--permission-prompt-tool` kancası; SICAK BEKLEYEN SÜREÇ (06.10): liderin bir sonraki süreci aynı komutla önceden açılıp bekler (`tur_kos(sicak=True)`, `sicak_isit`, panel `_lider_isit_arkada` 2 dk'da bir; ömür 10 dk) — lider turu 9–12 sn → 3,5–6,4 sn, güç aynı. Codex: app-server (onay kapısı, steer, interrupt), `exec` yalnız görselde. Gemini = `antigravity.py` (`agy`, Google AI Pro; ajan başına ev, kanca ret = çıkış 2, kanca komutu TIRNAKSIZ + tur öncesi öz-sınama, istem ve tur içi not stdin `stream-json`'dan, Durdur = süreç kesilir + `--conversation`; gerçek terminalde de; KOTA `agy -p /usage` modelsiz, ≥1.2.15 — eskisinde modele soru olur, sorulmaz); eski `gemini.py` (Gemini CLI) Pro'ya kapalı. |
@@ -270,7 +271,7 @@ matrisin ölçümüyle karşılaştırır.
 - **F5 "ben yokken" altyapısı (01.10):** kuyruk + dönüş raporu, kesintiden devam, masaüstü bildirimi, zamanlayıcı — dördü canlı (8911, gerçek motor) ölçüldü. Kalan F5: telefon, onay yorgunluğu (E80), bağlam göstergesi, ses (en son).
 - **Güncelleme hemen:** 30 dakikada bir ölçer, uyguladıktan sonra yeniden
   ölçer (`olc_ve_ilerle`). CLI güncellemesinin deneme turu, ofis gerçek terminal kipindeyse terminalde de koşar (30.09).
-- **Sınamalar:** **5338/5338** (08.10; 102 dosya; tam takım ÇIKIŞ KODUYLA koşulur — kod 3 = artık klasör) + gerçek set (`gercek_set.py`, her gece 03:30). Deneme seti 15/15
+- **Sınamalar:** **5376/5376** (08.10; 103 dosya; tam takım ÇIKIŞ KODUYLA koşulur — kod 3 = artık klasör) + gerçek set (`gercek_set.py`, her gece 03:30). Deneme seti 15/15
   (Claude ve Codex, işçi+lider).
 - **MALİYET (03.10, `testler/carpan.py`):** basit iş ofiste doğrudan Claude'un ~1,6–1,8×'i; Claude önbelleği 5 dk; ret ölçüte bağlı (`lider.ret_dayanagi`); triyaj+plan tek tur; KARMA (karne + çapraz kontrol) 20 işte 19/20, Claude payı %40 az. Yalın lider ve `--fork-session` denendi, geri alındı. Tam metin: günlük "08.10 ANAYASADAN TAŞINAN: MALİYET".
 - **Kalan işler:** `PLAN.md` "00. KALAN İŞLER — 08.10" (A–F; ses, görünüş, uygulama en son).

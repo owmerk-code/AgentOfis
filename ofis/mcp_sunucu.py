@@ -1376,12 +1376,22 @@ def arac_izin_sor(oturum: Oturum, args: dict) -> str:
 
     if bulgu is None:
         return izin()
+    _m = _kapi_karari(oturum, arac, girdi, bulgu)
+    return izin() if _m is None else ret(_m)
 
+def _kapi_karari(oturum: Oturum, arac: str, girdi: dict, bulgu: dict):
+    """Riskli bulgunun KARARI -- TEK yer (izin_sor ve masaustu araclari)."
+    `None` = gecer (onayli / izinli / kayda gecen); metin = durmasi gereken
+    sebep (onay karti acildiysa onu da soyler). 08.10.2026: masaustu araclari
+    kapiyi KENDI icinde sorar (ofis araclari CLI kancasindan serbest gecer);
+    kural ikiye bolunmesin diye karar izin_sor'dan buraya alindi.
+    """
+    from ofis import riskli
     try:
         ofis = oturum.ofis
         postane = ofis.postane
     except Exception as exc:
-        return ret(f"RISKLI EYLEM ve onay defterine ulasilamiyor ({exc}). "
+        return (f"RISKLI EYLEM ve onay defterine ulasilamiyor ({exc}). "
                    "Eylem yapilmadi.")
 
     gorev_id = None
@@ -1398,14 +1408,14 @@ def arac_izin_sor(oturum: Oturum, args: dict) -> str:
         ofis.db.olay_yaz(oturum.proje_id, "kendi_dosyasini_sildi",
                          f"{arac} | {str(girdi.get('command') or '')[:200]}",
                          ajan_ad=oturum.ajan_ad, gorev_id=gorev_id)
-        return izin()
+        return None
     if (bulgu.get("sinif") == "silme" and arac in riskli.YAMA_ARACLARI
             and gorev_id and bulgu.get("yama_hedefleri")
             and _kendi_yeni_dosyalari(ofis, gorev_id, girdi, bulgu["yama_hedefleri"])):
         ofis.db.olay_yaz(oturum.proje_id, "kendi_dosyasini_sildi",
                          f"{arac} | yama: {', '.join(bulgu['yama_hedefleri'])[:200]}",
                          ajan_ad=oturum.ajan_ad, gorev_id=gorev_id)
-        return izin()
+        return None
 
     # SORULMAYAN ama KAYDA GECEN sinif.
     if not bulgu.get("sorulur"):
@@ -1413,7 +1423,7 @@ def arac_izin_sor(oturum: Oturum, args: dict) -> str:
             oturum.proje_id, "arac_degisikligi",
             f"{arac} | {bulgu['esles']} | {str(girdi)[:200]}",
             ajan_ad=oturum.ajan_ad, gorev_id=gorev_id)
-        return izin()
+        return None
 
     # PATRONUN IZNI (ofis/izin.py): patron bu eylemi ACIKCA istediyse
     # ya da kalici izin varsa SORULMAZ, ama kayda gecer. Para ve silme
@@ -1423,13 +1433,13 @@ def arac_izin_sor(oturum: Oturum, args: dict) -> str:
     if iz:
         izin_mod.gecti_kaydi(ofis.db, oturum.proje_id, izin=iz, bulgu=bulgu,
                              ajan_ad=oturum.ajan_ad, gorev_id=gorev_id)
-        return izin()
+        return None
 
     im = postane.imza(bulgu)
     for kayit in postane.onay_ara(oturum.ajan_ad, im,
                                   gorev_no=oturum.gorev_no):
         if kayit["durum"] == "reddedildi":
-            return ret(
+            return (
                 "REDDEDILDI. Patron bu eylemi onaylamadi.\n"
                 f"Eylem  : {bulgu['eylem']}\n"
                 f"Gerekce: {kayit['cevap_notu'] or '(yazilmamis)'}\n\n"
@@ -1444,14 +1454,14 @@ def arac_izin_sor(oturum: Oturum, args: dict) -> str:
             # desen). Imza kabadir (`git push`): 'is' gibi davransaydi ayni
             # iste baska dala push da sorulmadan gecerdi (06.10 olculdu).
             if (kayit.get("kapsam") or "eylem") == "is":
-                return izin()
+                return None
             if not postane.onay_kullanildi_mi(kayit["id"]):
                 postane.onay_kullan(kayit["id"], ajan_ad=oturum.ajan_ad,
                                     ne=f"{arac} | {bulgu['esles']}",
                                     gorev_id=gorev_id)
-                return izin()
+                return None
         if kayit["durum"] == "bekliyor":
-            return ret(
+            return (
                 "ONAY ZATEN BEKLIYOR -- SIMDI DUR.\n"
                 f"Eylem: {bulgu['eylem']}\n"
                 f"Onay : {kayit['id']}\n\n"
@@ -1473,12 +1483,12 @@ def arac_izin_sor(oturum: Oturum, args: dict) -> str:
                                  ayrinti=ayrinti, risk=bulgu["risk"],
                                  gorev_no=oturum.gorev_no)
     except Exception as exc:
-        return ret(f"RISKLI EYLEM ve onay kaydi yazilamadi ({exc}). "
+        return (f"RISKLI EYLEM ve onay kaydi yazilamadi ({exc}). "
                    "Eylem yapilmadi.")
     ofis.db.olay_yaz(oturum.proje_id, "arac_onay_bekliyor",
                      f"{bulgu['ad']} -- {arac}",
                      ajan_ad=oturum.ajan_ad, gorev_id=gorev_id)
-    return ret(
+    return (
         "ONAY ISTENDI -- SIMDI DUR.\n"
         f"Sinif : {bulgu['ad']}\n"
         f"Eylem : {bulgu['eylem']}\n"
@@ -1488,6 +1498,228 @@ def arac_izin_sor(oturum: Oturum, args: dict) -> str:
         "yapmaya calisma. Buraya kadar yaptiklarini `kanit_ekle` ile "
         "deftere yaz, sonra turu bitir. Patron onaylayinca is kaldigi "
         "yerden devam eder. " + _KART_ACILDI)
+
+
+# ---------------------------------------------------------------------------
+# MASAUSTU (D1, 08.10.2026) -- `ofis/masaustu.py`. Kapi BURADA sorulur:
+# ofis araclari CLI kancasindan serbest gecer; karar `_kapi_karari`nda
+# (izin_sor ile ayni yer).
+
+import time  # noqa: E402 -- masaustu araclari
+
+#: Son ekran goruntusu (bu MCP sureci = bu ajanin CLI oturumu).
+_MASAUSTU = {"goruntu": None, "sayac": 0}
+#: Goruntu bundan eskiyse koordinatli eylem yapilmaz (ekran degismis olabilir).
+MASAUSTU_GORUNTU_OMRU_SN = 120
+_MASAUSTU_GORUNTU_SAKLA = 12
+
+
+def _masaustu_klasoru(oturum: Oturum):
+    from pathlib import Path as _P
+    from ofis.yollar import KARALAMA as _KARALAMA
+    if oturum.gorev_no is not None:
+        kok = _P(oturum.ofis.isin_koku(oturum.gorev()))
+    else:
+        kok = _P(oturum.ofis.kok_klasoru(getattr(oturum, "kanat", "") or None))
+    k = (kok / _KARALAMA / "masaustu").resolve()
+    k.mkdir(parents=True, exist_ok=True)
+    return kok.resolve(), k
+
+
+def _masaustu_goruntu(oturum: Oturum):
+    """Ekran goruntusu al, eskileri sil (son 12 kalir)."""
+    from ofis import masaustu as _m
+    kok, k = _masaustu_klasoru(oturum)
+    _MASAUSTU["sayac"] += 1
+    ad = f"ekran-{(oturum.ajan_ad or 'ajan')}-{int(time.time())}-{_MASAUSTU['sayac']}.png"
+    g = _m.goruntu_al(k / ad)
+    _MASAUSTU["goruntu"] = g
+    eskiler = sorted(k.glob(f"ekran-{oturum.ajan_ad or 'ajan'}-*.png"),
+                     key=lambda f: f.stat().st_mtime)
+    for f in eskiler[:-_MASAUSTU_GORUNTU_SAKLA]:
+        try:
+            f.unlink()
+        except OSError:
+            pass
+    return g, kok
+
+
+def _masaustu_kapisi(oturum: Oturum, eylem: str, girdi: dict, **ayrinti) -> str | None:
+    """None = gecer; metin = durma sebebi (HATA ile baslar)."""
+    from ofis import riskli
+    try:
+        bulgu = riskli.masaustu_degerlendir(eylem, **ayrinti)
+    except Exception as exc:                 # noqa: BLE001 -- kapi KAPALI kalir
+        return f"HATA: ofis kapisi degerlendiremedi ({exc}); eylem YAPILMADI."
+    if bulgu.get("ret"):
+        return "HATA: " + bulgu["sebep"]
+    m = _kapi_karari(oturum, "masaustu_" + eylem, girdi, bulgu)
+    return None if m is None else "HATA: " + m
+
+
+def _masaustu_olay(oturum: Oturum, metin: str) -> None:
+    try:
+        gid = oturum.gorev()["id"] if oturum.gorev_no is not None else None
+        oturum.ofis.db.olay_yaz(oturum.proje_id, "masaustu", metin[:400],
+                                ajan_ad=oturum.ajan_ad, gorev_id=gid)
+    except Exception:                        # noqa: BLE001 -- kayit eylemi dusurmez
+        pass
+
+
+def _masaustu_ozeti(g, *, pencere_adi: str = "", ogeler: bool = True) -> str:
+    from ofis import masaustu as _m
+    satirlar = [f"EKRAN GORUNTUSU: {g.genislik}x{g.yukseklik} piksel (koordinatlari BU "
+                "goruntunun pikseliyle ver)."]
+    try:
+        pler = _m.pencereler(25)
+    except Exception:                        # noqa: BLE001
+        pler = []
+    hedef = None
+    if pencere_adi:
+        hedef = next((p for p in pler if pencere_adi.lower() in p["baslik"].lower()
+                      or pencere_adi.lower() in p["uygulama"].lower()), None)
+    if hedef is None:
+        hedef = next((p for p in pler if p["onde"]), None)
+    if pler:
+        satirlar.append("PENCERELER (onde olan *):")
+        for p in pler[:15]:
+            sol, ust = g.goruntuye(p["kutu"][0], p["kutu"][1])
+            sag, alt = g.goruntuye(p["kutu"][2], p["kutu"][3])
+            satirlar.append(f"  {'*' if p['onde'] else ' '} {p['baslik'][:70]} "
+                            f"[{p['uygulama']}]{' (simge)' if p['simge'] else ''} "
+                            f"kutu=({sol},{ust})-({sag},{alt})")
+    if ogeler and hedef and not hedef.get("simge"):
+        try:
+            liste = _m.ogeler(hedef["hwnd"], 120)
+        except Exception:                    # noqa: BLE001
+            liste = []
+        if liste:
+            satirlar.append(f"OGELER ({hedef['baslik'][:50]}; ad, tur, merkez):")
+            for o in liste[:120]:
+                k = o.get("kutu") or [0, 0, 0, 0]
+                x, y = g.goruntuye((k[0] + k[2]) / 2, (k[1] + k[3]) / 2)
+                if not (0 <= x <= g.genislik and 0 <= y <= g.yukseklik):
+                    continue
+                satirlar.append(f"  {o.get('tur')}: {str(o.get('ad') or '')[:60]!r} @({x},{y})"
+                                + ("" if o.get("etkin", True) else " (pasif)")
+                                + (" [sifre]" if o.get("sifre") else ""))
+    return "\n".join(satirlar)
+
+
+def arac_masaustu_bak(oturum: Oturum, args: dict):
+    """Ekranin goruntusu + pencereler + one cikan pencerenin ogeleri."""
+    from ofis import masaustu as _m
+    girdi = {k: v for k, v in (args or {}).items()}
+    dur = _masaustu_kapisi(oturum, "bak", girdi)
+    if dur:
+        return dur
+    try:
+        g, kok = _masaustu_goruntu(oturum)
+        ozet = _masaustu_ozeti(g, pencere_adi=str(args.get("pencere") or ""),
+                               ogeler=args.get("ogeler", True) is not False)
+    except _m.MasaustuHatasi as exc:
+        return f"HATA: {exc}"
+    _masaustu_olay(oturum, f"bak: {_goreli(g.yol, kok)}")
+    return {"metin": ozet + f"\nGORUNTU: {_goreli(g.yol, kok)}", "gorseller": [g.yol]}
+
+
+def arac_masaustu_eylem(oturum: Oturum, args: dict):
+    """Fare/klavye/pencere/uygulama eylemi; ardindan (varsayilan) yeni goruntu."""
+    from ofis import masaustu as _m
+    a = dict(args or {})
+    eylem = str(a.get("eylem") or "").strip()
+    if eylem not in ("tikla", "cift_tikla", "sag_tikla", "surukle", "kaydir", "yaz", "tus",
+                     "pencere", "uygulama_ac", "bekle"):
+        return ("HATA: eylem su degerlerden biri olmali: tikla, cift_tikla, sag_tikla, "
+                "surukle, kaydir, yaz, tus, pencere, uygulama_ac, bekle.")
+    g = _MASAUSTU.get("goruntu")
+    koordinatli = eylem in ("tikla", "cift_tikla", "sag_tikla", "surukle", "kaydir")
+    try:
+        ex = ey = None
+        oge, pencere = {}, {}
+        if koordinatli:
+            if g is None:
+                return "HATA: once `masaustu_bak` ile ekrana bak; koordinatlar o goruntunun pikseliyle verilir."
+            if time.time() - g.zaman > MASAUSTU_GORUNTU_OMRU_SN:
+                return ("HATA: son ekran goruntusu eski (ekran degismis olabilir). Once "
+                        "`masaustu_bak`, sonra yeni koordinatla dene.")
+            if a.get("x") is None or a.get("y") is None:
+                return "HATA: x ve y gerekli (son goruntunun pikseli)."
+            ex, ey = g.ekrana(a["x"], a["y"])
+            if eylem != "kaydir":
+                oge = _m.oge_noktada(ex, ey) or {}
+            pencere = _m.on_pencere() or {}
+        elif eylem in ("yaz", "tus"):
+            oge = _m.odak_ogesi() or {}
+            pencere = _m.on_pencere() or {}
+        elif eylem == "pencere":
+            pencere = _m.pencere_bul(str(a.get("pencere") or "")) or {}
+            if not pencere:
+                return f"HATA: {a.get('pencere')!r} adli pencere yok. `masaustu_bak` pencereleri listeler."
+        dur = _masaustu_kapisi(oturum, eylem if eylem != "bekle" else "bak", a, oge=oge,
+                               pencere=pencere, metin=str(a.get("metin") or ""),
+                               tuslar=str(a.get("tuslar") or ""),
+                               uygulama=str(a.get("uygulama") or ""))
+        if dur:
+            return dur
+        if eylem != "bekle":
+            _surucu = _m.kira_al(f"{oturum.ajan_ad} (#{oturum.gorev_no})")
+            if _surucu:
+                return (f"HATA: MASAUSTUNU SU AN {_surucu} KULLANIYOR (tek masaustu, tek "
+                        "surucu). Eylem YAPILMADI. Bitmesini bekle (`masaustu_eylem` "
+                        "eylem=bekle) ya da `soru_sor` ile lidere danis.")
+        if eylem != "bekle" and _m.patron_etkin_mi():
+            return ("HATA: PATRON SU AN BILGISAYARI KULLANIYOR (ofisin son eyleminden sonra "
+                    "klavye/fare hareketi var). Eylem YAPILMADI. Biraz bekleyip `masaustu_bak` "
+                    "ile yeniden bak; uzun surerse `soru_sor` ile patrona sor.")
+        if eylem in ("tikla", "cift_tikla", "sag_tikla"):
+            _m.tikla(ex, ey, dugme="sag" if eylem == "sag_tikla" else "sol",
+                     kez=2 if eylem == "cift_tikla" else 1)
+            yapilan = f"{eylem} ({a['x']},{a['y']}) -> {oge.get('ad') or 'adsiz'} ({oge.get('tur') or '?'})"
+        elif eylem == "surukle":
+            if a.get("x2") is None or a.get("y2") is None:
+                return "HATA: surukle icin x2 ve y2 gerekli."
+            ex2, ey2 = g.ekrana(a["x2"], a["y2"])
+            _m.surukle(ex, ey, ex2, ey2)
+            yapilan = f"surukle ({a['x']},{a['y']}) -> ({a['x2']},{a['y2']})"
+        elif eylem == "kaydir":
+            adim = int(a.get("adim") or -3)
+            _m.kaydir(ex, ey, adim)
+            yapilan = f"kaydir {adim} @({a['x']},{a['y']})"
+        elif eylem == "yaz":
+            metin = str(a.get("metin") or "")
+            if not metin:
+                return "HATA: metin gerekli."
+            _m.yaz(metin)
+            yapilan = (f"yaz {len(metin)} harf -> {oge.get('ad') or 'odaktaki alan'}"
+                       + ("" if oge.get("sifre") else f": {metin[:80]!r}"))
+        elif eylem == "tus":
+            _m.tus(str(a.get("tuslar") or ""))
+            yapilan = f"tus {a.get('tuslar')} -> {oge.get('ad') or 'odaktaki oge'}"
+        elif eylem == "pencere":
+            onde = _m.pencere_one(pencere["hwnd"])
+            yapilan = f"pencere one: {pencere['baslik'][:60]}" + ("" if onde else " (Windows one almadi)")
+        elif eylem == "uygulama_ac":
+            pid = _m.uygulama_ac(str(a.get("uygulama") or ""),
+                                 [str(x) for x in (a.get("argumanlar") or [])])
+            time.sleep(min(10.0, float(a.get("bekle_sn") or 2.5)))
+            yapilan = f"uygulama acildi: {a.get('uygulama')} (surec {pid or '?'})"
+        else:
+            time.sleep(max(0.5, min(30.0, float(a.get("sn") or 2))))
+            yapilan = f"bekle {a.get('sn') or 2} sn"
+    except _m.MasaustuHatasi as exc:
+        return f"HATA: {exc}"
+    _masaustu_olay(oturum, yapilan)
+    if a.get("bak", True) is False:
+        return f"YAPILDI: {yapilan}"
+    time.sleep(0.6)
+    try:
+        g2, kok = _masaustu_goruntu(oturum)
+        ozet = _masaustu_ozeti(g2, ogeler=a.get("ogeler", True) is not False)
+    except _m.MasaustuHatasi as exc:
+        return f"YAPILDI: {yapilan}\n(yeni goruntu alinamadi: {exc})"
+    return {"metin": f"YAPILDI: {yapilan}\n\nSONRAKI EKRAN:\n{ozet}\nGORUNTU: {_goreli(g2.yol, kok)}",
+            "gorseller": [g2.yol]}
 
 
 ARACLAR = [
@@ -1784,6 +2016,61 @@ ARACLAR = [
         "islev": arac_video_denetle,
     },
     {
+        "name": "masaustu_bak",
+        "description": (
+            "BILGISAYARIN EKRANINA BAK (masaustu uygulamalari icin; web sitesi icin gomulu "
+            "tarayiciyi kullan). Ekran goruntusu (gorsel olarak doner) + acik pencereler + "
+            "ondeki pencerenin ogeleri (ad, tur, merkez koordinati). Koordinatlar BU "
+            "goruntunun pikseliyle. Patronun masaustu oldugu icin ILK kullanimda patrona "
+            "sorulur ('bu is boyunca' onayi isi acar). `pencere`: ogeleri listelenecek "
+            "pencerenin adindan bir parca; `ogeler`: false = liste yok (hizli)."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "pencere": {"type": "string"},
+                "ogeler": {"type": "boolean"},
+            },
+        },
+        "islev": arac_masaustu_bak,
+    },
+    {
+        "name": "masaustu_eylem",
+        "description": (
+            "MASAUSTUNDE FARE / KLAVYE. eylem: 'tikla' | 'cift_tikla' | 'sag_tikla' (x,y) · "
+            "'surukle' (x,y -> x2,y2) · 'kaydir' (x,y, adim: + yukari / - asagi) · 'yaz' "
+            "(metin; odaktaki alana; Turkce harf olur; satir sonu = Enter) · 'tus' (tuslar: "
+            "'ctrl+s', 'enter', 'alt+tab', 'f5') · 'pencere' (pencere: adindan parca, one "
+            "getirir) · 'uygulama_ac' (uygulama: 'notepad', 'excel' ya da tam yol; "
+            "argumanlar) · 'bekle' (sn). x,y SON `masaustu_bak` goruntusunun pikseli (120 "
+            "sn'den eski goruntuyle tiklanmaz). Eylemden sonra yeni ekran goruntusu doner "
+            "(`bak`: false = donmez). Kapi: siradan eylem 'bu is boyunca' onayiyla acilir; "
+            "gonder/sil/ode/satin al/yayinla gibi dugmeler ve sifre alani HER SEFERINDE "
+            "sorulur; terminal penceresine komut yazilmaz (kendi kabugunu kullan). Patron "
+            "klavye/fareyi kullaniyorsa eylem yapilmaz."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "eylem": {"type": "string"},
+                "x": {"type": "number"}, "y": {"type": "number"},
+                "x2": {"type": "number"}, "y2": {"type": "number"},
+                "adim": {"type": "integer"},
+                "metin": {"type": "string"},
+                "tuslar": {"type": "string"},
+                "pencere": {"type": "string"},
+                "uygulama": {"type": "string"},
+                "argumanlar": {"type": "array", "items": {"type": "string"}},
+                "bekle_sn": {"type": "number"},
+                "sn": {"type": "number"},
+                "bak": {"type": "boolean"},
+                "ogeler": {"type": "boolean"},
+            },
+            "required": ["eylem"],
+        },
+        "islev": arac_masaustu_eylem,
+    },
+    {
         "name": "medya_isle",
         "description": (
             "YEREL medya araclari -- kredi/para HARCAMAZ, cikti olculur, kanit otomatik. "
@@ -2049,9 +2336,23 @@ def istegi_isle(istek: dict, oturum: Oturum):
                 "content": [{"type": "text", "text": f"HATA: {exc}"}],
                 "isError": True,
             })
+        gorseller = []
+        if isinstance(metin, dict):
+            # GORSEL DONDUREN ARAC (08.10.2026, masaustu): ekran goruntusu
+            # modele dogrudan gider (MCP `image` icerigi); yol metinde de var.
+            gorseller = list(metin.get("gorseller") or [])
+            metin = str(metin.get("metin") or "")
         hatali = isinstance(metin, str) and metin.startswith("HATA")
+        icerik = [{"type": "text", "text": metin}]
+        for _g in gorseller:
+            try:
+                import base64 as _b64
+                icerik.append({"type": "image", "mimeType": "image/png",
+                               "data": _b64.b64encode(open(_g, "rb").read()).decode("ascii")})
+            except OSError:
+                pass
         return _sonuc(istek_id, {
-            "content": [{"type": "text", "text": metin}],
+            "content": icerik,
             "isError": hatali,
         })
 

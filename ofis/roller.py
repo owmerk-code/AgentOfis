@@ -573,7 +573,9 @@ ROLLER = {r.ad: r for r in (
     # bu ise en yakin olcum BrowseComp. Riskli tiklama zaten kapida.
     _r("bilgisayar", "BILGISAYAR",
        "Bilgisayar ve tarayici isleri: sitelerde islem, form, yonetim "
-       "paneli, dosya duzeni. Gomulu tarayiciyi kullanir.",
+       "paneli, dosya duzeni, masaustu uygulamalari. Site icin gomulu "
+       "tarayici; program (Excel, bir uygulama) icin `masaustu_bak` / "
+       "`masaustu_eylem` (ilk kullanimda patrona sorulur).",
        tur="eller",
        kanit_turleri=("gorsel", "baglanti", "dosya"),
        olcut_sablonu="Islem SITEDE GORUNUR: ekran goruntusu ya da kayit "

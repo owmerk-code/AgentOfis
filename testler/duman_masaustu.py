@@ -178,6 +178,21 @@ with db.baglanti() as c:
 sina("yapilan her masaustu eylemi deftere yazildi (bak, tikla, yaz)",
      any(x.startswith("bak") for x in olaylar) and any(x.startswith("tikla") for x in olaylar)
      and any(x.startswith("yaz") for x in olaylar), str(olaylar)[:200])
+ofis.kadro.ise_al("mert", "bilgisayar", motor="sahte", klasor=str(D))
+gm = ofis.tahta.gorev_ac("mertin isi", neden="n", ana_hedef="h", kabul_olcutu="k")
+gm = ofis.tahta.sahiplen(gm["no"], "mert", gm["revizyon"])
+OM = _Oturum("mert", gm["no"])
+r = M.arac_masaustu_bak(OM, {})
+_kart = [x for x in onaylar() if x[2] == "bekliyor"][-1]
+ofis.postane.onay_cevapla(_kart[0], onayla=True, kapsam="is")
+M.arac_masaustu_bak(OM, {})
+n = len(YAPILAN)
+r = M.arac_masaustu_eylem(OM, {"eylem": "yaz", "metin": "x", "bak": False})
+sina("TEK SURUCU: ece suruyorken mert'in eylemi YAPILMAZ, kim surdugu soylenir",
+     "ece" in str(r) and "KULLANIYOR" in str(r) and len(YAPILAN) == n, str(r)[:140])
+sina("kira sahibi susarsa (5 dk) duser",
+     MS.kira_al("mert (#9)", simdi=time.time() + MS.KIRA_SN + 1) is None)
+MS.kira_birak("mert (#9)")
 gi = ofis.tahta.gorev_ac("baska is", neden="n", ana_hedef="h", kabul_olcutu="k")
 gi = ofis.tahta.sahiplen(gi["no"], "ece", gi["revizyon"])
 r = M.arac_masaustu_bak(_Oturum("ece", gi["no"]), {})
