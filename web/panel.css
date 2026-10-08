@@ -2037,3 +2037,21 @@ details > summary.hf-bas { cursor: pointer; }
 .takim-satir input, .takim-satir select { width: 100%; min-width: 0; background: var(--zemin); color: var(--metin);
   border: 1px solid var(--cizgi); border-radius: var(--koseli); padding: 5px 8px; font-size: var(--yz-alt); }
 .takim-ad { display: flex; align-items: center; gap: 6px; }
+
+/* DURUM TABLOSU (08.10, B2+B4) */
+.dt-ozet { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 10px; }
+.dt-rozet { font-size: 11px; padding: 1px 7px; border-radius: 10px; border: 1px solid var(--cizgi-acik); color: var(--metin-2); white-space: nowrap; }
+.dt-baslik { font-size: 11px; letter-spacing: .06em; color: var(--metin-3); margin: 12px 0 6px; }
+.dt-is, .dt-ajan { border: 1px solid var(--cizgi); border-left: 3px solid var(--cizgi-acik); border-radius: 6px; padding: 7px 9px; margin-bottom: 6px; background: var(--zemin-2); }
+.dt-is { cursor: pointer; }
+.dt-is:hover { border-color: var(--cizgi-acik); }
+.dt-is-bas { display: flex; gap: 6px; align-items: baseline; }
+.dt-is-ad { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dt-nerede { font-size: var(--yz-alt); margin-top: 3px; }
+.dt-alt { font-size: 11px; color: var(--metin-3); margin-top: 2px; }
+.dt-sen { border-left-color: var(--kotu); } .dt-rozet.dt-sen { color: var(--kotu); border-color: var(--kotu); }
+.dt-durdu { border-left-color: var(--uyari); } .dt-rozet.dt-durdu { color: var(--uyari); border-color: var(--uyari); }
+.dt-calisiyor { border-left-color: var(--iyi); } .dt-rozet.dt-calisiyor { color: var(--iyi); border-color: var(--iyi); }
+.dt-inceleme { border-left-color: var(--bilgi); } .dt-rozet.dt-inceleme { color: var(--bilgi); border-color: var(--bilgi); }
+.dt-bekliyor { border-left-color: var(--bekleyen); } .dt-rozet.dt-bekliyor { color: var(--bekleyen); border-color: var(--bekleyen); }
+.dt-sirada, .dt-bos { border-left-color: var(--cizgi-acik); }

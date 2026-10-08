@@ -3309,7 +3309,8 @@ async function cizSekme() {
   // Raporlar / Hafiza / Kararlar artik AYRI panolar: her biri kendi
   // kabina cizilir ve yalniz EKRANDAYSA cizilir.
   const ciz = { raporlar: cizRaporlar, hafiza: cizHafiza, kararlar: cizKararlar,
-                yetenek: cizYetenek, sohbet: cizSohbet, denetim: cizDenetim };
+                yetenek: cizYetenek, sohbet: cizSohbet, denetim: cizDenetim,
+                durum: cizDurum };
   // Konsol kendi kabini SILMEDEN cizer (terminal dugumu tasinir).
   if (panoAcik("konsol")) cizKonsol();
   for (const [p, f] of Object.entries(ciz)) {
@@ -3325,6 +3326,69 @@ async function cizSekme() {
         && odak.value) continue;
     kap.textContent = "";
     await f(kap);
+  }
+}
+
+/* DURUM TABLOSU (08.10, B2 + B4): her isin GERCEK durumu (seni mi bekliyor,
+   giris mi, kredi onayi mi, baska is mi, liderin incelemesi mi), son adimi;
+   her ajanin ne yaptigi ve sirasi; lidere giden ama baslamamis istekler.
+   Kural sunucuda (`ofis/durum_tablosu.py`); burada yalniz cizim. */
+const DURUM_TUR = { sen: ["seni bekliyor", "dt-sen"], durdu: ["durdu", "dt-durdu"],
+                    calisiyor: ["çalışıyor", "dt-calisiyor"], inceleme: ["incelemede", "dt-inceleme"],
+                    bekliyor: ["bekliyor", "dt-bekliyor"], sirada: ["sırada", "dt-sirada"] };
+function sureKisa(sn) {
+  if (sn == null) return "";
+  if (sn < 60) return `${sn} sn`;
+  if (sn < 3600) return `${Math.round(sn / 60)} dk`;
+  if (sn < 86400) return `${Math.round(sn / 3600)} sa`;
+  return `${Math.round(sn / 86400)} gün`;
+}
+async function cizDurum(kap) {
+  let r;
+  try { r = await al("/api/durum"); }
+  catch (e) { return kap.append(el("div", "form-ipucu uyari", "durum okunamadı: " + e.message)); }
+  const oz = r.ozet || {};
+  const ust = el("div", "dt-ozet");
+  const parca = Object.entries(DURUM_TUR).filter(([t]) => oz[t])
+    .map(([t, [ad, sinif]]) => el("span", "dt-rozet " + sinif, `${oz[t]} ${ad}`));
+  if (!parca.length) ust.append(el("span", "bos-yazi", "Açık iş yok."));
+  ust.append(...parca);
+  kap.append(ust);
+
+  kap.append(el("div", "dt-baslik", "İŞLER — şu an nerede"));
+  for (const x of r.isler || []) {
+    const [ad, sinif] = DURUM_TUR[x.tur] || [x.durum, ""];
+    const d = el("div", "dt-is " + sinif);
+    const bas = el("div", "dt-is-bas");
+    bas.append(el("span", "dt-rozet " + sinif, ad), el("b", null, `#${x.no}`),
+               el("span", "dt-is-ad", x.baslik));
+    d.append(bas);
+    d.append(el("div", "dt-nerede", x.nerede));
+    const alt = [x.takim, x.sahip || "sahipsiz", x.model].filter(Boolean).join(" · ");
+    const ek = [];
+    if (x.son_adim) ek.push(`son adım: ${x.son_adim}` + (x.son_adim_yas_sn != null ? ` (${sureKisa(x.son_adim_yas_sn)} önce)` : ""));
+    if (x.ret) ek.push(`${x.ret} kez geri döndü`);
+    d.append(el("div", "dt-alt", alt + (ek.length ? " — " + ek.join(" · ") : "")));
+    d.onclick = () => { try { gorevAc(x.no); } catch (_) {} };
+    kap.append(d);
+  }
+
+  kap.append(el("div", "dt-baslik", "AJANLAR — kim ne yapıyor"));
+  for (const a of r.ajanlar || []) {
+    const sinif = { sen: "dt-sen", durdu: "dt-durdu", calisiyor: "dt-calisiyor",
+                    inceleme: "dt-inceleme" }[a.hal] || "dt-bos";
+    const d = el("div", "dt-ajan " + sinif);
+    d.append(el("b", null, a.ad), el("span", "dt-alt", ` ${a.meslek}${a.lider ? " (lider)" : ""} · ${a.model}`));
+    d.append(el("div", "dt-nerede", a.ne));
+    if ((a.sirada || []).length) d.append(el("div", "dt-alt", "sırada: " + a.sirada.join(" · ")));
+    kap.append(d);
+  }
+
+  if ((r.sira || []).length) {
+    kap.append(el("div", "dt-baslik", "LİDERE GİDEN SIRA — henüz başlamadı"));
+    for (const k of r.sira)
+      kap.append(el("div", "dt-ajan dt-sirada",
+        `${k.lider}: ${k.metin}` + (k.yas_sn != null ? ` (${sureKisa(k.yas_sn)} önce)` : "")));
   }
 }
 
@@ -3809,10 +3873,16 @@ function surenIsler() {
   s.append(el("b", "suren-baslik", "Süren işler"));
   for (const [d, g] of satirlar) {
     const r = el("div", "suren-is" + (g.duraklatildi ? " duraklatildi" : ""));
+    // GERCEK DURUM (08.10, B2): tahtanin sutunu degil durum tablosunun
+    // hukmu -- "calisiyor" sutunundaki is senin cevabini bekliyor olabilir.
+    const gd = (D.durumIs || {})[g.no];
+    const cip = el("span", "sohbet-cip " + (g.duraklatildi ? "durum-inceleme"
+                : gd ? (DURUM_TUR[gd.tur] || ["", ""])[1] : "durum-" + d),
+                g.duraklatildi ? "duraklatıldı"
+                : gd ? (DURUM_TUR[gd.tur] || [GOREV_DURUM[d] || d])[0] : (GOREV_DURUM[d] || d));
+    if (gd) cip.title = gd.nerede;
     r.append(el("span", "suren-sahip", g.sahip || "—"),
-             el("span", "suren-ad", ` #${g.no} ${g.baslik}`),
-             el("span", "sohbet-cip " + (g.duraklatildi ? "durum-inceleme" : "durum-" + d),
-                g.duraklatildi ? "duraklatıldı" : (GOREV_DURUM[d] || d)));
+             el("span", "suren-ad", ` #${g.no} ${g.baslik}`), cip);
     const dk = el("button", "sohbet-cip", g.duraklatildi ? "Sürdür" : "Duraklat");
     dk.title = g.duraklatildi ? "aynı oturumdan devam eder"
       : "yalnız bu işi beklemeye alır (koşan turu keser); öteki işler sürer";
@@ -3900,6 +3970,10 @@ async function cizSohbet(kap) {
       l.append(y); kap.append(l);
     }
   }
+  try {
+    const dt = await al("/api/durum");
+    D.durumIs = Object.fromEntries((dt.isler || []).map((x) => [x.no, x]));
+  } catch (_) { D.durumIs = null; }       // olculemedi: tahtanin sutunu yazilir
   const _suren = surenIsler();
   if (_suren) kap.append(_suren);
   // KAYDIRMA KORUNUR: patron yukari kaydirmissa yeniden cizim onu
@@ -5992,6 +6066,7 @@ const PANOLAR = {
   kod:      { ad: "Kod",      sayac: "sayac-kod" },
   tarayici: { ad: "Tarayıcı", sayac: "sayac-kabin" },
   gorevler: { ad: "Görevler", sayac: "sayac-tahta" },
+  durum:    { ad: "Durum",    sayac: "" },
   raporlar: { ad: "Raporlar", sayac: "" },
   hafiza:   { ad: "Hafıza",   sayac: "" },
   kararlar: { ad: "Kararlar", sayac: "" },
@@ -6020,7 +6095,7 @@ function yerlesimVarsayilan() {
         yiginlar: [{ yuk: 1, panolar: ["tarayici"], secili: "tarayici" }] },
       { gen: 0.8, kapali: false,
         yiginlar: [{ yuk: 1, secili: "gorevler",
-                     panolar: ["gorevler", "raporlar", "hafiza", "kararlar",
+                     panolar: ["gorevler", "durum", "raporlar", "hafiza", "kararlar",
                                "yetenek", "denetim"] }] },
     ],
   };

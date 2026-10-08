@@ -2344,6 +2344,12 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
                          daemon=True).start()
         return {"surduruldu": True, "sebep": ""}
 
+    @uygulama.get("/api/durum")
+    def api_durum():
+        """DURUM TABLOSU (B2 + B4): her isin gercek durumu, ajanlar, sira."""
+        from . import durum_tablosu as _dt
+        return _dt.tablo(ofis_ac())
+
     @uygulama.post("/api/sorular/onerilenleri_kabul")
     def api_onerilenleri_kabul(govde: dict = None):
         """TOPLU KABUL (B1): onerilen secenegi olan bekleyen sorularin hepsi
