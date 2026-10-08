@@ -705,10 +705,11 @@ class _CoSahteMotor:
     def _ev_bul(self):
         return str(_co_ev)
 
-    def tur_kos(self, metin, *, klasor, efor, yazabilir, zaman_asimi, **_):
+    def tur_kos(self, metin, *, klasor, efor, yazabilir, zaman_asimi, model="", **_):
         _CoSahteMotor.cagri += 1
         _CoSahteMotor.son_metin = metin
         _CoSahteMotor.son_efor = efor
+        _CoSahteMotor.son_model = model
         thread = "th-" + str(_CoSahteMotor.cagri)
         yield _CoOlay("oturum", "", {"oturum_id": thread})
         if self.senaryo == "limit":
@@ -720,9 +721,6 @@ class _CoSahteMotor:
             gd = _co_ev / "generated_images" / thread
             gd.mkdir(parents=True, exist_ok=True)
             (gd / "exec-1.png").write_bytes(b"\x89PNG-sahte")
-            if self.senaryo == "kopya":
-                ad = metin.split("`")[1]
-                (Path(klasor) / ad).write_bytes(b"\x89PNG-kopya")
         yield _CoOlay("bitti", "ok", {"basarili": True, "oturum_id": thread,
                                       "jeton": 1234})
 
@@ -746,12 +744,17 @@ try:
     sina("codex: efor DUSUK (kota korunur)", _CoSahteMotor.son_efor == "dusuk")
     sina("codex: istem tarifi tasiyor", "kirmizi elma" in _CoSahteMotor.son_metin)
 
-    _CoSahteMotor.senaryo = "kopya"
-    _co_s = gorsel.CodexUretici().uret("mavi", _co_kok / "out" / "k.png")
-    sina("codex: ajanin kopyaladigi dosya ONCELIKLI",
-         Path(_co_s["yol"]).read_bytes() == b"\x89PNG-kopya")
+    # 08.10.2026 (C6, olculdu): sarmalayan tur HIZLI kademe modeliyle, kopyalamasiz
+    # (203k -> 96k jeton, gorsel ayni kalitede); gorsel turun klasorunden alinir.
+    sina("codex: sarmalayan model hizli kademe (varsayilana dusmez)",
+         _CoSahteMotor.son_model == gorsel.roller.model_sec("codex", "hizli")
+         if hasattr(gorsel, "roller") else _CoSahteMotor.son_model == "gpt-6-luna",
+         str(_CoSahteMotor.son_model))
+    sina("codex: istem kopyalama ISTEMIYOR, tek arac cagrisi",
+         "KOPYALA" not in _CoSahteMotor.son_metin.upper().replace("KOPYALAMA", "")
+         and "BIR KEZ" in _CoSahteMotor.son_metin, _CoSahteMotor.son_metin[:120])
     sina("codex: calisma klasorunde artik kalmiyor",
-         not any((_co_kok / "calisma").iterdir()))
+         not (_co_kok / "calisma").exists() or not any((_co_kok / "calisma").iterdir()))
 
     _CoSahteMotor.senaryo = "bos"
     try:

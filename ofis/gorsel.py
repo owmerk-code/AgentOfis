@@ -663,12 +663,19 @@ class CodexUretici(Uretici):
     #: klasor acsaydik `_evi_hazirla` her biri icin config.toml'a ayri
     #: bir guven satiri eklerdi ve dosya sisip giderdi.
     CALISMA = OFIS_EVI / "gorsel-codex"
+    #: SARMALAYAN TUR (08.10.2026, OLCULDU C6): gorseli SUNUCUDAKI image_gen
+    #: uretir; turdaki sohbet modeli yalniz araci cagirir. Eskiden model
+    #: verilmiyordu (hesabin varsayilani) ve ajana "dosyayi kopyala" adimi
+    #: yaptiriliyordu: 203k jeton / 85 sn. Hizli kademe modeli + kopyalamasiz
+    #: tek cagri: 96k jeton / 30 sn, gorsel AYNI kalitede (ayni tarifle iki
+    #: uretim yan yana bakildi). Gorsel, turun `generated_images` klasorunden
+    #: ofis tarafinda alinir.
     ISTEM = (
-        "Yerlesik gorsel uretme aracini (image_gen) kullanarak ASAGIDAKI "
-        "tarif icin TEK bir gorsel uret. Kod yazma, betik calistirma, API "
-        "anahtari kullanma. Uretilen gorsel dosyasini calisma klasorune "
-        "`{ad}` adiyla KOPYALA. Sonunda yalnizca dosya adini yaz.\n\n"
+        "Yerlesik gorsel uretme aracini (image_gen) BIR KEZ cagirarak asagidaki "
+        "tarifi uret. Baska hicbir arac kullanma, dosya kopyalama, kod yazma, "
+        "API anahtari kullanma. Gorsel uretilince yalnizca TAMAM yaz.\n\n"
         "TARIF:\n{istem}\n")
+    SARMALAYAN_KADEME = "hizli"
 
     @staticmethod
     def _motor():
@@ -720,8 +727,10 @@ class CodexUretici(Uretici):
         self.CALISMA.mkdir(parents=True, exist_ok=True)
         ad = f"gorsel-{uuid.uuid4().hex[:12]}.png"
         son, hatalar = {}, []
-        for o in m.tur_kos(self.ISTEM.format(ad=ad, istem=istem),
-                           klasor=str(self.CALISMA), efor="dusuk",
+        from . import roller as _roller
+        sarmalayan = _roller.model_sec("codex", self.SARMALAYAN_KADEME) or ""
+        for o in m.tur_kos(self.ISTEM.format(istem=istem),
+                           klasor=str(self.CALISMA), efor="dusuk", model=sarmalayan,
                            yazabilir=True, zaman_asimi=self.ZAMAN_ASIMI):
             if o.tur in ("hata", "limit"):
                 hatalar.append(o.govde)
