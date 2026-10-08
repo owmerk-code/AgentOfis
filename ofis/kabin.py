@@ -412,6 +412,13 @@ class Kabin:
                     f" kapi={self.kapi}\n".encode("utf-8"))
             self.surec = subprocess.Popen(
                 komut, stdout=subprocess.DEVNULL, stderr=g, creationflags=PENCERE_YOK)
+        # PANELLE BIRLIKTE KAPANIR (08.10.2026 OLCULDU): panel durdurulunca
+        # (gosteri paneli yeniden baslatildi) kabin Chrome'u saatlerce yasadi,
+        # profili kilitli tuttu; patronun panelinin tarayicisi "profil baska
+        # bir Chrome'da acik" diye ACILAMADI. Is nesnesi: panel sureci olunce
+        # (oldurulse bile) Windows kafesi kapatir, Chrome da biter.
+        from .motor.tip import SurecKafesi
+        self.kafes = SurecKafesi(self.surec)
         self.gorunur = bool(gorunur)
         self._olum_bildirildi = False
         bitis = time.time() + bekle_sn
@@ -421,6 +428,16 @@ class Kabin:
             # Surec olduyse beklemenin anlami yok -- ve sebebi soylenir.
             if self.surec.poll() is not None:
                 self._olum_bildirildi = True
+                # E1 (08.10.2026 OLCULDU): kayittaki "sebepsiz" olumlerin
+                # hepsi profil kilidiydi (cikis 21) ama kayit cikis kodunu
+                # tutmuyordu. Artik tutar.
+                try:
+                    with open(gunluk, "ab") as g:
+                        g.write(f"--- kabin kapandi cikis={self.surec.returncode}"
+                                f"{' (profil baska Chrome da acik)' if self.surec.returncode == self.PROFIL_KILITLI else ''}"
+                                "\n".encode("utf-8"))
+                except OSError:
+                    pass
                 hata = KabinHatasi(
                     f"Kabin Chrome'u acilirken kapandi (cikis "
                     f"{self.surec.returncode}). Son satirlar ({gunluk}):\n"
@@ -436,6 +453,7 @@ class Kabin:
             "tutuyor olabilir.")
 
     def kapat(self) -> dict:
+        kafes = getattr(self, "kafes", None)
         if self.surec and self.surec.poll() is None:
             self.surec.terminate()
             try:
@@ -446,6 +464,12 @@ class Kabin:
             # ONCEKI OTURUMDAN KALAN kabin (02.10.2026): surec elimizde
             # degildi ve panelin carpisi onu KAPATAMIYORDU.
             cdp_kapat(self.kapi)
+        if kafes is not None:
+            try:
+                kafes.kapat()
+            except Exception:                    # noqa: BLE001 -- zaten kapanmis olabilir
+                pass
+        self.kafes = None
         self.surec = None
         self.gorunur = None
         return self.durum()

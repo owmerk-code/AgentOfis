@@ -119,6 +119,7 @@ def is_kos(no: str, *, kip: str, motor: str, model: str, lider_model: str,
         return sonuc
 
     ana = Path(tempfile.mkdtemp(prefix=f"ofis-deneme-{no}-"))
+    __import__("_claude_iz").kaydet(ana)   # E4: Claude oturum kaydi cikista silinir
     _kullaniciya_ac(ana)
     kok = ana / "calisma"
     kok.mkdir()

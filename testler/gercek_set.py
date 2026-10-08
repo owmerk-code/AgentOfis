@@ -824,6 +824,7 @@ def is_kos(no: str, motor: str, *, kuru: str = "", zaman_asimi: int = 600,
     tanim = ISLER[no]
     sonuc = {"no": no, "ad": tanim["ad"], "motor": motor, "kip": kuru or "gercek"}
     ana = Path(tempfile.mkdtemp(prefix=f"ofis-gercek-{no}-"))
+    __import__("_claude_iz").kaydet(ana)   # E4: Claude oturum kaydi cikista silinir
     _kullaniciya_ac(ana)
     bag: dict = {}
     t0 = time.time()

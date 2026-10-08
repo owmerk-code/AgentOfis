@@ -1044,6 +1044,22 @@ class Lider:
                     (self.proje_id, guncel["id"])).fetchone()
             _isci = {"bilgi_onerisi": "onerdi", "hafiza_yok": "yok"}.get(
                 _io["tur"] if _io else "", "atladi")
+            # E3: lider HICBIR bilgi yazmadiysa iscinin onerisi KAYBOLMAZ --
+            # patrona kart olur (yazan patron).
+            if _isci == "onerdi" and not yazilan:
+                try:
+                    with self.db.baglanti() as _c:
+                        _og = _c.execute(
+                            "SELECT govde FROM olay WHERE proje_id = ? AND gorev_id = ? "
+                            "AND tur = 'bilgi_onerisi' ORDER BY rowid DESC LIMIT 1",
+                            (self.proje_id, guncel["id"])).fetchone()
+                    self.ofis.bellek.kapsam(guncel.get("kanat_id") or "").isci_onerileri(
+                        (_og["govde"] if _og else "").splitlines(),
+                        oneren=isci_ad or "isci", gorev_no=no)
+                except Exception as _exc:          # noqa: BLE001 -- kapanisi dusurmez, soylenir
+                    self.db.olay_yaz(self.proje_id, "uyari",
+                                     f"#{no} isci hafiza onerisi karta donusmedi: {_exc}",
+                                     ajan_ad=lider_ad, gorev_id=guncel["id"])
             self.db.olay_yaz(self.proje_id, "hafiza_adimi",
                              f"#{no}: {_durum}" + (f" ({', '.join(yazilan)})" if yazilan else "")
                              + f" | isci: {_isci}",

@@ -119,5 +119,24 @@ sina("hafiza_adimi: isci onerdi", "isci: onerdi" in "".join(ad["a"]), str(ad["a"
 sina("hafiza_adimi: isci yok dedi", "isci: yok" in "".join(ad["b"]), str(ad["b"]))
 sina("hafiza_adimi: isci atladi", "isci: atladi" in "".join(ad["c"]), str(ad["c"]))
 
+print("\n5. E3: lider yazmazsa iscinin onerisi patrona KART olur (kaybolmaz)")
+gh = is_kostur("onerili is", "Bitti.\nKANIT dosya: r.md -> yazildi\n"
+               "BILGI: kargo suresi -> 2 is gunu (magaza ayarlari)")
+ofis.lider._hukmu_uygula(gh["no"], "KARAR: kapat\nHAFIZA: yok", "demir", "cinar")
+_kart = [k for k in ofis.bellek.bekleyen_hafiza_onerileri() if k["konu"] == "kargo suresi"]
+sina("lider 'HAFIZA: yok' dedi ama oneri KART oldu (hafizaya yazilmadi)",
+     len(_kart) == 1 and _kart[0]["icerik"].startswith("2 is gunu") and _kart[0]["oneren"] == "cinar"
+     and f"#{gh['no']}" in _kart[0]["alinti"]
+     and not any(o["konu"] == "kargo suresi" for o in ofis.bellek.gecerli_olgular()), str(_kart))
+_r = ofis.bellek.hafiza_onerisi_cevapla(_kart[0]["id"], yaz=True) if _kart else {}
+sina("patron 'Yaz' deyince hafizada (patronun bilgisi olarak)",
+     any(o["konu"] == "kargo suresi" for o in ofis.bellek.kapsam(kn).gecerli_olgular()), str(_r))
+gi = is_kostur("onerili is 2", "Bitti.\nKANIT dosya: r.md -> yazildi\n"
+               "BILGI: iade suresi -> 14 gun (sozlesme)\nBILGI: renk kodu -> #111 (marka)")
+ofis.lider._hukmu_uygula(gi["no"], "KARAR: kapat\nBILGI: iade suresi -> 14 gun (sozlesme)",
+                         "demir", "cinar")
+sina("lider en az BIR bilgi yazdiysa kart ACILMAZ (lider karar vermis)",
+     not any(k["konu"] in ("iade suresi", "renk kodu") for k in ofis.bellek.bekleyen_hafiza_onerileri()))
+
 print(f"\n== sonuc: {GECEN} gecti, {KALAN} kaldi ==")
 sys.exit(1 if KALAN else 0)

@@ -176,6 +176,7 @@ class Sahne:
     def __init__(self, motor: Motor, model: str) -> None:
         self.motor, self.model = motor, model
         self.ana = Path(tempfile.mkdtemp(prefix=f"ofis-matris-{motor.ad}-"))
+        __import__("_claude_iz").kaydet(self.ana)   # E4: Claude oturum kaydi cikista silinir
         _kullaniciya_ac(self.ana)
         self.kok = self.ana / "calisma"
         self.kok.mkdir()

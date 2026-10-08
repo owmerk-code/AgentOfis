@@ -941,6 +941,14 @@ _KOD_SILME_KALIPLARI = (
     r"\bfrom\s+(?:os|shutil|pathlib)\s+import\b[^\n;]*\b(?:remove|unlink|rmdir|removedirs|rmtree)\b",
     r"['\"](?:os|shutil)['\"]\s*\)\s*\.\s*(?:remove|unlink|rmdir|removedirs|rmtree)\b",
     r"\bgetattr\s*\([^)]*['\"](?:remove|unlink|rmdir|removedirs|rmtree|rmsync|unlinksync|rmdirsync)['\"]",
+    # GIZLENMIS YAZIM (08.10.2026 OLCULDU): `getattr(os, 're'+'move')` ve
+    # sifreli metni cozup calistirmak (`exec(base64.b64decode(...))`,
+    # `exec(bytes.fromhex(...))`) SORULMADAN geciyordu. Olagan iste bu
+    # yazimlar neredeyse hic gecmez; gecerse ne yaptigi metinden okunamaz
+    # -> silme gibi SORULUR (kisit degil, soru).
+    r"\bgetattr\s*\(\s*(?:os|shutil|pathlib|path|fs)\s*,\s*[^),]*\+",
+    r"\b(?:exec|eval)\s*\([^\n]*\b(?:b64decode|b32decode|b85decode|a85decode|fromhex|"
+    r"unhexlify|decompress|rot_?13|codecs\.decode)\b",
     # Liste: yalniz komutun ILK ogesi (`['rm', ...]`) ya da kabuga verilen
     # listede silme komutu (`['cmd', '/c', 'del', x]`). Herhangi bir listede
     # "del" gecmesi (`['add', 'del']`) silme degildir.

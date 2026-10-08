@@ -69,6 +69,10 @@ SILME = {
     "subprocess liste ['rm',...]": ("Bash", 'python -c "import subprocess; subprocess.run([\'rm\',\'-rf\',\'x\'])"'),
     "subprocess liste ['cmd','/c','del']": ("Bash", 'python -c "import subprocess; subprocess.run([\'cmd\',\'/c\',\'del\',\'a\'])"'),
     "node getattr benzeri fs['rmSync']": ("Bash", 'node -e "const fs=require(\'fs\'); fs[\'rmSync\'](\'d\')"'),
+    # 08.10: gizlenmis yazim (once SORMADAN geciyordu)
+    "getattr(os, 're'+'move')": ("Bash", 'python -c "import os; f=getattr(os,\'re\'+\'move\'); f(\'a\')"'),
+    "exec(bytes.fromhex(...))": ("Bash", 'python -c "exec(bytes.fromhex(\'6f73\').decode())"'),
+    "exec(base64.b64decode(...))": ("Bash", 'python -c "import base64;exec(base64.b64decode(\'aW1w\'))"'),
     "codex kod kipi exec_command(python os.remove)":
         ("Bash", 'text(await tools.exec_command({cmd:"python -c \\"import os; os.remove(\'a\')\\""}));'),
 }
@@ -88,6 +92,9 @@ ZARARSIZ = {
     "listede 'del' kelimesi (komut degil)": 'python -c "print([\'add\', \'del\'])"',
     "os.path okumasi": 'python -c "import os; print(os.path.exists(\'a\'))"',
     "os.replace (yazma, silme degil)": 'python -c "import os; os.replace(\'b\', \'a\')"',
+    "getattr(os,'path') (sabit ad)": 'python -c "import os; print(getattr(os, \'path\'))"',
+    "base64 cozup YAZDIRMA (exec yok)": 'python -c "import base64; print(base64.b64decode(\'aGk=\'))"',
+    "exec(duz kod)": 'python -c "exec(\'print(1)\')"',
 }
 for ad, komut in ZARARSIZ.items():
     sina(f"{ad} -> SERBEST", karar("Bash", komut) is None, str(karar("Bash", komut)))

@@ -192,6 +192,37 @@ def _gonderildi_mi(t, dokum_bul, onceki: int, deneme: int = 4) -> bool:
     return bool(d is not None and d.exists() and d.stat().st_size > onceki)
 
 
+#: Terminal kipinin gecici dosyalari (kanca ayari, sahte dokum) bu kadar
+#: eskiyince silinir. Acik bir terminal en cok bir oturum surer; iki gun
+#: hicbir canli terminale denk gelmez.
+GECICI_OMUR_SN = 2 * 24 * 3600
+
+
+def gecici_klasor() -> Path:
+    """Terminal kipinin gecici klasoru: OFISIN EVINDE (`ev/tui`).
+
+    08.10.2026 OLCULDU: `%TEMP%/agentofis-tui`de 899 dosya birikmisti (194
+    gercek kanca ayari, 705 sinamanin sahte dokumu -- sinama evi geciciye
+    cevirir ama bu klasor evin disindaydi). Simdi evin altinda: sinamada
+    ev gecici oldugu icin sinamayla birlikte silinir; gercek evde her
+    acilista GECICI_OMUR_SN'den eski dosyalar supurulur.
+    """
+    from .. import yollar
+    k = Path(yollar.ofis_evi()) / "tui"
+    k.mkdir(parents=True, exist_ok=True)
+    sinir = time.time() - GECICI_OMUR_SN
+    try:
+        for f in k.iterdir():
+            try:
+                if f.is_file() and f.stat().st_mtime < sinir:
+                    f.unlink()
+            except OSError:
+                pass
+    except OSError:
+        pass
+    return k
+
+
 def kanca_komutu() -> str:
     """CLI'in calistiracagi kanca komutu -- yollar tirnakli (Windows'ta
     tirnaksiz yol bosluklu klasorde bozulur; olculdu)."""
@@ -390,6 +421,10 @@ class TuiMotoru(Motor):
 
         with _KILIT:
             kayit = _ACIK.get(oturum_id) if oturum_id else None
+            if kayit is not None:
+                # Tur terminali SAHIPLENDIGI ANDA kosuyor sayilir (asagidaki
+                # "ayni ajanin eski terminali" temizligine bkz.).
+                kayit["kosuyor"] = True
         if kayit and not kayit["terminal"].canli():
             with _KILIT:
                 _ACIK.pop(oturum_id, None)
@@ -406,8 +441,7 @@ class TuiMotoru(Motor):
                 yield MotorOlayi("bitti", "", {"basarili": False, "sebep": "kapi",
                                                "oturum_id": oturum_id})
                 return
-            gecici = Path(tempfile.gettempdir()) / "agentofis-tui"
-            gecici.mkdir(exist_ok=True)
+            gecici = gecici_klasor()
             plan = self.ic.tui_plani(
                 oturum_id=oturum_id, model=model, efor=efor, yazabilir=yazabilir,
                 ek_klasorler=ek_klasorler, mcp_yapilandirma=mcp_yapilandirma,
@@ -435,11 +469,19 @@ class TuiMotoru(Motor):
                     kapat(k)
             # Motorun sistem eki bayrakla verilemiyorsa (codex) ilk mesaja.
             metin = plan.get("ilk_on_ek", "") + metin
+            # ACILIRKEN DE KOSUYOR (08.10.2026, OLCULDU canli Brave): ayni
+            # liderin iki capraz incelemesi ayni saniyede basladi; isaret
+            # acilis bittikten SONRA konuyordu ve ikinci tur, acilmakta olan
+            # ilk terminali "kosmayan eski terminal" sanip KAPATTI -- ilk
+            # inceleme modelsiz dustu ("Terminal acilirken kapandi"), hukum
+            # alinamadi. Isaret kayitla birlikte konur.
             kayit = {"terminal": t, "plan": plan, "son": time.time(),
-                     "ajan": sahibi,
+                     "ajan": sahibi, "kosuyor": True,
                      "gorev": kimlik.get("OFIS_GOREV", ""), "ofset": 0}
             with _KILIT:
                 _ACIK[oturum_id] = kayit
+            if _tutucu is not None:
+                _tutucu["kayit"] = kayit
             yield MotorOlayi("basladi", "gercek terminal", {"oturum_id": oturum_id})
             # Acilis: guven sorusu + ekranin durulmasi.
             son_boy, durgun, bas = -1, 0.0, time.monotonic()

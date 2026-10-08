@@ -109,7 +109,7 @@ kanal.gonder("n1", "NOT: dosya adini degistir")
 ol, bit = kos("YAVAS is", oturum_id=oid, kanal=kanal)
 mesajlar = [o for o in ol if o.tur == "mesaj"]
 sina("mesaj olayi (kimlikli)", bool(mesajlar) and mesajlar[0].ek.get("kimlik") == "n1")
-dokum = Path(tempfile.gettempdir()) / "agentofis-tui"
+dokum = tui.gecici_klasor()
 satirlar = []
 for f in dokum.glob(f"sahte-{oid}.jsonl"):
     satirlar = [json.loads(x) for x in f.read_text(encoding="utf-8").splitlines()]
@@ -196,7 +196,7 @@ try:
         sina("kopru ekrani getirdi", ilk.get("tur") == "veri" and "sahte-cli" in ilk.get("govde", ""))
         ws.send_json({"tur": "girdi", "govde": chr(27) + "[200~PANELDEN YAZILDI" + chr(27) + "[201~" + chr(13)})
         time.sleep(3)
-    dk = Path(tempfile.gettempdir()) / "agentofis-tui" / f"sahte-{poid}.jsonl"
+    dk = tui.gecici_klasor() / f"sahte-{poid}.jsonl"
     sina("insanin yazdigi terminale ulasti",
          dk.exists() and "PANELDEN YAZILDI" in dk.read_text(encoding="utf-8"))
     with ist.websocket_connect("/ws/tui/olmayan") as ws:
@@ -477,6 +477,55 @@ sina("codex: role=user mesaji ULASTI, asistan sayilmaz",
               "content": [{"type": "output_text", "text": "NOT q"}]}}) == "")
 sina("iz bosluklari tekler (yapistirmada satir sonu degisebilir)",
      tui._iz("A  b\r\n c") == "A b c")
+
+print("\n-- ayni ajanin iki turu AYNI ANDA: acilan terminal kapatilmaz (08.10) --")
+import threading  # noqa: E402
+_paralel = {}
+
+
+def _ilk_tur():
+    _paralel["a"] = kos("YAVAS birinci is")
+
+
+_th = threading.Thread(target=_ilk_tur)
+_th.start()
+time.sleep(1.5)                       # birinci tur hala ACILISTA (en az 4 sn)
+_paralel["b"] = kos("ikinci is")
+_th.join(60)
+_ba, _bb = (_paralel.get("a") or ([], {}))[1], (_paralel.get("b") or ([], {}))[1]
+sina("acilistaki birinci tur ikincinin acilisinda KAPATILMADI, ikisi de basarili",
+     _ba.get("basarili") is True and _bb.get("basarili") is True,
+     f"a={str(_ba)[:160]} b={str(_bb)[:120]}")
+for _k in list(tui.acik_oturumlar()):
+    tui.kapat(_k["oturum_id"])
+
+print("\n-- gecici dosyalar %TEMP%'te birikmez (08.10) --")
+from ofis import yollar as _yol  # noqa: E402
+_gk = tui.gecici_klasor()
+sina("terminal gecici klasoru OFISIN EVINDE (sinamada gecici ev)",
+     Path(_gk).resolve().is_relative_to(_yol.ofis_evi()) and _gk.name == "tui", str(_gk))
+_eski = _gk / "kanca-eski.json"
+_yeni = _gk / "kanca-yeni.json"
+_eski.write_text("{}", encoding="utf-8")
+_yeni.write_text("{}", encoding="utf-8")
+_t = time.time() - tui.GECICI_OMUR_SN - 60
+os.utime(_eski, (_t, _t))
+tui.gecici_klasor()
+sina("iki gunden eski dosya supuruldu, yenisi (canli terminalin) kaldi",
+     not _eski.exists() and _yeni.exists())
+from ofis.motor.claude import _supur_eski_limit  # noqa: E402
+_lk = Path(tempfile.mkdtemp(prefix="ofis-sup-"))
+(_lk / "ofis-limit-eski").mkdir()
+(_lk / "ofis-limit-yeni").mkdir()
+(_lk / "baska-eski").mkdir()
+_t = time.time() - 7200
+for _ad in ("ofis-limit-eski", "baska-eski"):
+    os.utime(_lk / _ad, (_t, _t))
+_sil = _supur_eski_limit(_lk)
+sina("olcum ortasinda oldurulen panelin limit artigi sonraki olcumde silinir; "
+     "yenisi ve baska klasor kalir",
+     _sil == ["ofis-limit-eski"] and (_lk / "ofis-limit-yeni").exists()
+     and (_lk / "baska-eski").exists(), str(_sil))
 sina("butun terminaller kapandi", not tui.acik_oturumlar())
 print(f"\n== {GECEN} gecti, {KALAN} kaldi ==")
 sys.exit(1 if KALAN else 0)

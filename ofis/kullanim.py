@@ -284,7 +284,8 @@ def tazele(db, proje_id: str, *, fabrika=None, zorla: bool = False,
     codex'in 5 saatlik penceresi %100 doluyken ofis sabahki yuzdeyi
     gosteriyordu ve onceden gecis o hesaba is vermeye devam ederdi.
 
-    * Okuma kota HARCAMAZ (claude `get_usage`, codex `account/rateLimits`).
+    * Okuma kota HARCAMAZ (claude `get_usage`, codex `account/rateLimits`,
+      gemini `agy -p /usage` -- 08.10.2026).
     * Seyreltilir (`TAZELEME_SN`); `zorla` insan istediginde.
     * Okuyamayan motor (`limit_oku` -> None) UYDURULMAZ: eski olcum yasiyla
       kalir, bu yazilir.

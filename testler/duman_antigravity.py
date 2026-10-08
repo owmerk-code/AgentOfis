@@ -249,5 +249,58 @@ finally:
 sina("kapi calismiyorsa tur BASLAMAZ (agy hic kosmaz)",
      [o.tur for o in ol] == ["hata", "bitti"] and ol[-1].ek["sebep"] == "kapi", str([o.tur for o in ol]))
 
+
+print("\n-- E2: Gemini kota yuzdesi (agy -p /usage, model cagrilmaz) --")
+_kd = Path(tempfile.mkdtemp(prefix="ofis-agy-kota-sin-"))
+_kayit = _kd / "argv.jsonl"
+_sahte = _kd / "agy_kota.py"
+_sahte.write_text(
+    "import json, os, sys\n"
+    "open(os.environ['KOTA_KAYIT'], 'a').write(json.dumps(sys.argv[1:]) + '\\n')\n"
+    "if sys.argv[1:2] == ['changelog']:\n"
+    "    print(os.environ.get('KOTA_SURUM', '1.3.1') + ':')\n"
+    "    print('- notlar')\n"
+    "    sys.exit(0)\n"
+    "print(open(os.environ['KOTA_CEVAP'], encoding='utf-8').read())\n", encoding="utf-8")
+_cevap = _kd / "cevap.json"
+_GERCEK = {"conversation_id": "", "status": "SUCCESS", "num_turns": 0,
+           "usage": {"total_tokens": 0},
+           "command": {"name": "usage", "data": {"groups": [
+               {"name": "Gemini Models", "buckets": [
+                   {"id": "gemini-weekly", "window": "weekly", "remaining_fraction": 0.846,
+                    "reset_time": "2026-10-10T21:29:26Z"},
+                   {"id": "gemini-5h", "window": "5h", "remaining_fraction": 0.999,
+                    "reset_time": "2026-10-08T19:58:40Z"}]},
+               {"name": "Claude and GPT models", "buckets": [
+                   {"id": "3p-weekly", "window": "weekly", "remaining_fraction": 0.1,
+                    "reset_time": "2026-10-15T14:59:16Z"}]}]}}}
+os.environ["KOTA_KAYIT"] = str(_kayit)
+os.environ["KOTA_CEVAP"] = str(_cevap)
+_km = AntigravityMotoru(calistirilabilir=[sys.executable, str(_sahte)], ev_koku=str(_kd / "ev"))
+
+
+def _kota(cevap, surum="1.3.1"):
+    _cevap.write_text(json.dumps(cevap), encoding="utf-8")
+    os.environ["KOTA_SURUM"] = surum
+    _kayit.write_text("", encoding="utf-8")
+    lp = _km.limit_oku()
+    return lp, [json.loads(x) for x in _kayit.read_text(encoding="utf-8").splitlines() if x]
+
+
+_lp, _cagri = _kota(_GERCEK)
+_p = (_lp or {}).get("pencereler") or {}
+sina("haftalik ve 5 saatlik pencere (kullanim = 1 - kalan), YALNIZ Gemini grubu",
+     set(_p) == {"7g", "5s"} and abs(_p["7g"]["kullanim"] - 0.154) < 1e-6
+     and _p["5s"]["yenilenme"] == 1791489520, str(_lp))
+_usage = [c for c in _cagri if "-p" in c]
+sina("salt okunur kipte, bos klasorde sorulur (--mode plan)",
+     len(_usage) == 1 and _usage[0][:2] == ["-p", "/usage"] and "plan" in _usage[0], str(_cagri))
+_lp, _ = _kota(dict(_GERCEK, num_turns=1))
+sina("tur kostuysa (komut taninmadi) olcum YOK SAYILIR", _lp is None, str(_lp))
+_lp, _ = _kota({"status": "SUCCESS", "num_turns": 0, "response": "merhaba"})
+sina("komutun kendi cevabi degilse olcum yok", _lp is None)
+_lp, _cagri = _kota(_GERCEK, surum="1.2.14")
+sina("eski agy (1.2.15 oncesi): /usage HIC SORULMAZ (modele soru olarak giderdi)",
+     _lp is None and not any("-p" in c for c in _cagri), str(_cagri))
 print(f"\n{GECEN} gecti, {KALAN} kaldi")
 sys.exit(1 if KALAN else 0)

@@ -47,6 +47,7 @@ def dogrudan(no: str, model: str) -> dict:
     """Ayni isi dogrudan Claude'a verir (bos gecici klasor, ayni fikstur)."""
     tanim = G.ISLER[no]
     ana = Path(tempfile.mkdtemp(prefix=f"ofis-carpan-{no}-"))
+    __import__("_claude_iz").kaydet(ana)   # E4: Claude oturum kaydi cikista silinir
     kok = ana / "calisma"
     kok.mkdir()
     bag: dict = {}

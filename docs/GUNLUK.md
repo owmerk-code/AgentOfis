@@ -15351,3 +15351,54 @@ yükseltilmiş indirme SORULMAZ (`riskli.KREDISIZ_YUKSELTME`), 4K sorulur;
 `flow-video` teslimi 1080p kliplerle, ilk indirmede bakiye önce/sonra okunur
 (Flow bedeli değişirse durur). Son video 1080p kliplerle yeniden kurgulandı
 (0 kredi; etiket ve yapraklar gözle görülür keskin) → teslim klasörüne ek.
+
+## 08.10.2026 — E AŞAMASI: SAĞLAMLIK (E1–E4 + üç kök neden)
+
+**E1 — kabinin "ilk açılış ölümü".** `ev/kabin.log`'da 15 açılış, 8'i ölü;
+hepsi aynı anda başka bir kabin aynı profili tutarken (07:11 ve 17:34;
+ikincisi gösteri panelinin kabininin profili kilitlemesiydi). Geçici
+profilde 20 art arda aç/kapa: **20/20**, ~2,5 sn. Aynı profil ikinci kez:
+Chrome çıkış 21 ("profil başka Chrome'da açık"), ofis 3 sn bekleyip bir
+kez yeniden dener — kayıttaki "iki satır, 3 sn arayla" deseni birebir.
+Sebep artık kayda yazılır (`--- kabin kapandi cikis=21`). Kalıcı çare
+dünkü Job Object (panel ölünce kabin de kapanır). Sınama
+`duman_kabin_kafes.py` (gerçek Chrome).
+
+**E2 — Gemini kota yüzdesi.** `agy --help`'te kota yok; programın içinde
+`retrieveUserQuota` ve değişiklik notunda "`-p "/usage"` print kipinde
+modelsiz cevaplanır (1.2.15)". İlk ölçüm modele gitti (~12 bin jeton) —
+sebep Git Bash'in `/usage`'ı dosya yoluna çevirmesiydi (MSYS). Doğru
+çağrıyla: 3,1–3,5 sn, `num_turns` 0, jeton 0; boş evde de çalışıyor
+(giriş anahtarlıkta). Gemini grubu: haftalık %15,4 dolu, 5 saatlik %0,1.
+Koruma: sürüm `agy changelog`un ilk satırı (0,3 sn), 1.2.15 altıysa hiç
+sorulmaz; `--mode plan` (tur başlasa bile yazamaz); cevap komutun kendi
+cevabı değilse ölçüm yok sayılır. Var olmayan model adıyla koruma
+denendi, işe yaramadı (komuttan önce reddediyor). İki koruma da koparılınca
+sınama ateş ediyor.
+
+**Codex çapraz incelemesinin sebepsiz düşmesi — KÖK NEDEN.** Brave 2'de
+lider (arda) #8 ve #9'u aynı saniyede iki Codex terminalinde incelemeye
+aldı; #9 19 sn sonra modelsiz düştü. Terminal kaydı "koşuyor" işaretini
+açılış BİTTİKTEN sonra alıyordu; ikinci tur "aynı ajanın koşmayan eski
+terminali"ni kapatırken açılmakta olan ilkini kapattı. Düzeltme: tur
+terminali sahiplendiği an koşuyor. Sınama aynı ajanın iki turunu aynı anda
+açar; düzeltmesiz kodda hatayı yeniden üretti, düzeltmeyle geçti.
+
+**`%TEMP%` artıkları.** `agentofis-tui`de 899 dosya (705 sınama dökümü, 194
+kanca ayarı) → terminal geçicileri ofisin evinde (`ev/tui`; sınamada
+geçici ev), 2 günden eskiler süpürülür. Boş `ofis-limit-*`: panel kota
+ölçümü ortasında öldürülünce `finally` koşmuyor → sonraki ölçüm saatten
+eski artığı siler.
+
+**Kapı: gizlenmiş silme.** CLAUDE.md'deki "kapı satır içi Python silmesini
+görmüyor" notu ESKİMİŞTİ (01.10'dan beri görüyor; ölçüldü). Geçen iki yazım:
+`getattr(os, 're'+'move')` ve çözülmüş metni `exec` etmek
+(`b64decode`/`fromhex`…) → silme gibi SORULUR; `getattr(os,'path')`,
+base64 çözüp yazdırmak, düz `exec` serbest.
+
+**E3** (lider bilgi yazmadıysa işçinin önerisi patrona kart) ve **E4**
+(gerçek motor betiklerinin Claude oturum kayıtları çıkışta silinir;
+birikmiş 1.365 kayıt temizlendi) bitti.
+
+CLAUDE.md 42 → 38,3 bin harf (organizasyon ve terminal satırları kısaldı;
+ayrıntı bu günlükte, 05.10 ve 08.10).

@@ -602,6 +602,50 @@ class Bellek:
             acilan.append({"id": oid, "konu": k, "icerik": icerik, "alinti": alinti})
         return acilan
 
+    def isci_onerileri(self, satirlar, *, oneren: str, gorev_no) -> list:
+        """ISCININ hafiza onerisi patrona KART olur (E3, 06.10 bulgusu #7).
+
+        Isci bitirirken `BILGI: konu -> deger (nereden)` yazar; lider kanitla
+        dogrulayip kendi satiriyla yazmazsa ("HAFIZA: yok" dese bile) oneri
+        KAYBOLUYORDU. Simdi lider hicbir bilgi yazmadiysa kart acilir; yazan
+        yine PATRONDUR ("Yaz" / "Yanlis"). Kaynak alintisi patronun sozu
+        degil, isin numarasidir (karta yazilir).
+        """
+        acilan = []
+        for s in list(satirlar or [])[:self.AZAMI_SOHBET_ONERISI]:
+            if "->" not in str(s):
+                continue
+            konu, icerik = (x.strip() for x in str(s).split("->", 1))
+            konu = " ".join(konu.split())
+            icerik = " ".join(icerik.split())
+            if not konu or not icerik or len(konu) > AZAMI_KONU_HARF \
+                    or len(icerik) > AZAMI_BILGI_HARF:
+                continue
+            try:
+                self.koruma_kapisi(oneren, "isci hafiza onerisi", f"{konu}: {icerik}")
+            except BellekHatasi:
+                continue
+            k = self._konu_bul(konu) or konu
+            mevcut = self.gecerli_olgular([k])
+            if mevcut and " ".join(mevcut[0]["icerik"].split()) == icerik:
+                continue
+            alinti = f"#{gorev_no} isinde {oneren} onerdi; lider yazmadi"
+            with self.db.baglanti() as conn:
+                if conn.execute(
+                        "SELECT 1 FROM hafiza_onerisi WHERE proje_id = ? AND durum = 'bekliyor' "
+                        "AND konu = ? AND icerik = ? AND kanat_id = ?",
+                        (self.proje_id, k, icerik, self._yazim())).fetchone():
+                    continue
+                oid = uuid.uuid4().hex
+                conn.execute(
+                    "INSERT INTO hafiza_onerisi (id, proje_id, konu, icerik, alinti, oneren, "
+                    "durum, olusturuldu, kanat_id) VALUES (?,?,?,?,?,?,'bekliyor',?,?)",
+                    (oid, self.proje_id, k, icerik, alinti, oneren, simdi(), self._yazim()))
+            self.db.olay_yaz(self.proje_id, "hafiza_onerisi",
+                             f"{k} -> {icerik} ({alinti})", ajan_ad=oneren)
+            acilan.append({"id": oid, "konu": k, "icerik": icerik})
+        return acilan
+
     def bekleyen_hafiza_onerileri(self) -> list:
         with self.db.baglanti() as conn:
             rows = conn.execute(

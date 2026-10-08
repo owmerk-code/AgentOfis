@@ -64,7 +64,7 @@ from pathlib import Path
 from typing import Iterator
 
 from .tip import (dokum_ekle, ortam_hazirla, Motor, MotorHatasi, MotorOlayi,
-                  MotorYokHatasi, SurecKafesi)
+                  MotorYokHatasi, SurecKafesi, limit_penceresi)
 
 _PENCERE_YOK = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
 _SON = object()
@@ -242,6 +242,104 @@ class AntigravityMotoru(Motor):
         except (OSError, ValueError):
             return {}
         return {"eposta": str(d.get("active") or ""), "plan": ""} if isinstance(d, dict) else {}
+
+    # -- kota (E2, 08.10.2026) -------------------------------------------
+
+    #: `/usage` print kipinde 1.2.15'ten beri MODELSIZ cevaplanir (agy'nin
+    #: kendi degisiklik notu). Daha eski surumde ayni komut MODELE soru
+    #: olarak gider -- OLCULDU: bir tur, ~12 bin jeton. Surum bilinmezse
+    #: ya da eskiyse hic sorulmaz.
+    USAGE_EN_AZ_SURUM = (1, 2, 15)
+    #: `/usage` penceresi -> ortak ad. Yalniz "Gemini" grubu okunur:
+    #: Antigravity'nin Claude/GPT-OSS grubu ofiste kullanilmaz (05.10).
+    LIMIT_ADLARI = {"5h": "5s", "weekly": "7g"}
+
+    def surum(self) -> tuple | None:
+        """Kurulu agy'nin surumu: `agy changelog`un ILK satiri (not ikili
+        dosyanin icinde gelir, ag istemez; olculdu 0,3 sn)."""
+        try:
+            p = subprocess.run(self._onek() + ["changelog"], capture_output=True, text=True,
+                               encoding="utf-8", errors="replace", timeout=20,
+                               stdin=subprocess.DEVNULL, creationflags=_PENCERE_YOK)
+        except (OSError, subprocess.TimeoutExpired):
+            return None
+        import re
+        m = re.match(r"\s*(\d+)\.(\d+)\.(\d+)\s*:", p.stdout or "")
+        return tuple(int(x) for x in m.groups()) if m else None
+
+    def limit_oku(self, *, ek_ortam: dict = None) -> dict | None:
+        """`agy -p /usage --output-format json` -- MODEL CAGRILMAZ.
+
+        OLCULDU (08.10.2026, agy 1.3.1, bos gecici klasor ve BOS ev): ~3,5 sn,
+        `num_turns` 0, jeton 0; Gemini grubunun haftalik ve 5 saatlik kalan
+        orani + yenilenme saati (Antigravity'nin kendi `/usage` ekraniyla
+        ayni). Giris sistem anahtarliginda: hesap duzeyinde olcum, ajan
+        evinden bagimsiz. Ofisin ayri `_kota` evinde, bos gecici klasorde,
+        salt okunur kipte (`--mode plan`) kosar: surum korumasi yanilsa bile
+        tur bir sey yazamaz. Cevap komutun KENDI cevabi degilse (tur
+        kostuysa) olcum yok sayilir -- uydurulmaz.
+        """
+        if not self.musait_mi():
+            return None
+        s = self.surum()
+        if not s or s < self.USAGE_EN_AZ_SURUM:
+            return None
+        import tempfile
+        ev = self.ev("_kota")
+        ev.mkdir(parents=True, exist_ok=True)
+        ortam = ortam_hazirla(os.environ, ek={"USERPROFILE": str(ev), "HOME": str(ev),
+                                              **_appdata_ortami(ev), **(ek_ortam or {})},
+                              izinli=tuple(ek_ortam or ()))
+        dizin = tempfile.mkdtemp(prefix="ofis-agy-kota-")
+        try:
+            p = subprocess.run(self._onek() + ["-p", "/usage", "--output-format", "json",
+                                               "--mode", "plan", "--print-timeout", "30s"],
+                               cwd=dizin, env=ortam, capture_output=True, text=True,
+                               encoding="utf-8", errors="replace", timeout=45,
+                               stdin=subprocess.DEVNULL, creationflags=_PENCERE_YOK)
+            cikti = p.stdout or ""
+        except (OSError, subprocess.TimeoutExpired):
+            return None
+        finally:
+            for _ in range(10):
+                shutil.rmtree(dizin, ignore_errors=True)
+                if not os.path.exists(dizin):
+                    break
+                time.sleep(0.2)
+        return self.usage_pencereleri(cikti)
+
+    @classmethod
+    def usage_pencereleri(cls, cikti: str) -> dict | None:
+        """`/usage` JSON cevabi -> ortak bicim (`kullanim` = 1 - kalan)."""
+        from datetime import datetime
+        d = None
+        for satir in reversed(str(cikti or "").splitlines()):
+            satir = satir.strip()
+            if satir.startswith("{"):
+                try:
+                    d = json.loads(satir)
+                    break
+                except ValueError:
+                    continue
+        if not isinstance(d, dict) or d.get("num_turns") not in (0, None) \
+                or (d.get("command") or {}).get("name") != "usage":
+            return None
+        pencereler = {}
+        for g in ((d["command"].get("data") or {}).get("groups") or []):
+            if not isinstance(g, dict) or not str(g.get("name") or "").lower().startswith("gemini"):
+                continue
+            for b in g.get("buckets") or []:
+                ad = cls.LIMIT_ADLARI.get((b or {}).get("window"))
+                kalan = (b or {}).get("remaining_fraction")
+                if not ad or not isinstance(kalan, (int, float)) or b.get("disabled"):
+                    continue
+                try:
+                    yen = int(datetime.fromisoformat(
+                        str(b["reset_time"]).replace("Z", "+00:00")).timestamp())
+                except (KeyError, TypeError, ValueError):
+                    continue
+                pencereler[ad] = {"kullanim": max(0.0, 1.0 - float(kalan)), "yenilenme": yen}
+        return limit_penceresi(pencereler, kaynak="agy /usage (tur yok)")
 
     def ev(self, ajan_ad: str) -> Path:
         """Ajanin AYRI evi (USERPROFILE): ayarlar, konusmalar, kanca, MCP."""

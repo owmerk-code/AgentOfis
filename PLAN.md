@@ -43,10 +43,10 @@ başlar.
 | **D — Bilgisayar** | | |
 | D1 | Bilgisayar kullanımı: fare/klavye ile masaüstü uygulaması; her riskli adım sorulur (41-liste #29, E47) | YOK (kapıda "masaüstü" sınıfı var, yetenek yok) |
 | **E — Kapanış ve sağlamlık** | | |
-| E1 | Kabinin ilk açılış ölümü: 20 açılışta tekrar etmediği ölçülecek (E12) | açık |
-| E2 | Gemini kota yüzdesi (`limit_oku` yok); Gemini gerçek terminal penceresi (isteğe bağlı) | YOK |
-| E3 | Düşen hafıza önerisi: işçinin önerisi lider "HAFIZA: yok" deyince kayboluyor → patrona kart (06.10 bulgu #7) | YOK |
-| E4 | Ajan koşularının Claude Code oturum çöpü: `~/.claude/projects`'te 1.365 geçici klasör kaydı (~220 MB) | temizlik + kalıcı çözüm |
+| E1 | Kabinin ilk açılış ölümü: 20 açılışta tekrar etmediği ölçülecek (E12) | BİTTİ 08.10: 20/20 temiz açılış; kayıttaki 8 ölümün hepsi profil başka kabinde açıktı (çıkış 21; biri gösteri kabininin kilidi → Job Object); kayıt artık çıkış kodunu yazar |
+| E2 | Gemini kota yüzdesi (`limit_oku` yok); Gemini gerçek terminal penceresi (isteğe bağlı) | BİTTİ 08.10: `agy -p /usage` modelsiz (3 sn, 0 jeton), haftalık + 5 saatlik; sürüm koruması (eski agy'de modele soru olurdu); terminal 08.10'da yapılmıştı |
+| E3 | Düşen hafıza önerisi: işçinin önerisi lider "HAFIZA: yok" deyince kayboluyor → patrona kart (06.10 bulgu #7) | BİTTİ 08.10: lider hiç bilgi yazmadıysa öneri kart olur, yazan patron (`bellek.isci_onerileri`) |
+| E4 | Ajan koşularının Claude Code oturum çöpü: `~/.claude/projects`'te 1.365 geçici klasör kaydı (~220 MB) | BİTTİ 08.10: birikmiş silindi; gerçek motor betikleri `_claude_iz.kaydet` ile kendi kayıtlarını çıkışta siler |
 | E5 | Eski eksik listesinin (E01–E90) her maddesi kanıtla kapatılır (K23 / 41-liste #41) | açık |
 | **F — Büyük işlerle uçtan uca test** (patron bu kez dışarıda tutmadı) | | |
 | F1 | Her alandan gerçek iş (yazılım, içerik, araştırma, görsel/video, tarayıcı işi) iki motorda; "her işe hazır" ancak bundan sonra | en son |

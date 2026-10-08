@@ -470,6 +470,29 @@ def _kip(izin_araci: str) -> list:
     return [] if izin_araci else ["--permission-mode", "acceptEdits"]
 
 
+def _supur_eski_limit(kok, *, omur_sn: float = 3600) -> list:
+    """`ofis-limit-*` klasorlerinden `omur_sn`'den eski olanlari siler.
+
+    Olcum ~1,3 sn surer; saatten eski klasor hicbir canli olcume ait
+    olamaz. Silinen adlar doner (sinama icin).
+    """
+    import shutil as _sh
+    silinen = []
+    sinir = time.time() - omur_sn
+    try:
+        for p in Path(kok).glob("ofis-limit-*"):
+            try:
+                if p.is_dir() and p.stat().st_mtime < sinir:
+                    _sh.rmtree(p, ignore_errors=True)
+                    if not p.exists():
+                        silinen.append(p.name)
+            except OSError:
+                pass
+    except OSError:
+        pass
+    return silinen
+
+
 class ClaudeMotoru(Motor):
     """`claude` CLI'ini tur basina bir surec olarak kosturur."""
 
@@ -613,6 +636,10 @@ class ClaudeMotoru(Motor):
         # %TEMP%'te bos `ofis-limit-*` kaliyordu. Simdi: surec biter,
         # klasor birkac denemeyle silinir, silinemese de olcum kaybolmaz.
         cevap = None
+        # Panel olcum ortasinda OLDURULURSE `finally` kosmaz ve klasor kalir
+        # (08.10.2026 olculdu: gosteri paneli yeniden baslatilinca bos
+        # `ofis-limit-*`). Bir sonraki olcum saatten eski artiklari supurur.
+        _supur_eski_limit(tempfile.gettempdir())
         dizin = tempfile.mkdtemp(prefix="ofis-limit-")
         try:
             if True:
