@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Zorluk -> model eslemesi ve KAPI MODELI yukseltmesi.
+"""Zorluk -> model eslemesi; kapi modeli KENDILIGINDEN devreye GIRMEZ (08.10).
 
 Iki ayri soru sinaniyor:
 
@@ -28,7 +28,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from ofis import Ofis, Veritabani, Koltuk, Lider
 from ofis import roller as R
-from ofis.lider import YUKSELTME_ESIGI
+RET_IKI = 2
 from ofis.motor.sahte import SahteMotor
 from ofis.tahta import TahtaHatasi
 
@@ -195,8 +195,7 @@ sina("sahte -> YOK", R.kapi_modeli("sahte") is None)
 sina("karar adaptorun bayragindan okunuyor",
      R.KAPI_MODELLERI["astra"]["motor"] == "codex")
 
-print("\n5. yukseltme -- ikinci retten sonra")
-sina("esik 2", YUKSELTME_ESIGI == 2)
+print("\n5. iki retten sonra inceleme YINE liderin modeliyle (08.10, patron)")
 sina("fable HICBIR kademede yok",
      not any("fable" in (m or "")
              for d in R.KADEME_MODEL.values() for m in d.values()))
@@ -210,7 +209,7 @@ gy = ofis.tahta.gorev_ac("Takilan is", neden="s", ana_hedef="s",
 ofis.tahta.sahiplen(gy["no"], "cinar", gy["revizyon"])
 ofis.tahta.kanit_ekle(gy["no"], "terminal", "pytest", "2 passed", "cinar")
 ofis.tahta.incelemeye_ver(gy["no"], ofis.tahta.gorev(gy["no"])["revizyon"])
-for _ in range(YUKSELTME_ESIGI):
+for _ in range(RET_IKI):
     guncel = ofis.tahta.gorev(gy["no"])
     if guncel["durum"] != "inceleme":
         ofis.tahta.incelemeye_ver(gy["no"], guncel["revizyon"])
@@ -218,7 +217,7 @@ for _ in range(YUKSELTME_ESIGI):
     ofis.tahta.geri_gonder(gy["no"], guncel["revizyon"],
                            gerekce="eksik", gonderen="ceren")
 sina("ret sayaci calisiyor",
-     ofis.tahta.ret_sayisi(gy["no"]) == YUKSELTME_ESIGI,
+     ofis.tahta.ret_sayisi(gy["no"]) == RET_IKI,
      str(ofis.tahta.ret_sayisi(gy["no"])))
 
 guncel = ofis.tahta.gorev(gy["no"])
@@ -230,19 +229,17 @@ try:
     Lider(ofis, motor_fabrikasi=_f).incele(gy["no"], lider_ad="ceren")
 except Exception:
     pass                                   # hukum onemli degil, MODEL onemli
-sina("inceleme KAPI MODELINE yukseldi",
-     _Kaydeden.son.get("model") == "fable", str(_Kaydeden.son.get("model")))
-# TAVANSIZ kosmaz: kullanicinin olcumu "tek promptta 5 saatlik limit".
-sina("yukseltilen tur TAVANLI kostu",
-     bool(_Kaydeden.son.get("butce_usd")), str(_Kaydeden.son.get("butce_usd")))
-
+# Patron: "fable ve astra ben istersem eklerim" -- ret sayisi modeli DEGISTIRMEZ.
+sina("iki retten sonra inceleme LIDERIN modeliyle (fable'a CIKILMADI)",
+     _Kaydeden.son.get("model") == "sonnet", str(_Kaydeden.son.get("model")))
+sina("inceleme TAVANSIZ (arka plana dusmez, gercek terminalde kosabilir)",
+     not _Kaydeden.son.get("butce_usd"), str(_Kaydeden.son.get("butce_usd")))
 with ofis.db.baglanti() as c:
     y = [dict(r) for r in c.execute(
         "SELECT * FROM olay WHERE tur = 'yukseltme'")]
-sina("yukseltme GORUNUR bir olay", len(y) == 1)
-sina("olay tavani da soyluyor", bool(y) and "$" in y[0]["govde"])
+sina("'yukseltme' olayi YOK", not y, str(y))
 
-print("\n6. tavan uygulanamayan motorda yukseltme YAPILMIYOR")
+print("\n6. codex liderde de inceleme liderin modeliyle")
 # codex liderde astra'ya cikmak, tavansiz pahali model demekti.
 ofis.kadro.ise_al("kaan", "lider", lider_mi=True, motor="codex",
                   model="gpt-5.6-sol", klasor=str(kok / "w"),
@@ -252,7 +249,7 @@ g6 = ofis.tahta.gorev_ac("Codex takilan", neden="s", ana_hedef="s",
 ofis.tahta.sahiplen(g6["no"], "cinar", g6["revizyon"])
 ofis.tahta.kanit_ekle(g6["no"], "terminal", "pytest", "ok", "cinar")
 ofis.tahta.incelemeye_ver(g6["no"], ofis.tahta.gorev(g6["no"])["revizyon"])
-for _ in range(YUKSELTME_ESIGI):
+for _ in range(RET_IKI):
     gg = ofis.tahta.gorev(g6["no"])
     if gg["durum"] != "inceleme":
         ofis.tahta.incelemeye_ver(g6["no"], gg["revizyon"])
@@ -268,14 +265,12 @@ try:
     Lider(ofis, motor_fabrikasi=_f).incele(g6["no"], lider_ad="kaan")
 except Exception:
     pass
-sina("codex liderde ASTRA'YA CIKILMADI",
-     _Kaydeden.son.get("model") != "astra", str(_Kaydeden.son.get("model")))
-# Atlanan yukseltme de GORUNUR olmali: gorunmeyen bosluk, "neden hala
-# ayni hukum geliyor" sorusunu cevapsiz birakir.
+sina("codex liderde ASTRA'YA CIKILMADI, liderin modeli kaldi",
+     _Kaydeden.son.get("model") == "gpt-5.6-sol", str(_Kaydeden.son.get("model")))
 with ofis.db.baglanti() as c:
     u = [dict(r) for r in c.execute(
         "SELECT * FROM olay WHERE tur='uyari' AND govde LIKE '%kapi modeli yok%'")]
-sina("atlanan yukseltme UYARI olarak gorunuyor", len(u) >= 1)
+sina("'kapi modeli yok' gurultusu YOK (yukseltme hic denenmiyor)", not u)
 
 # --------------------------------------------- 7. FABLE KORUMASI
 print("\n7. fable korumasi -- saglayicinin KENDI yuzdesiyle")
@@ -346,38 +341,6 @@ sina("yenilenmis pencere kapatmiyor",
      butce.kapi_acik_mi(ofis.db, ofis.proje_id)["acik"])
 _tur_yaz({"7g_kapi": {"kullanim": 0.85, "yenilenme": _GELECEK}},
          model="claude-fable-5-1")
-
-# EN ONEMLI: pay doluyken IS DURMAZ, yalnizca pahali basamak kapanir.
-g7 = ofis.tahta.gorev_ac("Tavan doluyken", neden="s", ana_hedef="s",
-                         kabul_olcutu="y", sahip="cinar")
-ofis.tahta.sahiplen(g7["no"], "cinar", g7["revizyon"])
-ofis.tahta.kanit_ekle(g7["no"], "terminal", "pytest", "ok", "cinar")
-ofis.tahta.incelemeye_ver(g7["no"], ofis.tahta.gorev(g7["no"])["revizyon"])
-for _ in range(YUKSELTME_ESIGI):
-    gg = ofis.tahta.gorev(g7["no"])
-    if gg["durum"] != "inceleme":
-        ofis.tahta.incelemeye_ver(g7["no"], gg["revizyon"])
-        gg = ofis.tahta.gorev(g7["no"])
-    ofis.tahta.geri_gonder(g7["no"], gg["revizyon"], gerekce="eksik",
-                           gonderen="ceren")
-gg = ofis.tahta.gorev(g7["no"])
-if gg["durum"] != "inceleme":
-    ofis.tahta.incelemeye_ver(g7["no"], gg["revizyon"])
-
-_Kaydeden.son = {}
-try:
-    Lider(ofis, motor_fabrikasi=_f).incele(g7["no"], lider_ad="ceren")
-except Exception:
-    pass
-sina("pay doluyken FABLE'A CIKILMADI",
-     _Kaydeden.son.get("model") != "fable", str(_Kaydeden.son.get("model")))
-sina("inceleme yine de KOSTU (is durmadi)",
-     _Kaydeden.son.get("model") == "sonnet", str(_Kaydeden.son.get("model")))
-with ofis.db.baglanti() as c:
-    at = [dict(r) for r in c.execute(
-        "SELECT * FROM olay WHERE tur='uyari' "
-        "AND govde LIKE '%yukseltme ATLANDI%'")]
-sina("atlanan yukseltme GORUNUR", len(at) >= 1)
 
 bulgular = ofis.saglik.denetle()["bulgular"]
 sina("saglik Fable payini raporluyor",

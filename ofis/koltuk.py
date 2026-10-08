@@ -1951,8 +1951,7 @@ class Koltuk:
 
     #: Kacinci tavan kesintisinden sonra insana soylenir.
     #: 1 olsaydi her sıradan kesinti gurultu olurdu; 3 olsaydi bir tur
-    #: daha bosa giderdi. Ikinci kesinti bir DESENDIR -- ret sayacinin
-    #: esigiyle (`YUKSELTME_ESIGI = 2`) ayni mantik.
+    #: daha bosa giderdi. Ikinci kesinti bir DESENDIR.
     TAVAN_UYARI_ESIGI = 2
 
     def _tavan_uyarisi(self, no: int, gorev: dict, butce_usd):

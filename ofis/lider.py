@@ -40,7 +40,7 @@ import json
 import re
 import sqlite3
 
-from . import butce, degisim, kullanim, plan, roller, tarayici, tavan
+from . import degisim, kullanim, roller, tarayici, tavan
 from .motor import motor_ac, MotorHatasi
 from .postane import NOT_KURALI, gorev_notlari
 from .zincir import LIDER_ZINCIRI, basamaklari_kur, limitte_devret, lider_devri, tur_butcesi, ZincirBitti
@@ -133,14 +133,6 @@ BILGI_DESENI = re.compile(r"^\s*BILGI\s*:\s*(.+?)\s*->\s*(.+)$",
 #: Bir incelemeden en fazla kac bilgi yazilir -- hafiza bir cop kutusu
 #: degil; lider her seyi yazmaya kalkarsa brifing gurultuyle dolar.
 AZAMI_INCELEME_BILGI = 5
-
-
-#: Kacinci retten sonra inceleme KAPI MODELINE yukselir. 2 secildi:
-#: birinci ret siradan (isci eksik birakmistir), ikincisi bir DESENDIR
-#: -- ya isci anlamiyor ya olcut belirsiz. Ikisi de daha iyi bir goz
-#: ister. 1 olsaydi her siradan ret pahaliya kosardi; 3 olsaydi iki tur
-#: daha bosa giderdi.
-YUKSELTME_ESIGI = 2
 
 
 class LiderHatasi(RuntimeError):
@@ -755,76 +747,20 @@ class Lider:
         isci_ad = gorev["sahip"]
         isci = self.ofis.kadro.ajan(isci_ad) if isci_ad else None
 
-        # KAPI MODELINE YUKSELTME -- is ikinci kez geri dondugunde.
-        #
-        # Nobet zincirinin TERSI: orada limit gelince daha ucuza inilir,
-        # burada is takildiginda daha guclusune cikilir. Ayni ucuz
-        # modeli ucuncu kez kosturmak jeton yakar ve ayni hukmu uretir.
-        #
-        # UC KURAL, ucu de olculmus bir sebebe dayaniyor:
-        #
-        # 1. TAVAN ZORUNLU. Kapi modeli (fable) pahali; kullanicinin
-        #    olcumu *"tek promptta 5 saatlik limiti bitiriyordu."*
-        #    Tavan verilmediyse rolun alt sinirina duseriz -- tavansiz
-        #    kosmayiz.
-        # 2. TAVAN UYGULANAMIYORSA YUKSELTME YAPILMAZ. `codex` tur
-        #    basina tavan uygulayamiyor (`butce_destegi=False`), yani
-        #    `astra` otomatik hicbir yola baglanamaz. Para kontrolleri
-        #    KAPALI KALARAK basarisiz olur.
-        # 3. SESSIZ OLMAZ. Yukseltme gorunur bir olaydir; "bu inceleme
-        #    neden pahaliya kosmus" sorusu sonradan cevaplanabilmeli.
+        # KAPI MODELI (fable/astra) KENDILIGINDEN DEVREYE GIRMEZ (08.10.2026,
+        # patron: "fable ve astra ben istersem eklerim, lidere soylersem
+        # eklerim"). Eskiden is ikinci kez geri donunce inceleme kendiliginden
+        # fable'a, dolar tavaniyla ve bu yuzden ARKA PLANDA kosuyordu. Artik
+        # inceleme her zaman liderin KENDI modeliyle (patron lidere fable/astra
+        # verdiyse o) gercek terminalde kosar; ret sayisi modeli degistirmez.
         model = lider["model"]
-        ret_sayisi = self.ofis.tahta.ret_sayisi(no)
-        if ret_sayisi >= YUKSELTME_ESIGI:
-            p = plan.oku(self.db, self.proje_id)
-            kapi = roller.kapi_modeli(
-                lider["motor"], tavansiz_izinli=p["tavansiz_kapi_izinli"])
-            # HAFTALIK TAVAN: tur basina tavan tek bir turun kacmasini
-            # onler; haftalik tavan COK SAYIDA MAKUL turun toplamda
-            # limiti bitirmesini onler. Kullanicinin yasadigi ikincisi.
-            hafta = butce.kapi_acik_mi(self.db, self.proje_id)
-            if kapi and not hafta["acik"]:
-                # Is DURMAZ -- pahali basamak kapanir, inceleme liderin
-                # kendi modeliyle kosar. Zincirdeki ayni ayrim: kaynak
-                # tukenince is olmez.
-                self.db.olay_yaz(
-                    self.proje_id, "uyari",
-                    f"#{no} yukseltme ATLANDI -- {hafta['sebep']}",
-                    ajan_ad=lider["ad"], gorev_id=gorev["id"])
-                kapi = None
-            if kapi:
-                # TUR SINIRI iceride bir kacak frenidir (27.09.2026): haftalik
-                # pay saglayicinin kendi yuzdesiyle korunuyor (`butce.py`).
-                # Ad `kapi_siniri`: `tavan` bu dosyada MODULDUR (kacak freni).
-                kapi_siniri = butce_usd or hafta["tur_siniri"]
-                if kapi_siniri:
-                    model = kapi["model"]
-                    butce_usd = kapi_siniri
-                    self.db.olay_yaz(
-                        self.proje_id, "yukseltme",
-                        f"#{no} {ret_sayisi}. kez geri dondu -> inceleme "
-                        f"{lider['motor']}/{model} ile, tavan ${kapi_siniri:.2f}",
-                        ajan_ad=lider["ad"], gorev_id=gorev["id"])
-            else:
-                # Atlanan yukseltme de GORUNUR olmali: gorunmeyen bosluk,
-                # "neden hala ayni hukum geliyor" sorusunu cevapsiz birakir.
-                self.db.olay_yaz(
-                    self.proje_id, "uyari",
-                    f"#{no} {ret_sayisi}. kez geri dondu ama "
-                    f"'{lider['motor']}' motorunda tavan uygulanabilir bir "
-                    "kapi modeli yok -- yukseltme YAPILMADI.",
-                    ajan_ad=lider["ad"], gorev_id=gorev["id"])
 
         metin = self.inceleme_metni(no)
         # Inceleme ISIN URETILDIGI yerde kosar (bkz. `_isin_yeri`): lider
         # kendi bos klasorunde arayip "yok" demesin.
         inceleme_klasoru = self._isin_yeri(gorev) or lider["klasor"]
         # NOBET ZINCIRI -- inceleme de liderin isidir ve limitte DURMAMALI.
-        # Kapi modeline yukseltildiyse (fable ayri bir cepten yer) once
-        # liderin KENDI modeli denenir: fable'in cebi dolmus olabilir ama
-        # hesabin genel penceresi dolmamis olabilir.
-        zincir = (((lider["motor"], lider["model"]),) if model != lider["model"]
-                  else ()) + LIDER_ZINCIRI
+        zincir = LIDER_ZINCIRI
         basamaklar, uyarilar = basamaklari_kur(
             self.db, self.proje_id, dict(lider, model=model),
             fabrika=self.motor_fabrikasi, zincir=zincir, butce_usd=butce_usd,
@@ -835,9 +771,9 @@ class Lider:
                              gorev_id=gorev["id"])
         # CAPRAZ KONTROL (03.10.2026): isi yapan motorun TERSI inceler --
         # farkli sirketin modeli farkli hatayi yakalar; inceleme turu zaten
-        # var, ek tur yok. Kapi modeline yukseltilen inceleme dokunulmaz.
+        # var, ek tur yok.
         from . import karne
-        if model == lider["model"] and karne.capraz_acik_mi(self.db, self.proje_id):
+        if karne.capraz_acik_mi(self.db, self.proje_id):
             # Yalniz IKI GERCEK motor arasinda: sahte isin incelemesi
             # baska motora kaymaz.
             gercek = karne.gercek_motorlar(roller.kademe_haritasi(self.db, self.proje_id))
@@ -855,8 +791,7 @@ class Lider:
 
         def kostur(b):
             from .motor.tui import kipe_gore
-            # Inceleme de gercek terminalde olabilir -- TEMIZ oturum, salt
-            # okunur. Tavan gereken tur (fable hakemi) ARKADA kalir.
+            # Inceleme de gercek terminalde -- TEMIZ oturum, salt okunur.
             motor = kipe_gore(self.db, self.proje_id,
                               self.motor_fabrikasi(b["motor"]),
                               ajan_ad=lider["ad"], butce_usd=butce_usd,
@@ -867,7 +802,7 @@ class Lider:
                 metin,
                 klasor=inceleme_klasoru,
                 oturum_id="",                 # TEMIZ oturum -- Yasa 4
-                model=b["model"],             # kapi modeline yukseltilmis olabilir
+                model=b["model"],
                 # Efor tavani insanindir -- lider turu da uyar.
                 efor=roller.tur_eforu(self.db, self.proje_id, lider["efor"]),
                 yazabilir=False,              # inceleyici duzeltmez
