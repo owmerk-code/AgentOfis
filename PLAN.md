@@ -31,14 +31,14 @@ başlar.
 | B6 | Bekleyen soru ilgili terminalin üstünde | BİTTİ 08.10 |
 | B7 | Terminalde hangi HESAPLA çalıştığı | BİTTİ 08.10 (Gemini satırı kapalı: patron kararı) |
 | **C — Medya ve tasarım (kalanlar)** | | |
-| C1 | Flow ile GÖRSEL uçtan uca (Nano Banana, ürün referanslı) | beceri var, canlı ölçülmedi |
-| C2 | Seslendirme (istenirse) + yapay zekâ müziği (patron: AI müzik); Flow müziği girişi/lisansı | YOK |
+| C1 | Flow ile GÖRSEL uçtan uca (Nano Banana, ürün referanslı) — profesyonel seviye, genel | beceri var, canlı ölçülmedi |
+| C2 | Müzik ve seslendirme FLOW'UN KENDİSİNDEN (08.10 patron: "flow'da var"; dış servis yok); kurguda ses katmanı | YOK |
 | C3 | Flow 1080p "Yükseltilmiş" bedeli; teslim çözünürlüğü kararı | ölçülmedi |
 | C4 | Flow'u süren belirlenimci araç (Belle işi 1,21 M jeton / 48 dk; güç kısmaz, hız+kota) | YOK |
-| C5 | Tasarım akışı: bir istekten 3 seçenek, telefon/masaüstü önizlemesi, sürümler (41-liste #26) | YOK |
-| C6 | Codex ile görsel pahalı (~220k jeton) — düşür ya da gerekçeyi ölç (K20) | açık |
+| C5 | Tasarım akışı: bir istekten 3 seçenek, telefon/masaüstü önizlemesi, sürümler (41-liste #26) | İPTAL 08.10 (patron: gerek yok) |
+| C6 | Codex/GPT görseli KALIR (08.10 patron: "ikisini de kullanacağız") — bedeli ve kalitesi ölçülür, güç kısmadan düşürülür | açık |
 | C7 | Kurgu kuralları (yazı ürüne binmez, temiz kapanış) gerçekte ölçülmedi | büyük işlerle testte |
-| C8 | Otomatik içerik hattı: uzun videodan klip → kurgu → paylaşım onaya (E89) | YOK |
+| C8 | Otomatik içerik hattı: uzun videodan klip → kurgu → paylaşım onaya (E89) | İPTAL 08.10 (patron: YouTube yayını yok) |
 | **D — Bilgisayar** | | |
 | D1 | Bilgisayar kullanımı: fare/klavye ile masaüstü uygulaması; her riskli adım sorulur (41-liste #29, E47) | YOK (kapıda "masaüstü" sınıfı var, yetenek yok) |
 | **E — Kapanış ve sağlamlık** | | |
