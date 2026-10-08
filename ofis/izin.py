@@ -483,8 +483,88 @@ def plan_izinleri(izinler, patron_sozu: str) -> tuple:
     return temiz, ""
 
 
-def plan_blogu() -> str:
-    """Plan istemine giren tarif."""
+#: Patronun "kullanma" dedigini anlatan sozler (model cumlesinde). `olumsuz_mu`
+#: eylem fiillerine bakar; "fable kullanma", "astra olmasin" onu gecer (olculdu).
+_MODEL_OLUMSUZ = ("kullanma", "kullanmayin", "kullanmasin", "kullanmayalim", "olmasin",
+                  "olmayacak", "istemiyorum", "istemem", "gerek yok", "gerekmez", "yapma",
+                  "yapmayin", "yapmasin", "verme", "vermeyin", "degil", "haric", "disinda",
+                  "yerine", "hayir")
+
+
+#: Model adinin patronun cumlesinde aranmayan genel parcalari (efor, surum).
+_MODEL_GENEL = {"high", "low", "medium", "xhigh", "max", "thinking", "preview", "latest"}
+
+
+def _model_parcalari(mid: str) -> set:
+    """`gpt-6.1-sol` -> {gpt, sol}; `gemini-3.8-flash-high` -> {gemini, flash}.
+    Patron modeli bu parcalardan biriyle anar ("opus ile", "sol'a yaptir")."""
+    return {x for x in re.split(r"[^a-z0-9.]+", (mid or "").lower())
+            if x and x not in _MODEL_GENEL and not re.fullmatch(r"[0-9.]+", x)}
+
+
+def model_secenekleri(db, proje_id: str) -> dict:
+    """Motor -> secilebilir model kimlikleri (motorlarin kendi listeleri)."""
+    from . import guncelleme
+    try:
+        liste = guncelleme.model_listesi(db, proje_id)
+    except Exception:                            # noqa: BLE001
+        liste = {}
+    # Listede olmayan model UYDURULMAZ (fable/astra da listeden gelir:
+    # `fable`, `gpt-6-astra` -- 08.10 olculdu).
+    return {m: [x["id"] for x in v] for m, v in (liste or {}).items()}
+
+
+def plan_modeli(kol: dict, patron_sozu: str, db=None, proje_id: str = "") -> tuple:
+    """Bir isin MODELI -- yalniz patronun sozuyle.
+
+    Patron (08.10.2026): "takim sohbetinde lidere soylersem ya da mesajda
+    'su isi su ajana su modelle yaptir' dersem; fable ve astra da yalniz
+    boyle". Lider bir kola `model` yazabilir ama yalniz patronun BU
+    mesajindan, modeli ANAN kelimesi kelimesine alintiyla (`model_alinti`);
+    olumsuz cumle ("fable kullanma") reddedilir; model motorlarin KENDI
+    listesinde olmali (uydurulmaz). Patron demediyse ajanin modeli kalir.
+    Doner: (`{"ad", "motor", "model", "alinti"}` ya da None, ret metni)."""
+    from . import roller
+    ad = str((kol or {}).get("model") or "").strip()
+    if not ad:
+        return None, ""
+    secenek = (model_secenekleri(db, proje_id) if db is not None else
+               {k["motor"]: [a] for a, k in roller.KAPI_MODELLERI.items()})
+    motor, model = "", ""
+    for mo, idler in secenek.items():
+        tam = next((i for i in idler if i.lower() == ad.lower()), "")
+        if tam:
+            motor, model = mo, tam
+            break
+    if not motor:
+        for mo, idler in secenek.items():
+            yakin = next((i for i in idler if ad.lower() in i.lower()), "")
+            if yakin:
+                motor, model = mo, yakin
+                break
+    if not motor:
+        return None, (f"'{ad}' modeli motorlarin listesinde yok. `model` alanina listedeki "
+                      "adlardan birini yaz ya da bos birak (ajan kendi modeliyle calisir).")
+    soz = (patron_sozu or "").strip()
+    alinti = str((kol or {}).get("model_alinti") or "").strip()
+    sade_soz, sade_al = riskli.sadelestir(soz), riskli.sadelestir(alinti)
+    al_kelime = set(re.split(r"[^a-z0-9.]+", sade_al))
+    if (not soz or len(sade_al) < 3 or sade_al not in sade_soz
+            or not (_model_parcalari(model) | _model_parcalari(ad)) & al_kelime):
+        return None, (f"'{model}' yalniz patron mesajinda bu modeli ACIKCA andiysa yazilir: "
+                      "`model_alinti` patronun cumlesinden KELIMESI KELIMESINE, modelin "
+                      "adini iceren bir parca olmali. Patron model demediyse `model` "
+                      "alanini bos birak.")
+    cumle = next((c for c in re.split(r"[.!?;\n]", sade_soz) if sade_al in c), sade_al)
+    if olumsuz_mu(soz, alinti) or any(o in cumle for o in _MODEL_OLUMSUZ):
+        return None, (f"Patron bu model icin olumsuz konusuyor olabilir ('{alinti}'). "
+                      "`model` alanini bos birak.")
+    return {"ad": ad, "motor": motor, "model": model, "alinti": alinti}, ""
+
+
+def plan_blogu(modeller: dict = None) -> str:
+    """Plan istemine giren tarif. `modeller`: motor -> secilebilir kimlikler."""
+    liste = "; ".join(f"{m}: {', '.join(v)}" for m, v in (modeller or {}).items() if v)
     return (
         "## PATRONUN IZINLERI (`izinler`, cogu iste BOS)\n\n"
         "Riskli bir eylemi (git push, deploy, publish, genel paket kurma) "
@@ -497,7 +577,15 @@ def plan_blogu() -> str:
         "- PARA ve SILME izne yazilamaz: patron 'yap' dese bile her seferinde "
         "sorulur. Zorla push (--force) da oyle.\n"
         "- Olumsuz cumleye (\"push etme\") izin yazma. Emin degilsen yazma: "
-        "bir fazla soru, istenmeyen bir push'tan ucuzdur.")
+        "bir fazla soru, istenmeyen bir push'tan ucuzdur.\n\n"
+        "## ISIN MODELI (`model`, kolda; cogu iste YAZMA)\n\n"
+        "Patron BU MESAJINDA bir is icin acikca bir model dediyse (\"bunu opus ile "
+        "yap\", \"raporu fable yazsin\") o kola `\"model\"`: listedeki ad ve "
+        "`\"model_alinti\"`: patronun cumlesinden KELIMESI KELIMESINE, model adini "
+        "iceren parca yaz. O is o modelle (o modelin motorunda) kosar. Patron model "
+        "demediyse YAZMA -- ajan kendi modeliyle calisir; FABLE ve ASTRA pahalidir, "
+        "sistem onlari kendiliginden KULLANMAZ."
+        + (f"\nSecilebilir modeller -- {liste}" if liste else ""))
 
 
 def brifing_blogu(db, proje_id: str, gorev_id) -> str:

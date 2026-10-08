@@ -885,6 +885,9 @@ class Veritabani:
         # MOTOR SECIMI (03.10.2026, `karne`): isin ilk turunda secilen motor;
         # is boyunca ayni motorda kalir (oturum kopmasin). Bos = ajanin motoru.
         ("gorev", "motor_secimi", "TEXT NOT NULL DEFAULT ''"),
+        # PATRONUN SECTIGI MODEL (08.10.2026): fable/astra yalniz patronun
+        # sozuyle (`izin.plan_modeli`); bos = ajanin kendi modeli.
+        ("gorev", "patron_modeli", "TEXT NOT NULL DEFAULT ''"),
         # ORGANIZASYON (05.10.2026): cikarilan ajan SILINMEZ (ad geri donmez,
         # gecmisi okunur kalir) -- arsive gider, hicbir takimda gorunmez.
         ("ajan", "arsiv", "INTEGER NOT NULL DEFAULT 0"),

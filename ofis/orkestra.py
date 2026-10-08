@@ -471,7 +471,7 @@ class Orkestra:
             "  Ama o zaman inceleme insana duser: YAPAN INCELEYEMEZ.",
         ]
         if patron_sozu:
-            satirlar += ["", izin_mod.plan_blogu()]
+            satirlar += ["", izin_mod.plan_blogu(izin_mod.model_secenekleri(self.db, self.proje_id))]
         if hata:
             satirlar += [
                 "",
@@ -586,6 +586,16 @@ class Orkestra:
                     return (f"'{sahip}' YAZAMAZ ama ona dosya yazan bir is "
                             f"verdin ({', '.join(alan)}). Bu isi 'eller' bir "
                             "ajana ver ya da yazma alanini bosalt.")
+        # ISIN MODELI (08.10.2026): fable/astra yalniz patronun sozuyle.
+        # Son denemede plan dusmez, model ATILIR (ajan kendi modeliyle kosar).
+        for kol in kollar:
+            _, model_hatasi = izin_mod.plan_modeli(kol, patron_sozu, self.db, self.proje_id)
+            if model_hatasi and son_sans:
+                self.db.olay_yaz(self.proje_id, "uyari",
+                                 f"Bir kolun modeli ATILDI (son deneme): {model_hatasi}")
+                kol["model"] = ""
+            elif model_hatasi:
+                return model_hatasi
         for sira, kol in enumerate(kollar):
             bekler = kol.get("bekler") or []
             if not isinstance(bekler, list):
@@ -772,6 +782,17 @@ class Orkestra:
                         self.proje_id, "uyari",
                         f"Bagimlilik kurulamadi #{acilan[sira]['no']} -> "
                         f"#{acilan[int(b)]['no']}: {exc}", ajan_ad=lider["ad"])
+        # PATRONUN SECTIGI MODEL ise yazilir; kosulurken koltuk onu kullanir.
+        for sira, kol in enumerate(plan["kollar"]):
+            pm, _ = izin_mod.plan_modeli(kol, patron_sozu, self.db, self.proje_id)
+            if pm and sira < len(acilan):
+                with self.db.baglanti() as conn:
+                    conn.execute("UPDATE gorev SET patron_modeli = ? WHERE id = ?",
+                                 (f"{pm['motor']}/{pm['model']}", acilan[sira]["id"]))
+                self.db.olay_yaz(self.proje_id, "patron_modeli",
+                                 f"#{acilan[sira]['no']} {pm['motor']}/{pm['model']} "
+                                 f"(patron: \"{pm['alinti'][:120]}\")",
+                                 ajan_ad="insan", gorev_id=acilan[sira]["id"])
         acilan = [self.ofis.tahta.gorev(g["no"]) for g in acilan]
 
         # PATRONUN IZINLERI her kola yazilir: patron hedefin tamami icin

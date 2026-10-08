@@ -15023,3 +15023,46 @@ Haiku'nun gerekçesi — kodlama 19,5 — yenisi için geçerli değil: Terminal
 ### 08.10 ANAYASADAN TAŞINAN: MALİYET
 
 - **MALİYET (03.10, `testler/carpan.py`):** basit iş ofiste doğrudan Claude'un **~1,6–1,8×**'i (sabah 3,9×). Claude önbelleği 5 dakika (`CLAUDE_CODE_PROMPT_CACHE_TTL=5m`, ~%30 ucuz lider turu); RET ÖLÇÜTE BAĞLI (`lider.ret_dayanagi`: `OLCUT:` alıntısı ya da `BOZULDU:`, yoksa bir kez sorulur). Liderin triyaj+planı TEK TUR (`hedef_ver(hazir_plan=)`, geçmezse plan turu); "anlattı yapmadı" koruması (`yazilacak_dosyalar`); her tur `jeton_dokumu`, terminal turuna ölçülmüş birimden `maliyet_tahmini_usd` (`ev/fiyat_olcumu.json`). Asıl sabit bedel: Claude her yeni oturumda ~12k (Haiku)/~23k (Sonnet) jetonu 1 sa önbelleğe yazar. Yalın lider (güç kısar) ve çatal/`--fork-session` (Sonnet'te önbellek kullanmıyor, ölçüldü) DENENDİ, GERİ ALINDI. Araştırma `docs/arastirma/`. KARMA (karne + çapraz kontrol, varsayılan): 20 işlik sette 19/20, gereksiz ret 0, Claude payı yalnız-Claude'a göre %40 az (Codex Plus 5 sa +26 puan). Ofis köke bırakılan YENİ yardımcı dosyayı `.ofis/` altına taşır (`degisim.yardimcilari_topla`). Sıradaki: Ponytail ölçümü, Caveman (muhtemelen faydasız).
+
+## 08.10.2026 — FABLE/ASTRA YALNIZ PATRONUN SÖZÜYLE; ANTIGRAVITY TERMİNAL ÖLÇÜMÜ
+
+**Karar (patron):** "fable ve astra sadece ben eklersem, istersem veya lidere
+söylersem çalışabilir; onun dışında agent sisteminde pek kullanmaya gerek yok."
+- Kaldırıldı: iki ret sonrası incelemenin kendiliğinden fable'a (dolar
+  tavanıyla, bu yüzden ARKA PLANDA) yükseltilmesi (`lider.py`). İnceleme her
+  zaman liderin kendi modeliyle, gerçek terminalde.
+- Eklendi: lider kola `model: fable|astra` + `model_alinti` yazabilir; ofis
+  patronun mesajına karşı doğrular (`izin.plan_modeli`): alıntı mesajda
+  kelimesi kelimesine geçmeli ve modelin adını içermeli; olumsuz cümle ret
+  ("fable kullanma", "astra olmasın" — `izin.olumsuz_mu` bunları GÖRMÜYORDU,
+  ölçüldü; model cümlesi için ayrı olumsuzluk listesi); gerçek kimlik
+  motorun listesinden (`gpt-6-astra`), listede yoksa ret. İşe
+  `gorev.patron_modeli` yazılır, koltuk o modelle (doğru motorda, tavansız)
+  koşturur. Mutasyon: olumsuzluk koruması kaldırılınca "fable kullanma"
+  diyen patronun işi fable'la açıldı (sınama yakaladı). `duman_patron_modeli`.
+- Şartname kapısı zaten yalnız patronun `--sartname` komutuyla.
+
+**Antigravity (agy 1.3.1) gerçek terminal ölçümü** (boş geçici klasör, ayrı
+ev, gemini-3.8-flash-low; 10 koşu):
+- Yeni evde etkileşimli kip KURULUM ekranı açıyor (renk + "Google etkileşim
+  verilerini toplasın" onayı, varsayılan işaretli). Patronun kendi agy'si
+  kurulumu tamamlamış (`cache/onboarding.json`); aynı dosya ajan evine
+  konunca ekran gelmiyor. Veri onayı patron adına ayrıca VERİLMEDİ.
+- Konuşma düz JSONL olarak da yazılıyor:
+  `brain/<konuşma>/.system_generated/logs/transcript_full.jsonl` (adım,
+  tür USER_INPUT/PLANNER_RESPONSE/GENERIC, durum, içerik, `tool_calls`,
+  jeton). `conversations/<id>.db` SQLite+protobuf. Klasör güveni
+  `settings.json` `trustedWorkspaces`.
+- Kanca: etkileşimli kipte izin AÇIKÇA `{"decision": "allow"}` (stdout)
+  yazılmalı; yazılmazsa agy `toolPermission=request-review` ile insana
+  soruyor ve tur duruyor (ölçüldü). Aynı JSON arka plan kipini BOZMUYOR
+  (ölçüldü: 3 adım, silme çıkış 2 ile durdu, 11,8 sn). Belge: agy'nin
+  kendi `builtin/skills/agy-customizations/docs/hooks.md`.
+- ÇÖZÜLMEDİ: tek adımlı iş terminalde 3 sn'de bitti; dosya yazıp komut
+  koşturan 4 adımlı iş 6/6 koşuda bir araç adımından sonra 2-3 dk ilerlemedi
+  (günlükte son satır modele giden istek; cevap işlenmiyor).
+  `--dangerously-skip-permissions` ve `--mode accept-edits` çözmedi. Ham
+  çıktıda terminal soruları var (DA, OSC renk, kitty `?u`, DECRQM); ofisin
+  terminal katmanı bunları cevaplamıyor — sebep olup olmadığı ölçülmedi.
+  Sıradaki: gerçek Windows konsol penceresinde aynı iş (ayırt etmek için).
+  Gemini o güne dek ARKA kipte kalır (`tui_destegi=False`).

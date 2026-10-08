@@ -499,6 +499,16 @@ class Koltuk:
                    if etkin != istenen_efor else ""),
                 ajan_ad=ajan_ad, gorev_id=gorev["id"])
 
+        # PATRONUN SECTIGI MODEL (08.10.2026, fable/astra; `izin.plan_modeli`):
+        # karne, kademe ve ajanin modeli bu iste onun yerine gecmez.
+        _pm = str(gorev.get("patron_modeli") or "")
+        if "/" in _pm:
+            _pm_motor, _pm_model = _pm.split("/", 1)
+            kosan_ajan = dict(kosan_ajan, motor=_pm_motor, model=_pm_model)
+            self.db.olay_yaz(self.proje_id, "patron_modeli",
+                             f"#{no} patronun istedigi modelle kosuyor: {_pm}",
+                             ajan_ad=ajan_ad, gorev_id=gorev["id"])
+
         # HESAPLAR: zincir (motor, model) degil (HESAP, model) uzerinde
         # yurur. Kimlik burada cozulur -- `zincir` gizli depoyu bilmez.
         # Cozulemeyen hesap zincire HIC girmez ve sebebi gorunur olur:

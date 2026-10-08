@@ -54,10 +54,14 @@ motor matrisinden geçmeden deftere girmez.
   (24.09); Pro alınınca eklenti olarak geri takılır.
 - **Kullanıcı API değil ABONELİK kullanıyor:** maliyet **kota diliyle**
   anlatılır (5 saat / 7 gün penceresi yüzdesi), dolar yalnız API hesabında.
-- **fable:** YALNIZ KAPI (şartname · ikinci ret sonrası hakem · şüpheli
-  inceleme), tavanlı, hiçbir kademede yok. Fable penceresi %80'de kapanır.
-- **astra:** otomatik hiçbir yolda YOK (codex tur başına tavan uygulayamıyor,
-  ortak havuzdan yer). **05.10 patron:** fable/astra ajana ve kataloğa ELLE
+- **fable / astra YALNIZ PATRONUN SÖZÜYLE** (08.10, patron: "ben eklersem,
+  istersem veya lidere söylersem"): sistem onları KENDİLİĞİNDEN kullanmaz
+  (iki ret sonrası otomatik hakem kaldırıldı; inceleme liderin modeliyle).
+  Yollar: ajana elle atama / takım kurarken · patron mesajda "şu işi şu
+  ajana şu modelle" der → lider kola `model` (HER model, listeden) +
+  patronun mesajından kelimesi kelimesine `model_alinti` (`izin.plan_modeli`;
+  olumsuz cümle ret; listede yoksa ret; `gorev.patron_modeli`) · şartname
+  yalnız `--sartname` ile. Hiçbir kademede yok. **05.10 patron:** fable/astra ajana ve kataloğa ELLE
   atanabilir ("genelde tercih etmiyorum"): listede notlu, seçerken bir kez
   sorulur, atama `uyari` olayı; kademeye yine yazılamaz.
 - **Model listesi** (`guncelleme.model_listesi`): üç motorun BÜTÜN modelleri
@@ -185,7 +189,7 @@ matrisin ölçümüyle karşılaştırır.
 | `ofis/postane.py` | Soru/onay, patronun notu (`NOT_KURALI`), imza/kapsam ile onay eşleştirme. |
 | `ofis/danisma.py` | Ajana sorulan soruyu teslim eder (araçsız, salt okunur); cevaplanamazsa insana yükseltir. |
 | `ofis/mcp_sunucu.py` | Ofis MCP: durum · kanit_ekle · karar_yaz · sohbete_yaz · soru_sor · onay_iste · bilgi_yaz · gorev_ac · gorsel_uret/iste · video_uret/durum/iste · video_kurgula · video_denetle · medya_isle · izin_sor (kanca) · giris_iste. Kimlik ORTAMDAN gelir. |
-| `ofis/motor/tui.py` | GERÇEK TERMİNAL KİPİ: iç motoru (claude/codex) ConPTY'de gerçek CLI olarak koşturan sarmalayıcı; brifing yapıştırılır, olaylar CLI'ın oturum dosyasından okunur, terminal turlar arası açık kalır. TEK KİP `gercek` (08.10, patron: "arka plan kipi istemiyorum"; `kip_oku` varsayılanı, panel/ayarlar `arka` yazamaz; `arka` yalnız sınamanın elle yazdığı değer); tek kural `kipe_gore`. İstisna motor sınırı: Gemini'nin TUI'si yok, tavan gereken kapı turu (fable) arkada. |
+| `ofis/motor/tui.py` | GERÇEK TERMİNAL KİPİ: iç motoru (claude/codex) ConPTY'de gerçek CLI olarak koşturan sarmalayıcı; brifing yapıştırılır, olaylar CLI'ın oturum dosyasından okunur, terminal turlar arası açık kalır. TEK KİP `gercek` (08.10, patron: "arka plan kipi istemiyorum"; `kip_oku` varsayılanı, panel/ayarlar `arka` yazamaz; `arka` yalnız sınamanın elle yazdığı değer); tek kural `kipe_gore`. İstisna: Gemini'nin TUI'si henüz yok (08.10 ölçüm: çok adımlı işte takılıyor, günlükte); patronun açtığı tavanlı şartname turu arkada. |
 | `ofis/kanca.py` | Gerçek terminal (TUI) kancası: CLI'ın her araç çağrısını arka plan kipindeki AYNI kapıya sorar; hata = deny; `--oz-sinama`. |
 | `ofis/izin.py` | Patronun ACIKCA istedigi riskli eylem (push, deploy) sorulmaz: lider planda patronun sozunden KELIMESI KELIMESINE alintiyla izin yazar, ofis sinifi olcer, olumsuz cumleyi reddeder; is basina ve kalici (insan). Para ve silme izinle acilmaz. |
 | `ofis/riskli.py` | Riskli eylem ölçütü (geri alınabilir mi · dışarı çıkıyor mu · para var mı) + sert durak; kabuk kuralları; araç adı polaritesi (okuma serbest, tanınmayan sorulur); şifre/kart alanı. |
@@ -260,9 +264,6 @@ matrisin ölçümüyle karşılaştırır.
 - **Codex ajanı kapı varken tam erişimle** koşar (workspace-write'ta `git add` bile yapamıyordu, push sandbox kullanıcısı yüzünden düşüyordu); riskli adım kapıda.
 - **TEMİZ BAŞLANGIÇ (08.10, patron: "gerçek iş yapmadık, denemeler yaptık"):** deneme izleri `kabuk sifirla` ile silindi (1.431 kalem; yedek `AgentOfis-yedek-20261008-021420-sifirlama-oncesi.zip`). "Her şey gerçek": sahte motor ve örnek ofis (`testler/ornek_ofis.py`) yalnız sınamada; ilk açılış (`baslat.bat`) GERÇEK ofis kurar (Ofisim + GENEL + lider arda/Opus); deneme kipi ve arka plan kipi kaldırıldı.
 - **Gerçek terminal kipi** tek kip (ajan panosu = gerçek terminal; lider de gerçek terminalde, her tur temiz).
-  30.09 düzeltmeleri: brifing kopyası ajan başına ofis evinde (ortak kökte
-  `BRIFING.md` YOK), yapıştırmanın ardına elle yazılan sahip satırı, güven
-  sorusu ekrana bakarak, codex oturum dosyası tur işaretiyle.
 - **Aşama 1 (gerçek iş kalitesi) sürüyor:** `testler/gercek_set.py` patron gibi
   sohbetten 12 iş verir; gece 03:30 iki motor (`gece_kos.py`). 30.09: codex
   14 işin 14'ü iki motorda geçti (01.10; G13 Excel, G14 form+patron izni dahil); tek koşuda claude 13/14, codex 12/14 (kalanlar düzeltildi, yeniden geçti). Set 18 işe çıktı (not, durdur/sürdür, Word, proje); 01.10 tek koşuda claude **17/18** (kalan G15 tek savunulabilir ret), codex **14/18** (4 kök sebep düzeltildi, dördü yeniden geçti) → 18 işin 18'i iki motorda. Codex haftalık eşiği dolunca `gercek_set.py --kota-esigi 0.95` (yalnız geçici ofiste). Patronun GERÇEK ofisinin kopyasında (`testler/ofis_kopyasi.py`, lider demir/Opus) 4/4 iş bitti. Gece görevi DEVRE DIŞI (PC gece kapalı), set gündüz koşulur. Kural: gerçek motorla geçmeyen "bitti" değil.
@@ -272,7 +273,7 @@ matrisin ölçümüyle karşılaştırır.
 - **F5 "ben yokken" altyapısı (01.10):** kuyruk + dönüş raporu, kesintiden devam, masaüstü bildirimi, zamanlayıcı — dördü canlı (8911, gerçek motor) ölçüldü. Kalan F5: telefon, onay yorgunluğu (E80), bağlam göstergesi, ses (en son).
 - **Güncelleme hemen:** 30 dakikada bir ölçer, uyguladıktan sonra yeniden
   ölçer (`olc_ve_ilerle`). CLI güncellemesinin deneme turu, ofis gerçek terminal kipindeyse terminalde de koşar (30.09).
-- **Sınamalar:** **5108/5108** (08.10; 96 dosya; tam takım ÇIKIŞ KODUYLA koşulur — kod 3 = artık klasör) + gerçek set (`gercek_set.py`, her gece 03:30). Deneme seti 15/15
+- **Sınamalar:** **5133/5133** (08.10; 97 dosya; tam takım ÇIKIŞ KODUYLA koşulur — kod 3 = artık klasör) + gerçek set (`gercek_set.py`, her gece 03:30). Deneme seti 15/15
   (Claude ve Codex, işçi+lider).
 - **MALİYET (03.10, `testler/carpan.py`):** basit iş ofiste doğrudan Claude'un ~1,6–1,8×'i; Claude önbelleği 5 dk; ret ölçüte bağlı (`lider.ret_dayanagi`); triyaj+plan tek tur; KARMA (karne + çapraz kontrol) 20 işte 19/20, Claude payı %40 az. Yalın lider ve `--fork-session` denendi, geri alındı. Tam metin: günlük "08.10 ANAYASADAN TAŞINAN: MALİYET".
 - **Kalan işler:** `PLAN.md` "00. KALAN İŞLER — 08.10" (A–F; ses, görünüş, uygulama en son).
