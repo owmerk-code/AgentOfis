@@ -710,6 +710,56 @@ function hesapEtiketi(r) {
   return kim + (plan ? " · " + plan : "");
 }
 
+/* BEKLEYEN SERIT (B6): `cizBekleyenler`in son okudugu kuyruktan (D.bekleyen). */
+function bekleyenSeridi(a) {
+  const b = D.bekleyen || {};
+  const sorular = (b.sorular || []).filter((x) => x.gonderen === a.ad);
+  const onaylar = (b.onaylar || []).filter((x) => x.isteyen === a.ad);
+  if (!sorular.length && !onaylar.length) return null;
+  const k = el("div", "pano-bekleyen");
+  for (const q of sorular) {
+    const sat = el("div", "pano-bekleyen-soru");
+    sat.append(el("b", null, "? sana soruyor: "), document.createTextNode(q.govde));
+    k.append(sat);
+    const eylem_ = el("div", "istek-eylem");
+    let secili = q.secim && q.secim.onerilen != null ? q.secim.onerilen : null;
+    if (q.secim) {
+      const sec = el("div", "secenekler");
+      const dg = q.secim.secenekler.map((t, i) => {
+        const d = el("button", "secenek" + (i === secili ? " secili" : ""),
+                     t + (i === q.secim.onerilen ? "  ★" : ""));
+        d.onclick = (e) => { e.stopPropagation(); secili = i;
+          dg.forEach((x, j) => x.classList.toggle("secili", j === i)); };
+        return d;
+      });
+      sec.append(...dg);
+      k.append(sec);
+    }
+    const girdi = el("input");
+    girdi.placeholder = q.secim ? "İstersen not ekle…" : "Cevabın…";
+    girdi.onclick = (e) => e.stopPropagation();
+    const gonder = (e) => {
+      if (e) e.stopPropagation();
+      const ek = girdi.value.trim();
+      const metin = q.secim && secili != null ? q.secim.secenekler[secili] + (ek ? " — " + ek : "") : ek;
+      if (!metin) return;
+      eylem(`/api/soru/${q.id}/cevap`, { metin }, "cevap gönderildi");
+    };
+    const dug = el("button", "dugme olumlu", "Cevapla");
+    dug.onclick = gonder;
+    girdi.addEventListener("keydown", (e) => { if (e.key === "Enter") gonder(e); });
+    eylem_.append(girdi, dug);
+    k.append(eylem_);
+  }
+  for (const o of onaylar) {
+    const sat = el("div", "pano-bekleyen-soru");
+    sat.append(el("b", null, "⏸ onayını bekliyor: "), document.createTextNode(o.eylem),
+               el("span", "dt-alt", "  — sağdaki “Senden bekleniyor” kartından onayla/reddet"));
+    k.append(sat);
+  }
+  return k;
+}
+
 function panoKur(a, secenek) {
   const s = secenek || {};
   // TERMINAL KIPI (varsayilan): pano bastan sona bir terminal penceresi --
@@ -858,6 +908,11 @@ function panoKur(a, secenek) {
   }
 
   p.append(bas);
+  // BEKLEYEN SORU TERMINALIN USTUNDE (08.10, B6): ajan sana soru sorduysa
+  // soru ve cevap yeri (secenekliyse dugmeler) kendi panosunda; onay
+  // bekliyorsa ne bekledigi ve nerede cevaplanacagi.
+  const _bekleyen = bekleyenSeridi(a);
+  if (_bekleyen) p.append(_bekleyen);
   if (!term) {
     p.append(ozetSatiri(a));
     const kart = kullanimKarti(a);
@@ -2914,6 +2969,14 @@ function cizTahta() {
 async function cizBekleyenler() {
   const kap = $("#bekleyen-bolum");
   const b = await al("/api/bekleyenler");
+  // Terminal panolari ayni kuyrugu okur (B6: soru kendi terminalinin ustunde).
+  const _onceki = JSON.stringify(((D.bekleyen || {}).sorular || []).map((x) => x.id))
+                + JSON.stringify(((D.bekleyen || {}).onaylar || []).map((x) => x.id));
+  D.bekleyen = b;
+  if (_onceki !== JSON.stringify((b.sorular || []).map((x) => x.id))
+                 + JSON.stringify((b.onaylar || []).map((x) => x.id))) {
+    try { cizCanli(); } catch (_) {}
+  }
   // SAGLIK BULGULARI DA BURAYA. Olculdu (21.09.2026): `saglik.py` 12
   // denetimle yazilmisti ve `panel.py` icinde adi bile gecmiyordu --
   // yani panelin cevapladigini soyledigi tek soru ("neye bakmam
@@ -4603,7 +4666,13 @@ async function cizKararlar(kap) {
 // iki ayri istek iki ayri ani gosterirdi.
 async function hesaplariAl(taze) {
   const t = taze ? await yolla("/api/hesaplar/tazele", {}) : await al("/api/hesaplar");
+  // Terminal basliklarindaki hesap rozeti (B7) bu tablodan: ilk geliste ya
+  // da hesap/e-posta degisince panolar yeniden cizilir (yoksa ilk cizimde
+  // tablo henuz yoktu ve rozet hic cikmiyordu -- olculdu).
+  const imza = (x) => JSON.stringify(((x || {}).hesaplar || []).map((h) => [h.ad, h.eposta, h.plan, h.durum]));
+  const degisti = imza(D.hesaplar) !== imza(t);
   D.hesaplar = t;
+  if (degisti) { try { cizCanli(); } catch (_) {} }
   return t;
 }
 

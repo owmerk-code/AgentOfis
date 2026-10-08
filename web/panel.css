@@ -2055,3 +2055,9 @@ details > summary.hf-bas { cursor: pointer; }
 .dt-inceleme { border-left-color: var(--bilgi); } .dt-rozet.dt-inceleme { color: var(--bilgi); border-color: var(--bilgi); }
 .dt-bekliyor { border-left-color: var(--bekleyen); } .dt-rozet.dt-bekliyor { color: var(--bekleyen); border-color: var(--bekleyen); }
 .dt-sirada, .dt-bos { border-left-color: var(--cizgi-acik); }
+
+/* BEKLEYEN SERIT (08.10, B6): soru kendi terminalinin ustunde */
+.pano-bekleyen { border-bottom: 1px solid var(--cizgi); border-left: 3px solid var(--kotu); background: rgba(212,103,79,.06); padding: 7px 10px; }
+.pano-bekleyen-soru { font-size: var(--yz-alt); line-height: 1.4; margin-bottom: 4px; }
+.pano-bekleyen-soru b { color: var(--kotu); font-weight: 600; }
+.pano-bekleyen .istek-eylem { margin-top: 6px; }
