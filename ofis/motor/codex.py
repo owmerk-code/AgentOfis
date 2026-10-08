@@ -1630,7 +1630,7 @@ class CodexMotoru(Motor):
     def tui_plani(self, *, oturum_id: str, model: str, efor: str,
                   yazabilir: bool, ek_klasorler: tuple, mcp_yapilandirma: str,
                   izinli_araclar: tuple, ek_ortam: dict, kanca_komutu: str,
-                  gecici: Path) -> dict:
+                  gecici: Path, klasor: str = "") -> dict:
         """`codex` etkilesimli komutu + oturum dosyasini bulan islev.
 
         * Kanca komutu TIRNAKSIZ verilir: tirnakli komut PowerShell'de

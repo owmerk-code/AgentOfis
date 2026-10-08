@@ -870,6 +870,7 @@ def is_kos(no: str, motor: str, *, kuru: str = "", zaman_asimi: int = 600,
         # yapilmasin diye.
         dagilim: dict = {}
         bedel: dict = {}
+        kipler: dict = {}
         with ofis.db.baglanti() as c:
             for r in c.execute("SELECT ajan_ad, govde FROM olay WHERE proje_id=? AND "
                                "tur='tur_ozeti' ORDER BY rowid", (ofis.proje_id,)):
@@ -879,6 +880,8 @@ def is_kos(no: str, motor: str, *, kuru: str = "", zaman_asimi: int = 600,
                     continue
                 yol = v.get("yol") or "isci"
                 dagilim.setdefault(yol, []).append(round((v.get("sure_ms") or 0) / 1000))
+                # KIP (08.10.2026): T = gercek terminal, A = arka plan.
+                kipler.setdefault(yol, []).append("T" if v.get("kip") == "terminal" else "A")
                 # BEDEL (03.10.2026, "ofis carpani"): jeton ve API karsiligi
                 # maliyet yola gore -- abonelikte kota agirligini bu tasir.
                 bd = bedel.setdefault(yol, {"tur": 0, "jeton": 0, "maliyet_usd": 0.0})
@@ -897,6 +900,7 @@ def is_kos(no: str, motor: str, *, kuru: str = "", zaman_asimi: int = 600,
                     bd.setdefault("dokum", {})[alan] = bd.get("dokum", {}).get(alan, 0) + int(n or 0)
         sonuc["sureler"] = dagilim
         sonuc["bedel"] = bedel
+        sonuc["kipler"] = kipler
     except Exception as exc:                    # noqa: BLE001 -- bir is digerini durdurmasin
         sonuc["durum"] = "hata"
         sonuc["hata"] = f"{exc.__class__.__name__}: {exc}"
@@ -945,7 +949,9 @@ def rapor_yaz(sonuclar: list, ayar: dict) -> Path:
         if r.get("sureler"):
             s.append(f"- {r['no']}: " + " · ".join(
                 f"{y} {'+'.join(str(x) for x in v)}" for y, v in r["sureler"].items())
-                + f" (toplam {r.get('sure_sn', 0):.0f})")
+                + f" (toplam {r.get('sure_sn', 0):.0f})"
+                + (" · kip " + " · ".join(f"{y} {''.join(v)}" for y, v in r["kipler"].items())
+                   if r.get("kipler") else ""))
     s += ["", "## Sohbette gorunen (kalanlar)", ""]
     for r in sonuclar:
         if r.get("durum") != "gecti":

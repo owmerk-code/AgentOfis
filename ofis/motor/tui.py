@@ -376,7 +376,7 @@ class TuiMotoru(Motor):
                 oturum_id=oturum_id, model=model, efor=efor, yazabilir=yazabilir,
                 ek_klasorler=ek_klasorler, mcp_yapilandirma=mcp_yapilandirma,
                 izinli_araclar=izinli_araclar, ek_ortam=ek_ortam,
-                kanca_komutu=kanca_komutu(), gecici=gecici)
+                kanca_komutu=kanca_komutu(), gecici=gecici, klasor=klasor)
             ortam = dict(plan["ortam"], **kimlik)
             try:
                 t = Terminal(plan["argv"], klasor=klasor, ortam=ortam,
@@ -576,6 +576,21 @@ class TuiMotoru(Motor):
 
         kayit["kosuyor"] = False
         kayit["son"] = time.time()
+        # Kimligini KENDI dosyasindan bildiren motor (agy: `last_conversations`).
+        if plan.get("oturum_kimligi"):
+            try:
+                durum["oturum_id"] = plan["oturum_kimligi"]() or durum.get("oturum_id")
+            except Exception:                    # noqa: BLE001 -- kimlik yoksa eskisi
+                pass
+        # TUR SONU ISI (agy: alt ajanin urettigi gorselin teslimi) -- yalniz
+        # basarili turda; olaylari ve metne eki doner.
+        if not sebep and plan.get("tur_sonu"):
+            try:
+                for o in plan["tur_sonu"](durum):
+                    yield o
+            except Exception as exc:             # noqa: BLE001 -- teslim dusse de tur bitti
+                yield MotorOlayi("arac_sonuc", f"tur sonu isi yapilamadi: {exc}",
+                                 {"hatali": True, "cagri_id": "", "arac": "tur_sonu"})
         # Kimligi oturum dosyasindan ogrenen motor (codex): kayit yeni
         # kimlikle tutulur ki sonraki tur AYNI terminale yazsin.
         gercek = durum.get("oturum_id") or ""

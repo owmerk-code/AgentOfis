@@ -98,8 +98,10 @@ OTURUM_SAAT = 5
 #: kosuyor, yani haftalik kapi butcesi onun harcamasini GORMUYORDU.
 #: Iki kopyadan biri duzeltilip oteki unutuluyor; bu projede bu desen
 #: alti kez odendi.
+#: `kip` (08.10.2026): tur GERCEK TERMINALDE mi kostu ("terminal") -- arka
+#: plana dusen tur sonradan gorulebilsin (patron: "her sey gercek").
 OZET_ALANLARI = ("jeton", "maliyet_usd", "sure_ms", "model",
-                 "arac_sayisi", "basarili", "jeton_dokumu", "baglam")
+                 "arac_sayisi", "basarili", "jeton_dokumu", "baglam", "kip")
 
 
 def tur_ozeti_yaz(db, proje_id: str, ek: dict, *, ajan_ad: str = "",

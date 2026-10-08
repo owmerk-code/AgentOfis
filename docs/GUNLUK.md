@@ -15066,3 +15066,36 @@ ev, gemini-3.8-flash-low; 10 koşu):
   terminal katmanı bunları cevaplamıyor — sebep olup olmadığı ölçülmedi.
   Sıradaki: gerçek Windows konsol penceresinde aynı iş (ayırt etmek için).
   Gemini o güne dek ARKA kipte kalır (`tui_destegi=False`).
+
+## 08.10.2026 — DÜZELTME + ANTIGRAVITY GERÇEK TERMİNALDE
+
+**Önceki girdideki iki bulgu YANLIŞTI (ölçüm hatası).** Ölçüm betiği turun
+bittiğini adım dosyasında "BITTI" arayarak anlıyordu; kelime İSTEMİN içinde de
+geçtiği için dosya oluşur oluşmaz "bitti" deyip birkaç saniye sonra terminali
+KAPATIYORDU. "Çok adımlı iş takılıyor" ve "izinde açık `{"decision":"allow"}`
+gerekli" ikisi de bundan çıktı. Ayrım: aynı iş gerçek Windows konsol
+penceresinde (patron ekranında gördü) ve doğrudan ConPTY'de takılmadan bitti;
+düzeltilmiş betikle ofisin terminal sınıfında da bitti. İzinde çıktı yazmayan
+bugünkü kanca etkileşimli kipte de çalışıyor (ölçüldü). Ders (kalıcı ilke
+zaten var): ölçüm aracının kendisi ölçülmeli — "bitti" sinyali, istemin
+kendisinde geçemeyecek bir şey olmalı (adım TÜRÜ, kelime değil).
+
+**Antigravity artık gerçek terminalde** (`tui_destegi=True`, `antigravity.tui_plani`
+/ `tui_cevir`; `tui.py`'ye genel kancalar: plana `klasor`, motorun kendi
+`oturum_kimligi`, `tur_sonu` = görsel teslimi).
+- Kurulum işareti patronun KENDİ agy'sinden kopyalanır; patronunki tamam
+  değilse terminal açılmaz, sebep söylenir (veri onayı patron adına verilmez).
+- Klasör güveni `trustedWorkspaces`; olaylar `transcript_full.jsonl`;
+  kimlik `last_conversations.json`; `/exit`, Esc, `--conversation`.
+- SINAMANIN YAKALADIĞI: aynı klasörde YENİ konuşma açılınca
+  `last_conversations` ilk mesaja kadar ESKİ konuşmayı gösteriyor; ofis eski
+  dosyaya bakıp "gönderilmedi" diyordu. Açılıştaki kimlik değişene kadar
+  dosya yok sayılır (mutasyon: koruma kalkınca 4 sınama düştü; gerçek agy'de
+  de doğrulandı).
+- Gerçek agy, ofisin terminal sarmalayıcısı: araçlı tur 17-23 sn, aynı
+  terminalde devam 4 sn, kapanıp yeni konuşma 14 sn.
+- GERÇEK SET G01 Gemini ile: GEÇTİ 128 sn; tur özetine `kip` eklendi
+  (`kullanim.OZET_ALANLARI`), rapor her yolu yazar: "lider T · işçi T ·
+  inceleme T" (üç tur da terminalde). `duman_agy_tui` 24 sınama (sahte agy).
+- Not: agy terminalde `ask_question` aracıyla patrona seçenekli soru
+  sorabiliyor (kanca serbest); cevap terminalden verilir.

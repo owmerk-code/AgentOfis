@@ -30,9 +30,24 @@ OLCULENLER (agy 1.x, bu makinede, bos gecici klasorde, 04.10.2026):
   kapanabilir (#1044). Tur sonunda yeni gorseller `.ofis/ekler/`e alinir.
 * VIDEO araci YOK (model kendisi soyledi) -- video gomulu tarayicida Flow ile.
 
+GERCEK TERMINAL (08.10.2026, OLCULDU agy 1.3.1, bos gecici klasor): `agy`
+bayraksiz acilinca etkilesimli kip. (1) Yeni evde KURULUM ekrani (renk +
+"Google etkilesim verilerini toplasin" onayi): patronun KENDI agy'sinin
+`cache/onboarding.json`'u tamamsa ayni isaret ajan evine konur (patron adina
+yeni karar VERILMEZ; patronunki tamam degilse tur baslamaz, sebep soylenir).
+(2) Klasor guveni `settings.json` `trustedWorkspaces`. (3) Konusma kimligi
+`cache/last_conversations.json` {calisma klasoru: kimlik} (1,5 sn'de yazildi);
+adimlar `brain/<kimlik>/.system_generated/logs/transcript_full.jsonl` (USER_INPUT
+/ PLANNER_RESPONSE + tool_calls + jeton / GENERIC arac sonucu). (4) Kanca ayni
+(izinde cikti yok, ret cikis 2 -- etkilesimli kipte de gecti). (5) `/exit`
+kapatir, Esc keser, `--conversation` kaldigi yerden surdurur (onceki cevabi
+hatirladi). Dort adimli is (yaz, komut, silme kancada durdu, soru) ofisin
+terminal sinifinda 12-16 sn'de bitti. NOT: ilk olcumde "takiliyor" sanildi --
+olcum betigi istemdeki "BITTI" kelimesini cevap sanip terminali erken
+kapatiyordu (olcum hatasi; gercek konsol penceresiyle ayrildi).
+
 Bayraklar: `mcp_konusur=True` (ofis araclari), `izin_kancasi=True` (kanca),
-`butce_destegi=False` (tur basina dolar tavani yok), `tui_destegi=False`
-(gercek terminal kipi henuz olculmedi -- arka kipte kosar).
+`butce_destegi=False` (tur basina dolar tavani yok), `tui_destegi=True`.
 """
 
 from __future__ import annotations
@@ -104,6 +119,9 @@ def kanca_komutu() -> str:
     KISA yol adi (8.3) kullanilir.
     """
     return f"{_bosluksuz(Path(sys.executable))} {_bosluksuz(Path(__file__).resolve().parent.parent / 'kanca.py')} --agy"
+
+
+kanca_komutu_agy = kanca_komutu      # tui_plani'nin parametre adiyla cakismasin
 
 
 def _bosluksuz(yol: Path) -> str:
@@ -187,7 +205,7 @@ class AntigravityMotoru(Motor):
     tur_ici_mesaj = True
     araclar_kapatilabilir = False
     baglayici_tasir = False
-    tui_destegi = False
+    tui_destegi = True
 
     def __init__(self, *, calistirilabilir=None, zaman_asimi: float = None,
                  ev_koku: str = "") -> None:
@@ -223,8 +241,9 @@ class AntigravityMotoru(Motor):
         guvenli = "".join(ch if ch.isalnum() or ch in "-_" else "_" for ch in (ajan_ad or "_ortak"))
         return kok / guvenli
 
-    def _evi_hazirla(self, ev: Path, sunucular: dict) -> None:
-        """Kanca, MCP ve izin dosyalari -- her tur yeniden (ajan basina ev)."""
+    def _evi_hazirla(self, ev: Path, sunucular: dict, guvenilen=()) -> None:
+        """Kanca, MCP ve izin dosyalari -- her tur yeniden (ajan basina ev).
+        `guvenilen`: etkilesimli kipte sorulmadan guvenilen klasorler."""
         cfg = ev / ".gemini" / "config"
         cli = ev / ".gemini" / "antigravity-cli"
         cfg.mkdir(parents=True, exist_ok=True)
@@ -244,8 +263,34 @@ class AntigravityMotoru(Motor):
         except Exception:                       # noqa: BLE001
             pass
         izin = ["command(*)"] + [f"mcp({ad}/*)" for ad in sunucular]
-        (cli / "settings.json").write_text(json.dumps({"permissions": {"allow": izin}}),
-                                           encoding="utf-8")
+        ayar = {"permissions": {"allow": izin}}
+        if guvenilen:
+            ayar["trustedWorkspaces"] = [str(k) for k in guvenilen]
+        (cli / "settings.json").write_text(json.dumps(ayar), encoding="utf-8")
+
+    @staticmethod
+    def _kurulum_isareti(ev: Path) -> str:
+        """Etkilesimli kipin ilk kurulum ekrani (renk + veri toplama onayi)
+        ajan evinde ACILMASIN: patronun KENDI agy'si kurulumu tamamladiysa
+        ayni isaret konur. Doner: bos = tamam; aksi halde SEBEP."""
+        hedef = ev / ".gemini" / "antigravity-cli" / "cache" / "onboarding.json"
+        try:
+            if json.loads(hedef.read_text(encoding="utf-8")).get("onboardingComplete"):
+                return ""
+        except (OSError, ValueError):
+            pass
+        kaynak_ev = Path(os.environ.get("OFIS_AGY_KAYNAK_EV") or Path.home())
+        kaynak = kaynak_ev / ".gemini" / "antigravity-cli" / "cache" / "onboarding.json"
+        try:
+            veri = json.loads(kaynak.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            veri = {}
+        if not veri.get("onboardingComplete"):
+            return ("Antigravity'nin ilk kurulumu (renk ve veri onayi) bu bilgisayarda "
+                    "tamamlanmamis: patron bir kez `agy` acip kurulumu bitirmeli.")
+        hedef.parent.mkdir(parents=True, exist_ok=True)
+        hedef.write_text(json.dumps(veri), encoding="utf-8")
+        return ""
 
     @staticmethod
     def _sunucular(mcp_yapilandirma: str) -> tuple:
@@ -467,6 +512,142 @@ class AntigravityMotoru(Motor):
                       else "durduruldu" if durduruldu
                       else "limit" if limit else "cikis"),
         })
+
+    # -- gercek terminal ---------------------------------------------------
+
+    def tui_plani(self, *, oturum_id: str, model: str, efor: str, yazabilir: bool,
+                  ek_klasorler: tuple, mcp_yapilandirma: str, izinli_araclar: tuple,
+                  ek_ortam: dict, kanca_komutu: str, gecici: Path, klasor: str = "") -> dict:
+        """Gercek terminalde acilacak `agy` ve okunacak adim dosyasi.
+
+        Arka kipin kurallari AYNEN: ayni ajan evi, kanca (agy'ninki --
+        `kanca_komutu` parametresi Claude bicimidir, kullanilmaz), MCP, model,
+        efor, salt okunur kip, klasorler, kaldigi konusma. Farki: istem stdin
+        yerine terminale yapistirilir, olaylar adim dosyasindan okunur."""
+        if not self.musait_mi():
+            raise MotorYokHatasi(self.durum_notu())
+        kok = Path(klasor).expanduser().resolve() if klasor else Path.cwd().resolve()
+        sunucular, mcp_ortam = self._sunucular(mcp_yapilandirma)
+        ajan_ad = mcp_ortam.get("OFIS_AJAN") or (ek_ortam or {}).get("OFIS_AJAN") or "_ortak"
+        ev = self.ev(ajan_ad)
+        self._evi_hazirla(ev, sunucular, guvenilen=[str(kok)] + [
+            str(Path(e).expanduser().resolve()) for e in ek_klasorler or ()])
+        neden = self._kurulum_isareti(ev) or kanca_sina(kanca_komutu_agy())
+        if neden:
+            raise MotorHatasi(f"Antigravity terminali acilmadi: {neden}")
+        argv = self._onek()
+        if model:
+            argv += ["--model", str(model)]
+        if EFOR_CEVRIMI.get(efor) and not str(model or "").endswith(("-low", "-medium", "-high")):
+            argv += ["--effort", EFOR_CEVRIMI[efor]]
+        if not yazabilir:
+            argv += ["--mode", "plan"]
+        for ek in ek_klasorler or ():
+            argv += ["--add-dir", str(ek)]
+        if oturum_id:
+            argv += ["--conversation", str(oturum_id)]
+        ortam = ortam_hazirla(os.environ, ek={"USERPROFILE": str(ev), "HOME": str(ev),
+                                              **_appdata_ortami(ev), **mcp_ortam,
+                                              **(ek_ortam or {})},
+                              izinli=tuple(ek_ortam or ()) + tuple(mcp_ortam))
+        cli = ev / ".gemini" / "antigravity-cli"
+        hedef = os.path.normcase(str(kok))
+        baslangic = time.time()
+
+        def _kimlik() -> str:
+            try:
+                d = json.loads((cli / "cache" / "last_conversations.json").read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                return ""
+            for k, v in (d or {}).items():
+                try:
+                    if os.path.normcase(str(Path(k).resolve())) == hedef:
+                        return str(v)
+                except OSError:
+                    continue
+            return ""
+
+        # YENI KONUSMADA ESKI KIMLIK (08.10.2026, sinama yakaladi): ayni
+        # klasorde yeni konusma acilinca `last_conversations` ILK MESAJA kadar
+        # ONCEKI konusmayi gosterir; ofis eski dosyaya bakip "gonderilmedi"
+        # diyordu. Acilistaki kimlik degisene kadar dosya YOK sayilir.
+        eski = "" if oturum_id else _kimlik()
+
+        def _guncel() -> str:
+            k = _kimlik()
+            if oturum_id:
+                return k or oturum_id
+            return k if k and k != eski else ""
+
+        def _dokum():
+            k = _guncel()
+            return (cli / "brain" / k / ".system_generated" / "logs" / "transcript_full.jsonl"
+                    if k else None)
+
+        def _tur_sonu(durum: dict) -> list:
+            teslim = self._gorselleri_al(ev, kok, baslangic, durum)
+            if teslim:
+                durum.setdefault("metin", []).append("\n\nURETILEN GORSEL: " + ", ".join(teslim))
+            return [MotorOlayi("arac_sonuc", f"gorsel teslim alindi: {y}",
+                               {"hatali": False, "cagri_id": "", "arac": "generate_image"})
+                    for y in teslim]
+
+        return {
+            "argv": argv, "ortam": ortam, "kapat": "/exit", "oturum_id": oturum_id,
+            "dokum": _dokum, "oturum_kimligi": _guncel, "tur_sonu": _tur_sonu,
+            # Sistem eki bayrakla verilemiyor: yeni konusmanin ilk mesajina.
+            "ilk_on_ek": "" if oturum_id else SISTEM_EKI,
+            # Giris kutusu cizildi (olculdu: "? for shortcuts").
+            "hazir_mi": lambda e: "for shortcuts" in e[-800:],
+            "durdur": "\x1b",
+        }
+
+    def tui_cevir(self, kayit: dict, durum: dict) -> tuple:
+        """Adim dosyasinin bir satiri -> (olaylar, tur_bitti).
+
+        PLANNER_RESPONSE: modelin sozu, arac cagrilari, jeton; arac cagrisi
+        YOKSA tur biter (model durdu). GENERIC: sirayla bekleyen aracin sonucu."""
+        olaylar = []
+        tur, hal = kayit.get("type"), str(kayit.get("status") or "")
+        durum.setdefault("metin", [])
+        icerik = str(kayit.get("content") or "")
+        if tur == "PLANNER_RESPONSE":
+            idx = kayit.get("step_index")
+            giris = int(kayit.get("input_tokens") or 0)
+            cikis = int(kayit.get("output_tokens") or 0)
+            onbellek = int(kayit.get("cache_read_tokens") or 0)
+            if giris or cikis:
+                durum.setdefault("kullanim", {})[idx] = giris + cikis
+                durum.setdefault("dokum_mesaj", {})[idx] = dokum_ekle({}, {
+                    "input_tokens": giris, "output_tokens": cikis,
+                    "cache_read_input_tokens": onbellek})
+            if icerik.strip():
+                parca = ("\n\n" + icerik) if durum["metin"] else icerik
+                durum["metin"].append(parca)
+                olaylar.append(MotorOlayi("metin", parca))
+            cagrilar = [c for c in kayit.get("tool_calls") or [] if isinstance(c, dict)]
+            for c in cagrilar:
+                ad = str(c.get("name") or "")
+                param = c.get("args") if isinstance(c.get("args"), dict) else {}
+                if ad == "call_mcp_tool":
+                    ad = f"{param.get('ServerName', '')}.{param.get('ToolName', '')}"
+                durum["arac_sayisi"] = durum.get("arac_sayisi", 0) + 1
+                durum.setdefault("bekleyen_arac", []).append(ad)
+                olaylar.append(MotorOlayi("arac", ad, {"ozet": _girdi_ozeti(ad, param),
+                                                       "cagri_id": f"{idx}:{ad}"}))
+            if not cagrilar:
+                if hal and hal != "DONE":
+                    olaylar.append(MotorOlayi("hata", (icerik or hal)[:400], {"sebep": "cikis"}))
+                return olaylar, True
+        elif tur == "GENERIC":
+            bekleyen = durum.get("bekleyen_arac") or []
+            ad = bekleyen.pop(0) if bekleyen else "arac"
+            if any(k in icerik.lower() for k in ("resource_exhausted", "quota", "rate limit",
+                                                 "rate_limit", "usage limit")):
+                durum["limit"] = True
+            olaylar.append(MotorOlayi("arac_sonuc", f"{ad} {hal.lower() or 'done'}",
+                                      {"hatali": hal != "DONE", "cagri_id": "", "arac": ad}))
+        return olaylar, False
 
     def _satir_cevir(self, satir: str, durum: dict) -> list:
         """stream-json satiri -> olaylar (sinamada dogrudan cagrilir)."""
