@@ -15099,3 +15099,46 @@ kendisinde geçemeyecek bir şey olmalı (adım TÜRÜ, kelime değil).
   inceleme T" (üç tur da terminalde). `duman_agy_tui` 24 sınama (sahte agy).
 - Not: agy terminalde `ask_question` aracıyla patrona seçenekli soru
   sorabiliyor (kanca serbest); cevap terminalden verilir.
+
+## 08.10.2026 — B AŞAMASI: EKRANIN İŞLEVSEL EKSİKLERİ
+
+- **B7 terminalde hangi hesap:** başlıkta e-posta + plan (`semuparfum · Max`,
+  `omerjob34 · Plus`), hesap tablosundan. İlk açılışta çıkmıyordu: panolar
+  hesap tablosundan önce çiziliyordu (ölçüldü) → tablo gelince/değişince
+  yeniden çizim. `panel.js`'te aynı adlı iki işlev (`hesapSatiri`) vardı,
+  sonraki öncekini eziyordu (ekranda "undefined") → `hesapKaydi`.
+  Antigravity `giris_durumu` (etkin Google hesabı `google_accounts.json`).
+  AÇIK: defterdeki `gemini` hesap satırı "kapalı" ("kasadaki anahtar", eski
+  Gemini CLI) — Gemini ajanını durdurmuyor (zincir motoru doğrudan kullanıyor,
+  kopyada ölçüldü) ama tablo/rozet onu göstermiyor; açmak patronun kararı.
+- **Yedek zincirde Haiku 4.5 vardı** (`VARSAYILAN_ZINCIR` `("claude","haiku")`):
+  limit dolunca iş sessizce Haiku'ya düşüyordu; 05.10 kararı orada
+  unutulmuştu. Çıkarıldı, sınamaya bağlandı.
+- **B1 karar ekranı:** `soru_sor(secenekler, onerilen)`; seçenek düğmeleri,
+  önerilen hazır seçili; "Önerilenlerin hepsini kabul et" yalnız önerilenli
+  SORULARI cevaplar (onay kartları dokunulmaz). Ekranda tıklanıp deftere
+  yazıldığı ölçüldü.
+- **B2+B4 Durum panosu** (`durum_tablosu.py`): her açık işin "nerede"
+  satırı (onay/giriş/kredi/cevap/başka ajan/durdu/ölü süreç/çalışıyor/
+  inceleme/bağımlılık/sıra), son araç adımı, geri dönüş; ajanlar; lidere
+  giden sıra. Sohbetteki "Süren işler" çipleri de aynı hükmü yazar.
+- **B6:** soru kendi terminalinin üstünde (seçenekli, cevaplanır).
+- **B3:** rapor + o işin verilmiş ve bekleyen kararları.
+- **B5** (`deger.py`): haftalık biten/ilk seferde/geri dönen/iptal, ortanca
+  süre, puan, senden istenen soru-onay, günlük çubuk, hesap başına
+  tur-jeton-süre + şu anki kota.
+
+**HATA (benim) — sınama panelinde gerçek tur koştu:** görsel denetim için
+gerçek defterin kopyasıyla 8911'i açtım ve kopyaya örnek iş koydum; ajanın
+motoru GERÇEK Claude'du ve çalışma klasörü gerçek `Masaüstü\Ofisim`. Seçenekli
+soruyu ekrandan cevaplayınca panel işi sürdürdü: ece (Sonnet, 25 sn,
+~195k jeton çoğu önbellek) ve arda (Opus, 32k) birer tur koştu. Dosya
+YAZILMADI (yalnız soru sordu); iz olarak `ev/brifing/<proje>/ece.md` ve
+`~/.claude/projects/C--Users-pc-Desktop-Ofisim` oluştu → silindi.
+DERS: sınama panelinde örnek veri YALNIZ sahte motorlu ajanlarla
+(`motor='sahte'`, panel `OFIS_SINAMA_MOTORU=1`) ve geçici klasörle kurulur;
+gerçek defterin kopyasında koşulabilir iş BIRAKILMAZ.
+
+### 08.10 ANAYASADAN TAŞINAN: GERÇEK TERMİNAL KARARI
+
+- **Gerçek terminal kararı (29.09, ölçüldü):** iki motorda kanca riskli komutu durdurdu, not tur sürerken ulaştı; yerleşik izin kipleri push/rm'i SORMADAN yaptı → karar ofisin kancası.

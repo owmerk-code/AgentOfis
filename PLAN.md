@@ -23,13 +23,13 @@ başlar.
 | A2 | Gerçek ofisi temiz başlangıca alma — A1 ile, patron onayıyla; + sahte motor/örnek ofis yalnız sınamada, deneme kipi ve arka plan kipi kaldırıldı | BİTTİ 08.10 (patron SIFIRLA yazdı; elle kalan: Ofisim deneme klasörleri, veri/ örnek dosyaları) |
 | A3 | Belgeler: CLAUDE.md "Güncel durum" | BİTTİ 08.10 |
 | **B — Ekranın işlevsel eksikleri (görünüş değil)** | | |
-| B1 | Karar ekranı: seçenekli soru, önerilen seçili, toplu kabul | YOK |
-| B2 | Her işin gerçek durumu tek ekranda (onay/kredi/giriş bekliyor, hangi adımda) | kısmen (kanban + iş kartı) |
-| B3 | Rapor + ona bağlı kararlar bir arada | kısmen (Raporlar sekmesi) |
-| B4 | Lider durum tablosu (kim çalışıyor, sırada ne var, neden) | YOK |
-| B5 | Değer panosu (haftalık iş, geri dönen iş, hesap başına kota) | YOK |
-| B6 | Bekleyen soru ilgili terminalin üstünde | doğrulanacak (yazma yeri var) |
-| B7 | Terminalde hangi HESAPLA çalıştığı | YOK (pencere yüzdesi var, hesap adı yok) |
+| B1 | Karar ekranı: seçenekli soru, önerilen seçili, toplu kabul | BİTTİ 08.10 |
+| B2 | Her işin gerçek durumu tek ekranda (onay/kredi/giriş bekliyor, hangi adımda) | BİTTİ 08.10 (Durum panosu) |
+| B3 | Rapor + ona bağlı kararlar bir arada | BİTTİ 08.10 |
+| B4 | Lider durum tablosu (kim çalışıyor, sırada ne var, neden) | BİTTİ 08.10 (Durum panosu) |
+| B5 | Değer panosu (haftalık iş, geri dönen iş, hesap başına kota) | BİTTİ 08.10 (Durum > Bu hafta) |
+| B6 | Bekleyen soru ilgili terminalin üstünde | BİTTİ 08.10 |
+| B7 | Terminalde hangi HESAPLA çalıştığı | BİTTİ 08.10 (Gemini satırı kapalı: patron kararı) |
 | **C — Medya ve tasarım (kalanlar)** | | |
 | C1 | Flow ile GÖRSEL uçtan uca (Nano Banana, ürün referanslı) | beceri var, canlı ölçülmedi |
 | C2 | Seslendirme (istenirse) + yapay zekâ müziği (patron: AI müzik); Flow müziği girişi/lisansı | YOK |
