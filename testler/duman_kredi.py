@@ -98,6 +98,17 @@ sina("adres bilinmiyorken Flow'un dugme adi yeter",
      (tikla("Oluşturmaya başla", url="") or {}).get("sinif") == "kredi")
 sina("alt alan adi da kredi sitesi (labs.google)", riskli.kredi_sitesi_mi("https://www.labs.google/fx/tr"))
 sina("benzer ama baska alan adi DEGIL", not riskli.kredi_sitesi_mi("https://flow.google.com.kotu.site/"))
+# FLOW MUSIC (08.10.2026, olculdu): ayri site, uretim sohbet kutusundan.
+MUZIK = "https://www.flowmusic.app/?utm_source=flow"
+sina("Flow Music kredi sitesi", riskli.kredi_sitesi_mi(MUZIK)
+     and not riskli.kredi_sitesi_mi("https://flowmusic.app.kotu.site/"))
+sina("Flow Music: sohbetten uretim (Send message) SORULUR",
+     (tikla("Send message", url=MUZIK, ayar="") or {}).get("sinif") == "kredi")
+sina("Flow Music: Enter ile gonderme SORULUR",
+     (riskli.degerlendir("browser_press_key", {"key": "Enter"}, url=MUZIK, uretim_ayari="") or {})
+     .get("sinif") == "kredi")
+sina("Flow Music: remiks SORULUR", (tikla("Remix your audio", url=MUZIK, ayar="") or {}).get("sinif") == "kredi")
+sina("Flow Music: dinlemek (Play) serbest", tikla("Play", url=MUZIK, ayar="") is None)
 
 print("\n3. baska sitede ayni yazi")
 sina("baska sitede 'Oluştur' sorulmaz", tikla("Oluştur", url="https://ornek.com/") is None)

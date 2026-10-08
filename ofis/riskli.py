@@ -410,7 +410,9 @@ DENETLENEN = {
 #: GORMEZ (fatura yok) ama kredi patronundur ve geri gelmez. OLCULDU
 #: (06.10 gosteri): Flow'da "Oluşturmaya başla" kapidan SORULMADAN gecti,
 #: ajan 4 krediyi kendisi harcadi. Yalniz bu sitelerde aranir.
-KREDI_SITELERI = ("flow.google.com", "labs.google")
+#: `flowmusic.app` (08.10.2026, OLCULDU): Flow ana sayfasindaki "Flow Music" ayri
+#: site; sarki uretimi sohbet kutusundan ("Send message") gunluk krediyle.
+KREDI_SITELERI = ("flow.google.com", "labs.google", "flowmusic.app")
 #: Uretimi tetikleyen yazilar (sadelestirilmis). "1080p Yükseltilmiş" /
 #: "4K Yükseltilmiş" indirme secenekleri BUYUTME yapar -- bedeli olculmedi,
 #: sorulur.
@@ -418,6 +420,8 @@ KREDI_TETIK = _kur((
     r"\bolusturmaya basla", r"\bolustur\b", r"\byeniden olustur", r"\btekrar olustur",
     r"\bgenerate\b", r"\bregenerate\b", r"\bcreate\b", r"\btekrar dene\b", r"\bretry\b",
     r"\buzat\b", r"\bextend\b", r"\byukseltilmis\b", r"\bupscale",
+    # Flow Music (08.10): uretim sohbetten ve remiks / ayirma araclarindan.
+    r"\bsend message\b", r"\bmesaj gonder", r"\bremix\b", r"\bstem split\b",
 ))
 #: Kredi sitesinde tek basina "Yukselt" PLAN yukseltmedir: PARA.
 KREDI_PARA = _kur((r"\byukselt\b", r"\bupgrade\b"))
