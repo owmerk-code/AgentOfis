@@ -178,7 +178,12 @@ import shutil as _sh  # noqa: E402
 import time as _t  # noqa: E402
 beceri.HAZIR_KOK = _GERCEK_HAZIR
 _hazir = sorted(p.name for p in beceri.HAZIR_KOK.iterdir() if (p / "SKILL.md").exists())
-sina("kodla gelen uc beceri var", {"reklam-kreatifi", "flow-video", "flow-gorsel"} <= set(_hazir), str(_hazir))
+sina("kodla gelen beceriler var (gorsel, flow-video, reklam-kreatifi, video-duzenle)",
+     {"reklam-kreatifi", "flow-video", "gorsel", "video-duzenle"} <= set(_hazir)
+     and "flow-gorsel" not in _hazir, str(_hazir))
+_gs = (beceri.HAZIR_KOK / "gorsel" / "SKILL.md").read_text(encoding="utf-8")
+sina("gorsel becerisi: gorsel_uret + referans + oran; Flow'da gorsel YOK",
+     all(k in _gs for k in ("gorsel_uret", "referanslar", "oran=", "URETILMEZ")), _gs[:200])
 for _ad in _hazir:
     _b = beceri.on_bilgi(beceri.HAZIR_KOK / _ad / "SKILL.md")
     sina(f"  {_ad}: basligin adi klasorle ayni, aciklama var",
@@ -199,28 +204,36 @@ _eski.mkdir(parents=True)
 (_eski / "SKILL.md").write_text("---\nname: flow-video\ndescription: eski\n---\neski\n", encoding="utf-8")
 _k = beceri._kayit_oku()
 _k["flow-video"] = {"kaynak": "agent sistemi (04.10)", "eklendi": "2026-10-04T19:24:42"}
+# EMEKLI (08.10): ofisin getirdigi flow-gorsel depodan KALKAR.
+_emk = beceri._kok() / "skills" / "flow-gorsel"
+_emk.mkdir(parents=True, exist_ok=True)
+(_emk / "SKILL.md").write_text("---\nname: flow-gorsel\ndescription: eski\n---\nx\n", encoding="utf-8")
+_k["flow-gorsel"] = {"kaynak": beceri.HAZIR, "surum": 0}
 beceri._kayit_yaz(_k)
 _yeni = beceri.hazir_esitle()
-sina("eksik ofis becerileri depoya geldi", {"reklam-kreatifi", "flow-gorsel"} <= set(_yeni), str(_yeni))
+sina("eksik ofis becerileri depoya geldi", {"reklam-kreatifi", "gorsel"} <= set(_yeni), str(_yeni))
+sina("EMEKLI ofis becerisi (flow-gorsel) depodan KALKTI",
+     not _emk.exists() and "flow-gorsel" not in beceri._kayit_oku())
 sina("elle konan eski flow-video GUNCELLENDI ve benimsendi",
      "KIMLIK KILIDI" in (_eski / "SKILL.md").read_text(encoding="utf-8")
      and beceri._kayit_oku()["flow-video"]["kaynak"] == beceri.HAZIR)
 # patron kapatirsa kapali kalir; silerse geri gelmez
-beceri.kapat("flow-gorsel")
+beceri.kapat("gorsel")
 beceri.hazir_esitle()
-sina("kapatilan ofis becerisi KAPALI kalir", beceri._yer("flow-gorsel")[0] == "kapali")
-beceri.ac("flow-gorsel")
+sina("kapatilan ofis becerisi KAPALI kalir", beceri._yer("gorsel")[0] == "kapali")
+beceri.ac("gorsel")
 beceri.sil("reklam-kreatifi")
 beceri.hazir_esitle()
 sina("silinen ofis becerisi GERI GELMEZ", beceri._yer("reklam-kreatifi")[0] is None)
 # patronun ayni adli kendi becerisine (baska kaynak) dokunulmaz
 _kendi = beceri._kok() / "skills" / "flow-gorsel"
+_kendi.mkdir(parents=True, exist_ok=True)
 (_kendi / "SKILL.md").write_text("---\nname: flow-gorsel\ndescription: patronun\n---\npatron\n", encoding="utf-8")
 _k = beceri._kayit_oku()
 _k["flow-gorsel"] = {"kaynak": "patron", "surum": 0}
 beceri._kayit_yaz(_k)
 beceri.hazir_esitle()
-sina("baska kaynakli ayni adli beceriye DOKUNULMAZ",
+sina("baska kaynakli ayni adli beceriye DOKUNULMAZ (emekli adinda bile)",
      "patron" in (_kendi / "SKILL.md").read_text(encoding="utf-8"))
 # Gemini (Antigravity): ajanin evine esitlenir (olculdu: agy oradan okuyor)
 from ofis.motor.antigravity import AntigravityMotoru  # noqa: E402

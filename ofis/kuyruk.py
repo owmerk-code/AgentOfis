@@ -246,6 +246,58 @@ def devam_cevabi(ofis, kayit_id: str) -> str:
     return metin
 
 
+def askida_kalanlari_kapat(ofis) -> int:
+    """ISI BITMIS AMA CEVAPSIZ KALAN ISTEK (08.10.2026, OLCULDU canli Brave).
+
+    Istek Durdur ile kesildi, is Surdur ile (halka) bitti; patronun mesaji
+    hic cevaplanmadi. Sohbet onu "suruyor" sandi ve panel 3 sn'de bir
+    BASTAN CIZDI (patron: "kendi kendine F5 atiyor gibi"; oynayan video
+    da bu yuzden kapaniyordu). Kural tek yerde: sirada/kosan istek YOKKEN,
+    bir istegin actigi islerin HEPSI kapanmissa (bitti/iptal) istek ofisin
+    modelsiz cevabiyla kapanir. Isi suren istege DOKUNULMAZ. Doner: kac.
+    """
+    with ofis.db.baglanti() as c:
+        if c.execute("SELECT 1 FROM kuyruk WHERE proje_id = ? AND durum IN ('bekliyor', 'kosuyor') "
+                     "LIMIT 1", (ofis.proje_id,)).fetchone():
+            return 0
+        kayitlar = [_sozluk(r) for r in c.execute(
+            "SELECT * FROM kuyruk WHERE proje_id = ? AND basladi IS NOT NULL ORDER BY rowid",
+            (ofis.proje_id,))]
+    kapanan = 0
+    for i, k in enumerate(kayitlar):
+        sonraki = next((x for x in kayitlar[i + 1:] if x.get("lider_ad") == k.get("lider_ad")), None)
+        with ofis.db.baglanti() as c:
+            m = c.execute(
+                "SELECT id FROM mesaj WHERE proje_id = ? AND gonderen = 'insan' AND alici = ? "
+                "AND mod = 'uyandiran' AND olusturuldu >= ? AND (cevap = '' OR cevap IS NULL)"
+                + (" AND olusturuldu < ?" if sonraki else "") + " ORDER BY rowid LIMIT 1",
+                (ofis.proje_id, k["lider_ad"], k["basladi"])
+                + ((sonraki["basladi"],) if sonraki else ())).fetchone()
+            if not m:
+                continue
+            gorevler = acilan_gorevler(c, ofis.proje_id, k)
+            if not gorevler or any(g["durum"] not in ("bitti", "iptal") for g in gorevler):
+                continue
+            satir = ["İş tamamlandı (ofisin özeti; istek yarıda durdurulup sürdürülmüştü):"]
+            satir += [f"- #{g['no']} {_kisa(g['baslik'], 70)} — {GOREV_ADI.get(g['durum'], g['durum'])}"
+                      for g in gorevler]
+            # TESLIM DOSYALARI cevapta (patron videoyu katli adimlarda
+            # aramasin): her isin SON ajan mesajindaki ekler.
+            ekler = []
+            for g in gorevler:
+                r = c.execute("SELECT o.govde FROM olay o JOIN gorev g ON g.id = o.gorev_id "
+                              "WHERE o.proje_id = ? AND g.no = ? AND o.tur = 'ajan_sohbet' "
+                              "ORDER BY o.rowid DESC LIMIT 1", (ofis.proje_id, g["no"])).fetchone()
+                for s in (r["govde"] if r else "").splitlines():
+                    if s.startswith("[ek] ") and s not in ekler:
+                        ekler.append(s)
+            satir += ekler[:8]
+            c.execute("UPDATE mesaj SET cevap = ?, cevaplandi = ? WHERE id = ?",
+                      ("\n".join(satir), simdi(), m["id"]))
+        kapanan += 1
+    return kapanan
+
+
 #: ILETILEMEDI (02.10.2026). Rakipte (video BCiMfZ9mN-w, k47) mesajin
 #: yaninda "Iletilemedi -- terminal cevap vermedi [Terminale git]
 #: [Tekrar dene]" var. Bizde siradaki is DUSERSE patronun mesaji ya hic

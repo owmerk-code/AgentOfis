@@ -710,6 +710,7 @@ class _CoSahteMotor:
         _CoSahteMotor.son_metin = metin
         _CoSahteMotor.son_efor = efor
         _CoSahteMotor.son_model = model
+        _CoSahteMotor.son_gorseller = tuple(_.get("gorseller") or ())
         thread = "th-" + str(_CoSahteMotor.cagri)
         yield _CoOlay("oturum", "", {"oturum_id": thread})
         if self.senaryo == "limit":
@@ -793,6 +794,70 @@ try:
                         ucretsiz_sadece=True)
     sina("para kilidi KAPALIYKEN codex yine uretiyor", _co_s["uretici"] == "codex")
     gorsel.TERCIH_SIRASI = _co_eski_sira
+
+    # 5b. REFERANS FOTOGRAF (08.10.2026, Brave): Flow kutuyu uydurdu; codex
+    # `-i` ile urunu birebir korudu (olculdu). Referans motora EK olarak
+    # gider, eksik/yanlis dosya HATA, referans alamayan uretici atlanir.
+    _co_ref = _co_kok / "ref"
+    _co_ref.mkdir()
+    (_co_ref / "sise.png").write_bytes(b"\x89PNG-sise")
+    (_co_ref / "not.txt").write_text("x", encoding="utf-8")
+    _CoSahteMotor.senaryo = "dosya"
+    _co_s = gorsel.uret("sise", _co_kok / "out" / "r.png",
+                        referanslar=[_co_ref / "sise.png"])
+    sina("referans: motora EK gorsel olarak gidiyor",
+         _CoSahteMotor.son_gorseller == (str((_co_ref / "sise.png").resolve()),),
+         str(_CoSahteMotor.son_gorseller))
+    sina("referans: istem urunu birebir korumayi soyluyor",
+         "BIREBIR" in _CoSahteMotor.son_metin.upper()
+         and "icat etme" in _CoSahteMotor.son_metin, _CoSahteMotor.son_metin[-200:])
+    sina("referans: sonucta ad olarak yaziliyor", _co_s.get("referanslar") == ["sise.png"])
+    gorsel.uret("sise", _co_kok / "out" / "r2.png")
+    sina("referanssiz istekte motora gorsel gitmiyor, not yok",
+         _CoSahteMotor.son_gorseller == () and "icat etme" not in _CoSahteMotor.son_metin)
+    _co_cagri = _CoSahteMotor.cagri
+    for _co_bad, _co_ne in ((_co_ref / "yok.png", "yok"), (_co_ref / "not.txt", "gorsel degil")):
+        try:
+            gorsel.uret("x", _co_kok / "out" / "h.png", referanslar=[_co_bad])
+            sina(f"referans {_co_ne}: HATA", False)
+        except gorsel.GorselHatasi as exc:
+            sina(f"referans {_co_ne}: HATA", _co_ne.split()[0] in str(exc), str(exc))
+    sina("hatali referans tur KOSTURMADI", _CoSahteMotor.cagri == _co_cagri)
+    try:
+        gorsel.uret("x", _co_kok / "out" / "g.png", uretici="openai",
+                    referanslar=[_co_ref / "sise.png"])
+        sina("referans alamayan uretici acikca secilince REDDEDILIYOR", False)
+    except gorsel.GorselHatasi as exc:
+        sina("referans alamayan uretici acikca secilince REDDEDILIYOR",
+             "ALAMIYOR" in str(exc), str(exc))
+    _co_eski_sira = gorsel.TERCIH_SIRASI
+    gorsel.TERCIH_SIRASI = ("openai", "codex")
+    _co_s = gorsel.uret("x", _co_kok / "out" / "o.png", referanslar=[_co_ref / "sise.png"])
+    gorsel.TERCIH_SIRASI = _co_eski_sira
+    sina("otomatik sirada referans alamayan ATLANIYOR, gerekcesi yazili",
+         _co_s["uretici"] == "codex" and any(
+             a["uretici"] == "openai" and "referans" in a["sebep"]
+             for a in _co_s["atlananlar"]), str(_co_s.get("atlananlar")))
+
+    # Komut: `--image` bayragi istemin '-'sini YUTMAMALI (ardindan bayrak).
+    from ofis.motor.codex import CodexMotoru as _CoM
+    _co_m = _CoM(kip="exec")
+    _co_m.calistirilabilir = "codex"
+    _co_k = _co_m._komut_kur("", devam=False, model="", efor="", yazabilir=True,
+                             ek_klasorler=(), klasor="C:/x", gorseller=("C:/a.png", "C:/b.png"))
+    _co_i = _co_k.index("--image")
+    sina("komut: --image iki dosyayi tasiyor, ardindan BAYRAK",
+         _co_k[_co_i + 1:_co_i + 3] == ["C:/a.png", "C:/b.png"]
+         and _co_k[_co_i + 3].startswith("--") and _co_k[-1] == "-", str(_co_k))
+    _co_k2 = _co_m._komut_kur("", devam=False, model="", efor="", yazabilir=True,
+                              ek_klasorler=(), klasor="C:/x")
+    sina("komut: referanssiz turda --image YOK", "--image" not in _co_k2)
+    _co_app = _CoM(kip="app-server")
+    try:
+        list(_co_app.tur_kos("x", klasor=str(_co_kok), gorseller=("C:/a.png",)))
+        sina("app-server kipinde ekli gorsel REDDEDILIYOR", False)
+    except Exception as exc:
+        sina("app-server kipinde ekli gorsel REDDEDILIYOR", "exec" in str(exc), str(exc))
 
     # 6. Lider blogu olu oturumu 'anahtar yok' diye YANLIS anlatmiyor.
     _co_eski_mus = gorsel.CodexUretici.musait_mi

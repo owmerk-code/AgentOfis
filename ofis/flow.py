@@ -383,6 +383,22 @@ def gerekirse_olc(db, proje_id: str, cdp: str = "", zorla: bool = False, olcer=N
     return {"yapildi": True, "sebep": "olculdu", "fark": d}
 
 
+#: Flow'un RESIM kipi modelleri (katalog yoksa da taninir).
+RESIM_ISARETLERI = ("nano banana", "imagen", "resim")
+
+
+def resim_ayari_mi(ayar_metni: str, katalog: dict = None) -> bool:
+    """Flow'un su anki uretim ayari GORSEL (resim) mi. 08.10.2026 patron:
+    "gorsel icin dogrudan Gemini ya da GPT; video icin Flow." Ayar okunamazsa
+    False (o zaman kredi kapisi her zamanki gibi sorar)."""
+    t = (ayar_metni or "").lower()
+    if not t or t.startswith("video"):
+        return False
+    k = katalog if katalog is not None else oku()
+    modeller = [str(x.get("model") or "").lower() for x in (k.get("resim") or [])]
+    return any(m and m in t for m in modeller) or any(i in t for i in RESIM_ISARETLERI)
+
+
 def ucretsiz_mi(ayar_metni: str, katalog: dict = None) -> bool:
     """Flow'un su anki uretim ayari (istem cubugundaki `Ayarlar tetikleyicisi`
     yazisi: "Video · 720p · 10 sn. x1" ya da "🍌 Nano Banana 2.1 · 9:16 · x1")

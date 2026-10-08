@@ -372,6 +372,8 @@ SINIFLAR = {
     # 30.09: patronun kendi tarayicisini acmak, masaustu pencerelerine
     # tus gondermek, ekrani yakalamak. Bkz. KABUK_KURALLARI "masaustu".
     "masaustu": ("PATRONUN MASAUSTU / TARAYICISI", "yuksek"),
+    # 08.10: patronun koydugu kural (Flow'da gorsel yok) -- sorulmaz, ret.
+    "kural":    ("PATRON KURALI", "yuksek"),
     # 07.10: abonelik URETIM KREDISINI (Google Flow) harcayan tiklama.
     "kredi":    ("URETIM KREDISI", "yuksek"),
 }
@@ -423,6 +425,11 @@ KREDI_TETIK = _kur((
     # Flow Music (08.10): uretim sohbetten ve remiks / ayirma araclarindan.
     r"\bsend message\b", r"\bmesaj gonder", r"\bremix\b", r"\bstem split\b",
 ))
+#: OLCULMUS KREDISIZ YUKSELTME (08.10.2026, canli: bakiye 896 -> 896, 1080x1920
+#: 8 sn klip ~44 sn'de indi). 1080p "Yukseltilmis" indirme kredi HARCAMAZ ->
+#: sorulmaz (kural: olculmus 0 kredi sorulmaz). 4K ve yeni uretim sorulur.
+#: Flow bedeli degistirirse: video becerisi indirmede bakiyeyi once/sonra okur.
+KREDISIZ_YUKSELTME = _kur((r"\b1080p\b",))
 #: Kredi sitesinde tek basina "Yukselt" PLAN yukseltmedir: PARA.
 KREDI_PARA = _kur((r"\byukselt\b", r"\bupgrade\b"))
 
@@ -575,8 +582,26 @@ def degerlendir(arac: str, argumanlar: dict, *, url: str = "",
                 (arac == "browser_press_key" and sadelestir(a.get("key")) == "enter")
                 or (arac == "browser_type" and a.get("submit"))):
             bulunan = "Enter (istemi gonderir)"
+        if bulunan and "yukseltilmis" in bulunan.lower() and _esles(okunur, KREDISIZ_YUKSELTME) \
+                and not _esles(okunur, _kur((r"\b4k\b", r"\b2160p\b"))):
+            bulunan = ""                         # 1080p yukseltilmis: olculmus 0 kredi
         if bulunan:
             from ofis import flow as _flow       # vekil betik olarak kosar: mutlak
+            # FLOW'DA GORSEL YOK (08.10.2026, patron: "resim uretimini inatla
+            # flowda niye yapiyosun; video icin flow, gorsel icin gemini ya
+            # da gpt"). Olculdu: Flow'un resim modeli urunun kutusunu UYDURDU.
+            # Kural yapi: sorulmaz, REDDEDILIR; ajana dogru yol soylenir.
+            if _flow.resim_ayari_mi(uretim_ayari):
+                b = _bulgu("kural", bulunan, arac,
+                           hedef + f" | ayar: {uretim_ayari}", url, kimlik)
+                b["ret"] = True
+                b["sebep"] = (
+                    "FLOW'DA GORSEL URETILMEZ (patron karari): ayar " + repr(uretim_ayari)
+                    + " bir RESIM ayari. Gorseli `gorsel_uret` ile uret (GPT; urun "
+                    "fotograflarini `referanslar`a ver, `oran` ile 9:16/4:5/1:1). Flow "
+                    "yalniz VIDEO icin: videonun baslangic karesini gorsel_uret ile "
+                    "uretip Flow'a yukle, kipi Video yap.")
+                return b
             if not _flow.ucretsiz_mi(uretim_ayari):
                 b = _bulgu("kredi", bulunan, arac,
                            hedef + (f" | ayar: {uretim_ayari}" if uretim_ayari else ""),

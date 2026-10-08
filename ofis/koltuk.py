@@ -330,6 +330,13 @@ class Koltuk:
         if _tsebep:
             # Is OLMEZ, tur BASLAMAZ -- zincirdeki ayni ayrim.
             self.ofis.tahta.birak(no, sebep="jeton tavani doldu")
+            # BEKLEMEYE ALINIR (08.10.2026 canli: birakilan is halkaya geri
+            # dondu, ayni uyari 4 kez yazildi). Karar patronun: tavani
+            # yukseltir ya da isi boler; "Surdur" ayni oturumdan acar.
+            try:
+                self.ofis.tahta.duraklat(no, "ofis (jeton tavani)")
+            except Exception:                    # noqa: BLE001 -- zaten duraklatilmis olabilir
+                pass
             yield self._olay("uyari", _tsebep, {"gorev_no": no},
                              ajan_ad=ajan_ad, gorev_id=gorev["id"])
             return
@@ -915,7 +922,8 @@ class Koltuk:
                     # jeton tur ortasinda bilinmiyor (olculdu). Bu,
                     # donguye girmis ya da megabaytlarca metin ureten
                     # bir turu durdurur.
-                    fren.olay(olay.tur, olay.govde or "")
+                    fren.olay(olay.tur, olay.govde or "",
+                              str((olay.ek or {}).get("ozet") or ""))
                     _fsebep = fren.asildi_mi()
                     if _fsebep:
                         yield self._olay("uyari", _fsebep, fren.olcum(),

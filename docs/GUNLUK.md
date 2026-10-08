@@ -15142,3 +15142,212 @@ gerçek defterin kopyasında koşulabilir iş BIRAKILMAZ.
 ### 08.10 ANAYASADAN TAŞINAN: GERÇEK TERMİNAL KARARI
 
 - **Gerçek terminal kararı (29.09, ölçüldü):** iki motorda kanca riskli komutu durdurdu, not tur sürerken ulaştı; yerleşik izin kipleri push/rm'i SORMADAN yaptı → karar ofisin kancası.
+
+## 08.10.2026 — C: BRAVE UÇTAN UCA (ürün görseli GPT+referans, kurgu araçları, not hatası)
+
+Patron: Masaüstü `brave görsel.zip` (8 fotoğraf: SEMU BRAVE şişe + kutu) ile
+görsel ve video; video ≤150 kredi; "görseli GPT ile üret, videoyu Flow ile
+yap"; "kutu ne alaka"; kurgu/montaj araçları uçtan uca, profesyonel.
+Canlı gösteri: gerçek ofisin kopyası (8911), ekip selin (tasarım, Gemini) +
+kerem (video, Gemini), lider arda (Opus).
+
+**1. Flow görsel modeli ürünü uyduruyor (ölçüldü).** selin Flow Nano Banana
+2.1 ile 0 kredide üretti; şişe yakın ama KUTU uyduruldu (bitki çizimi +
+"BRAVE" yazısı; gerçek kutuda yok), sıvı koyu kehribar (gerçeği açık saman).
+Lider bir kez reddetti, ikinci denemede de kutu yanlış.
+
+**2. GPT + referans fotoğraf birebir (ölçüldü).** `codex exec -i sise.png`:
+şişe/etiket birebir (38 sn, 11k jeton). Ofis aracına bağlandı:
+`gorsel_uret(referanslar=[...])` → `CodexUretici` → `CodexMotoru.tur_kos(
+gorseller=)` → `--image` (birden çok değer yuttuğu için hemen ardından
+`--json` bayrağı; yalnız exec kipinin yeni turu, öteki kipte RET). Referans
+alamayan üretici otomatik sırada atlanır, açıkça seçilirse ret; eksik/yanlış
+dosya HATA (referanssız sessiz üretim = ürünü uydurmak). Gerçek ölçüm
+(şişe + DİK çevrilmiş kutu): 65 sn, 86k jeton, şişe ve kutu birebir
+(amblem+SEMU, ek yeri, altın çerçeve, "50 ml · 1.7 FL.OZ."). DERS: kutu
+fotoğrafı yan yatıktı, model yazıyı dikey okur → önce döndür (beceriye yazıldı).
+Beceriler (`flow-gorsel`, `reklam-kreatifi`) ve lider bloğu: ürün görünen
+görselde GPT + referans, Flow ürünsüz sahne için. Lider bloğu jeton
+sınırına takıldı (457 > 450) → satır kısaltıldı.
+
+**3. HATA: TUI notu "iletildi" sayılıyordu, ajana hiç ulaşmamıştı.** Patron
+gibi selin'e not bıraktım; defterde `not_iletildi (tur SURERKEN)` göründü ama
+ajan Flow'da devam etti. Ölçüm: agy kaydında tek USER_INPUT (brifing);
+terminal ekranında not "▸ PATRONUN NOTU … / Press up to edit queued
+messages" — agy tur içi mesajı SIRAYA koyuyor, tur bitince gönderiyor
+(06:06:34'te gönderdi; ofis turu çoktan bitmiş saymıştı, o devam turu
+izlenmedi). Eski kod yapıştırır yapıştırmaz `mesaj` olayı veriyordu.
+Düzeltme (`tui.py`): not ancak motorun KAYDINDA kullanıcı mesajı olarak
+görününce ulaştı sayılır (`tui_kullanici_metni`: claude `attachment
+queued_command` — `queue-operation enqueue` yalnız sıra, sayılmaz; codex
+`response_item` role=user; agy `USER_INPUT`); tur sonunda bekleyen not varsa
+20 sn beklenir, notun açtığı devam turu AYNI turda izlenir; ulaşmayan not
+olay vermez → sonraki turun brifinginde gider (sözleşme). Sahte agy gerçeğiyle
+aynı sıra davranışını taklit eder (`#YAVAS#`, `#YUT#`); ters denemede
+(tanıma kaldırılınca) sınama düştü. Lider ikinci teslimi "patron notu
+çiğnenmiş" diye reddetti (not brifingde vardı) → üçüncü tur GPT+referansla
+geçti; lider üç olgu yazdı (model seçimi, kutu tarifi, sıvı rengi).
+
+**4. Büyük video eki.** Sohbet eki base64 JSON, 20 MB → hazır video
+gönderilemiyordu. `/api/ek_akis` (ham gövde, akışla diske, video/ses 2 GB,
+öteki 20 MB; sınır aşılınca yarım dosya silinir); panel 15 MB üstünü ve
+video/sesi akışla yollar; telefon da video seçebilir (izinli uç). Ajanın
+paylaşımı belleğe okumadan kopyalar. Projede 200 MB üstü dosya günlük
+ZIP'e girmez, `buyuk_atlandi` diye söylenir.
+
+**5. Kurgu/montaj araçları (hepsi yerel, kredi yok, çıktı ölçülür).**
+- `video_islem.py` (medya_isle): `sahneler` (ffmpeg sahne skoru + zaman
+  damgalı kare panosu; ajan videoyu "görür"), `kes`, `ses_ayir`,
+  `sessizlik_kes` (silencedetect; 9 sn → 6,3 sn ölçüldü), `kare_ara` (RIFE
+  v4.6 ncnn, GitHub nihui; 4 sn 1080×1920 24→48 kare/sn 60 sn'de; siyah
+  çıktı denetimi). ffmpeg 9 tuzakları: `-filter_complex_script` ve `-vsync`
+  KALDIRILMIŞ → `-/filter_complex dosya`, `-fps_mode passthrough`. Sahne
+  skoru parlaklığı yakın renk geçişini (kırmızı→yeşil) görmedi — gerçek
+  videoda sorun değil, sınama belirgin renkle kuruldu.
+- `vokal_ayir`: UVR MDX-Net `Kim_Vocal_2.onnx` (65 MB, `ev/araclar/modeller/
+  mdx`), STFT/ISTFT numpy ile yazıldı, onnxruntime ortamda zaten vardı —
+  ayırma paketlerinin hepsi ~1 GB torch istiyordu. Ölçüm: TTS konuşma +
+  sentetik müzik; konuşmanın SDR'i −9,3 → +18,4 dB; 12 sn ses 30 sn.
+  vokal + müzik = karışım (sınamada ölçülür).
+- Remotion şablonu: sahnede `hiz` (0,25–4), `yerlesim` kapla|bulanik|sigdir
+  + `odak`, `filtre`; planda `sesler[]` (süre ofisçe ölçülür, video sonunda
+  kırpılır) + `muzik_alcalt` (konuşurken müzik kısılır), `muzik_bas`, `logo`,
+  geçiş kayma/silme/yukarı. Klip `kirp_bas + sure × hiz`'e yetmezse ÇİZMEDEN
+  ret (sonu siyah kalmasın). Gerçek çizimde ölçüldü: bulanık dolgu dolu,
+  sığdır'da siyah; seslendirme çalarken müzik >8 dB düşük.
+- Beceri `video-duzenle`: önce anla (denetle + sahneler + altyazı), plan,
+  araç tablosu, ölç-bak, teslim.
+
+**6. Gözlem:** #1 (selin, Gemini) 4.385 sn, ~2 M jeton (tahmin 69k) — iki
+yanlış yol (Flow) yüzünden. Efor ayarı "hepsi normal" sabit: zor işte
+istenen "yüksek" normale düşüyor (patrona söylenecek).
+
+**7. Video turunda üç hata daha (patron ekranda gördü: "bekliyor, terminale bak").**
+- KAÇAK FRENİ güç kısıyordu: kerem (Flow'u süren video ajanı) 121. araç
+  çağrısında KESİLDİ — çağrılar çeşitliydi (bul, tıkla, yükle, yaz, denetle,
+  altyazı), klip üretilmişti, kurguya geçiyordu. Fren kör sayıydı (120).
+  Artık DÖNGÜ ölçülür: aynı çağrı (araç + girdi özeti) art arda 50 kez ya da
+  son 80 çağrıda en çok 2 farklı çağrı → fren; sert sınır 1000. Çeşitli 500
+  çağrı frenlenmez; aynı araç farklı girdiyle döngü sayılmaz (sınandı).
+- Fren turu kesince agy terminali KAPANMIYORDU: CLI arkada yaşadı, sonraki tur
+  ikinci terminal açtı (aynı ajanın iki agy'si). `TuiMotoru.tur_kos` artık
+  sarmalayıcı: çağıran akışı bırakırsa (GeneratorExit) koşan tur Esc ile
+  durur, terminal kapanır. Ters denemede sınama düştü.
+- agy'nin KENDİ sorusu turu kilitledi: ajan ofisin kaynağını
+  (`ofis/mcp_sunucu.py`, çalışma alanı dışı) okumak istedi, agy "Allow access
+  to this file?" sordu; ofisin kapısından geçmediği için kimse cevaplamadı.
+  Ölçüldü: "3. No, deny" turun TAMAMINI keser ("Interrupted · What should …
+  do instead?"). Düzeltme: TUI planına `ekran_sorusu` — ofis ekranda soruyu
+  tanır, REDDEDER, ajana "çalışma alanı dışı, kendi klasörünle kaldığın yerden
+  devam et" yazar, olayı (yol + "izin patronun") görünür kaydeder. Kalıcı izin
+  (`allowNonWorkspaceAccess`, agy ikilisinden okundu) patronun kararı — ofis
+  kendiliğinden açmaz (otomatik izin denemem güvenlik denetiminde durduruldu,
+  doğru).
+- Canlı gösteri paneli eski kodla koşuyordu; mevcut kopyayla yeniden açıldı,
+  "kesintiden devam" yarım işi kendiliğinden sürdürdü.
+
+**8. Panel: "video otomatik kapanıyor", "kendi kendine F5 atıyor" (patron).**
+- Ölçüldü: oynatılan video 1,5 sn içinde DOM'dan siliniyordu — sohbet her canlı
+  olayda ve "süren istek" varken 3 sn'de bir BAŞTAN çiziliyordu. Kural:
+  oynayan / tam ekran / son 30 sn'de dokunulan medya varsa pano yeniden
+  çizilmez (`medyaKullaniliyor`); düzeltmeden sonra video 9,6 sn sonuna dek
+  oynadı, yerinde kaldı.
+- 3 sn'lik yenilemenin sebebi: Brave isteği Durdur (05:43) → Sürdür yolunda
+  hiç CEVAPLANMADI, sohbet onu sonsuza dek "sürüyor" saydı. `kuyruk.
+  askida_kalanlari_kapat`: sıra boşken isteğin açtığı işlerin hepsi kapanmışsa
+  istek ofisin modelsiz özetiyle kapanır (son teslim dosyaları `[ek]` olarak
+  cevapta; video artık cevabın içinde büyük ve oynatılabilir). Halka sonunda
+  ve kesintiden devamda çağrılır.
+- Kapanmış işin eski onay kartları sohbetin en altında yığılıyordu → işi
+  süren onay dışarıda, kapanmışınki isteğin katlı adımlarında.
+- Kerem'in paylaşım metni UYDURDU: "ardıç ve odunsu notalar", "semu.com.tr"
+  (arka etikette yalnız içindekiler/uyarı/üretici var). `reklam-kreatifi`:
+  ürün bilgisi yalnız kaynaktan; bilinmiyorsa yazılmaz ya da [SITE] yer
+  tutucu + patrona sorulur. Video tek klip (8 sn) + 2 sn kapanış, 20 kredi;
+  senaryodaki 2. sahne üretilmedi.
+
+**9. "Görsel için Flow yok" (patron: "resim üretimini inatla flowda niye yapıyosun").**
+- KÖK SEBEP: `tasarim` rolünün tarifi (07.10) hâlâ "ürün görselini gömülü
+  tarayıcıda Google Flow ile üret (`flow-gorsel`)" diyordu; becerinin adı da
+  ajanı Flow'a yolluyordu. Düzeltme YAPI ile: (1) Flow'da resim ayarıyla
+  (Nano Banana / Imagen / "Resim") üretim tıklaması tarayıcı kapısında
+  SORULMADAN REDDEDİLİR, ajana "gorsel_uret + referanslar + oran" söylenir
+  (`flow.resim_ayari_mi`, `riskli` sınıf `kural`, `ret`); (2) rol tarifi, lider
+  bloğu, `reklam-kreatifi` güncellendi; (3) `flow-gorsel` EMEKLİ (`beceri.EMEKLI`:
+  ofisin getirdiği kopya depodan kalkar, patronunkine dokunulmaz), yerine
+  `gorsel` becerisi (GPT, referans, oran, sonradan yazı/CTA, ölç-bak).
+- `gorsel_uret` `oran` alanı aldı (GPT'ye istemde; Gemini'ye `imageConfig`).
+- GEMİNİ GÖRSELİ ÖLÇÜLDÜ: (a) ücretsiz AI Studio anahtarı → görsel modellerinde
+  kota SIFIR (`GenerateRequestsPerDay…-FreeTier`, bekleme ~15 sa); (b) aboneliğin
+  yolu agy `generate_image`: `agy -p` (komut satırı) kipinde araç ajana HİÇ
+  sunulmadı, ajan aradı ve ofisin klasörlerini taradı (çalışma alanı denetimi
+  komut satırından okumayı görmüyor — açık). Sonuç: bugün görsel = GPT (codex,
+  referanslı, ölçüldü). Gemini görseli ücretli anahtar ya da agy'nin etkileşimli
+  kipte ölçülmesiyle açılır. Ölçüm izleri ajan evinden silindi.
+
+**10. FLOW'U HANGİ MODEL SÜRER — 0 kredi ölçümü (patron: "flow'u daha yetenekli ajana kullandırsak?").**
+Aynı iş (yeni proje, Video·Kareler·Veo 3.1 Fast·9:16·x1, başlangıç karesi yükle,
+istemi yaz, ÜRETME) takım sohbetinden "@kerem iş:" ile; kerem'in modeli her
+koşuda değişti (`flow_model_olc.py`, kredi kartı çıksa reddedilecekti — çıkmadı).
+| model | ajan turu | araç | yeni jeton (önbellek hariç) | doğru |
+| Gemini 3.8 Flash High | 608 sn (2. koşu da 652 sn toplam) | 83 / 92 | ~420k | evet |
+| Sonnet 5.5 | 171 sn | 41 | ~100k | evet |
+| Opus 5.5 | 191 sn | 49 | ~107k | evet (+ bakiye öncesi/sonrası) |
+| GPT-5.6 Sol | 239 sn | 26 | (codex dökümü yok) | evet |
+EŞİTSİZLİK DÜZELTİLDİ: Flow son ayarı hatırlıyor; yalnız ilk koşu (Gemini)
+sıfırdan kurdu → Gemini ayarlar hazırken yeniden ölçüldü, sonuç değişmedi
+(fazlası keşif: araç tarifi dosyalarını okuma). Not: "jeton" alanı motorlar
+arasında tutarsız (Claude önbellek okumayı sayıyor, Gemini saymıyor) —
+karşılaştırma `jeton_dokumu`'ndan yapıldı. Kredi: defterde gösteriden yalnız
+1 kredili üretim (kerem, 20); Opus'un okuduğu bakiye 956 (katalog 1046,
+bayat) — aradaki fark defterde yok.
+Panel: "son tur: <eski model>" rozeti yeni tur sürerken iki model çalışıyor
+gibi gösteriyordu → ajan çalışırken yalnız şimdiki model; boştayken "önceki tur".
+
+**11. BRAVE 2 (gerçek iş, Sonnet 5.5 ajanlarla): 1 hikâye görseli + 15 sn video — 43 dk.**
+12:13 istek → 12:56 üçü kapandı (ilk Brave işi 2 sa 12 dk sürmüştü). Görsel GPT
+(gorsel_uret, 4 referans), 3 sürüm: lider (çapraz inceleme GPT-6.1) ilk iki
+sürümü reddetti — 1.'si haklı (etiket çizimi renkli, kutu çerçevesi eksik),
+2.'si YARI haklı ("meyve eklenmiş" YANLIŞ: gerçek etikette var; "hacim satırı
+yok" doğru) → patron notuyla 3. sürüm kapandı. Video: 3 Flow klibi (Veo 3.1
+Fast, GPT başlangıç kareleri) 60 kredi, kurgu + premium kapanış kartı, 15,0 sn.
+Yol boyunca bulunan ve düzeltilen hatalar (hepsi sınandı):
+- Patronun "Tüm ofis"ten eki proje köküne yazılıyordu, takım ajanları
+  göremedi ("fotoğrafları yeniden yükler misiniz") → `ekler.takima_getir`
+  (`Sohbet._konus` başında, ek işi yapan takımın `.ofis/ekler`ine kopyalanır).
+- Jeton tavanı Claude'da önbellek okumasını sayıyordu ("19,9 M", gerçek yeni
+  jeton 528k) → `tavan.tur_jetonu` (girdi+çıktı+önbelleğe yazma); tavana
+  takılan iş artık DURAKLATILIR (halka 4 kez yeniden almıştı).
+- İnceleyici patronun kredi onayını göremedi, "onay doğrulanmıyor" diye
+  reddetti → inceleme metninde "Patronun bu işteki onayları (OFİSİN KAYDI)".
+- Çapraz inceleme codex'te düştü, sebep hiçbir yere yazılmadı → motorun
+  `hata` olayları inceleme sonucuna yazılıyor.
+- Sahipsiz işe not reddediliyordu ("sahibi yok") → kabul edilir, işe bağlı.
+- Kurgu yazıları alta alınca KUTUYA/ŞİŞEYE bindi, lider kaçırdı → ofis
+  ÖLÇER: `kurgu.yazi_carpismasi` (yazılı her sahneden kare + rembg ön plan
+  maskesi; yazı bandının >%12'si ürünse uyarı). Gerçek kötü kurguda %79 ve
+  %100 yakaladı, iyi kurguda sessiz; 12–19 sn.
+Teslim: Masaüstü\Brave	eslim (hikaye 1080x1920 PNG, video 1080x1920 15,0 sn).
+
+**12. Patron: "Gemini daha önce görsel üretmişti" — haklı, düzeltme.** Etkileşimli
+terminalde (ofisin Gemini ajanları böyle koşar) agy `invoke_subagent` →
+`generate_image`'ı referans fotoğraf yollarıyla çağırdı: şişe+kutu tanınır,
+216 sn, 768×1376 (GPT: 65 sn, 1086×1448, etiket daha sadık). `-p` kipinde
+araç yok — yanlış kipte ölçmüştüm. HATA bulundu: teslim, agy'nin bakılan
+fotoğrafların BAYT BAYT kopyalarını (`media_*`) "üretilen görsel" sayıyordu →
+çalışma klasöründe olanın kopyası ve tekrarlar alınmaz (md5; ters denemeli).
+Katalog: tasarım ve video Sonnet 5.5 (patron kararı, ölçüme dayalı).
+Panel (patron: "sürekli yenileniyor, sohbet yukarı gidiyor"): her canlı
+olayda sohbet SİLİNİP çiziliyordu; silmede kaydırma 0'a düşüyor, kaydırma
+olayı "en üst"ü kaydediyordu → ekran dışında çiz, değişmediyse dokunma,
+değiştiyse tek hamlede değiştir + kaydırmayı koru (`sohbetiTazele`). Ölçüldü:
+8 yenilemede kaydırma 1500'de sabit, öğeler yerinde (yeniden çizim yok).
+
+**13. C3 — Flow 1080p yükseltmesinin bedeli ÖLÇÜLDÜ.** İndir menüsü (kerem,
+okuyup tıklamadan): 270p GIF · 720p özgün · 1080p Yükseltilmiş · 4K (pasif,
+"Yükselt" = abonelik). Tek 1080p indirme (kapı sordu, patron adına onay):
+bakiye 896 → 896, 8 sn klip ~44 sn, gerçek 1080×1920 24 fps. Kural: 1080p
+yükseltilmiş indirme SORULMAZ (`riskli.KREDISIZ_YUKSELTME`), 4K sorulur;
+`flow-video` teslimi 1080p kliplerle, ilk indirmede bakiye önce/sonra okunur
+(Flow bedeli değişirse durur). Son video 1080p kliplerle yeniden kurgulandı
+(0 kredi; etiket ve yapraklar gözle görülür keskin) → teslim klasörüne ek.

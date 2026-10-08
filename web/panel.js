@@ -789,7 +789,13 @@ function panoKur(a, secenek) {
   // yukseltilmis inceleme ya da hesap zinciri devriyse rozet yalniz olculeni
   // yazinca ajanin modeli degismis sanildi. Ana rozet ajanin modeli; farkli
   // turda ikinci rozet "son tur: ..." ve sebebi.
-  const farkli = olculen && ayar && !modelAyni(a.motor, a.model, sonTur.motor, sonTur.model);
+  // 08.10.2026 (patron: "hem sonnet hem opus yaziyor terminalde?"): model
+  // degistirilip yeni tur basladiginda "son tur: <eski model>" rozeti iki
+  // model ayni anda calisiyormus gibi gorunuyordu. Ajan CALISIRKEN yalniz
+  // simdiki model; bostayken farkliysa "onceki tur".
+  const calisiyor = a.oda === "masa" || a.calisiyor;
+  const farkli = !calisiyor && olculen && ayar
+    && !modelAyni(a.motor, a.model, sonTur.motor, sonTur.model);
   const motorAd = farkli ? ayar : (olculen || ayar);
   if (motorAd) {
     const m = el("span", "pano-motor", motorAd.replace("claude-", ""));
@@ -798,10 +804,9 @@ function panoKur(a, secenek) {
     bas.append(m);
   }
   if (farkli) {
-    const s2 = el("span", "pano-motor farkli", "son tur: " + olculen.replace("claude-", ""));
-    s2.title = "Bu tur ajanın kendi modeliyle koşmadı: iş iki kez geri dönünce inceleme kapı "
-      + "modeline (hakem) yükseltilir ya da hesap zinciri başka hesaba/motora devretmiştir. "
-      + "Ajanın modeli değişmedi.";
+    const s2 = el("span", "pano-motor farkli", "önceki tur: " + olculen.replace("claude-", ""));
+    s2.title = "Ajanın bir önceki turu başka modelle koştu: model sonradan değiştirilmiş ya da "
+      + "hesap zinciri (limit) başka hesaba/motora devretmiş olabilir. Şu anki model soldaki.";
     bas.append(s2);
   }
   // BAGLAM (06.10, E34): ajanin aklinin ne kadari dolu. Olculmediyse YOK;
@@ -3387,6 +3392,8 @@ async function cizSekme() {
     const odak = document.activeElement;
     if (odak && kap.contains(odak) && /^(INPUT|TEXTAREA)$/.test(odak.tagName)
         && odak.value) continue;
+    if (medyaKullaniliyor(kap)) continue;
+    if (p === "sohbet") { await sohbetiTazele(kap); continue; }
     kap.textContent = "";
     await f(kap);
   }
@@ -3955,15 +3962,60 @@ function sureleriYaz() {
 setInterval(sureleriYaz, 1000);
 // CANLI DURUM: bir istek surerken sohbet 3 sn'de bir tazelenir (son durum
 // notu, calisan ajan). Cevap akarken akis izleyicisi zaten ciziyor.
+/* VIDEO OYNARKEN PANO YENIDEN CIZILMEZ (08.10.2026, OLCULDU): sohbet her
+   canli olayda bastan ciziliyordu; oynatilan video 1,5 sn icinde DOM'dan
+   siliniyordu (patron: "videoyu acamiyorum, otomatik kapaniyor"). Oynayan,
+   tam ekrandaki ya da son 30 sn icinde dokunulan medya varsa cizim bir
+   sonraki tazelemeye kalir -- veri kaybolmaz, izlenen video kaybolurdu. */
+/* SOHBET TITREMEZ, YUKARI KACMAZ (08.10.2026, patron: "panel surekli
+   yenileniyor gibi, takim sohbeti yukari gidiyor"). Olculen sebep: her canli
+   olayda pano SILINIP bastan ciziliyordu; silme aninda kaydirma 0'a dusuyor,
+   tarayicinin kaydirma olayi da konumu "en ust" diye kaydediyordu. Artik:
+   ekran disinda cizilir, DEGISMEDIYSE dokunulmaz, degistiyse tek hamlede
+   yer degistirir ve kaydirma korunur. */
+function sohbetKaydirmasi(kap) {
+  kap.onscroll = () => {
+    kap.dataset.altta = (kap.scrollHeight - kap.scrollTop - kap.clientHeight < 40) ? "1" : "0";
+    kap.dataset.kaydir = String(kap.scrollTop);
+  };
+}
+async function sohbetiTazele(kap) {
+  const yeni = el("div");
+  await cizSohbet(yeni);
+  // Karsilastirma DOM'un metin dokumuyle (yazma degil OKUMA; XMLSerializer:
+  // HTML yazan ozellik bu bolgede hic gecmesin -- guvenlik bekcisi).
+  const html = new XMLSerializer().serializeToString(yeni);
+  if (kap._sonHtml === html && kap.childNodes.length) return false;
+  const altta = kap.dataset.altta !== "0";
+  const kaydir = kap.scrollTop;
+  kap._sonHtml = html;
+  kap.replaceChildren(...yeni.childNodes);
+  kap.scrollTop = altta ? kap.scrollHeight : kaydir;
+  kap.dataset.kaydir = String(kap.scrollTop);
+  sohbetKaydirmasi(kap);
+  sureleriYaz();
+  return true;
+}
+
+let _medyaDokunma = 0;
+for (const olay of ["play", "pause", "seeking", "volumechange"])
+  document.addEventListener(olay, (e) => {
+    if (e.target && /^(VIDEO|AUDIO)$/.test(e.target.tagName)) _medyaDokunma = Date.now();
+  }, true);
+function medyaKullaniliyor(kap) {
+  const fs = document.fullscreenElement;
+  if (fs && kap.contains(fs)) return true;
+  for (const m of kap.querySelectorAll("video, audio"))
+    if (!m.paused && !m.ended) return true;
+  return !!kap.querySelector("video, audio") && Date.now() - _medyaDokunma < 30000;
+}
+
 setInterval(async () => {
   const kap = $("#pano-sohbet");
   if (!kap || document.hidden || !panoAcik("sohbet") || _sohbetAkisZaman) return;
   if (!kap.querySelector(".sohbet-adimlar.suruyor")) return;
-  const yeni = el("div");
-  await cizSohbet(yeni);
-  kap.replaceChildren(...yeni.childNodes);
-  if (kap.dataset.altta !== "0") kap.scrollTop = kap.scrollHeight;
-  else kap.scrollTop = Number(kap.dataset.kaydir || 0);
+  if (medyaKullaniliyor(kap)) return;
+  await sohbetiTazele(kap);
 }, 3000);
 
 // SUREN ISLER (02.10.2026; rakipte sohbetin altinda is basina "Durdur ·
@@ -4035,7 +4087,11 @@ async function cizSohbet(kap) {
   const cocuk = {};
   const ustler = [];
   for (const x of ogeler) {
-    const disarida = x.tur === "sohbet" || x.tur === "cevap" || x.tur === "onay"
+    // ONAY KARTI disarida yalniz isi SURERKEN (08.10.2026, patron: "keremin
+    // selinin gonderdikleri ne alaka"): kapanmis isin eski onaylari sohbetin
+    // en altinda yigiliyordu; artik istegin katli adimlarinin icinde.
+    const onayAcik = x.tur === "onay" && !["bitti", "iptal"].includes(x.gorev_durum || "");
+    const disarida = x.tur === "sohbet" || x.tur === "cevap" || onayAcik
       || (x.bekliyor && x.kime === "insan");
     if (x.istek && istekler.has(x.istek) && !disarida) (cocuk[x.istek] = cocuk[x.istek] || []).push(x);
     else ustler.push(x);
@@ -4128,7 +4184,8 @@ function sohbetAkisIzle() {
       } else if (b.classList.contains("akiyor")) biten = true;
     }
     if (biten || !(r.kosu && r.kosu.calisiyor)) {
-      kap.textContent = ""; await cizSohbet(kap); return;
+      if (medyaKullaniliyor(kap)) { _sohbetAkisZaman = setTimeout(tur, 2000); return; }
+      await sohbetiTazele(kap); return;
     }
     _sohbetAkisZaman = setTimeout(tur, 400);
   };
@@ -6788,9 +6845,30 @@ function ekCiplari() {
     kap.append(c);
   }
 }
+// BUYUK dosya (video/ses) AKISLA gider: govde dosyanin kendisi, sinir 2 GB
+// (ekler.py). Kucuk dosya eskisi gibi base64 JSON.
+async function ekAkisla(f) {
+  const ad = f.name || ("ek-" + Date.now());
+  bildir(`yükleniyor: ${ad} (${Math.round(f.size / 1048576)} MB)`, "bilgi");
+  const r = await fetch("/api/ek_akis?ad=" + encodeURIComponent(ad) +
+                        "&kanat=" + encodeURIComponent(D.kanat || ""),
+                        { method: "POST", body: f });
+  if (!r.ok) {
+    let m = r.status + "";
+    try { m = (await r.json()).detail || m; } catch (_) {}
+    throw new Error(m);
+  }
+  return r.json();
+}
 async function ekYukle(dosyalar) {
   for (const f of dosyalar) {
     try {
+      if (f.size > 15 * 1048576 || /^(video|audio)\//.test(f.type || "")) {
+        const r = await ekAkisla(f);
+        D.ekler.push(r);
+        bildir(`eklendi: ${r.yol}`, "iyi");
+        continue;
+      }
       const veri = await new Promise((ok, hata) => {
         const r = new FileReader();
         r.onload = () => ok(String(r.result).split(",")[1] || "");

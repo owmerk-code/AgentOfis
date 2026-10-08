@@ -58,9 +58,9 @@ Her sahne TEK cekim (Flow tek klip uretir; hareket sahnenin icinde). Tablo:
 - Yeniden cekim payi: toplamin ~%30'u kadar kredi (gerekmezse harcanmaz).
 
 ## 6. Taslak kareler (0 kredi)
-Her sahnenin ilk karesini Flow'da RESIM olarak uret (`flow-gorsel`; Nano
-Banana katalogda 0 kredi, kapi sormaz): urun fotografi referans, sahnenin
-oraninda. Bu kareler hem patrona onizlemedir hem de videoda BASLANGIC KARESI
+Her sahnenin ilk karesini `gorsel_uret` ile uret (`gorsel` becerisi; urun
+fotografi `referanslar`, sahnenin `oran`i; olculdu: urun ve kutu birebir).
+Flow'da gorsel URETILMEZ (kapida reddedilir). Bu kareler hem patrona onizlemedir hem de videoda BASLANGIC KARESI
 olur -- urun ve kompozisyon boylece korunur.
 
 ## 7. Senaryo paketi -> patron
@@ -73,6 +73,8 @@ sordurmaz (cift onay yok). Patron duzeltme isterse paketi guncelle (kredi
 harcamaz) ve yeniden gonder.
 
 ## 8. Paylasim metni (teslimle birlikte)
+URUN BILGISI UYDURULMAZ (08.10.2026 olculdu: arka etikette olmayan koku notalari ve var olmayan bir site adresi yazildi). Yalniz KAYNAGI olani yaz: patronun sozu, urunun etiketi/kutusu, verilen site ya da magaza kaydi. Koku notasi, kalicilik, fiyat, indirim, site/adres bilinmiyorsa YAZMA ya da [SITE] gibi yer tutucu birak ve teslimde patrona sor.
+
 Aciklama (2-3 cumle, ilk satir kanca, sonda CTA), 5-10 ilgili etiket, kapak
 karesi. Patron baska dil istemedikce Turkce. Konusmali videoda altyazi
 (`medya_isle` altyazi, replikle) -- Reels cogu zaman sessiz izlenir.

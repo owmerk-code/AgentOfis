@@ -422,7 +422,8 @@ ROLLER = {r.ad: r for r in (
        # BAYATTI (takim basina baglayici izni, `lider.dagit`). Bayat "yapamazsin"
        # cumlesi ajani bosuna durdurur.
        uyari="Kreatif uretimi: `reklam-kreatifi` (plan, senaryo paketi), "
-             "`flow-gorsel` ve `flow-video` (gomulu tarayicida Flow). Meta "
+             "gorsel `gorsel` becerisi (`gorsel_uret`, GPT), video `flow-video` "
+             "(gomulu tarayicida Flow; Flow'da gorsel URETILMEZ). Meta "
              "Reklamlar baglayicisi takima izinliyse kullan; para ve yayin "
              "eylemleri kapida sorulur."),
 
@@ -517,11 +518,15 @@ ROLLER = {r.ad: r for r in (
        # gorseli insana sordu; Claude gormezden gelip uretmisti.
        # 07.10.2026: urune sadik / markali gorsel icin Flow (Nano Banana,
        # olculmus 0 kredi) eklendi; `gorsel_uret` hizli genel gorselde kalir.
-       uyari="Urun ya da marka gorselini gomulu tarayicida Google Flow ile "
-             "uret (`flow-gorsel` becerisi, urun fotografi referans; Nano "
-             "Banana 0 kredi); plan icin `reklam-kreatifi`. Hizli genel "
-             "gorselde `gorsel_uret` (abonelikten). `gorsel_iste` yalniz "
-             "ikisi de uretemezse."),
+       # 08.10.2026 (patron: "resim uretimini inatla flowda niye yapiyosun;
+       # gorsel icin gemini ya da gpt"): bu cumle ajani Flow'a yonlendiriyordu
+       # ve Flow kutuyu uydurdu (olculdu). Flow'daki resim uretimi artik
+       # kapida REDDEDILIR.
+       uyari="Her gorseli `gorsel_uret` ile uret (GPT, abonelikten): urun "
+             "fotograflarini `referanslar`a ver, `oran` ile 9:16/4:5/1:1 "
+             "(`gorsel` becerisi). Flow'da GORSEL URETILMEZ -- Flow yalniz "
+             "video. Plan icin `reklam-kreatifi`. `gorsel_iste` yalniz "
+             "gorsel_uret uretemezse."),
 
     _r("video", "ICERIK",
        "Hareketli icerik: reklam klibi, sosyal medya videosu, urun "
@@ -631,8 +636,11 @@ MESLEK_MOTORU = {
     "seo": ("gemini", "gemini-3.8-flash-high"),
     "dokuman": ("gemini", "gemini-3.8-flash-high"),
     "ceviri": ("gemini", "gemini-3.8-flash-high"),
-    "tasarim": ("gemini", "gemini-3.8-flash-high"),
-    "video": ("gemini", "gemini-3.8-flash-high"),
+    # 08.10.2026 (patron karari, OLCUME dayali): Flow'u ayni isle suren dort
+    # model 0 kredide olculdu -- Gemini ~608 sn / 83-92 cagri, Sonnet 171 sn /
+    # 41 cagri (dordu de dogru). Gorsel/video ajanlari Sonnet 5.5.
+    "tasarim": ("claude", "sonnet"),
+    "video": ("claude", "sonnet"),
     "reklam": ("gemini", "gemini-3.8-flash-high"),
     "destek": ("gemini", "gemini-3.8-flash-high"),
     "magaza": ("codex", "gpt-5.6-sol"),

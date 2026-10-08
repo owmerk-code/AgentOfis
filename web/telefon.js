@@ -140,7 +140,16 @@ async function gonder(kanat) {
   let metin = $("#mesaj").value.trim();
   if (!metin && !foto) return;
   try {
-    if (foto) {
+    if (foto && (foto.size > 15 * 1048576 || /^video\//.test(foto.type || ""))) {
+      // VIDEO / buyuk dosya AKISLA (sinir 2 GB, ekler.py).
+      const ad = foto.name || `telefon-${Date.now()}.mp4`;
+      const r0 = await fetch("/api/ek_akis?ad=" + encodeURIComponent(ad),
+                             { method: "POST", body: foto, credentials: "same-origin" });
+      let j0 = null;
+      try { j0 = await r0.json(); } catch (_) { /* bos */ }
+      if (!r0.ok) throw new Error((j0 && j0.detail) || `hata ${r0.status}`);
+      metin = (metin || "Ekteki videoya bak.") + "\n[ek] " + j0.yol;
+    } else if (foto) {
       const veri = await new Promise((ok, hata) => {
         const r = new FileReader();
         r.onload = () => ok(String(r.result).split(",")[1] || "");

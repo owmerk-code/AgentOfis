@@ -802,6 +802,11 @@ class Vekil:
             self._cocuga(satir)                 # serbest, aynen gecer
             return
 
+        if bulgu.get("ret"):
+            # PATRON KURALI: sorulmaz, yapilmaz; ajana dogru yol soylenir.
+            self._ajana(_hata_sonucu(istek_id, bulgu["sebep"]))
+            return
+
         if not self.ofis.hazir:
             self._ajana(_hata_sonucu(istek_id, (
                 f"RISKLI EYLEM ve ONAY ISTENEMIYOR -- {self.ofis.hata}.\n"

@@ -79,10 +79,37 @@ sina("nabiz frene SAYILMIYOR", f3.asildi_mi() == "")
 
 # Varsayilanlar OLCULMUS is profillerinin ustunde olmali: en agir
 # olculen tarayici isi 31 arac cagrisi yapmisti.
-sina("varsayilan arac tavani olculen isin USTUNDE",
-     T.VARSAYILAN_AZAMI_ARAC > 31)
+sina("varsayilan arac tavani olculen isin USTUNDE (Flow videosu 121+ cagri, 08.10)",
+     T.VARSAYILAN_AZAMI_ARAC > 400)
+
+# DONGU OLCULUR, SAYI DEGIL (08.10.2026, canli Brave: Flow'u suren ajan 121.
+# cesitli cagrida kesildi -- ilerlemeydi).
+_fd = T.KacakFreni()
+for _i in range(500):
+    _fd.olay("arac", "tarayici.browser_click", f"oge {_i % 37}")
+sina("CESITLI 500 cagri (ilerleme) FRENLENMIYOR", _fd.asildi_mi() == "", _fd.asildi_mi())
+_fa = T.KacakFreni()
+for _i in range(T.DONGU_ART_ARDA):
+    _fa.olay("arac", "Read", "ayni.txt")
+sina("ayni cagri art arda DONGU_ART_ARDA kez: FRENLIYOR, sebebi soyluyor",
+     "DONGU" in _fa.asildi_mi() and "art arda" in _fa.asildi_mi(), _fa.asildi_mi())
+_fb = T.KacakFreni()
+for _i in range(T.DONGU_PENCERE):
+    _fb.olay("arac", "Read" if _i % 2 else "Grep", "x")
+sina("A-B-A-B dongusu (pencerede 2 farkli cagri): FRENLIYOR", "DONGU" in _fb.asildi_mi(), _fb.asildi_mi())
+_fc = T.KacakFreni()
+for _i in range(T.DONGU_ART_ARDA + 5):
+    _fc.olay("arac", "Read", f"dosya{_i}.txt")
+sina("ayni ARAC farkli GIRDIYLE dongu SAYILMIYOR", _fc.asildi_mi() == "", _fc.asildi_mi())
 sina("varsayilan jeton tavani en agir isin USTUNDE",
      T.VARSAYILAN_AZAMI_JETON > 4_860_234)
+# 08.10.2026 canli: Claude'un `jeton`u onbellek OKUMASINI da iceriyordu; 15 sn'lik
+# video isi "19,9 M" diye durdu. Tavana YENI jeton sayilir.
+sina("tavana YENI jeton sayilir (onbellek okumasi haric)",
+     T.tur_jetonu({"jeton": 2_894_662, "jeton_dokumu": {"girdi": 72, "cikti": 5527,
+                   "onbellek_okuma": 2_794_352, "onbellek_yazma": 94_711}}) == 72 + 5527 + 94_711)
+sina("dokum yoksa motorun toplami", T.tur_jetonu({"jeton": 1234}) == 1234
+     and T.tur_jetonu({"jeton": None}) == 0)
 
 
 # ------------------------------------------ 2. BIRIKMIS JETON TAVANI
@@ -135,7 +162,7 @@ class KacanMotor(SahteMotor):
     def tur_kos(self, metin, **ayar):
         ayar.pop("izin_araci", None)
         for i in range(500):
-            yield MotorOlayi("arac", f"arac_{i}", {})
+            yield MotorOlayi("arac", "Read", {"ozet": "ayni.txt"})
         yield MotorOlayi("metin", "bitti", {})
         yield MotorOlayi("bitti", "", {"basarili": True, "jeton": 10})
 
@@ -147,8 +174,8 @@ olaylar = list(Koltuk(ofis, motor_fabrikasi=lambda a, **k: KacanMotor())
                .akit(g3["no"], "kacan", zaman_asimi=30))
 uyarilar = [o for o in olaylar if o["tur"] == "uyari"]
 arac_sayisi = len([o for o in olaylar if o["tur"] == "arac"])
-sina("fren TUTTU (500 cagri tamamlanmadi)",
-     arac_sayisi <= T.VARSAYILAN_AZAMI_ARAC + 2, str(arac_sayisi))
+sina("fren TUTTU (500 ayni cagri tamamlanmadi)",
+     arac_sayisi <= T.DONGU_ART_ARDA + 2, str(arac_sayisi))
 sina("fren SEBEBINI soyledi",
      any("Kacak freni" in (o["govde"] or "") for o in uyarilar),
      str([o["govde"][:60] for o in uyarilar]))
@@ -236,7 +263,7 @@ class _DonguLider(SahteMotor):
     """Inceleme turunda sonsuz arac cagiran lider."""
 
     def tur_kos(self, metin, **ayar):
-        for i in range(T.VARSAYILAN_AZAMI_ARAC + 50):
+        for i in range(T.DONGU_ART_ARDA + 50):
             yield MotorOlayi("arac", "Read")
         yield MotorOlayi("metin", "KARAR: kapat")
         yield MotorOlayi("bitti", "", {"basarili": True})

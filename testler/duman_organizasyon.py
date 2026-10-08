@@ -75,8 +75,9 @@ sina("her rolun katalog satiri var", set(k) == set(R.ROLLER) == set(R.MESLEK_BAS
 sina("lider claude/opus, kod claude/sonnet",
      (k["lider"]["motor"], k["lider"]["model"]) == ("claude", "opus")
      and k["backend"]["motor"] == "claude" and k["arayuz"]["model"] == "sonnet")
-sina("arastirma ve video gemini, test ve plan codex 6.1, tarayici codex 5.6",
-     k["arastirma"]["motor"] == k["video"]["motor"] == "gemini"
+sina("arastirma gemini, video/tasarim sonnet (08.10 olcum), test ve plan codex 6.1, tarayici codex 5.6",
+     k["arastirma"]["motor"] == "gemini"
+     and (k["video"]["motor"], k["video"]["model"]) == (k["tasarim"]["motor"], k["tasarim"]["model"]) == ("claude", "sonnet")
      and (k["kalite"]["motor"], k["kalite"]["model"]) == ("codex", "gpt-6.1-sol")
      and (k["bilgisayar"]["motor"], k["bilgisayar"]["model"]) == ("codex", "gpt-5.6-sol"))
 sina("katalogda haiku ve 3.1 pro YOK",
@@ -181,7 +182,7 @@ sina("takimin lideri ve ajanin motor/model/Turkce meslek adi",
                                   for a in w["ajanlar"]))
 sec = ist.get("/api/kadro/secenek").json()
 sina("secenekler: katalog + motor durumu + model secenekleri",
-     sec["katalog"]["video"]["motor"] == "gemini"
+     sec["katalog"]["video"]["motor"] == "claude"
      and set(sec["motor_durum"]) >= {"claude", "codex", "gemini"}
      and any(x["id"] == "gpt-5.6-sol" for x in sec["model_secenek"]["codex"])
      and any(x["id"] == "gemini-3.8-flash-high" for x in sec["model_secenek"]["gemini"]))
@@ -198,8 +199,9 @@ sina("gemini durumunda video notu DURUSTCE yazili",
      any("video" in n for n in sec["motor_durum"]["gemini"]["notlar"]))
 r = ist.post("/api/ajan", json={"ad": "sahne", "meslek": "video", "kanat": magaza,
                                 "karakter": "1:0:2"})
-sina("panelden ise alma: motor bos -> katalog (gemini) + karakter",
-     r.status_code == 200 and r.json()["motor"] == "gemini" and r.json()["karakter"] == "1:0:2",
+sina("panelden ise alma: motor bos -> katalog (video: claude sonnet) + karakter",
+     r.status_code == 200 and r.json()["motor"] == "claude" and r.json()["model"] == "sonnet"
+     and r.json()["karakter"] == "1:0:2",
      r.text[:200])
 r = ist.post("/api/ajan/kaya/tasi", json={"kanat": web})
 sina("lider tasima 400 + sebep", r.status_code == 400 and "LIDER" in r.text)

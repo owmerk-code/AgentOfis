@@ -130,7 +130,11 @@ class Postane:
             raise PostaneHatasi(
                 f"#{gorev_no} {gorev['durum']}: kapanmis bir ise not yazilmaz. "
                 "Devam gerekiyorsa lidere yaz.")
-        if (gorev.get("sahip") or "") != alici:
+        # SAHIPSIZ IS (08.10.2026, canli iki kez: Durdur ve jeton tavani isi
+        # birakti, patronun notu "isin sahibi yok" diye REDDEDILDI). Not ise
+        # baglidir: sahipsiz isteki not kabul edilir, isi kim alirsa
+        # brifinginde gorur (gorev_notlari isin BUTUN notlarini tasir).
+        if (gorev.get("sahip") or "") and gorev["sahip"] != alici:
             raise PostaneHatasi(
                 f"#{gorev_no} {alici}'in isi degil (sahibi: "
                 f"{gorev.get('sahip') or 'yok'}). Not isin SAHIBINE yazilir.")

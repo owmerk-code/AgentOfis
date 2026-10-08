@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import shutil
 import subprocess
 import uuid
@@ -36,6 +37,14 @@ VIDEO_UZANTI = {".mp4", ".mov", ".webm", ".mkv", ".m4v"}
 GORSEL_UZANTI = {".png", ".jpg", ".jpeg", ".webp"}
 SES_UZANTI = {".mp3", ".wav", ".m4a", ".aac", ".ogg", ".flac"}
 AZAMI_SAHNE_SN = 60
+#: 08.10.2026 (patron: "edit, montaj, sahne, ses birlestirme"): sablonun
+#: yeni alanlari. Tek yer burasi; Kurgu.tsx ayni adlari kullanir.
+GECISLER = ("solma", "kesme", "kayma", "silme", "yukari")
+YERLESIMLER = ("kapla", "bulanik", "sigdir")
+FILTRELER = ("yok", "sicak", "soguk", "siyah_beyaz", "canli", "sinematik")
+ODAKLAR = ("orta", "sol", "sag", "ust", "alt")
+LOGO_KONUM = ("sag_ust", "sol_ust", "sag_alt", "sol_alt", "orta_ust", "orta_alt")
+AZAMI_SES_IZI = 20
 AZAMI_TOPLAM_SN = 180          # Instagram Reels siniri (3 dk)
 
 
@@ -138,10 +147,10 @@ def plan_dogrula(plan: dict, kok) -> dict:
     if len(sahneler) > 40:
         raise KurguHatasi("En fazla 40 sahne.")
     gecis = plan.get("gecis") or "solma"
-    if gecis not in ("solma", "kesme"):
-        raise KurguHatasi("gecis 'solma' ya da 'kesme' olmali.")
+    if gecis not in GECISLER:
+        raise KurguHatasi(f"gecis {', '.join(GECISLER)} olmali.")
     gs = float(plan.get("gecis_sure") if plan.get("gecis_sure") is not None else 0.4)
-    if gecis == "solma" and not 0.1 <= gs <= 1.5:
+    if gecis != "kesme" and not 0.1 <= gs <= 1.5:
         raise KurguHatasi("gecis_sure 0.1-1.5 sn olmali.")
     temiz = []
     toplam = 0.0
@@ -157,11 +166,23 @@ def plan_dogrula(plan: dict, kok) -> dict:
             raise KurguHatasi(f"sahne {i}: sure (saniye) gerekli.")
         if not 0.3 <= sure <= AZAMI_SAHNE_SN:
             raise KurguHatasi(f"sahne {i}: sure 0.3-{AZAMI_SAHNE_SN} sn olmali.")
-        if gecis == "solma" and sure <= gs:
+        if gecis != "kesme" and sure <= gs:
             raise KurguHatasi(f"sahne {i}: sure ({sure}) gecis suresinden ({gs}) uzun olmali.")
         y = dict(s, sure=sure)
+        _sahne_ayarlari(y, i)
         if tur == "video":
             y["dosya"] = str(_dosya(kok, s.get("dosya"), VIDEO_UZANTI, f"sahne {i}"))
+            # KAYNAK YETIYOR MU: kirp_bas + sure x hiz klibin suresini asarsa
+            # Remotion son kareyi dondurur ya da SIYAH cizer -- once soylenir.
+            try:
+                ks = float(olc(y["dosya"]).get("sure") or 0)
+            except KurguHatasi:
+                ks = 0
+            gerek = float(y.get("kirp_bas") or 0) + sure * float(y.get("hiz") or 1)
+            if ks and gerek > ks + 0.15:
+                raise KurguHatasi(
+                    f"sahne {i}: klip {ks:.2f} sn ama kirp_bas + sure x hiz = {gerek:.2f} sn "
+                    "istiyor; sureyi kisalt, hizi artir ya da kirp_bas'i azalt.")
         elif tur == "gorsel":
             y["dosya"] = str(_dosya(kok, s.get("dosya"), GORSEL_UZANTI, f"sahne {i}"))
         if y.get("yazi") is not None:
@@ -174,6 +195,35 @@ def plan_dogrula(plan: dict, kok) -> dict:
         raise KurguHatasi("fps 24, 25, 30 ya da 60 olmali.")
     if plan.get("muzik"):
         out["muzik"] = str(_dosya(kok, plan["muzik"], SES_UZANTI, "muzik"))
+    for alan, alt, ust in (("muzik_ses", 0, 2), ("klip_ses", 0, 2), ("muzik_alcalt", 0, 1),
+                           ("muzik_bas", 0, 3600)):
+        if plan.get(alan) is not None:
+            out[alan] = _sayi(plan[alan], alan, alt, ust)
+    sesler = plan.get("sesler") or []
+    if not isinstance(sesler, list) or len(sesler) > AZAMI_SES_IZI:
+        raise KurguHatasi(f"sesler en fazla {AZAMI_SES_IZI} izlik bir liste olmali.")
+    temiz_ses = []
+    for j, z in enumerate(sesler, 1):
+        if not isinstance(z, dict):
+            raise KurguHatasi(f"ses {j}: {{dosya, bas, ses?, kirp_bas?}} olmali.")
+        yol = _dosya(kok, z.get("dosya"), SES_UZANTI | VIDEO_UZANTI, f"ses {j}")
+        bas = _sayi(z.get("bas", 0), f"ses {j} bas", 0, AZAMI_TOPLAM_SN)
+        kb = _sayi(z.get("kirp_bas", 0), f"ses {j} kirp_bas", 0, 3600)
+        uzun = float(olc(yol).get("sure") or 0) - kb
+        if uzun <= 0.05:
+            raise KurguHatasi(f"ses {j}: kirp_bas'tan sonra ses kalmiyor (ya da sure okunamadi).")
+        temiz_ses.append({"dosya": str(yol), "bas": bas, "kirp_bas": kb, "sure": round(uzun, 3),
+                          "ses": _sayi(z.get("ses", 1), f"ses {j} ses", 0, 2)})
+    out["sesler"] = temiz_ses
+    logo = plan.get("logo")
+    if logo:
+        if not isinstance(logo, dict):
+            raise KurguHatasi("logo {dosya, konum?, boyut?, saydamlik?} olmali.")
+        if logo.get("konum") and logo["konum"] not in LOGO_KONUM:
+            raise KurguHatasi(f"logo konumu {', '.join(LOGO_KONUM)} olmali.")
+        out["logo"] = dict(logo, dosya=str(_dosya(kok, logo.get("dosya"), GORSEL_UZANTI, "logo")),
+                           boyut=_sayi(logo.get("boyut", 0.18), "logo boyut", 0.05, 0.5),
+                           saydamlik=_sayi(logo.get("saydamlik", 0.9), "logo saydamlik", 0, 1))
     sk = plan.get("son_kart")
     if sk:
         if not isinstance(sk, dict) or not str(sk.get("metin") or "").strip():
@@ -182,10 +232,43 @@ def plan_dogrula(plan: dict, kok) -> dict:
         toplam += out["son_kart"]["sure"]
     if toplam > AZAMI_TOPLAM_SN:
         raise KurguHatasi(f"Toplam sure {toplam:.0f} sn; en fazla {AZAMI_TOPLAM_SN} sn.")
+    for j, z in enumerate(out["sesler"], 1):
+        if z["bas"] >= toplam:
+            raise KurguHatasi(f"ses {j}: bas ({z['bas']}) videonun suresinden ({toplam:.1f}) sonra.")
+        z["sure"] = round(min(z["sure"], toplam - z["bas"]), 3)
     for a in plan.get("altyazi") or []:
         if not isinstance(a, dict) or float(a.get("son", 0)) <= float(a.get("bas", 0)):
             raise KurguHatasi("altyazi satiri {bas, son, metin} ve son > bas olmali.")
     return out
+
+
+def _sayi(deger, ne: str, alt: float, ust: float) -> float:
+    try:
+        x = float(deger)
+    except (TypeError, ValueError):
+        raise KurguHatasi(f"{ne}: sayi olmali.")
+    if not alt <= x <= ust:
+        raise KurguHatasi(f"{ne}: {alt}-{ust} arasinda olmali ({x}).")
+    return x
+
+
+def _sahne_ayarlari(y: dict, i: int) -> None:
+    """Sahnenin hiz / yerlesim / odak / filtre alanlari (yerinde denetler)."""
+    if y.get("hiz") is not None:
+        if y.get("tur") != "video":
+            raise KurguHatasi(f"sahne {i}: hiz yalniz video sahnesinde.")
+        y["hiz"] = _sayi(y["hiz"], f"sahne {i} hiz", 0.25, 4)
+    if y.get("yerlesim") and y["yerlesim"] not in YERLESIMLER:
+        raise KurguHatasi(f"sahne {i}: yerlesim {', '.join(YERLESIMLER)} olmali.")
+    if y.get("filtre") and y["filtre"] not in FILTRELER:
+        raise KurguHatasi(f"sahne {i}: filtre {', '.join(FILTRELER)} olmali.")
+    if y.get("odak"):
+        o = str(y["odak"]).strip()
+        if o not in ODAKLAR and not re.fullmatch(r"\d{1,3}% \d{1,3}%", o):
+            raise KurguHatasi(f"sahne {i}: odak {', '.join(ODAKLAR)} ya da '30% 50%' olmali.")
+        y["odak"] = o
+    if y.get("kirp_bas") is not None:
+        y["kirp_bas"] = _sayi(y["kirp_bas"], f"sahne {i} kirp_bas", 0, 3600)
 
 
 # --------------------------------------------------------------- olcum
@@ -346,6 +429,75 @@ def ozet_metni(d: dict) -> str:
 
 
 # --------------------------------------------------------------- cizim
+#: Kurgu.tsx ile AYNI guvenli alan ve yazi olcusu (tek tanim orada; burada
+#: olcum icin aynasi -- degisirse ikisi birlikte).
+GUVENLI = {"9:16": (0.14, 0.3, 0.07, 0.13), "4:5": (0.08, 0.1, 0.07, 0.07)}
+GUVENLI_VARSAYILAN = (0.07, 0.07, 0.07, 0.07)
+#: Yazi bandinin bu orani urunse "binmis" sayilir.
+CARPISMA_ESIGI = 0.12
+
+
+def yazi_bandi(bicim: str, yazi: str, konum: str) -> tuple:
+    """Ekran yazisinin kapladigi YAKLASIK dikdortgen (x0, y0, x1, y1), piksel."""
+    import math
+    W, H = BICIMLER.get(bicim, BICIMLER["9:16"])
+    ust, alt, sol, sag = GUVENLI.get(bicim, GUVENLI_VARSAYILAN)
+    font = W * 0.062
+    alan = W * (1 - sol - sag)
+    gen = min(alan, len(yazi) * font * 0.55)
+    satir = max(1, math.ceil(len(yazi) * font * 0.55 / alan)) + yazi.count("\n")
+    yuk = satir * font * 1.18
+    x0 = W * sol + (alan - gen) / 2
+    if konum == "ust":
+        y0 = H * ust
+    elif konum == "orta":
+        y0 = (H - yuk) / 2
+    else:
+        y0 = H * (1 - alt) - yuk
+    return int(x0), int(y0), int(x0 + gen), int(y0 + yuk)
+
+
+def yazi_carpismasi(video, plan: dict) -> list:
+    """Yazili her sahnenin karesinde URUNU (on plan, rembg) bulur; yazi bandinin
+    urunle ortusmesi esigi asarsa uyari. 08.10.2026 OLCULDU (canli): yazilar alta
+    tasindi, kutunun ve sisenin ustune bindi; lider de kacirdi. Olculemezse bos."""
+    import tempfile
+    from PIL import Image
+    from . import medya_arac as _m
+    if not _m.hazir_mi().get("arka_plan"):
+        return []
+    g = 0.0 if plan.get("gecis") == "kesme" else float(plan.get("gecis_sure") or 0.4)
+    uyari, bas = [], 0.0
+    with tempfile.TemporaryDirectory(prefix="ofis-yazi-") as gec:
+        for i, s in enumerate(plan.get("sahneler") or [], 1):
+            sure = float(s.get("sure") or 0)
+            yazi = str(s.get("yazi") or "").strip()
+            if yazi and s.get("tur") in ("video", "gorsel"):
+                t = bas + min(sure * 0.6, max(0.1, sure - 0.3))
+                kare = Path(gec) / f"k{i}.png"
+                subprocess.run([arac("ffmpeg"), "-v", "error", "-y", "-ss", f"{t:.2f}", "-i", str(video),
+                                "-frames:v", "1", str(kare)], capture_output=True, timeout=60,
+                               creationflags=_pencere_yok())
+                if kare.is_file():
+                    try:
+                        m = _m.arka_plan(kare, Path(gec) / f"m{i}.png", model="isnet-general-use")
+                        with Image.open(m["cikti"]) as im:
+                            alfa = im.getchannel("A")
+                            x0, y0, x1, y1 = yazi_bandi(plan.get("bicim") or "9:16", yazi,
+                                                        s.get("yazi_konum") or "alt")
+                            bant = alfa.crop((x0, y0, x1, y1))
+                            h = bant.histogram()
+                            oran = sum(h[129:]) / max(1, bant.width * bant.height)
+                        if oran > CARPISMA_ESIGI:
+                            uyari.append(f"sahne {i}: YAZI URUNUN USTUNE BINIYOR (%{round(oran * 100)}) -- "
+                                         f"'{yazi[:40]}' ({s.get('yazi_konum') or 'alt'}); yaziyi bos alana "
+                                         "tasi (yazi_konum) ya da urunu kaydir (odak).")
+                    except Exception:            # noqa: BLE001 -- olcum dusse de video gecerli
+                        pass
+            bas += sure - g
+    return uyari
+
+
 def kurgula(plan: dict, kok, ad: str) -> dict:
     """Plani videoya cizer ve olcer. Cikti `kok/.ofis/ekler/<ad>.mp4`.
 
@@ -375,6 +527,16 @@ def kurgula(plan: dict, kok, ad: str) -> dict:
         hedef = public / f"muzik{kaynak.suffix.lower()}"
         shutil.copy2(kaynak, hedef)
         cizilecek["muzik"] = hedef.name
+    for j, z in enumerate(cizilecek.get("sesler") or []):
+        kaynak = Path(z["dosya"])
+        hedef = public / f"ses{j}{kaynak.suffix.lower()}"
+        shutil.copy2(kaynak, hedef)
+        z["dosya"] = hedef.name
+    if cizilecek.get("logo"):
+        kaynak = Path(cizilecek["logo"]["dosya"])
+        hedef = public / f"logo{kaynak.suffix.lower()}"
+        shutil.copy2(kaynak, hedef)
+        cizilecek["logo"]["dosya"] = hedef.name
     plan_yolu = is_klasoru / "plan.json"
     plan_yolu.write_text(json.dumps(cizilecek, ensure_ascii=False, indent=1), encoding="utf-8")
     cikti_klasoru = kok / ".ofis" / "ekler"
@@ -392,5 +554,8 @@ def kurgula(plan: dict, kok, ad: str) -> dict:
         hata = (r.stderr or b"").decode("utf-8", "replace").strip()[-600:]
         raise KurguHatasi(f"Cizim basarisiz (cikis {r.returncode}): {hata}")
     d = denetle(cikti, p["bicim"])
+    carpisma = yazi_carpismasi(cikti, p)
+    if carpisma:
+        d["uyarilar"] = list(d.get("uyarilar") or []) + carpisma
     d.update({"video": str(cikti), "plan": str(plan_yolu), "bicim": p["bicim"]})
     return d

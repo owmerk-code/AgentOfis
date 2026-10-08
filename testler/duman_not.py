@@ -83,6 +83,13 @@ reddedilir("isi olmayan ajan", lambda: ofis.postane.not_birak("bilge", "x"),
            "lidere")
 reddedilir("baskasinin isi", lambda: ofis.postane.not_birak(
     "bilge", "x", gorev_no=g1["no"]), "sahibi")
+# SAHIPSIZ IS (08.10 canli: Durdur / jeton tavani isi birakti, not REDDEDILDI).
+_gs = is_ac("sahipsiz", ["sahipsiz/"])
+_ns = ofis.postane.not_birak("ruzgar", "kutuyu birebir yap", gorev_no=_gs["no"])
+sina("SAHIPSIZ ise not KABUL edilir, ise bagli", _ns["gorev_no"] == _gs["no"])
+from ofis.postane import gorev_notlari as _gn
+sina("  isi alacak ajanin brifingine gidecek (isin notlarinda)",
+     any(n["id"] == _ns["id"] for n in _gn(db, ofis.proje_id, _gs["id"])))
 n1 = ofis.postane.not_birak("cinar", "once testleri duzelt")
 sina("is verilmeyince ajanin ELINDEKI is bulunur", n1["gorev_no"] == g1["no"])
 sina("not bekliyor (ulasmadi)",
@@ -90,7 +97,7 @@ sina("not bekliyor (ulasmadi)",
      == [n1["id"]])
 with db.baglanti() as c:
     sina("'not' olayi yazildi", c.execute(
-        "SELECT COUNT(*) FROM olay WHERE tur='not'").fetchone()[0] == 1)
+        "SELECT COUNT(*) FROM olay WHERE tur='not' AND govde LIKE '%once testleri%'").fetchone()[0] == 1)
 
 # ------------------------------------------------------------------ 2
 print("\n2. BRIFING -- not isin tanimina EK, ulasmayan YENI")

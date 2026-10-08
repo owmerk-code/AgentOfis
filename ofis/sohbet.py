@@ -765,6 +765,9 @@ class Sohbet:
         ekler = metinler(klasorleri_dogrula(ek_klasorler))
 
         lider = self.orkestra._lider_sec(lider_ad, None)
+        # Patronun eki ISI YAPACAK takimin klasorunde olsun (08.10.2026).
+        from . import ekler as _ek
+        _ek.takima_getir(self.ofis, mesaj, lider.get("kanat_id"))
         atanan = (atanan or "").strip()
         if atanan:
             # TAKIM SOHBETI: `@ad is: ...`. Is yine LIDERIN planindan

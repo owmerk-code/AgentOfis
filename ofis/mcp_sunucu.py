@@ -675,6 +675,8 @@ def arac_medya_isle(oturum: Oturum, args: dict) -> str:
     import json as _json
     from pathlib import Path as _P
     from ofis import medya_arac as _m
+    from ofis import video_islem as _vi
+    from ofis.kurgu import KurguHatasi as _KH
     if oturum.gorev_no is None:
         return "HATA: bu turda acik bir gorev yok."
     islem = str(args.get("islem") or "").strip()
@@ -724,9 +726,51 @@ def arac_medya_isle(oturum: Oturum, args: dict) -> str:
                     f"{d['sure_sn']} sn, model {d['model']}\n"
                     + (f"UYARI: {d['uyari']}\n" if d["uyari"] else "")
                     + f"cikti: {_goreli(d['cikti'], kok)} (saydam PNG)")
+        elif islem == "sahneler":
+            d = _vi.sahneler(p, cikti or ekler / f"{p.stem}-sahneler.jpg",
+                             esik=float(args.get("esik") or 0.3))
+            ozet = (f"SAHNELER (ofisin olcumu): {len(d['sahneler'])} sahne, {d['sure']} sn\n"
+                    + "\n".join(f"  #{s['no']}  {s['bas']:.2f}-{s['son']:.2f} sn ({s['sure']:.1f} sn)"
+                                 for s in d["sahneler"][:60])
+                    + f"\nkare panosu: {_goreli(d['pano'], kok)} (DOSYAYI AC VE BAK; her kutu bir "
+                      "sahnenin ortasi, altinda zamani)")
+        elif islem == "kes":
+            d = _vi.kes(p, cikti or ekler / f"{p.stem}-kes.mp4",
+                        bas=float(args.get("bas") or 0), son=float(args.get("son") or 0))
+            ozet = (f"KESILDI (ofisin olcumu): {d['bas']}-{d['son']} sn -> "
+                    f"{d['olcum'].get('sure')} sn, {d['olcum'].get('genislik')}x"
+                    f"{d['olcum'].get('yukseklik')}\ncikti: {_goreli(d['cikti'], kok)}")
+        elif islem == "ses_ayir":
+            d = _vi.ses_ayir(p, cikti or ekler / f"{p.stem}-ses.m4a")
+            ozet = (f"SES AYRILDI (ofisin olcumu): {d['olcum'].get('sure')} sn\n"
+                    f"cikti: {_goreli(d['cikti'], kok)} (video_kurgula'da muzik ya da sesler[])")
+        elif islem == "sessizlik_kes":
+            d = _vi.sessizlik_kes(p, cikti or ekler / f"{p.stem}-sikistirilmis.mp4",
+                                  esik_db=float(args.get("esik_db") or -35),
+                                  en_az=float(args.get("en_az") or 0.6))
+            if not d.get("cikti"):
+                return f"DEGISMEDI: {d['not']}"
+            ozet = (f"SESSIZLIK ATILDI (ofisin olcumu): {d['sure_once']} -> {d['sure_sonra']} sn "
+                    f"({d['atilan_sn']} sn atildi, {d['parca']} parca)\n"
+                    f"cikti: {_goreli(d['cikti'], kok)}")
+        elif islem == "vokal_ayir":
+            uz = ".wav"
+            d = _m.vokal_ayir(p, ekler / f"{p.stem}-vokal{uz}", ekler / f"{p.stem}-muzik{uz}")
+            ozet = (f"VOKAL / MUZIK AYRILDI (yapay zeka, ofisin olcumu): {d['sure']} sn ses, "
+                    f"{d['sure_sn']} sn surdu; vokal {d['vokal_db']} dB, muzik {d['muzik_db']} dB\n"
+                    + (f"UYARI: {d['uyari']}\n" if d["uyari"] else "")
+                    + f"vokal: {_goreli(d['vokal'], kok)}\nmuzik: {_goreli(d['muzik'], kok)}\n"
+                      "(video_kurgula: klibin sesini kapat, vokali sesler[]'e koy, yeni muzik ekle)")
+        elif islem == "kare_ara":
+            d = _vi.kare_ara(p, cikti or ekler / f"{p.stem}-akici.mp4",
+                             carpan=int(args.get("carpan") or 2))
+            ozet = (f"ARA KARE (RIFE, ofisin olcumu): {d['fps_once']:g} -> {d['fps_sonra']:g} kare/sn, "
+                    f"sure {d['sure_once']} -> {d['sure_sonra']} sn, {d['sure_sn']} sn surdu\n"
+                    f"cikti: {_goreli(d['cikti'], kok)} (video_kurgula'da hiz 0.5 / 0.25 ile AKICI agir cekim)")
         else:
-            return "HATA: islem 'gorsel_buyut', 'altyazi' ya da 'arka_plan' olmali."
-    except _m.MedyaHatasi as exc:
+            return ("HATA: islem 'gorsel_buyut', 'altyazi', 'arka_plan', 'sahneler', 'kes', "
+                    "'ses_ayir', 'sessizlik_kes', 'kare_ara' ya da 'vokal_ayir' olmali.")
+    except (_m.MedyaHatasi, _KH) as exc:
         return f"HATA: {exc}"
     except (ValueError, TypeError) as exc:
         return f"HATA: {exc}"
@@ -797,17 +841,36 @@ def arac_gorsel_uret(oturum: Oturum, args: dict) -> str:
     # "kendi AI aracinda uret" diye istem dosyasi birakildi. Ureticiyi
     # AJAN secti, patron degil: dusunce otomatik siraya donulur. Para kilidi
     # korunur -- otomatik sira ucretliyi zaten atlar.
+    # REFERANS FOTOGRAF (08.10.2026, Brave): gercek urunun fotografi
+    # ureticiye EK olarak gider; yollar ajanin kokunde olmali (kok disi
+    # dosyayi ofis disariya tasimaz).
+    ham = args.get("referanslar") or []
+    if isinstance(ham, str):
+        ham = [ham]
+    referanslar = []
+    kok_r = kok.resolve()
+    for r in ham:
+        p = _Path(str(r).strip())
+        p = (p if p.is_absolute() else kok / p).resolve()
+        try:
+            p.relative_to(kok_r)
+        except ValueError:
+            return f"HATA: referans kokun disinda: {r}"
+        referanslar.append(p)
+
     secilen = str(args.get("uretici") or "")
     notlar = []
     try:
         sonuc = _gorsel.uret(istem, hedef, uretici=secilen,
-                             model=str(args.get("model") or ""))
+                             model=str(args.get("model") or ""),
+                             referanslar=referanslar, oran=str(args.get("oran") or ""))
     except _gorsel.GorselHatasi as exc:
         if not secilen:
             return f"HATA: {exc}"
         notlar.append(f"(secilen '{secilen}' olmadi: {str(exc)[:160]} -- otomatik sira denendi)")
         try:
-            sonuc = _gorsel.uret(istem, hedef, uretici="", model="")
+            sonuc = _gorsel.uret(istem, hedef, uretici="", model="",
+                                 referanslar=referanslar, oran=str(args.get("oran") or ""))
         except _gorsel.GorselHatasi as exc2:
             return f"HATA: {exc2}\n" + notlar[0]
 
@@ -820,7 +883,10 @@ def arac_gorsel_uret(oturum: Oturum, args: dict) -> str:
     oturum.ofis.tahta.kanit_ekle(
         g["no"], "gorsel", sonuc["yol"],
         f"{sonuc['uretici']}/{sonuc['model']} ile uretildi, "
-        f"{sonuc['bayt']} bayt{para}. Istem: {istem[:200]}",
+        f"{sonuc['bayt']} bayt{para}"
+        + (f" · referans: {', '.join(sonuc['referanslar'])}"
+           if sonuc.get("referanslar") else "")
+        + f". Istem: {istem[:200]}",
         oturum.ajan_ad)
 
     satir = [f"Gorsel uretildi: {sonuc['yol']}",
@@ -1680,7 +1746,15 @@ ARACLAR = [
             "\"gecis\":\"solma\",\"muzik\":\".ofis/ekler/muzik.mp3\",\"altyazi\":[{\"bas\":0,"
             "\"son\":2,\"metin\":\"...\"}],\"son_kart\":{\"metin\":\"Marka\",\"alt_metin\":"
             "\"site.com\",\"sure\":2}}. Sahne turleri: video (kirp_bas: bastan atlanacak sn, "
-            "ses: klibin kendi sesi), gorsel (hareket: yakinlas|uzaklas|yok), renk (renk: #hex)."
+            "ses: klibin kendi sesi, hiz: 0.25-4 -- 0.5 agir cekim), gorsel (hareket: "
+            "yakinlas|uzaklas|yok), renk (renk: #hex). Her sahnede: yerlesim kapla|bulanik|sigdir "
+            "(yatay klip dikey videoda: 'bulanik' -- kirpmadan, arkasi bulanik dolgu), odak "
+            "orta|sol|sag|ust|alt ya da '30% 50%' (kapla'da kirpma merkezi), filtre yok|sicak|soguk|"
+            "siyah_beyaz|canli|sinematik. Plan: gecis solma|kesme|kayma|silme|yukari; muzik_bas "
+            "(muzigin kacinci sn'sinden), muzik_ses/klip_ses 0-2; sesler: [{dosya, bas, ses, "
+            "kirp_bas}] seslendirme/efekt izleri (calarken muzik muzik_alcalt carpanina iner, "
+            "varsayilan 0.3); logo: {dosya, konum sag_ust|sol_ust|sag_alt|sol_alt|orta_ust|orta_alt, "
+            "boyut 0.05-0.5, saydamlik}. Hazir videoyu duzenlerken once medya_isle 'sahneler' ile anla."
         ),
         "inputSchema": {
             "type": "object",
@@ -1719,18 +1793,35 @@ ARACLAR = [
             "dogru cikar -- ve ses repligi yanlis soyluyorsa UYARIR; cikti video_kurgula'nin "
             "\"altyazi\" bicimi + .srt; ~15 sn/8 sn klip), 'arka_plan' (gorselin arka "
             "planini siler, saydam PNG; `model` birefnet-general-lite ince kenar ~20 sn / "
-            "isnet-general-use hizli). Dosyalar isin klasorunde; cikti varsayilan `.ofis/ekler/`."
+            "isnet-general-use hizli). VIDEO DUZENLEME (hazir video / Flow klibi): 'sahneler' "
+            "(kesme noktalari + zaman damgali KARE PANOSU -- videoyu once bununla ANLA; `esik` "
+            "0.05-0.9), 'kes' (`bas`-`son` sn araligini yeni dosyaya), 'ses_ayir' (sesi .m4a/.wav), "
+            "'sessizlik_kes' (konusmali videoda sessiz bosluklari atar; `esik_db` -35, `en_az` 0.6 sn), "
+            "'kare_ara' (yapay zekayla ARA KARE, RIFE: `carpan` 2|4 -- 24 kare/sn Flow klibini 48/96'ya "
+            "cikarir, sure ayni; AGIR CEKIMDEN ONCE yap, yoksa goruntu takilir; 8 sn 1080p ~2 dk), "
+            "'vokal_ayir' (yapay zekayla KONUSMA/SARKI ile MUZIGI ayirir -- hazir videonun muzigini "
+            "degistirmek ya da konusmayi temizlemek icin; ~2,5 x ses suresi). "
+            "Birlestirme/hiz/yazi/muzik/seslendirme/logo: video_kurgula. "
+            "Dosyalar isin klasorunde; cikti varsayilan `.ofis/ekler/`."
         ),
         "inputSchema": {
             "type": "object",
             "properties": {
-                "islem": {"type": "string", "description": "gorsel_buyut | altyazi | arka_plan"},
+                "islem": {"type": "string", "description": "gorsel_buyut | altyazi | arka_plan | "
+                                                            "sahneler | kes | ses_ayir | sessizlik_kes | kare_ara | "
+                                                            "vokal_ayir"},
                 "dosya": {"type": "string", "description": "Isin klasorune gore girdi yolu."},
                 "cikti": {"type": "string", "description": "Istege bagli cikti yolu."},
                 "replik": {"type": "string", "description": "altyazi: klipte soylenmesi gereken metin."},
                 "olcek": {"type": "integer", "description": "gorsel_buyut: 2, 3 ya da 4 (varsayilan 2)."},
                 "en": {"type": "integer", "description": "gorsel_buyut: hedef genislik (piksel)."},
                 "model": {"type": "string", "description": "arka_plan modeli."},
+                "bas": {"type": "number", "description": "kes: baslangic (sn)."},
+                "son": {"type": "number", "description": "kes: bitis (sn)."},
+                "esik": {"type": "number", "description": "sahneler: kesim hassasiyeti (0.3)."},
+                "esik_db": {"type": "number", "description": "sessizlik_kes: sessizlik esigi (dB, -35)."},
+                "en_az": {"type": "number", "description": "sessizlik_kes: en kisa sessizlik (sn, 0.6)."},
+                "carpan": {"type": "integer", "description": "kare_ara: 2 ya da 4."},
             },
             "required": ["islem", "dosya"],
         },
@@ -1743,7 +1834,11 @@ ARACLAR = [
             "KANIT olarak tahtaya gecirir. Istemi SEN yazarsin -- iyi bir "
             "istem isin yarisidir: konu, bicem, renk, oran, ne OLMAYACAGI. "
             "Uretici otomatik secilir (once ucretsiz olan). Uretilen "
-            "dosya icin ayrica `kanit_ekle` CAGIRMA, iki kez sayilir."
+            "dosya icin ayrica `kanit_ekle` CAGIRMA, iki kez sayilir. "
+            "GERCEK BIR URUNUN gorseliyse urunun fotograflarini `referanslar`a "
+            "VER: uretici urunu, etiketi ve yazilarini fotograftan birebir alir "
+            "(referanssiz uretim urunu UYDURUR). Etiketteki yazilari, hacmi "
+            "(orn. '50 ml · 1.7 FL.OZ') istemde de aynen yaz."
         ),
         "inputSchema": {
             "type": "object",
@@ -1753,10 +1848,19 @@ ARACLAR = [
                 "dosya_adi": {"type": "string",
                               "description": "Orn. 'kreatif-1.png'. Yalniz dosya adi, yol degil."},
                 "uretici": {"type": "string",
-                            "description": "BOS BIRAK: ofis once Codex aboneligini (fatura "
-                                           "yok) sonra ucretsiz Gemini'yi dener. Secersen ve "
-                                           "olmazsa ofis yine otomatik siraya doner."},
+                            "description": "'codex' (GPT, abonelik) ya da 'gemini' (Nano "
+                                           "Banana, ucretsiz kota). BOS: once codex, sonra "
+                                           "gemini. Ikisi de referans fotograf alir. Secilen "
+                                           "olmazsa ofis otomatik siraya doner."},
+                "oran": {"type": "string",
+                         "description": "Cikti orani: 9:16 (hikaye/reels), 4:5 (gonderi), 1:1, "
+                                        "16:9 ... Gemini bunu tam uygular; GPT yakin bir dikey/"
+                                        "yatay uretir (gerekirse kirp)."},
                 "model": {"type": "string", "description": "Bos birak (varsayilan)."},
+                "referanslar": {"type": "array", "items": {"type": "string"},
+                                "description": "Gercek urunun fotograflari (kok icinde yol, "
+                                               "orn. '.ofis/ekler/sise.png'); en cok 8. "
+                                               "Arka plani temizlenmis fotograf en iyisi."},
             },
             "required": ["istem"],
         },

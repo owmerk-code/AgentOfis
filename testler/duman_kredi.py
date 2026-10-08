@@ -66,8 +66,10 @@ def tikla(yazi, url=FLOW, ayar=VIDEO_AYARI, arac="browser_click", **ek):
 
 
 print("1. katalogsuz: her uretim SORULUR (bilinmeyen = sor)")
-sina("katalog yokken resim uretimi de soruluyor",
-     (tikla("Oluşturmaya başla", ayar=RESIM_AYARI) or {}).get("sinif") == "kredi")
+# 08.10.2026 patron: "gorsel icin gemini ya da gpt, video icin flow".
+_r0 = tikla("Oluşturmaya başla", ayar=RESIM_AYARI) or {}
+sina("katalog yokken de Flow'da RESIM uretimi REDDEDILIR (sorulmaz)",
+     _r0.get("sinif") == "kural" and _r0.get("ret"), str(_r0)[:200])
 F.kaydet(KATALOG)
 
 print("\n2. kredi sitesi")
@@ -75,9 +77,17 @@ b = tikla("Oluşturmaya başla")
 sina("video uretimi SORULUR (kredi)", (b or {}).get("sinif") == "kredi", str(b))
 sina("kartta uretim ayari yazili", b and VIDEO_AYARI in b["hedef"] and VIDEO_AYARI in b["sebep"])
 sina("kartta senaryo paketi isteniyor", b and "senaryo paketi" in b["sebep"])
-sina("resim (katalogda 0 kredi) SORULMAZ -- taslak kareler serbest",
-     tikla("Oluşturmaya başla", ayar=RESIM_AYARI) is None)
+_r1 = tikla("Oluşturmaya başla", ayar=RESIM_AYARI) or {}
+sina("Flow'da resim (0 kredi bile) REDDEDILIR, ajana gorsel_uret soyleniyor",
+     _r1.get("ret") and "gorsel_uret" in _r1.get("sebep", ""), str(_r1)[:200])
+sina("video ayari resim SAYILMAZ (video kredisi sorulur, ret yok)",
+     not F.resim_ayari_mi(VIDEO_AYARI) and not F.resim_ayari_mi("") and F.resim_ayari_mi(RESIM_AYARI))
 sina("ayar okunamadiysa SORULUR", (tikla("Oluşturmaya başla", ayar="") or {}).get("sinif") == "kredi")
+# 08.10 OLCULDU: 1080p yukseltilmis indirme 0 kredi (896 -> 896) -> sorulmaz; 4K sorulur.
+sina("1080p Yukseltilmis indirme SORULMAZ (olculmus 0 kredi)",
+     tikla("1080p Yükseltilmiş") is None)
+sina("4K Yukseltilmis indirme SORULUR",
+     (tikla("4K Yükseltilmiş") or {}).get("sinif") in ("kredi", "para"), str(tikla("4K Yükseltilmiş")))
 sina("Enter (istem gonderimi) SORULUR",
      (riskli.degerlendir("browser_press_key", {"key": "Enter"}, url=FLOW,
                          uretim_ayari=VIDEO_AYARI) or {}).get("sinif") == "kredi")
@@ -89,8 +99,8 @@ sina("istemi YAZMAK (gondermeden) serbest",
      riskli.degerlendir("browser_type", {"element": "istem", "target": "e3", "text": "a bottle"},
                         url=FLOW, sayfa_metni="textbox", uretim_ayari=VIDEO_AYARI) is None)
 sina("ayar menusunde model secmek serbest", tikla("Veo 3.1 - Quality") is None)
-sina("1080p Yükseltilmiş indirme (buyutme) SORULUR",
-     (tikla("1080p Yükseltilmiş") or {}).get("sinif") == "kredi")
+sina("4K Yükseltilmiş indirme (buyutme) SORULUR -- 1080p'nin 0 kredisi olculdu (08.10)",
+     (tikla("4K Yükseltilmiş") or {}).get("sinif") == "kredi")
 sina("720p Orijinal indirme serbest", tikla("720p Orijinal boyut") is None)
 sina("Flow'da 'Yükselt' (plan) PARA", (tikla("Yükselt") or {}).get("sinif") == "para")
 sina("Flow'da 'Sil' yine SILME", (tikla("Sil") or {}).get("sinif") == "silme")
@@ -183,14 +193,16 @@ try:
     # Resim kipine gecildi: ayni dugme ucretsiz
     v.harita["e34"] = "button Ayarlar tetikleyicisi : " + RESIM_AYARI
     v.istegi_isle(cagri("browser_click", {"element": "Oluşturmaya başla", "target": "e35"}, 2))
-    sina("resim uretimi SORULMADAN gecti", len(v.cocuga) == 1)
+    sina("resim uretimi YAPILMADI, kart ACILMADI, ajana dogru yol soylendi",
+         len(v.cocuga) == 0 and len(o.postane.bekleyen_onaylar("vera")) == 1
+         and "FLOW'DA GORSEL" in son_metin(v), son_metin(v)[:200])
     v.harita["e34"] = "button Ayarlar tetikleyicisi : " + VIDEO_AYARI
     if bek:
         o.postane.onay_cevapla(bek[0]["id"], onayla=True, kapsam="is")
     for i in (3, 4, 5):
         v.istegi_isle(cagri("browser_click", {"element": "Oluşturmaya başla", "target": "e35"}, i))
     sina("'bu is boyunca' onayi: uc klip de gecti, yeni kart YOK",
-         len(v.cocuga) == 4 and not o.postane.bekleyen_onaylar("vera"), f"{len(v.cocuga)}")
+         len(v.cocuga) == 3 and not o.postane.bekleyen_onaylar("vera"), f"{len(v.cocuga)}")
     # Baska is: onay oraya tasinmaz
     g2 = o.tahta.gorev_ac("Baska", neden="s", ana_hedef="s", kabul_olcutu="y", yazma_alani=["y"])
     os.environ["OFIS_GOREV"] = str(g2["no"])

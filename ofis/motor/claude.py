@@ -1096,6 +1096,31 @@ class ClaudeMotoru(Motor):
             "durdur": "\x1b",
         }
 
+    @staticmethod
+    def tui_kullanici_metni(kayit: dict) -> str:
+        """Kayit satiri ajana VERILMIS bir kullanici mesajiysa metni.
+
+        OLCULDU (Claude Code oturum dosyalari): tur surerken yazilan mesaj
+        once `queue-operation enqueue` (yalniz SIRADA -- ulasmadi), arac
+        sinirinda `attachment.type == queued_command` (ULASTI); bos anda
+        yazilan ise duz `user` mesaji.
+        """
+        def _metin(icerik):
+            if isinstance(icerik, str):
+                return icerik
+            if isinstance(icerik, list):
+                return " ".join(str(b.get("text") or "") for b in icerik
+                                if isinstance(b, dict) and b.get("type") == "text")
+            return ""
+        tur = kayit.get("type")
+        if tur == "attachment":
+            ek = kayit.get("attachment") if isinstance(kayit.get("attachment"), dict) else {}
+            return _metin(ek.get("prompt")) if ek.get("type") == "queued_command" else ""
+        if tur == "user":
+            m = kayit.get("message") if isinstance(kayit.get("message"), dict) else {}
+            return _metin(m.get("content"))
+        return ""
+
     def tui_cevir(self, kayit: dict, durum: dict) -> tuple:
         """Oturum dosyasinin bir satiri -> (olaylar, tur_bitti).
 

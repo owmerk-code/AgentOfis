@@ -348,6 +348,7 @@ def _kuyrugu_kostur(db_yolu, proje_ad: str) -> None:
                                 break
                         _kuyruk.bitir(o, k["id"], "bitti", "kesintiden sonra surduruldu")
                         _kuyruk.devam_cevabi(o, k["id"])
+                        _kuyruk.askida_kalanlari_kapat(o)
                         continue
                     if MOTOR_FABRIKASI is None:
                         sohbet = o.sohbet
@@ -486,6 +487,9 @@ def _halkayi_kostur(db_yolu, proje_ad: str) -> None:
                             paralel=3):
             if adim.get("bitti") or _durdurulduysa(o, "Halka"):
                 break
+        # Durdur -> Surdur yolunda patronun istegi cevapsiz kaliyordu.
+        from . import kuyruk as _kq
+        _kq.askida_kalanlari_kapat(o)
     _arkada_calistir(db_yolu, proje_ad, isi, "halka")
 
 
@@ -2531,6 +2535,34 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
             return _ek.kaydet(ofis_ac(), govde.ad, veri, kanat_id=govde.kanat or None)
         except _ek.EkHatasi as exc:
             raise HTTPException(400, str(exc))
+
+    @uygulama.post("/api/ek_akis")
+    async def api_ek_akis(istek: Request, ad: str, kanat: str = ""):
+        """BUYUK ek (video/ses, 2 GB'a kadar): govde HAM dosyadir ve AKISLA
+        diske yazilir -- base64 JSON'da 500 MB'lik video bellegi doldururdu.
+        Sinir ve yer kurali `ekler.py`de (tek yer)."""
+        from . import ekler as _ek
+        ofis = ofis_ac()
+        siniri = _ek.sinir(ad)
+        try:
+            hedef = _ek.yeni_hedef(ofis, ad, kanat or None)
+        except _ek.EkHatasi as exc:
+            raise HTTPException(400, str(exc))
+        gecici = hedef.with_name(hedef.name + ".part")
+        boyut = 0
+        try:
+            with open(gecici, "wb") as f:
+                async for parca in istek.stream():
+                    boyut += len(parca)
+                    if boyut > siniri:
+                        raise HTTPException(
+                            400, f"Dosya cok buyuk; sinir {siniri // 1024 // 1024} MB.")
+                    f.write(parca)
+            return _ek.tamamla(ofis, gecici, hedef)
+        except _ek.EkHatasi as exc:
+            raise HTTPException(400, str(exc))
+        finally:
+            gecici.unlink(missing_ok=True)
 
     @uygulama.get("/api/ek/{ad}")
     def api_ek_oku(ad: str):

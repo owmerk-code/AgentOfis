@@ -739,7 +739,16 @@ class CodexMotoru(Motor):
         ek_ortam: dict = None,
         izin_araci: str = "",
         kanal=None,
+        gorseller: tuple = (),
     ) -> Iterator[MotorOlayi]:
+        # EKLI GORSEL (`--image`, 08.10.2026): yalniz `exec` kipinde ve yeni
+        # turda olculdu (urun fotografi referansli gorsel). Baska kipte
+        # sessizce dusmesin -- REDDEDILIR.
+        gorseller = tuple(str(g) for g in (gorseller or ()) if str(g).strip())
+        if gorseller and (self.kip != "exec" or oturum_id):
+            raise MotorHatasi(
+                f"{self.ad}: ekli gorsel yalniz exec kipinin YENI turunda "
+                f"tasinir (kip={self.kip}, devam={'evet' if oturum_id else 'hayir'}).")
         # TUR ICI KANAL tasinamiyorsa REDDEDILIR: sessizce yok saysaydik
         # insan notunun ulastigini sanirdi. Koltuk bu motora zaten vermez.
         if kanal is not None and not self.tur_ici_mesaj:
@@ -813,6 +822,7 @@ class CodexMotoru(Motor):
                 oturum, devam=devam, model=model, efor=efor,
                 yazabilir=yazabilir, ek_klasorler=ek_klasorler,
                 klasor=str(kok), mcp_yapilandirma=mcp_yapilandirma,
+                gorseller=gorseller,
             )
             self._arguman_dogrula(komut)
 
@@ -1750,6 +1760,19 @@ class CodexMotoru(Motor):
         except ValueError:
             return m.group(1)[1:-1][:300]
 
+    @staticmethod
+    def tui_kullanici_metni(kayit: dict) -> str:
+        """Rollout satiri ajana VERILMIS bir kullanici mesajiysa metni
+        (`response_item` / `message` / role `user`, `input_text` parcalari)."""
+        p = kayit.get("payload") if isinstance(kayit.get("payload"), dict) else {}
+        if (kayit.get("type") == "response_item" and p.get("type") == "message"
+                and p.get("role") == "user"):
+            return " ".join(str(b.get("text") or "") for b in (p.get("content") or [])
+                            if isinstance(b, dict) and b.get("type") == "input_text")
+        if kayit.get("type") == "event_msg" and p.get("type") == "user_message":
+            return str(p.get("message") or "")
+        return ""
+
     def tui_cevir(self, kayit: dict, durum: dict) -> tuple:
         """Rollout satiri -> (olaylar, tur_bitti)."""
         olaylar = []
@@ -1813,12 +1836,17 @@ class CodexMotoru(Motor):
 
     def _komut_kur(self, oturum: str, *, devam: bool, model: str, efor: str,
                    yazabilir: bool, ek_klasorler: tuple, klasor: str,
-                   mcp_yapilandirma: str = "") -> list:
+                   mcp_yapilandirma: str = "", gorseller: tuple = ()) -> list:
         sandbox = SANDBOX_YAZAR if yazabilir else SANDBOX_OKUR
         komut = [self.calistirilabilir, "exec", *OFIS_KURALLARI]
         if devam:
             # `codex exec resume <UUID> -`: kimlik motorun, bizim degil.
             komut += ["resume", oturum]
+        elif gorseller:
+            # `-i/--image <FILE>...` BIRDEN COK deger yutar: ardindan bir
+            # BAYRAK gelmeli, yoksa istemin '-'si de gorsel sanilir. Hemen
+            # arkasi `--json` -- bu yuzden tam burada.
+            komut += ["--image", *[str(g) for g in gorseller]]
         komut += [
             "--json",             # olaylar JSONL olarak stdout'a
             "--strict-config",    # sessizce dusen ayar olmasin

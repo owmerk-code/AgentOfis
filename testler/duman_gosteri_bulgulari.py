@@ -181,8 +181,11 @@ sina("  kurgu araci satiri var", "video_kurgula" in blok)
 
 print("\n9. ajanin kendi modeli ile son turun modeli ayri (07.10 patron: 'fable mi opus mu?')")
 _js = (Path(__file__).resolve().parent.parent / "web" / "panel.js").read_text(encoding="utf-8")
-sina("farkli turda ikinci rozet 'son tur:' ve sebebi",
-     "son tur: " in _js and "hakem" in _js and "function modelAyni(" in _js)
+# 08.10 (patron: "hem sonnet hem opus yaziyor terminalde?"): ajan CALISIRKEN
+# ikinci rozet YOK; bostayken farkliysa "onceki tur:".
+sina("farkli turda ikinci rozet 'onceki tur:'; ajan calisirken gosterilmez",
+     "\"önceki tur: \"" in _js and "const farkli = !calisiyor &&" in _js
+     and "function modelAyni(" in _js and "\"son tur: \" + olculen" not in _js)
 
 print(f"\n== sonuc: {GECEN} gecti, {KALAN} kaldi ==")
 sys.exit(1 if KALAN else 0)

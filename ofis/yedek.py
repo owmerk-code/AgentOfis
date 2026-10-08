@@ -67,6 +67,10 @@ GUNLUK_ARALIK_SAAT = 24
 BICIM = 1                     # manifest bicim surumu
 
 #: Klasor adlari -- herhangi bir derinlikte atlanir.
+#: PROJELERDE cok buyuk dosya (patronun yukledigi video, 08.10.2026) her gunun
+#: ZIP'ine ve Drive'a girmez -- disk ve kota dolardi. Atlanan SOYLENIR
+#: (`buyuk_atlandi`); asli patronun elinde, ajan ciktilari yeniden uretilebilir.
+PROJE_AZAMI_DOSYA = 200 * 1024 * 1024
 ATLANAN_KLASOR = {"__pycache__", ".pytest_cache", ".playwright-mcp",
                   "node_modules"}
 #: Dosya desenleri -- ad uzerinden.
@@ -262,7 +266,7 @@ def al(neden: str = "elle", *, kok: Path = None, hedef_kok: Path = None,
         # projelerini gecici arsive kopyalardi).
         from .yollar import OFIS_KODU as _OFIS_KODU
         projeler = gercek_projeler() if kok == _OFIS_KODU.resolve() else []
-    proje_dosyalari, bulunamayan = [], []
+    proje_dosyalari, bulunamayan, buyuk = [], [], []
     for p_ad, p_kok in projeler:
         p_kok = Path(p_kok)
         if not p_kok.is_dir():
@@ -273,11 +277,18 @@ def al(neden: str = "elle", *, kok: Path = None, hedef_kok: Path = None,
         for g in pt["dosyalar"]:
             if g.startswith(".ofis/karalama/"):
                 continue
+            try:
+                if (p_kok / g).stat().st_size > PROJE_AZAMI_DOSYA:
+                    buyuk.append(on + g)
+                    continue
+            except OSError:
+                pass
             proje_dosyalari.append((on + g, p_kok / g))
         topla["sirlar"] += [on + s for s in pt["sirlar"]]
     manifest = {"bicim": BICIM, "zaman": zaman.isoformat(timespec="seconds"),
                 "neden": neden, "kaynak": str(kok), "dosyalar": [],
-                "db": [], "sirlar_atlandi": topla["sirlar"]}
+                "db": [], "sirlar_atlandi": topla["sirlar"],
+                "buyuk_atlandi": buyuk}
 
     gecici_arsiv = hedef_kok / (ad + ".part")
     with tempfile.TemporaryDirectory(prefix="ofis-yedek-") as tmp:
@@ -341,6 +352,7 @@ def al(neden: str = "elle", *, kok: Path = None, hedef_kok: Path = None,
     sonuc = {"arsiv": str(arsiv), "boyut": arsiv.stat().st_size,
              "dosya": len(manifest["dosyalar"]), "db": manifest["db"],
              "sirlar_atlandi": manifest["sirlar_atlandi"],
+             "buyuk_atlandi": buyuk,
              "okunamayan": manifest.get("okunamayan", []),
              "projeler_bulunamayan": bulunamayan,
              "hedefler": [], "budanan": budama(hedef_kok, saklanan, arsiv)}

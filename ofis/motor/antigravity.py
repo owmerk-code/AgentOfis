@@ -612,7 +612,25 @@ class AntigravityMotoru(Motor):
             # Giris kutusu cizildi (olculdu: "? for shortcuts").
             "hazir_mi": lambda e: "for shortcuts" in e[-800:],
             "durdur": "\x1b",
+            # OLCULDU (08.10.2026): agy calisma alani disindaki dosya icin
+            # kendi sorusunu sorar ve cevap gelene kadar TUR DURUR. Ofis "3.
+            # No, deny access" basar; kalici izin (`allowNonWorkspaceAccess`)
+            # patronun karari, ofis kendiliginden acmaz.
+            "ekran_sorusu": {"isaret": "Allow access to this file?", "tus": "3",
+                             "ne": "calisma alani DISI dosya erisimi",
+                             "devam": ("OFIS: {yol} calisma alaninin DISINDA; erisim reddedildi "
+                                       "(izin patronun). Ofisin kaynak koduna ve baska klasorlere "
+                                       "gerek yok: araclarin tarifi araclarin kendisinde. Isine "
+                                       "kendi klasorunle KALDIGIN YERDEN devam et.")},
         }
+
+    @staticmethod
+    def tui_kullanici_metni(kayit: dict) -> str:
+        """Kayit satiri ajana VERILMIS bir kullanici mesajiysa metni.
+        (Siradaki mesaj kayda ancak gonderilince USER_INPUT olarak duser.)"""
+        if kayit.get("type") == "USER_INPUT":
+            return str(kayit.get("content") or "")
+        return ""
 
     def tui_cevir(self, kayit: dict, durum: dict) -> tuple:
         """Adim dosyasinin bir satiri -> (olaylar, tur_bitti).
@@ -753,8 +771,31 @@ class AntigravityMotoru(Motor):
                 yeniler = _yeniler()
         from ..yollar import EK_KLASORU
         hedef_klasor = kok / EK_KLASORU
+        # GIRDININ KOPYASI URETIM DEGILDIR (08.10.2026 OLCULDU): agy bakilan
+        # her fotografin BAYT BAYT kopyasini `brain/`e `media_*` diye yaziyor;
+        # referans verilen 2 urun fotografi 4 "uretilen gorsel" olarak teslim
+        # edildi. Calisma klasorunde zaten olan gorselin kopyasi ve ayni
+        # gorselin tekrari alinmaz.
+        import hashlib
+
+        def _oz(y):
+            try:
+                return hashlib.md5(y.read_bytes()).hexdigest()
+            except OSError:
+                return ""
+        try:
+            mevcut = {_oz(y) for i, y in enumerate(kok.rglob("*"))
+                      if i < 5000 and y.suffix.lower() in GORSEL_UZANTI and y.is_file()}
+        except OSError:
+            mevcut = set()
+        mevcut.discard("")
         teslim = []
         for p in yeniler:
+            oz = _oz(p)
+            if oz and oz in mevcut:
+                verilen.add(str(p))             # girdinin kopyasi: bir daha bakilmaz
+                continue
+            mevcut.add(oz)
             try:
                 hedef_klasor.mkdir(parents=True, exist_ok=True)
                 hedef = hedef_klasor / p.name

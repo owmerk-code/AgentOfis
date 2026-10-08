@@ -37,6 +37,12 @@ import unicodedata
 from pathlib import Path
 
 AZAMI_BAYT = 20 * 1024 * 1024
+#: VIDEO/SES BUYUK OLUR (08.10.2026, patron: "hazir bir videoyu sohbetten
+#: konusarak duzenlesin"). Flow 1080p klip 10-30 MB, telefon videosu yuzlerce
+#: MB. Bunlar base64 JSON'la degil AKISLA gelir (`/api/ek_akis`), sinir 2 GB.
+MEDYA = (".mp4", ".mov", ".webm", ".mkv", ".m4v", ".avi",
+         ".mp3", ".wav", ".m4a", ".aac", ".ogg", ".flac")
+MEDYA_AZAMI_BAYT = 2 * 1024 * 1024 * 1024
 # Fiziksel yer `.ofis/ekler` (01.10.2026, ayrim). Eski mesajlardaki
 # `[ek] ekler/<ad>` satirlari da TANINIR (gecmis sohbet bozulmasin).
 from .yollar import EK_KLASORU as KLASOR, KARALAMA as _KARALAMA  # noqa: E402
@@ -70,27 +76,90 @@ def _ajan_kanati(ofis, ajan_ad: str):
         return None
 
 
+def sinir(ad: str) -> int:
+    """Bu ada izin verilen en buyuk boyut: video/ses 2 GB, oteki 20 MB."""
+    return MEDYA_AZAMI_BAYT if Path(str(ad or "")).suffix.lower() in MEDYA else AZAMI_BAYT
+
+
+def _mb(n: int) -> str:
+    return f"{n // 1024 // 1024} MB"
+
+
+def yeni_hedef(ofis, ad: str, kanat_id: str = None) -> Path:
+    """Ekin benzersiz yeri (zaman damgali, temiz ad). Dosya YAZILMAZ."""
+    k = klasor(ofis, kanat_id)
+    k.mkdir(parents=True, exist_ok=True)
+    hedef = k / (time.strftime("%Y%m%d-%H%M%S-") + ad_temizle(ad))
+    sayac = 1
+    while hedef.exists() or hedef.with_name(hedef.name + ".part").exists():
+        hedef = k / f"{hedef.stem}-{sayac}{hedef.suffix}"
+        sayac += 1
+    return hedef
+
+
+def tamamla(ofis, gecici: Path, hedef: Path, *, ajan_ad: str = "insan") -> dict:
+    """`.part` dosyasini yerine koyar (ATOMIK) ve olayi yazar."""
+    boyut = gecici.stat().st_size
+    if not boyut:
+        gecici.unlink(missing_ok=True)
+        raise EkHatasi("Bos dosya eklenemez.")
+    gecici.replace(hedef)
+    ofis.db.olay_yaz(ofis.proje_id, "ek_eklendi",
+                     f"{KLASOR}/{hedef.name} ({boyut} bayt)", ajan_ad=ajan_ad)
+    return {"yol": f"{KLASOR}/{hedef.name}", "ad": hedef.name, "boyut": boyut,
+            "gorsel": hedef.suffix.lower() in GORSEL,
+            "medya": hedef.suffix.lower() in MEDYA}
+
+
 def kaydet(ofis, ad: str, veri: bytes, *, ajan_ad: str = "insan", kanat_id: str = None) -> dict:
     if not veri:
         raise EkHatasi("Bos dosya eklenemez.")
-    if len(veri) > AZAMI_BAYT:
-        raise EkHatasi(f"Dosya cok buyuk ({len(veri) // 1024 // 1024} MB); "
-                       f"sinir {AZAMI_BAYT // 1024 // 1024} MB.")
-    k = klasor(ofis, kanat_id)
-    k.mkdir(parents=True, exist_ok=True)
-    temiz = time.strftime("%Y%m%d-%H%M%S-") + ad_temizle(ad)
-    hedef = k / temiz
-    sayac = 1
-    while hedef.exists():
-        hedef = k / f"{hedef.stem}-{sayac}{hedef.suffix}"
-        sayac += 1
+    if len(veri) > sinir(ad):
+        raise EkHatasi(f"Dosya cok buyuk ({_mb(len(veri))}); sinir {_mb(sinir(ad))}.")
+    hedef = yeni_hedef(ofis, ad, kanat_id)
     gecici = hedef.with_name(hedef.name + ".part")
     gecici.write_bytes(veri)
-    gecici.replace(hedef)
-    ofis.db.olay_yaz(ofis.proje_id, "ek_eklendi",
-                     f"{KLASOR}/{hedef.name} ({len(veri)} bayt)", ajan_ad=ajan_ad)
-    return {"yol": f"{KLASOR}/{hedef.name}", "ad": hedef.name, "boyut": len(veri),
-            "gorsel": hedef.suffix.lower() in GORSEL}
+    return tamamla(ofis, gecici, hedef, ajan_ad=ajan_ad)
+
+
+def kopyala(ofis, kaynak: Path, *, ajan_ad: str = "insan", kanat_id: str = None) -> dict:
+    """Diskteki dosyayi eke KOPYALAR (bellege okumadan -- video yuzlerce MB)."""
+    import shutil
+    kaynak = Path(kaynak)
+    boyut = kaynak.stat().st_size
+    if boyut > sinir(kaynak.name):
+        raise EkHatasi(f"'{kaynak.name}' cok buyuk ({_mb(boyut)}); sinir {_mb(sinir(kaynak.name))}.")
+    hedef = yeni_hedef(ofis, kaynak.name, kanat_id)
+    gecici = hedef.with_name(hedef.name + ".part")
+    shutil.copyfile(kaynak, gecici)
+    return tamamla(ofis, gecici, hedef, ajan_ad=ajan_ad)
+
+
+def takima_getir(ofis, metin: str, kanat_id) -> list:
+    """Mesajdaki `[ek]` dosyalarini ISI YAPACAK takimin klasorune koyar.
+
+    08.10.2026 OLCULDU (canli): patron "Tum ofis" sekmesinden ekledi, dosya
+    projenin kokune yazildi; lider isi GENEL takima verdi, takimin ajani kendi
+    kokunde `.ofis/ekler/<ad>`i BULAMADI ("fotograflari yeniden yukler
+    misiniz?"). Satirdaki yol (`.ofis/ekler/<ad>`) her kokte AYNI anlama
+    gelsin diye dosya takimin klasorune kopyalanir. Doner: kopyalananlar.
+    """
+    import shutil
+    hedef_k = klasor(ofis, kanat_id or None)
+    kopyalanan = []
+    for yol in ayikla(metin or "")[1]:
+        ad = Path(yol).name
+        hedef = hedef_k / ad
+        if hedef.exists():
+            continue
+        for kok in ofis.kokler():
+            kaynak = Path(kok).resolve() / KLASOR / ad
+            if kaynak.is_file() and kaynak.resolve() != hedef.resolve():
+                hedef_k.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(kaynak, hedef)
+                kopyalanan.append(ad)
+                break
+    return kopyalanan
 
 
 def dosya(ofis, ad: str) -> Path:
@@ -137,13 +206,11 @@ def paylas(ofis, yol: str, *, ajan_ad: str = "") -> str:
     if not p.is_file():
         raise EkHatasi(f"'{ham}' bulunamadi.")
     boyut = p.stat().st_size
-    if boyut > AZAMI_BAYT:
-        raise EkHatasi(f"'{ham}' cok buyuk ({boyut // 1024 // 1024} MB); "
-                       f"sinir {AZAMI_BAYT // 1024 // 1024} MB.")
+    if boyut > sinir(p.name):
+        raise EkHatasi(f"'{ham}' cok buyuk ({_mb(boyut)}); sinir {_mb(sinir(p.name))}.")
     if ek_mi and _SATIR.fullmatch(f"[ek] {KLASOR}/{p.name}"):
         return f"{KLASOR}/{p.name}"
-    return kaydet(ofis, p.name, p.read_bytes(), ajan_ad=ajan_ad or "ajan",
-                  kanat_id=_kanat)["yol"]
+    return kopyala(ofis, p, ajan_ad=ajan_ad or "ajan", kanat_id=_kanat)["yol"]
 
 
 #: Liderin cevabindaki ek satiri: `[ek] <herhangi bir yol>`.

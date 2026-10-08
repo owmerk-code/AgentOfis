@@ -83,6 +83,17 @@ def _dokum_topla(mesajlar) -> dict | None:
     return {ad: sum(int(d.get(ad) or 0) for d in mesajlar.values())
             for ad in (*DOKUM_ALANLARI, "onbellek_yazma_1sa")}
 
+#: Tur sonunda SIRADA bekleyen not icin ek bekleme. OLCULDU (08.10.2026,
+#: selin/agy): agy tur surerken yazilani ajana VERMIYOR, siraya koyuyor
+#: ("Press up to edit queued messages") ve ancak tur bitince gonderiyor.
+SIRADAKI_NOT_SN = 20.0
+
+
+def _iz(metin: str) -> str:
+    """Notun kayitta aranacak izi: bosluklar teklenmis ilk 60 harf."""
+    return " ".join(str(metin or "").split())[:60]
+
+
 def _yapistir(t, metin: str, *, sahip: str = SAHIP_SATIRI) -> None:
     """Cok satirli metni TEK mesaj olarak gonderir (bracketed paste) ve
     ardina talimatin sahibini YAZAR (bkz. SAHIP_SATIRI)."""
@@ -334,13 +345,38 @@ class TuiMotoru(Motor):
         return f"{self.ic.etiket()} (terminal)"
 
     # ------------------------------------------------------------------ tur
-    def tur_kos(self, metin: str, *, klasor: str, oturum_id: str = "",
+    def tur_kos(self, metin: str, **ayar) -> Iterator[MotorOlayi]:
+        """YARIDA BIRAKILAN TUR (08.10.2026, OLCULDU canli Brave): kacak freni
+        turu kesince koltuk akistan cikti ama CLI terminalde YASAMAYA devam
+        etti; sonraki tur ikinci bir terminal acti (ayni ajanin iki agy'si,
+        biri gozetimsiz). Cagiran akisi birakirsa (GeneratorExit) kosan tur
+        DURDURULUR ve terminal kapanir; is devir paketiyle temiz surer."""
+        tutucu = {}
+        akis = self._tur_kos_ic(metin, _tutucu=tutucu, **ayar)
+        try:
+            yield from akis
+        except GeneratorExit:
+            kayit = tutucu.get("kayit")
+            if kayit is not None and kayit.get("kosuyor"):
+                with _KILIT:
+                    anahtar = next((k for k, v in _ACIK.items() if v is kayit), None)
+                try:
+                    kayit["terminal"].yaz(kayit["plan"].get("durdur", "\x1b"))
+                    time.sleep(0.5)
+                except Exception:                    # noqa: BLE001 -- zaten kapanmis olabilir
+                    pass
+                kayit["kosuyor"] = False
+                if anahtar:
+                    kapat(anahtar)
+            raise
+
+    def _tur_kos_ic(self, metin: str, *, klasor: str, oturum_id: str = "",
                 model: str = "", efor: str = "normal", yazabilir: bool = True,
                 ek_klasorler: tuple = (), butce_usd: float = None,
                 zaman_asimi: float = None, mcp_yapilandirma: str = "",
                 izinli_araclar: tuple = (), ek_ortam: dict = None,
                 izin_araci: str = "", kanal: TurKanali = None,
-                araclar_kapali: bool = False) -> Iterator[MotorOlayi]:
+                araclar_kapali: bool = False, _tutucu: dict = None) -> Iterator[MotorOlayi]:
         from ..terminal import Terminal, TerminalHatasi, duz_metin
         metin = str(metin or "").strip()
         if not metin:
@@ -482,6 +518,8 @@ class TuiMotoru(Motor):
                                            "oturum_id": oturum_id})
             return
         kayit["kosuyor"] = True
+        if _tutucu is not None:
+            _tutucu["kayit"] = kayit
         if not t.canli():
             with _KILIT:
                 _ACIK.pop(oturum_id, None)
@@ -515,8 +553,22 @@ class TuiMotoru(Motor):
 
         sinir = float(zaman_asimi or 1800)
         bitti = False
+        bitti_an = None
         sebep = ""
         durduruldu_an = None
+        # NOT ULASTI MI -- CLI'in KENDI kaydindan (08.10.2026, OLCULDU): agy
+        # notu siraya koydu, ofis yine "iletildi" dedi; ajan isi notsuz
+        # surdurdu. Yapistirmak ulastirmak degildir: not ancak motorun
+        # kaydinda KULLANICI MESAJI olarak gorununce `mesaj` olayi olur.
+        # Motor bunu bildiremiyorsa (`tui_kullanici_metni` yok) eski davranis.
+        kullanici = getattr(self.ic, "tui_kullanici_metni", None)
+        bekleyen = []                       # [(kimlik, not, iz)]
+        # CLI'IN KENDI SORUSU (08.10.2026, OLCULDU canli: agy "Allow access to
+        # this file? ... outside workspace" sordu, kimse cevaplamadi, tur
+        # KILITLENDI). Ofisin kapisindan gecmeyen bu soru ekranda taninir ve
+        # plandaki tusla (agy: "No, deny") kapatilir; izin vermek patronun.
+        ekran_sorusu = plan.get("ekran_sorusu")
+        son_ekran, gorulen_soru = 0.0, 0
         son_nabiz = time.monotonic()
         artik = b""
         while True:
@@ -526,15 +578,41 @@ class TuiMotoru(Motor):
                 for kimlik_, not_ in kanal.al():
                     try:
                         _yapistir(t, not_)
-                        yield MotorOlayi("mesaj", not_, {"kimlik": kimlik_})
                     except TerminalHatasi:
-                        pass
+                        continue        # bildirilmeyen not sonraki turun basinda gider
+                    if kullanici is None:
+                        yield MotorOlayi("mesaj", not_, {"kimlik": kimlik_})
+                    else:
+                        bekleyen.append((kimlik_, not_, _iz(not_)))
                 if kanal.durdurulsun and durduruldu_an is None:
                     durduruldu_an = simdi
                     try:
                         t.yaz(plan.get("durdur", "\x1b"))
                     except TerminalHatasi:
                         pass
+            if ekran_sorusu and simdi - son_ekran >= 1.5:
+                son_ekran = simdi
+                _ekr = duz_metin(t.gecmis())
+                _kac = _ekr.count(ekran_sorusu["isaret"])
+                if _kac > gorulen_soru:
+                    gorulen_soru = _kac
+                    _kuyruk = _ekr[_ekr.rfind(ekran_sorusu["isaret"]) - 600:]
+                    _m = re.search(r"Read:\s*(.+?)\s*Reason", _kuyruk, re.S)
+                    _yol = "".join(_m.group(1).split()) if _m else "?"
+                    try:
+                        t.yaz(ekran_sorusu["tus"])
+                        # OLCULDU (agy): ret turun TAMAMINI keser ("Interrupted
+                        # -- What should ... do instead?") ve yeni mesaj bekler;
+                        # mesaj gelmezse tur zaman asimina dek ASILI kalir.
+                        if ekran_sorusu.get("devam"):
+                            time.sleep(1.5)
+                            _yapistir(t, ekran_sorusu["devam"].format(yol=_yol))
+                    except TerminalHatasi:
+                        pass
+                    yield MotorOlayi("arac_sonuc",
+                                     f"{ekran_sorusu['ne']} istendi ({_yol}); ofis REDDETTI "
+                                     "(izin patronun); ajan kendi klasoruyle surdurur.",
+                                     {"hatali": True, "cagri_id": "", "arac": "ekran_sorusu"})
             if dokum is None or not dokum.exists():
                 dokum = plan["dokum"]()
             if dokum is not None and dokum.exists():
@@ -549,13 +627,25 @@ class TuiMotoru(Motor):
                         k = json.loads(ham.decode("utf-8", "replace"))
                     except ValueError:
                         continue
+                    if bekleyen:
+                        km = " ".join(str(kullanici(k) or "").split())
+                        for b in [b for b in bekleyen if km and b[2] and b[2] in km]:
+                            bekleyen.remove(b)
+                            yield MotorOlayi("mesaj", b[1], {"kimlik": b[0]})
+                            # Siradaki not tur bittikten SONRA gonderildi: CLI
+                            # yeni bir tur acti -- o tur da bu turun parcasi.
+                            bitti, bitti_an = False, None
                     olaylar, son = self.ic.tui_cevir(k, durum)
                     for o in olaylar:
                         yield o
                     if son:
                         bitti = True
+                        bitti_an = time.monotonic()
             if bitti:
-                break
+                # Sirada not varsa CLI onu tur sonunda gonderir: kisa bekle.
+                if not (bekleyen and t.canli() and durduruldu_an is None
+                        and time.monotonic() - bitti_an < SIRADAKI_NOT_SN):
+                    break
             if not t.canli():
                 sebep = "cikis"
                 break

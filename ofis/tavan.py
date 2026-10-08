@@ -75,8 +75,18 @@ import json
 #: Degerler en agir olculen isin BIR KAT ustune konuldu: fren gercek
 #: bir kacagi durdurmali ama normal isi kesmemeli. Her seye "sorun"
 #: diyen bir gosterge de gostergesizlikten farksizdir.
-VARSAYILAN_AZAMI_ARAC = 120
+#:
+#: 08.10.2026 (OLCULDU, canli Brave): Flow'u suren video ajani 121. cagrida
+#: KESILDI -- klip uretilmis, kurguya geciyordu. Cagrilar cesitliydi (bul,
+#: tikla, yukle, yaz, denetle): ILERLEME, dongu degil. Kor sayi guc kisiyordu
+#: (patron kurali: guc kisan kisit yok). Artik DONGU olculur (asagida); sert
+#: sinir yalniz gercekten olagan disi bir tur icin.
+VARSAYILAN_AZAMI_ARAC = 1000
 VARSAYILAN_AZAMI_CIKTI_HARF = 400_000
+#: DONGU: ayni cagri (arac + girdi ozeti) art arda bu kadar kez...
+DONGU_ART_ARDA = 50
+#: ...ya da son bu kadar cagrida en cok iki farkli cagri (A-B-A-B).
+DONGU_PENCERE = 80
 
 #: Birikmis jeton tavani. Gorev basina, turlar arasi.
 #:
@@ -116,11 +126,25 @@ class KacakFreni:
         self.azami_cikti_harf = int(azami_cikti_harf or 0)
         self.arac = 0
         self.harf = 0
+        self._son = []                 # son DONGU_PENCERE cagrinin imzasi
+        self._art_arda = 0
+        self._dongu = ""
 
-    def olay(self, tur: str, govde: str = "") -> None:
-        """Koltuk her olayda cagirir. Sayar, karar VERMEZ."""
+    def olay(self, tur: str, govde: str = "", ozet: str = "") -> None:
+        """Koltuk her olayda cagirir. Sayar, karar VERMEZ. `ozet`: aracin
+        girdi ozeti -- ayni ad farkli girdiyle cagrilirsa DONGU degildir."""
         if tur == "arac":
             self.arac += 1
+            imza = f"{govde or ''}|{ozet or ''}"
+            self._art_arda = self._art_arda + 1 if self._son and self._son[-1] == imza else 1
+            self._son = (self._son + [imza])[-DONGU_PENCERE:]
+            if self._art_arda >= DONGU_ART_ARDA:
+                self._dongu = (f"ayni cagri art arda {self._art_arda} kez "
+                               f"({(govde or '')[:60]})")
+            elif len(self._son) >= DONGU_PENCERE and len(set(self._son)) <= 2:
+                self._dongu = (f"son {DONGU_PENCERE} cagri yalniz "
+                               f"{len(set(self._son))} farkli cagri "
+                               f"({', '.join(sorted(s.split('|')[0][:40] for s in set(self._son)))})")
         elif tur in ("metin", "cikti", "dusunce"):
             self.harf += len(govde or "")
 
@@ -130,6 +154,8 @@ class KacakFreni:
         Sebep dondurulmesinin sebebi: teshis koyup NE oldugunu
         soylemeyen bir gosterge, insani bir kez daha dusundurur.
         """
+        if self._dongu:
+            return f"Kacak freni: tur DONGUDE -- {self._dongu}."
         if self.azami_arac and self.arac > self.azami_arac:
             return (f"Kacak freni: {self.arac} arac cagrisi "
                     f"(tavan {self.azami_arac}). Tur donguye girmis "
@@ -158,7 +184,7 @@ def lider_freni(db, proje_id: str, fren: KacakFreni, olay, *, ajan_ad: str,
     yazilir) ve basarisiz `ek`i dondurur -- cagiran dongudan cikar.
     Asilmadiysa `None`.
     """
-    fren.olay(olay.tur, olay.govde or "")
+    fren.olay(olay.tur, olay.govde or "", str((olay.ek or {}).get("ozet") or ""))
     sebep = fren.asildi_mi()
     if not sebep:
         return None
@@ -191,11 +217,25 @@ def gorev_jetonu(db, proje_id: str, gorev_id: str) -> int:
         except (ValueError, TypeError):
             continue
         if isinstance(veri, dict):
-            try:
-                toplam += int(veri.get("jeton") or 0)
-            except (TypeError, ValueError):
-                pass
+            toplam += tur_jetonu(veri)
     return toplam
+
+
+def tur_jetonu(ozet: dict) -> int:
+    """Bir turun TAVANA sayilan jetonu: YENI jeton (girdi + cikti + onbellege
+    yazma). 08.10.2026 OLCULDU (canli): Claude terminal turunun `jeton`u
+    onbellekten OKUNANI da iceriyordu (Sonnet'in tek Flow turu ~2,8 M), Gemini
+    icermiyordu; 15 sn'lik video isi "19,9 M jeton, tavan 5 M" diye DURDURULDU.
+    Tavan (en agir olculen is 4,86 M) yeni jetonla olculmustu. Dokum yoksa
+    motorun bildirdigi toplam."""
+    d = ozet.get("jeton_dokumu")
+    try:
+        if isinstance(d, dict) and d:
+            return int(sum(int(d.get(k) or 0) for k in
+                           ("girdi", "cikti", "onbellek_yazma", "onbellek_yazma_1sa")))
+        return int(ozet.get("jeton") or 0)
+    except (TypeError, ValueError):
+        return 0
 
 
 def jeton_tavani_denetle(db, proje_id: str, gorev_id: str, *,

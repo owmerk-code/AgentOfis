@@ -95,7 +95,8 @@ sina("gecici evde araclar kurulu degil (gercek eve bakilmiyor)",
      f"{M.hazir_mi()} {M.ARACLAR}")
 for ad, cagri in (("altyazi", lambda: M.altyazi("x.mp4")),
                   ("gorsel_buyut", lambda: M.gorsel_buyut(Path(d) / "x.png", Path(d) / "y.png")),
-                  ("arka_plan", lambda: M.arka_plan(Path(d) / "x.png", Path(d) / "y.png"))):
+                  ("arka_plan", lambda: M.arka_plan(Path(d) / "x.png", Path(d) / "y.png")),
+                  ("vokal_ayir", lambda: M.vokal_ayir(Path(d) / "x.mp4", Path(d) / "v.wav", Path(d) / "m.wav"))):
     try:
         cagri()
         sina(f"{ad}: kurulu degilken hata soyledi", False)
@@ -140,6 +141,24 @@ for oran, bekle in ((0.0, "bos"), (1.0, "silinmedi"), (0.7, "")):
     sina(f"on plan %{int(oran * 100)}: " + (f"uyari ({bekle})" if bekle else "uyari yok"),
          (bekle in r["uyari"]) if bekle else r["uyari"] == "", r["uyari"])
 sina("saydamlik icin cikti PNG'ye cevrildi", r["cikti"].endswith(".png"))
+
+print("\n4b. vokal_ayir: bos iz UYARIR")
+_hz = M.hazir_mi
+M.hazir_mi = lambda: {"vokal_ayir": True}
+from ofis import kurgu as _K  # noqa: E402
+_arac, _K.arac = _K.arac, (lambda ad: ad)  # sahte yardimci ffmpeg cagirmaz
+for vdb, mdb, bekle in ((-60, -14, "VOKAL yok"), (-15, -60, "MUZIK yok"), (-20, -16, "")):
+    M._yardimci = lambda argv, z, v=vdb, m=mdb: {"tamam": True, "sure": 3.0, "vokal_db": v,
+                                                "muzik_db": m, "karisim_db": -14}
+    r = M.vokal_ayir(Path(d) / "klip.mp4", Path(d) / "v.wav", Path(d) / "m.wav")
+    sina(f"vokal {vdb} / muzik {mdb} dB: " + (f"uyari ({bekle})" if bekle else "uyari yok"),
+         (bekle in r["uyari"]) if bekle else r["uyari"] == "", r["uyari"])
+try:
+    M.vokal_ayir(Path(d) / "klip.mp4", Path(d) / "v.txt", Path(d) / "m.wav")
+    sina("vokal_ayir: ses disi cikti REDDEDILDI", False)
+except M.MedyaHatasi:
+    sina("vokal_ayir: ses disi cikti REDDEDILDI", True)
+M.hazir_mi, M._yardimci, _K.arac = _hz, _y, _arac
 
 print("\n5. MCP araci")
 o = Ofis.proje_ac(Veritabani(Path(d) / "o.sqlite3"), "Medya", amac="a", basari_olcutu="b", kok_klasor=d)

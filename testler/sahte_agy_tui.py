@@ -13,7 +13,12 @@ ekranini gosterir ve mesaj almaz.
 Davranis mesajdaki isaretlerden:
   #ARAC#   -> once write_to_file (DONE) sonra run_command (ERROR) adimi
   #GORSEL# -> evin brain klasorune bir PNG birakir (tur sonu teslimi sinamasi)
-  #YAVAS#  -> cevap 6 sn surer (Esc sinamasi)
+  #YAVAS#  -> cevap 6 sn surer (Esc sinamasi). Bu sirada yazilan mesaj
+              gercek agy gibi SIRAYA girer (08.10.2026 olculdu) ve tur
+              bitince gonderilir.
+  #YUT#    -> #YAVAS# gibi ama siradaki mesaji HIC gondermez (ulasmayan not)
+  #ERISIM# -> gercek agy'nin "Allow access to this file?" sorusunu sorar, tusu
+              bekler (cevapsiz tur KILITLENIR) ve secimi sahte_agy_erisim.txt'ye yazar
   #KOTA#   -> cevap RESOURCE_EXHAUSTED hatasiyla biter
 Argumanlar: agy'ninkiler (--model, --conversation ...).
 """
@@ -69,10 +74,39 @@ def mesaj_oku():
         tampon += ch
 
 
+def mesgulken_oku(kuyruk, saniye):
+    """Tur surerken: yapistirilan + Enter'li mesaj SIRAYA girer; tek Esc keser."""
+    tampon, bas = "", time.time()
+    while time.time() - bas < saniye:
+        if not msvcrt.kbhit():
+            time.sleep(0.05)
+            continue
+        ch = msvcrt.getwch()
+        if ch == "\x1b":
+            time.sleep(0.05)
+            dizi = ""
+            while msvcrt.kbhit():
+                dizi += msvcrt.getwch()
+                if dizi.endswith("~"):
+                    break
+            if not dizi:
+                return True          # tek Esc: tur kesildi
+            continue                 # yapistirma isareti
+        if ch == "\r":
+            if tampon.strip():
+                kuyruk.append(tampon)
+                print("> " + tampon[:60] + "\n  Press up to edit queued messages", flush=True)
+            tampon = ""
+            continue
+        tampon += ch
+    return False
+
+
 print(f"Antigravity CLI 1.3.1 (sahte)\n{KLASOR}\n> \n? for shortcuts  {model}", flush=True)
 adim = 0
+kuyruk = []
 while True:
-    m = mesaj_oku()
+    m = kuyruk.pop(0) if kuyruk else mesaj_oku()
     if m.strip() == "/exit":
         break
     if not m.strip():
@@ -102,14 +136,30 @@ while True:
     if "#GORSEL#" in m:
         g = EV / "brain" / kimlik / "kedi.png"
         g.write_bytes(b"\x89PNG\r\n\x1a\n" + b"0" * 64)
-    if "#YAVAS#" in m:
-        bas = time.time()
-        kesildi = False
-        while time.time() - bas < 6:
-            if msvcrt.kbhit() and msvcrt.getwch() == "\x1b":
-                kesildi = True
+        # gercek agy gibi: bakilan girdi fotografinin BAYT BAYT kopyasi (media_*)
+        for f in Path(KLASOR).glob("*.jpg"):
+            (EV / "brain" / kimlik / f"media_{f.stem}.jpg").write_bytes(f.read_bytes())
+    if "#ERISIM#" in m:
+        print("File access\nRead: C:\\Users\\pc\\Desktop\\AgentOfis\\ofis\\mcp_sunucu.py\n"
+              "Reason: outside workspace\n\nAllow access to this file?\n> 1. Yes, allow access\n"
+              "  2. Yes, and always allow non-workspace access\n  3. No, deny access", flush=True)
+        while True:
+            ch = msvcrt.getwch()
+            if ch in "123":
                 break
-            time.sleep(0.05)
+        Path(os.environ["USERPROFILE"], "sahte_agy_erisim.txt").write_text(ch, encoding="utf-8")
+        satir({"step_index": adim, "type": "GENERIC", "status": "ERROR",
+               "content": "User declined the tool call" if ch == "3" else "allowed"})
+        adim += 1
+        if ch == "3":
+            # GERCEK agy gibi: ret turu KESER, yeni mesaj bekler.
+            print("Interrupted - What should Antigravity CLI do instead?\n> ", flush=True)
+            continue
+    if "#YAVAS#" in m or "#YUT#" in m:
+        sira = []
+        kesildi = mesgulken_oku(sira, 6)
+        if "#YAVAS#" in m:
+            kuyruk.extend(sira)
         if kesildi:
             print("Cancelled.\n? for shortcuts", flush=True)
             continue

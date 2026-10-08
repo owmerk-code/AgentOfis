@@ -458,6 +458,25 @@ sina("once yapistirma, sonra duz yazilmis sahip satiri, sonra Enter",
 
 for x in tui.acik_oturumlar():
     tui.kapat(x["oturum_id"])
+print("\n-- 18. NOT ULASTI MI: motorun KAYDINDAKI kullanici mesaji (08.10) --")
+from ofis.motor.claude import ClaudeMotoru as _CM  # noqa: E402
+from ofis.motor.codex import CodexMotoru as _XM  # noqa: E402
+_ck = _CM.tui_kullanici_metni
+sina("claude: SIRAYA alinan (queue-operation enqueue) ulasmis SAYILMAZ",
+     _ck({"type": "queue-operation", "operation": "enqueue", "content": "NOT x"}) == "")
+sina("claude: arac sinirinda verilen (queued_command) ULASTI",
+     "NOT x" in _ck({"type": "attachment", "attachment": {"type": "queued_command", "prompt": "NOT x"}}))
+sina("claude: duz kullanici mesaji ve metin parcalari",
+     _ck({"type": "user", "message": {"content": [{"type": "text", "text": "NOT y"}]}}) == "NOT y"
+     and _ck({"type": "user", "message": {"content": [{"type": "tool_result", "content": "NOT z"}]}}) == "")
+_xk = _XM.tui_kullanici_metni
+sina("codex: role=user mesaji ULASTI, asistan sayilmaz",
+     "NOT q" in _xk({"type": "response_item", "payload": {"type": "message", "role": "user",
+                     "content": [{"type": "input_text", "text": "NOT q"}]}})
+     and _xk({"type": "response_item", "payload": {"type": "message", "role": "assistant",
+              "content": [{"type": "output_text", "text": "NOT q"}]}}) == "")
+sina("iz bosluklari tekler (yapistirmada satir sonu degisebilir)",
+     tui._iz("A  b\r\n c") == "A b c")
 sina("butun terminaller kapandi", not tui.acik_oturumlar())
 print(f"\n== {GECEN} gecti, {KALAN} kaldi ==")
 sys.exit(1 if KALAN else 0)

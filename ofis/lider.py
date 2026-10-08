@@ -421,6 +421,30 @@ class Lider:
         else:
             satirlar.append("- (kanit yok)")
 
+        # PATRONUN ONAYLARI DEFTERDEN (08.10.2026 OLCULDU canli): kredi paketi
+        # patronca onaylanmisti, inceleyici onayi GOREMEDI ve "kredi harcanmadan
+        # once patronun onayi dogrulanmiyor" diye REDDETTI. Onay ajanin sozu
+        # degil, ofisin kaydi -- inceleyici kaynagini burada gorur.
+        try:
+            with self.db.baglanti() as _c:
+                _onaylar = [dict(r) for r in _c.execute(
+                    "SELECT isteyen, eylem, durum, kapsam, cevap_notu, olusturuldu, "
+                    "cevaplandi FROM onay WHERE proje_id = ? AND gorev_id = ? "
+                    "ORDER BY rowid", (self.proje_id, g["id"]))]
+        except Exception:                   # noqa: BLE001 -- olculemezse soylenir
+            _onaylar = None
+        satirlar += ["", "### Patronun bu isteki onaylari (OFISIN KAYDI)", ""]
+        if _onaylar is None:
+            satirlar.append("- (onay kaydi okunamadi)")
+        elif not _onaylar:
+            satirlar.append("- (bu iste onay istenmedi)")
+        for o in _onaylar or []:
+            satirlar.append(
+                f"- {o['olusturuldu'][:16]} {o['isteyen']}: {kisalt(o['eylem'], 160)} -> "
+                f"**{o['durum'].upper()}**" + (f" ({o['cevaplandi'][:16]}, kapsam {o['kapsam']})"
+                                              if o.get("cevaplandi") else "")
+                + (f" -- patronun notu: {kisalt(o['cevap_notu'], 200)}" if o.get("cevap_notu") else ""))
+
         # OFISIN KENDI OLCUMU -- ajanin sozu degil.
         #
         # Bu blok olmadan kapi kordu. Gercek ofiste 16 `diff` KANITI
@@ -789,6 +813,8 @@ class Lider:
                         + (f"/{basamaklar[0]['model']}" if basamaklar[0].get("model") else ""),
                         ajan_ad=lider["ad"], gorev_id=gorev["id"])
 
+        hatalar = []                  # motorun soyledigi sebep (08.10: kayboluyordu)
+
         def kostur(b):
             from .motor.tui import kipe_gore
             # Inceleme de gercek terminalde -- TEMIZ oturum, salt okunur.
@@ -827,6 +853,8 @@ class Lider:
                     return kesildi, []
                 if olay.tur == "metin":
                     parcalar.append(olay.govde)
+                elif olay.tur == "hata":
+                    hatalar.append(str(olay.govde or "")[:400])
                 elif olay.tur == "bitti":
                     ek = dict(olay.ek or {})
                     # INCELEME DE OLCULUR. Hic yazilmiyordu -- ve hakem
@@ -849,8 +877,12 @@ class Lider:
         except MotorHatasi as exc:
             return self._belirsiz(no, f"Inceleme motoru baslamadi: {exc}")
         if not ek.get("basarili") and not parcalar:
+            # SEBEP YAZILIR (08.10.2026 canli: capraz inceleme codex'te dustu,
+            # defterde yalniz "hukum alinamadi" vardi -- neden bilinmiyordu).
+            sebep = (hatalar[-1] if hatalar else "") or str(ek.get("sebep") or ek.get("hata") or "")
             return self._belirsiz(
-                no, "Inceleme turu basarisiz oldu, hukum alinamadi.")
+                no, "Inceleme turu basarisiz oldu, hukum alinamadi."
+                + (f" Sebep ({_b.get('motor', '')}): {sebep[:400]}" if sebep else ""))
 
         hukum = "".join(parcalar)
         # HUKUM SATIRI UNUTULDUYSA BIR KEZ SORULUR (01.10.2026). Olculdu

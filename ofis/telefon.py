@@ -54,7 +54,7 @@ IZINLI = (
     ("POST", r"/api/hafiza_onerisi/[^/]+"),
     ("GET", r"/api/tahta"), ("GET", r"/api/kuyruk"), ("GET", r"/api/takim"),
     ("POST", r"/api/durdur"), ("POST", r"/api/lidere"),
-    ("POST", r"/api/ek"), ("GET", r"/api/ek/[^/]+"),
+    ("POST", r"/api/ek"), ("POST", r"/api/ek_akis"), ("GET", r"/api/ek/[^/]+"),
 )
 #: Anahtarsiz (henuz eslesmemis) telefona acik olanlar.
 ESLESMESIZ = (("GET", r"/telefon"), ("GET", r"/telefon/.*"), ("GET", r"/sw\.js"),

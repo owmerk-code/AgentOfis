@@ -268,6 +268,37 @@ finally:
     _P.MOTOR_FABRIKASI = None
     _P._KOSU.update(calisiyor=False, mesaj="", dur=False)
 
+print("\n5. ASKIDA KALAN ISTEK (08.10 canli: Durdur -> Surdur, mesaj cevapsiz, panel 3 sn'de bir cizdi)")
+from ofis import kuyruk as _KQ  # noqa: E402
+with ofis.db.baglanti() as _c:
+    _c.execute("UPDATE kuyruk SET durum = 'iptal' WHERE durum IN ('bekliyor', 'kosuyor')")
+_k = _KQ.ekle(ofis, "askida istek", "demir")
+_al = _KQ.sira_al(ofis, "seri-askida")
+_m = ofis.postane.soru_sor("insan", "demir", "askida istek", mod="uyandiran")
+_g = ofis.tahta.gorev_ac("Askida is", neden="n", ana_hedef="h", kabul_olcutu="k", kanat_id=kn)
+_KQ.bitir(ofis, _k["id"], "bitti")          # Durdur: sira bitti, mesaj cevapsiz
+ofis.db.olay_yaz(ofis.proje_id, "ajan_sohbet", "teslim" + chr(10) + "[ek] .ofis/ekler/son.mp4",
+                 ajan_ad="demir", gorev_id=_g["id"])
+
+
+def _cevap():
+    with ofis.db.baglanti() as _c:
+        return _c.execute("SELECT cevap, cevaplandi FROM mesaj WHERE id = ?", (_m["id"],)).fetchone()
+
+
+sina("is SURERKEN istege dokunulmaz", _KQ.askida_kalanlari_kapat(ofis) == 0 and not _cevap()["cevaplandi"])
+with ofis.db.baglanti() as _c:
+    _c.execute("UPDATE gorev SET durum = 'bitti' WHERE id = ?", (_g["id"],))
+_k2 = _KQ.ekle(ofis, "sonraki istek", "demir")
+sina("sirada istek varken dokunulmaz", _KQ.askida_kalanlari_kapat(ofis) == 0 and not _cevap()["cevaplandi"])
+_KQ.iptal(ofis, _k2["id"])
+sina("isleri bitmis, sira bos: istek ofisin ozetiyle KAPANDI",
+     _KQ.askida_kalanlari_kapat(ofis) == 1 and _cevap()["cevaplandi"]
+     and f"#{_g['no']}" in (_cevap()["cevap"] or ""), str(dict(_cevap())))
+sina("  cevap teslim dosyasini tasiyor ([ek] satiri)",
+     "[ek] .ofis/ekler/son.mp4" in (_cevap()["cevap"] or ""), _cevap()["cevap"])
+sina("ikinci cagri bir sey yapmaz", _KQ.askida_kalanlari_kapat(ofis) == 0)
+
 print(f"\n== sonuc: {GECEN} gecti, {KALAN} kaldi ==")
 print(f"klasor: {kok}")
 sys.exit(1 if KALAN else 0)

@@ -51,6 +51,10 @@ GORSEL_UZANTI = {".png", ".jpg", ".jpeg", ".webp"}
 SATIR_KELIME = 6
 #: Bu oranin altinda duyulan replikle beklenen ayrisir: uyari.
 UYUM_ESIGI = 0.6
+#: Vokal/muzik ayirma modeli (UVR MDX-Net, onnxruntime; torch YOK). OLCULDU
+#: (08.10.2026): konusma + muzik karisiminda konusmanin SDR'i -9,3 -> +18,4 dB;
+#: 12 sn ses 30 sn'de.
+VOKAL_MODEL = "Kim_Vocal_2.onnx"
 ARKA_PLAN_MODELLERI = ("birefnet-general-lite", "isnet-general-use", "birefnet-general", "u2net")
 
 
@@ -66,7 +70,8 @@ def hazir_mi() -> dict:
     """Hangi arac kurulu -- ajanin ve liderin gordugu durum (olculur, varsayilmaz)."""
     return {"gorsel_buyut": ESRGAN.is_file() and (ESRGAN.parent / "models" / "realesrgan-x4plus.bin").is_file(),
             "altyazi": MEDYA_PY.is_file() and (MODELLER / "whisper").is_dir(),
-            "arka_plan": MEDYA_PY.is_file()}
+            "arka_plan": MEDYA_PY.is_file(),
+            "vokal_ayir": MEDYA_PY.is_file() and (MODELLER / "mdx" / VOKAL_MODEL).is_file()}
 
 
 def _yardimci(argv: list, zaman_asimi: float) -> dict:
@@ -273,6 +278,31 @@ def altyazi(girdi, *, replik: str = "", srt=None, ham: dict = None) -> dict:
         Path(srt).write_text(srt_metni(satirlar), encoding="utf-8")
     return {"satirlar": satirlar, "duyulan": duyulan, "uyum": uyum, "uyari": uyari,
             "srt": str(srt) if srt else ""}
+
+
+# --------------------------------------------------------------- vokal
+def vokal_ayir(girdi, vokal, muzik) -> dict:
+    """Video/sesi VOKAL (konusma/sarki) ve MUZIK (geri kalan) olarak ikiye ayirir.
+    vokal + muzik = karisim (fark yontemi); ikisi de olculur."""
+    if not hazir_mi()["vokal_ayir"]:
+        raise MedyaHatasi(f"Vokal ayirma modeli kurulu degil ({MODELLER / 'mdx' / VOKAL_MODEL}).")
+    from . import kurgu
+    vokal, muzik = Path(vokal), Path(muzik)
+    for p in (vokal, muzik):
+        if p.suffix.lower() not in (".wav", ".mp3", ".m4a"):
+            raise MedyaHatasi("cikti .wav, .mp3 ya da .m4a olmali.")
+        p.parent.mkdir(parents=True, exist_ok=True)
+    t = time.time()
+    d = _yardimci(["vokal", str(girdi), str(vokal), str(muzik), "--ffmpeg", kurgu.arac("ffmpeg"),
+                   "--modeller", str(MODELLER)], 1800)
+    uyari = ""
+    if d.get("vokal_db", 0) < d.get("karisim_db", 0) - 30:
+        uyari = "Seste neredeyse hic VOKAL yok (ayrilan vokal izi bos sayilir)."
+    elif d.get("muzik_db", 0) < d.get("karisim_db", 0) - 30:
+        uyari = "Seste neredeyse hic MUZIK yok (yalniz vokal)."
+    return {"vokal": str(vokal), "muzik": str(muzik), "sure": d.get("sure"), "uyari": uyari,
+            "vokal_db": d.get("vokal_db"), "muzik_db": d.get("muzik_db"),
+            "sure_sn": round(time.time() - t, 1)}
 
 
 # --------------------------------------------------------------- arka plan

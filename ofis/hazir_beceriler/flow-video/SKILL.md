@@ -21,7 +21,8 @@ beceri paketteki sahneleri Flow'da uretip paylasmaya hazir videoya cevirir.
 
 ## 1. Kredi kurali (kapida yapiyla durur)
 Kredili her uretim tiklamasi (Olusturmaya basla, Enter ile gonderme,
-1080p/4K buyutme) ofisin kapisinda DURUR ve patrona sorulur. Bu yuzden:
+4K buyutme) ofisin kapisinda DURUR ve patrona sorulur (1080p yukseltilmis
+indirme OLCULDU 0 kredi, sorulmaz). Bu yuzden:
 1. paketi (sahneler, model, toplam kredi, taslak kareler) `sohbete_yaz` ile
    gonder;
 2. `onay_iste(eylem="... paketi", ayrinti=<paket ozeti>, kredi=<TOPLAM>,
@@ -100,13 +101,15 @@ istemlerinde olcek kilidi, sise buyuk cikinca sonradan eklenmis).
 ## 5. Uret, bekle, indir
 - "Oluşturmaya başla"ya bir kez bas; uretim dakikalar surer, araliklarla
   `browser_snapshot` al. Bitmeden yeniden basma (cift kredi).
-- Indir: "Medyayı indir" -> **"720p Orijinal boyut"** (kredisiz). 1080p / 4K
-  "Yükseltilmiş" buyutmedir: bedeli olculmedi, kapida sorulur -- teslim
-  kalitesi icin patron onaylarsa kullan.
+- Indir: "Medyayı indir" -> **"1080p Yükseltilmiş"** (OLCULDU 08.10: 0 kredi,
+  8 sn klip ~45 sn; gercek 1080x1920). Teslim kurgusu 1080p kliplerle yapilir;
+  720p yalniz hizli taslak icin. Ilk 1080p indirmede bakiyeyi once/sonra oku:
+  degistiyse DUR ve patrona yaz (Flow bedeli degismis demektir). 4K pasif ya
+  da kredili: patron istemedikce kullanma.
 - Indirilenler kendiliginden isin `.ofis/indirilenler/` klasorune duser.
 - VIDEO icin yerel yapay zeka buyutme YOK (olculdu: hizli model yuzu
   mumlastiriyor, gercekci model 10 sn klipte saatler). 1080p teslim:
-  Flow'un "1080p Yükseltilmiş"i (kapida kredi) ya da kurgunun olceklemesi.
+  Flow'un "1080p Yükseltilmiş" indirmesi (kredisiz).
 
 ## 6. Klip denetimi (her klip, kurgudan once)
 - `video_denetle`: sure, oran, ses, siyah kare.

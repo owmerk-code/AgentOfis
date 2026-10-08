@@ -3,6 +3,7 @@ import {
   AbsoluteFill,
   Img,
   OffthreadVideo,
+  Sequence,
   interpolate,
   staticFile,
   useCurrentFrame,
@@ -11,12 +12,19 @@ import {
 import {Audio} from "@remotion/media";
 import {TransitionSeries, linearTiming} from "@remotion/transitions";
 import {fade} from "@remotion/transitions/fade";
+import {slide} from "@remotion/transitions/slide";
+import {wipe} from "@remotion/transitions/wipe";
 
 /* AGENTOFIS KURGU SABLONU (06.10.2026, Asama 5).
    Tek genel bilesen: ajan bir PLAN yazar (sahneler, yazilar, gecis, muzik,
    altyazi, kapanis karti); ofis (ofis/kurgu.py) plani dogrular, dosyalari
    bir is klasorune kopyalar ve bunu cizdirir. Ajan Remotion kodu yazmaz:
-   her iste ayni, sinanmis yol (kural yapi, rica degil). */
+   her iste ayni, sinanmis yol (kural yapi, rica degil).
+
+   08.10.2026 (patron: "edit, montaj, sahne, ses birlestirme"): sahnede hiz,
+   yerlesim (kapla / bulanik dolgu / sigdir) ve odak, renk filtresi; planda
+   seslendirme/efekt izleri (sesler[]) ve konusurken muzigin kisilmasi,
+   muzigin baslangici, yeni gecisler (kayma, silme, yukari), logo. */
 
 export type Bicim = "9:16" | "4:5" | "1:1" | "16:9";
 
@@ -24,23 +32,46 @@ export type Sahne = {
   tur: "video" | "gorsel" | "renk";
   dosya?: string;          // public klasorune gore (ofis kopyalar)
   renk?: string;           // tur=renk icin arka plan
-  sure: number;            // saniye
+  sure: number;            // saniye (CIKTIDAKI sure)
   kirp_bas?: number;       // video: bastan kac saniye atlanir
   ses?: boolean;           // video: klibin kendi sesi (Flow/Veo) duyulsun mu
+  hiz?: number;            // video: 0.25-4 (0.5 = agir cekim)
+  yerlesim?: "kapla" | "bulanik" | "sigdir";  // orani tutmayan kaynak icin
+  odak?: string;           // kapla'da kirpma merkezi: orta|sol|sag|ust|alt ya da "30% 50%"
+  filtre?: "yok" | "sicak" | "soguk" | "siyah_beyaz" | "canli" | "sinematik";
   yazi?: string;
   yazi_konum?: "ust" | "orta" | "alt";
   hareket?: "yakinlas" | "uzaklas" | "yok";   // gorsel: yavas kamera
+};
+
+export type SesIzi = {
+  dosya: string;           // seslendirme / efekt
+  bas: number;             // videonun kacinci saniyesinde baslar
+  sure: number;            // ofis olcer (ffprobe); kirp_bas sonrasi kalan
+  ses?: number;            // 0-2 (varsayilan 1)
+  kirp_bas?: number;
+};
+
+export type Logo = {
+  dosya: string;
+  konum?: "sag_ust" | "sol_ust" | "sag_alt" | "sol_alt" | "orta_ust" | "orta_alt";
+  boyut?: number;          // ekran genisliginin orani (0.18)
+  saydamlik?: number;      // 0-1 (0.9)
 };
 
 export type Plan = {
   bicim: Bicim;
   fps?: number;
   sahneler: Sahne[];
-  gecis?: "kesme" | "solma";
+  gecis?: "kesme" | "solma" | "kayma" | "silme" | "yukari";
   gecis_sure?: number;
   muzik?: string | null;
   muzik_ses?: number;
+  muzik_bas?: number;      // muzik dosyasinin kacinci saniyesinden
+  muzik_alcalt?: number;   // ses izi calarken muzigin carpani (0.3)
   klip_ses?: number;
+  sesler?: SesIzi[];
+  logo?: Logo | null;
   altyazi?: {bas: number; son: number; metin: string}[];
   son_kart?: {metin: string; alt_metin?: string; sure: number; renk?: string} | null;
   yazi_renk?: string;
@@ -77,6 +108,26 @@ export const toplamKare = (p: Plan, fps: number) => {
   return ps.reduce((t, x) => t + kare(x.sure, fps), 0) - g * Math.max(0, ps.length - 1);
 };
 
+const ODAK: Record<string, string> = {
+  orta: "50% 50%", sol: "0% 50%", sag: "100% 50%", ust: "50% 0%", alt: "50% 100%",
+};
+const odakCss = (o?: string) => (o ? ODAK[o] || o : "50% 50%");
+
+const FILTRE: Record<string, string> = {
+  yok: "none",
+  sicak: "sepia(0.18) saturate(1.12) brightness(1.03)",
+  soguk: "saturate(0.95) hue-rotate(-8deg) brightness(1.02)",
+  siyah_beyaz: "grayscale(1) contrast(1.08)",
+  canli: "saturate(1.3) contrast(1.06)",
+  sinematik: "contrast(1.12) saturate(0.9) brightness(0.97)",
+};
+
+const sunum = (p: Plan) =>
+  p.gecis === "kayma" ? slide({direction: "from-right"})
+  : p.gecis === "yukari" ? slide({direction: "from-bottom"})
+  : p.gecis === "silme" ? wipe({direction: "from-left"})
+  : fade();
+
 const Yazi: React.FC<{metin: string; konum: string; plan: Plan; buyuk?: boolean}> = ({
   metin, konum, plan, buyuk,
 }) => {
@@ -104,34 +155,59 @@ const Yazi: React.FC<{metin: string; konum: string; plan: Plan; buyuk?: boolean}
   );
 };
 
+/* Kaynagi cerceveye yerlestirir. BULANIK: orani tutmayan kaynak (16:9 klip
+   9:16 videoda) kirpilmadan ortada, arkasi ayni goruntunun bulanik buyugu
+   -- profesyonel dikey kurgunun standart cozumu. */
+const Kaynak: React.FC<{s: Sahne; plan: Plan; olcek: number}> = ({s, plan, olcek}) => {
+  const {fps} = useVideoConfig();
+  const yer = s.yerlesim || "kapla";
+  const filtre = FILTRE[s.filtre || "yok"] || "none";
+  const ciz = (fit: "cover" | "contain", ek: React.CSSProperties, sessiz: boolean) => {
+    const stil: React.CSSProperties = {
+      width: "100%", height: "100%", objectFit: fit,
+      objectPosition: fit === "cover" ? odakCss(s.odak) : "50% 50%", ...ek,
+    };
+    if (s.tur === "video") {
+      const sesVar = (s.ses ?? !plan.muzik) && !sessiz;
+      return (
+        <OffthreadVideo
+          src={staticFile(s.dosya!)}
+          trimBefore={s.kirp_bas ? kare(s.kirp_bas, fps) : undefined}
+          playbackRate={s.hiz ?? 1}
+          muted={!sesVar}
+          volume={plan.klip_ses ?? 1}
+          style={stil}
+        />
+      );
+    }
+    return <Img src={staticFile(s.dosya!)} style={stil} />;
+  };
+  const hareket = {transform: `scale(${olcek})`, filter: filtre};
+  if (yer === "kapla") return ciz("cover", hareket, false);
+  return (
+    <AbsoluteFill>
+      {yer === "bulanik" ? (
+        <AbsoluteFill style={{transform: "scale(1.15)", filter: `blur(40px) brightness(0.7) ${filtre === "none" ? "" : filtre}`}}>
+          {ciz("cover", {}, true)}
+        </AbsoluteFill>
+      ) : null}
+      <AbsoluteFill>{ciz("contain", hareket, false)}</AbsoluteFill>
+    </AbsoluteFill>
+  );
+};
+
 const SahneCiz: React.FC<{s: Sahne; plan: Plan; uzunluk: number}> = ({s, plan, uzunluk}) => {
   const frame = useCurrentFrame();
-  const {fps} = useVideoConfig();
-  const sesVar = s.ses ?? !plan.muzik;
-  let icerik: React.ReactNode = null;
-  if (s.tur === "video" && s.dosya) {
-    icerik = (
-      <OffthreadVideo
-        src={staticFile(s.dosya)}
-        trimBefore={s.kirp_bas ? kare(s.kirp_bas, fps) : undefined}
-        muted={!sesVar}
-        volume={plan.klip_ses ?? 1}
-        style={{width: "100%", height: "100%", objectFit: "cover"}}
-      />
-    );
-  } else if (s.tur === "gorsel" && s.dosya) {
+  let olcek = 1;
+  if (s.tur === "gorsel") {
     const h = s.hareket ?? "yakinlas";
-    const olcek = h === "yok" ? 1
+    olcek = h === "yok" ? 1
       : interpolate(frame, [0, uzunluk], h === "yakinlas" ? [1, 1.1] : [1.1, 1],
                     {extrapolateRight: "clamp"});
-    icerik = (
-      <Img src={staticFile(s.dosya)}
-           style={{width: "100%", height: "100%", objectFit: "cover", transform: `scale(${olcek})`}} />
-    );
   }
   return (
     <AbsoluteFill style={{backgroundColor: s.renk || "#000000", overflow: "hidden"}}>
-      {icerik}
+      {(s.tur === "video" || s.tur === "gorsel") && s.dosya ? <Kaynak s={s} plan={plan} olcek={olcek} /> : null}
       {s.yazi ? <Yazi metin={s.yazi} konum={s.yazi_konum || "alt"} plan={plan} /> : null}
     </AbsoluteFill>
   );
@@ -150,6 +226,20 @@ const SonKart: React.FC<{plan: Plan}> = ({plan}) => {
       ) : null}
     </AbsoluteFill>
   );
+};
+
+const LogoCiz: React.FC<{plan: Plan}> = ({plan}) => {
+  const {width, height} = useVideoConfig();
+  const l = plan.logo!;
+  const g = guvenli(plan.bicim);
+  const k = l.konum || "sag_ust";
+  const genislik = width * (l.boyut ?? 0.18);
+  const stil: React.CSSProperties = {position: "absolute", width: genislik, opacity: l.saydamlik ?? 0.9};
+  if (k.endsWith("ust")) stil.top = height * g.ust * 0.6; else stil.bottom = height * g.alt * 0.75;
+  if (k.startsWith("sol")) stil.left = width * g.sol;
+  else if (k.startsWith("sag")) stil.right = width * g.sag;
+  else stil.left = (width - genislik) / 2;
+  return <Img src={staticFile(l.dosya)} style={stil} />;
 };
 
 const Altyazi: React.FC<{plan: Plan}> = ({plan}) => {
@@ -172,6 +262,23 @@ const Altyazi: React.FC<{plan: Plan}> = ({plan}) => {
   );
 };
 
+/* Ses izi calarken muzik `muzik_alcalt` carpanina iner; 0,3 sn'de yumusak
+   gecer (ani kesik kulaga hata gibi gelir). */
+export const muzikCarpani = (p: Plan, sn: number) => {
+  const alt = p.muzik_alcalt ?? 0.3;
+  const yum = 0.3;
+  let c = 1;
+  for (const s of p.sesler || []) {
+    const b = s.bas, e = s.bas + s.sure;
+    let v = 1;
+    if (sn >= b && sn <= e) v = alt;
+    else if (sn > b - yum && sn < b) v = 1 - (1 - alt) * (sn - (b - yum)) / yum;
+    else if (sn > e && sn < e + yum) v = alt + (1 - alt) * (sn - e) / yum;
+    c = Math.min(c, v);
+  }
+  return c;
+};
+
 export const Kurgu: React.FC<Plan> = (plan) => {
   const {fps, durationInFrames} = useVideoConfig();
   const frame = useCurrentFrame();
@@ -185,7 +292,7 @@ export const Kurgu: React.FC<Plan> = (plan) => {
         <SahneCiz s={s} plan={plan} uzunluk={uz} />
       </TransitionSeries.Sequence>);
     if (g > 0 && i < ps.length - 1)
-      ogeler.push(<TransitionSeries.Transition key={`g${i}`} presentation={fade()}
+      ogeler.push(<TransitionSeries.Transition key={`g${i}`} presentation={sunum(plan)}
                     timing={linearTiming({durationInFrames: g})} />);
   });
   if (plan.son_kart)
@@ -193,15 +300,26 @@ export const Kurgu: React.FC<Plan> = (plan) => {
       <TransitionSeries.Sequence key="son" durationInFrames={kare(plan.son_kart.sure, fps)}>
         <SonKart plan={plan} />
       </TransitionSeries.Sequence>);
+  const sonKartBas = plan.son_kart ? durationInFrames - kare(plan.son_kart.sure, fps) : durationInFrames;
   // Muzik sonda 1 sn'de kisilir (kesik bitis kulaga hata gibi gelir).
-  const mses = (plan.muzik_ses ?? 0.8) * interpolate(
+  const mses = (plan.muzik_ses ?? 0.8) * muzikCarpani(plan, frame / fps) * interpolate(
     frame, [durationInFrames - fps, durationInFrames], [1, 0],
     {extrapolateLeft: "clamp", extrapolateRight: "clamp"});
   return (
     <AbsoluteFill style={{backgroundColor: "#000000"}}>
       <TransitionSeries>{ogeler}</TransitionSeries>
+      {plan.logo && frame < sonKartBas ? <LogoCiz plan={plan} /> : null}
       <Altyazi plan={plan} />
-      {plan.muzik ? <Audio src={staticFile(plan.muzik)} volume={mses} loop /> : null}
+      {plan.muzik ? (
+        <Audio src={staticFile(plan.muzik)} volume={mses} loop
+               trimBefore={plan.muzik_bas ? kare(plan.muzik_bas, fps) : undefined} />
+      ) : null}
+      {(plan.sesler || []).map((s, i) => (
+        <Sequence key={`ses${i}`} from={kare(s.bas, fps)} durationInFrames={kare(s.sure, fps)}>
+          <Audio src={staticFile(s.dosya)} volume={s.ses ?? 1}
+                 trimBefore={s.kirp_bas ? kare(s.kirp_bas, fps) : undefined} />
+        </Sequence>
+      ))}
     </AbsoluteFill>
   );
 };

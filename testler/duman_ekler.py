@@ -19,6 +19,7 @@ import _temizlik  # noqa: F401 -- gecici klasorleri siler; ILK ice aktarma
 
 import base64
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -113,6 +114,38 @@ try:
     sina("cok buyuk 400", ist.post("/api/ek", json={
         "ad": "x", "veri": "A" * (ekler.AZAMI_BAYT * 4 // 3 + 100)}).status_code == 400)
     sina("yol kacisi 404", ist.get("/api/ek/..%2Fgizli.txt").status_code == 404)
+
+    # BUYUK EK AKISLA (08.10.2026): video base64'suz, ham govdeyle; sinir ada gore.
+    _vid = b"\x00\x00\x00\x18ftypmp42" + os.urandom(3 * 1024 * 1024)
+    _y = ist.post("/api/ek_akis?ad=klip%201.mp4", content=_vid)
+    sina("akisli video eki 200", _y.status_code == 200, _y.text[:160])
+    _j = _y.json() if _y.status_code == 200 else {}
+    sina("  icerik birebir, medya isaretli",
+         ist.get(f"/api/ek/{_j.get('ad', 'x')}").content == _vid and _j.get("medya") is True)
+    sina("  yarim (.part) dosya kalmadi",
+         not list(ekler.klasor(ofis).glob("*.part")))
+    sina("video siniri 2 GB, oteki 20 MB",
+         ekler.sinir("a.MP4") == ekler.MEDYA_AZAMI_BAYT and ekler.sinir("a.pdf") == ekler.AZAMI_BAYT)
+    _sin = ekler.MEDYA_AZAMI_BAYT
+    ekler.MEDYA_AZAMI_BAYT = 1024 * 1024
+    _b = ist.post("/api/ek_akis?ad=buyuk.mp4", content=b"x" * (2 * 1024 * 1024))
+    ekler.MEDYA_AZAMI_BAYT = _sin
+    sina("sinirdan buyuk akis 400 ve yarim dosya SILINDI",
+         _b.status_code == 400 and not list(ekler.klasor(ofis).glob("*.part"))
+         and not list(ekler.klasor(ofis).glob("*buyuk.mp4")), _b.text[:120])
+    sina("akisla gelen pdf 20 MB sinirina tabi",
+         ist.post("/api/ek_akis?ad=b.pdf", content=b"x" * (ekler.AZAMI_BAYT + 10)).status_code == 400)
+    sina("bos akis 400", ist.post("/api/ek_akis?ad=bos.mp4", content=b"").status_code == 400)
+    # Ajanin buyuk videoyu paylasmasi: bellege okumadan kopya, 20 MB'a takilmaz.
+    _pv = Path(ofis.kok_klasoru(None)) / "cikti" / "reels.mp4"
+    _pv.parent.mkdir(parents=True, exist_ok=True)
+    _pv.write_bytes(b"v" * (ekler.AZAMI_BAYT + 1024))
+    try:
+        _py = ekler.paylas(ofis, "cikti/reels.mp4", ajan_ad="")
+        sina("ajan 20 MB'tan buyuk videoyu paylasabiliyor",
+             (Path(ofis.kok_klasoru(None)) / _py).stat().st_size == ekler.AZAMI_BAYT + 1024, _py)
+    except ekler.EkHatasi as exc:
+        sina("ajan 20 MB'tan buyuk videoyu paylasabiliyor", False, str(exc))
 except ImportError as exc:
     print(f"  [ATLANDI] fastapi yok: {exc}")
 
@@ -269,6 +302,21 @@ sina("kancanin olculmus reddi RET",
      tui_ret_mi("Script error:\nCommand blocked by PreToolUse hook: ONAY ISTENDI -- SIMDI DUR."))
 sina("hatali ofis araci (vekil) reddi RET",
      tui_ret_mi('{"content":[{"type":"text","text":"ONAY ISTENDI"}],"isError":true}'))
+
+print("\n-- 9d. patronun eki ISI YAPAN TAKIMIN klasorune gelir (08.10 canli) --")
+_tk = _KOK / "takim-B"
+_kb = ofis.kanat_ac("B", "B")
+ofis.takim_klasoru_ayarla(_kb, str(_tk))
+_e = ekler.kaydet(ofis, "kutu-on.jpg", b"jpg-veri")          # Tum ofis: proje koku
+sina("sahne: ek proje kokunde, takimin klasorunde YOK",
+     (Path(ofis.kok_klasoru(None)) / _e["yol"]).is_file()
+     and not (ekler.klasor(ofis, _kb) / _e["ad"]).exists())
+_kop = ekler.takima_getir(ofis, "bunlarla yap" + chr(10) + "[ek] " + _e["yol"], _kb)
+sina("istek takima gidince ek takimin .ofis/ekler'ine KOPYALANDI (ayni ad)",
+     _kop == [_e["ad"]] and (ekler.klasor(ofis, _kb) / _e["ad"]).read_bytes() == b"jpg-veri", str(_kop))
+sina("ikinci cagri bir sey yapmaz", ekler.takima_getir(ofis, "[ek] " + _e["yol"], _kb) == [])
+sina("var olmayan ek sessizce atlanir (uydurulmaz)",
+     ekler.takima_getir(ofis, "[ek] .ofis/ekler/yok.jpg", _kb) == [])
 
 print("\n-- 8. olcum ve yedek disi --")
 from ofis import degisim  # noqa: E402

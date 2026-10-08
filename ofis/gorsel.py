@@ -266,6 +266,10 @@ class Uretici:
     #: Uretici para harciyor mu? Ucretsiz kotayla calisan ile fatura
     #: kesen ayni sey degildir; insan hangisini kullandigini gormeli.
     ucretli = False
+    #: Referans fotograf (gercek urun) alabiliyor mu? Alamayan uretici
+    #: referansli istekte ATLANIR; acikca secildiyse REDDEDILIR -- urunu
+    #: gormeden "urunun gorseli" uretmek, urunu uydurmaktir.
+    referans_alir = False
 
     def musait_mi(self) -> bool:
         raise NotImplementedError
@@ -279,6 +283,17 @@ class Uretici:
         """`kalite` destegi ureticiye baglidir; desteklemeyen YOK SAYMAZ,
         gormezden gelmek yerine acikca bildirir (bkz. Gemini)."""
         raise NotImplementedError
+
+
+#: Referansli istemin eki -- iki uretici icin TEK metin. Urun fotografi
+#: "ilham" degil, KAYNAKTIR.
+REFERANS_NOTU = (
+    "\nEKLI FOTOGRAFLAR GERCEK URUNUN KENDISIDIR: sekli, rengi, malzemesi, "
+    "etiketi, logosu ve uzerindeki BUTUN yazilar birebir korunacak; yazi "
+    "uydurma, harf degistirme, urune olmayan parca ekleme. Fotograflarda "
+    "OLMAYAN bir urun parcasini (kutu, kapak, ambalaj) icat etme.\n")
+#: Izinli oranlar (Gemini `imageConfig.aspectRatio`; codex'e istemde soylenir).
+ORANLAR = ("1:1", "2:3", "3:2", "3:4", "4:3", "4:5", "5:4", "9:16", "16:9", "21:9")
 
 
 class GeminiUretici(Uretici):
@@ -300,6 +315,9 @@ class GeminiUretici(Uretici):
 
     ad = "gemini"
     ucretli = False
+    #: 08.10.2026: urun fotografi ek parca olarak gider (Gemini gorsel
+    #: modelleri gorsel girdi alir); oran API'nin `imageConfig`iyle.
+    referans_alir = True
     VARSAYILAN_MODEL = "gemini-3.1-flash-image"
 
     def musait_mi(self) -> bool:
@@ -310,7 +328,7 @@ class GeminiUretici(Uretici):
                 "`python -m ofis.kabuk anahtar ekle GEMINI_API_KEY`")
 
     def uret(self, istem: str, hedef: Path, *, model: str = "",
-             kalite: str = "") -> dict:
+             kalite: str = "", referanslar: tuple = (), oran: str = "") -> dict:
         # Gemini'de kalite kademesi YOK. Sessizce yutmak, kullanicinin
         # "yuksek kalite istedim" sanmasina yol acar -- sessizce yok
         # sayilan ayar, ayar degildir.
@@ -325,7 +343,20 @@ class GeminiUretici(Uretici):
         model = model or self.VARSAYILAN_MODEL
         url = (f"https://generativelanguage.googleapis.com/v1beta/models/"
                f"{model}:generateContent?key={anahtar}")
-        govde = {"contents": [{"parts": [{"text": istem}]}]}
+        parcalar = []
+        for r in referanslar or ():
+            p = Path(r)
+            tip = {".jpg": "image/jpeg", ".jpeg": "image/jpeg",
+                   ".webp": "image/webp"}.get(p.suffix.lower(), "image/png")
+            parcalar.append({"inline_data": {"mime_type": tip,
+                                             "data": base64.b64encode(p.read_bytes()).decode("ascii")}})
+        if referanslar:
+            istem = istem + REFERANS_NOTU
+        parcalar.append({"text": istem})
+        govde = {"contents": [{"parts": parcalar}]}
+        if oran:
+            govde["generationConfig"] = {"responseModalities": ["IMAGE"],
+                                         "imageConfig": {"aspectRatio": oran}}
         istek = urllib.request.Request(
             url, data=json.dumps(govde).encode("utf-8"),
             headers={"Content-Type": "application/json"})
@@ -656,6 +687,10 @@ class CodexUretici(Uretici):
 
     ad = "codex"
     ucretli = False
+    #: OLCULDU (08.10.2026, Brave): `codex exec -i sise.png` ile sise ve
+    #: etiket birebir korundu (38 sn, 11k jeton). Flow'un gorsel modeli
+    #: ayni istekte kutuyu UYDURDU -- urun gorselinin dogru yolu bu.
+    referans_alir = True
     #: Olculen tur ~60 sn. Uzun istemde uzayabilir; MCP istemcisinin
     #: kendi zaman asimi olculmedi (video'daki gibi) -- bilinen sinir.
     ZAMAN_ASIMI = 360.0
@@ -707,7 +742,7 @@ class CodexUretici(Uretici):
                 f"$env:CODEX_HOME=\"{ev}\"; codex login")
 
     def uret(self, istem: str, hedef: Path, *, model: str = "",
-             kalite: str = "") -> dict:
+             kalite: str = "", referanslar: tuple = (), oran: str = "") -> dict:
         import shutil
         import uuid
 
@@ -729,9 +764,17 @@ class CodexUretici(Uretici):
         son, hatalar = {}, []
         from . import roller as _roller
         sarmalayan = _roller.model_sec("codex", self.SARMALAYAN_KADEME) or ""
-        for o in m.tur_kos(self.ISTEM.format(istem=istem),
+        referanslar = tuple(str(Path(r)) for r in (referanslar or ()))
+        metin = self.ISTEM.format(istem=istem)
+        if oran:
+            # image_gen boyutu kendisi secer (olculdu: ~3:4); oran istemde.
+            metin += f"\nCIKTI ORANI: {oran} (bu orana uygun kompozisyon).\n"
+        if referanslar:
+            metin += REFERANS_NOTU
+        for o in m.tur_kos(metin,
                            klasor=str(self.CALISMA), efor="dusuk", model=sarmalayan,
-                           yazabilir=True, zaman_asimi=self.ZAMAN_ASIMI):
+                           yazabilir=True, zaman_asimi=self.ZAMAN_ASIMI,
+                           gorseller=referanslar):
             if o.tur in ("hata", "limit"):
                 hatalar.append(o.govde)
             elif o.tur == "bitti":
@@ -835,8 +878,38 @@ def musait_ureticiler() -> dict:
     return sonuc
 
 
+#: Referans fotograf sinirlari: gorsel turleri ve boyut.
+REFERANS_UZANTI = (".png", ".jpg", ".jpeg", ".webp")
+REFERANS_EN_COK = 8
+REFERANS_BOYUT = 20 * 1024 * 1024
+
+
+def referanslari_dogrula(referanslar) -> tuple:
+    """Referans dosyalari VAR, gorsel ve makul boyutta mi -> mutlak yollar.
+
+    Eksik dosya sessizce atlansaydi uretim referanssiz kosar ve urun
+    yine uydurulurdu -- sorun gorunmezdi. Bu yuzden her kusur HATA.
+    """
+    yollar = []
+    for r in referanslar or ():
+        p = Path(str(r)).expanduser()
+        if p.suffix.lower() not in REFERANS_UZANTI:
+            raise GorselHatasi(f"referans gorsel degil ({p.name}); "
+                               f"izinli: {', '.join(REFERANS_UZANTI)}")
+        if not p.is_file():
+            raise GorselHatasi(f"referans dosyasi yok: {p}")
+        if p.stat().st_size > REFERANS_BOYUT:
+            raise GorselHatasi(f"referans cok buyuk ({p.name}, "
+                               f"{p.stat().st_size // (1024 * 1024)} MB > 20 MB)")
+        yollar.append(str(p.resolve()))
+    if len(yollar) > REFERANS_EN_COK:
+        raise GorselHatasi(f"en fazla {REFERANS_EN_COK} referans ({len(yollar)} verildi)")
+    return tuple(yollar)
+
+
 def uret(istem: str, hedef, *, uretici: str = "", model: str = "",
-         kalite: str = "", ucretsiz_sadece: bool = None) -> dict:
+         kalite: str = "", ucretsiz_sadece: bool = None,
+         referanslar=(), oran: str = "") -> dict:
     """Istemi gorsele cevirir. Doner: `{uretici, model, yol, bayt, tip}`.
 
     `uretici` verilmezse TERCIH SIRASI denenir ve ilk musait olan
@@ -853,9 +926,21 @@ def uret(istem: str, hedef, *, uretici: str = "", model: str = "",
 
     adaylar = [uretici] if uretici else list(TERCIH_SIRASI)
     kilit = ucretsiz_sadece_mi() if ucretsiz_sadece is None else ucretsiz_sadece
+    referanslar = referanslari_dogrula(referanslar)
+    oran = str(oran or "").strip()
+    if oran and oran not in ORANLAR:
+        raise GorselHatasi(f"oran {oran!r} gecersiz; izinli: {', '.join(ORANLAR)}")
     atlananlar = []
     for ad in adaylar:
         u = uretici_ac(ad)
+        if referanslar and not u.referans_alir:
+            if uretici:
+                raise GorselHatasi(
+                    f"'{ad}' referans fotograf ALAMIYOR; urun gorseli icin "
+                    "ureticiyi bos birak (ofis referans alani secer).")
+            atlananlar.append({"uretici": ad,
+                               "sebep": "referans fotograf alamiyor"})
+            continue
         # PARA KILIDI, MUSAITLIKTEN ONCE. Ucretli bir ureticinin
         # anahtari olmasi onu kullanilabilir YAPMAZ; kilit acikken
         # anahtarin varligi bir davet degildir.
@@ -871,7 +956,14 @@ def uret(istem: str, hedef, *, uretici: str = "", model: str = "",
         if not u.musait_mi():
             atlananlar.append({"uretici": ad, "sebep": u.neden_musait_degil()})
             continue
-        sonuc = u.uret(istem, hedef, model=model, kalite=kalite)
+        ek = {}
+        if referanslar:
+            ek["referanslar"] = referanslar
+        if oran and u.referans_alir:          # referans alanlar oran da alir
+            ek["oran"] = oran
+        sonuc = u.uret(istem, hedef, model=model, kalite=kalite, **ek)
+        if referanslar:
+            sonuc["referanslar"] = [Path(r).name for r in referanslar]
         sonuc["atlananlar"] = atlananlar
         return sonuc
 
@@ -965,15 +1057,19 @@ def lider_blogu() -> str:
         "  kendi aracinda uretir. PARA HARCANMAZ.",
         "- Gorseli `gorsel_uret` araciyla urettir; CLI'i elle cagirtma (~800 bin",
         "  jeton yakti). Ureticiyi patron istemedikce olcute YAZMA.",
+        # 08.10.2026 (Brave, OLCULDU): referansli GPT urunu birebir korudu;
+        # Flow Nano Banana ayni istekte kutuyu uydurdu.
+        "- URUN gorunen gorsel: `gorsel_uret` + urun fotografi `referanslar`",
+        "  + `oran` (GPT, birebir). Flow'da gorsel kapida REDDEDILIR.",
         "- `codex` gorseli abonelikten (fatura yok) ama Codex kotasini ~3-5 kat",
         "  hizli yer; codex'li ajanlarla ORTAK.",
         # FLOW (04.10.2026, patron karari): abonelikte VIDEO icin programatik
         # yol yok (Antigravity'de video araci yok, olculdu); patron gomulu
         # tarayiciya Flow hesabiyla girdi ve videonun ajanca uretilmesini istedi.
-        "VIDEO/GORSEL: gomulu tarayicida Google Flow (abonelik kredisi, PARA",
-        "  KILIDINE TAKILMAZ): `video`/`tasarim` rolu (yoksa kadro oner);",
-        "  beceriler `reklam-kreatifi` -> `flow-video`/`flow-gorsel` ->",
-        "  `video_kurgula`. Kredili uretimden ONCE senaryo paketi patrona gider",
+        "VIDEO: gomulu tarayicida Google Flow (abonelik kredisi, PARA KILIDINE",
+        "  TAKILMAZ): `video` rolu; beceriler `reklam-kreatifi` -> `flow-video`",
+        "  -> `video_kurgula`. GORSEL Flow'da DEGIL: `gorsel_uret`. Kredili",
+        "  uretimden ONCE senaryo paketi patrona gider",
         "  (kapi sorar). Patronun istemini/senaryosunu ise AYNEN koy.",
     ]
     # FLOW KATALOGU (07.10.2026): lider toplam krediyi ve sahne basina modeli

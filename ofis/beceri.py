@@ -227,6 +227,13 @@ def _kaynak_surumu(p: Path) -> float:
         return 0.0
 
 
+#: EMEKLI ofis becerileri: koddan kalkti, depoda da kalmaz (yalniz ofisin
+#: getirdigi kopya; patron kendi adina yazdiysa dokunulmaz). 08.10.2026:
+#: `flow-gorsel` ajani gorseli Flow'da uretmeye yonlendiriyordu (patron:
+#: "gorsel icin gemini ya da gpt") -> yerine `gorsel`.
+EMEKLI = ("flow-gorsel",)
+
+
 def hazir_esitle() -> list:
     """Ofisin KENDI becerilerini (kodla gelen) depoya getirir/gunceller.
     Doner: yeni eklenenler. 04.10'da depoya elle konan `flow-video`
@@ -236,6 +243,17 @@ def hazir_esitle() -> list:
     kayit = _kayit_oku()
     silinen = set(kayit.get("_silinen") or [])
     eklenen, degisti = [], False
+    for ad in EMEKLI:
+        k = kayit.get(ad) or {}
+        if k.get("kaynak") == HAZIR or str(k.get("kaynak") or "").startswith("agent sistemi"):
+            durum, p = _yer(ad)
+            try:
+                if p is not None and Path(p).exists():
+                    shutil.rmtree(p)
+            except OSError:
+                continue
+            kayit.pop(ad, None)
+            degisti = True
     for src in sorted(p for p in HAZIR_KOK.iterdir() if (p / "SKILL.md").exists()):
         ad = src.name
         if ad in silinen:

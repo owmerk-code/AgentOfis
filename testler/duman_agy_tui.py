@@ -118,9 +118,12 @@ sina("model bayrakla verildi", "--model" in argv and "gemini-3.8-flash-low" in a
 kapat_hepsi()
 
 print("\n4. gorsel teslimi, kota, durdur, salt okunur")
+(is_kl / "urun-foto.jpg").write_bytes(b"\xff\xd8\xff" + b"urun" * 50)   # girdi fotografi
 ol, bit, cevap = kos("#GORSEL# uret")
 ekler = list((is_kl / ".ofis" / "ekler").glob("*.png"))
 sina("alt ajanin gorseli .ofis/ekler'e teslim", len(ekler) == 1, str(ekler))
+sina("GIRDI fotografinin kopyasi (media_*) 'uretilen' sayilmadi",
+     not list((is_kl / ".ofis" / "ekler").glob("media_*")), str(list((is_kl / ".ofis" / "ekler").glob("*"))))
 sina("cevap teslimi soyluyor", "URETILEN GORSEL" in cevap, cevap[-120:])
 ol, bit, _ = kos("#KOTA# dolu")
 sina("kota sinyali bitti'de", bit.get("limit") is True, str(bit)[:160])
@@ -128,6 +131,64 @@ kanal = TurKanali()
 kanal.durdur()
 ol, bit, _ = kos("#YAVAS# durdurulacak", kanal=kanal)
 sina("Durdur: tur 'durduruldu' ile kapandi", bit.get("sebep") == "durduruldu", str(bit)[:160])
+kapat_hepsi()
+# NOT ULASTI MI (08.10.2026, gercek agy OLCULDU): tur surerken yazilan
+# not SIRAYA girer; ofis onu ancak kayitta USER_INPUT olunca "ulasti" sayar
+# ve tur bitince gonderilen notun turunu da AYNI turda izler.
+kapat_hepsi()
+import threading as _th
+kanal = TurKanali()
+_th.Timer(2.0, lambda: kanal.gonder("n1", "PATRONUN NOTU: kutuyu birebir yap NOT-ISARETI-7")).start()
+ol, bit, cevap = kos("#YAVAS# uzun is", kanal=kanal)
+_m = [o for o in ol if o.tur == "mesaj"]
+sina("siradaki not ulasinca TEK 'mesaj' olayi", len(_m) == 1 and _m[0].ek.get("kimlik") == "n1",
+     str([(o.tur, o.govde[:40]) for o in ol if o.tur in ("mesaj", "metin")]))
+_trs2 = next(iter((CLI / "brain").glob(f"{bit.get('oturum_id')}/.system_generated/logs/transcript_full.jsonl")), None)
+_g2 = [json.loads(s)["content"] for s in _trs2.read_text(encoding="utf-8").splitlines()
+       if json.loads(s)["type"] == "USER_INPUT"] if _trs2 else []
+sina("  mesaj olayi notun KAYITTA gorunmesinden SONRA (yapistirma aninda degil)",
+     any("NOT-ISARETI-7" in g for g in _g2), str(_g2)[-200:])
+sina("  notun actigi devam turu ayni turda izlendi (iki cevap)",
+     bit.get("basarili") and cevap.count("TAMAM") == 2, cevap[-160:])
+kapat_hepsi()
+_eski_bek = tui.SIRADAKI_NOT_SN
+tui.SIRADAKI_NOT_SN = 2.0
+kanal = TurKanali()
+_th.Timer(2.0, lambda: kanal.gonder("n2", "PATRONUN NOTU: bu hic ulasmayacak")).start()
+ol, bit, _ = kos("#YUT# uzun is", kanal=kanal)
+tui.SIRADAKI_NOT_SN = _eski_bek
+sina("ULASMAYAN not 'iletildi' SAYILMIYOR (mesaj olayi yok, tur yine bitti)",
+     not any(o.tur == "mesaj" for o in ol) and bit.get("basarili"), str(bit)[:160])
+kapat_hepsi()
+# CLI'IN KENDI SORUSU (08.10.2026 canli: agy "Allow access to this file?"
+# sordu, tur KILITLENDI): ofis taniyip REDDEDER, tur biter, olay gorunur.
+kapat_hepsi()
+ol, bit, _ = kos("#ERISIM# disari bak", zaman_asimi=40)
+_secim = (ic.ev("ece") / "sahte_agy_erisim.txt")
+sina("agy'nin erisim sorusu REDDET (3) ile kapandi, tur bitti",
+     bit.get("basarili") and _secim.is_file() and _secim.read_text(encoding="utf-8") == "3",
+     str(bit)[:200])
+_trs3 = next(iter((CLI / "brain").glob(f"{bit.get('oturum_id')}/.system_generated/logs/transcript_full.jsonl")), None)
+_g3 = [json.loads(s)["content"] for s in _trs3.read_text(encoding="utf-8").splitlines()
+       if json.loads(s)["type"] == "USER_INPUT"] if _trs3 else []
+sina("  ret turu kesti; ofis DEVAM mesajini yazdi, ajan surdu (asili kalmadi)",
+     len(_g3) == 2 and "KALDIGIN YERDEN" in _g3[1], str(_g3)[-200:])
+sina("  patrona gorunur olay: yol + 'izin patronun'",
+     any(o.tur == "arac_sonuc" and "mcp_sunucu.py" in o.govde and "REDDETTI" in o.govde for o in ol),
+     str([o.govde[:90] for o in ol if o.tur == "arac_sonuc"]))
+kapat_hepsi()
+# YARIDA BIRAKILAN TUR (08.10.2026 canli: fren turu kesti, agy arkada yasadi,
+# ikinci terminal acildi): cagiran akisi birakinca CLI durur ve terminal kapanir.
+_m = tui.TuiMotoru(ic, ajan_ad="ece")
+_ak = _m.tur_kos("#YAVAS# kesilecek", klasor=str(is_kl), model="gemini-3.8-flash-low",
+                 zaman_asimi=60, ek_ortam={"OFIS_AJAN": "ece"})
+for _o in _ak:
+    if _o.tur == "nabiz":     # brifing gitti, tur KOSUYOR
+        break
+_ak.close()
+sina("yarida birakilan tur: ajanin terminali KAPANDI (arkada CLI kalmadi)",
+     not [o for o in tui.acik_oturumlar() if o.get("ajan") == "ece"],
+     str(tui.acik_oturumlar()))
 kapat_hepsi()
 ol, bit, _ = kos("salt okunur inceleme", yazabilir=False, ajan="lale")
 argv = json.loads((ic.ev("lale") / "sahte_agy_argv.json").read_text(encoding="utf-8"))

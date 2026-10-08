@@ -259,7 +259,11 @@ try:
     (pk / ".ofis" / "karalama").mkdir(parents=True)
     (pk / ".ofis" / "karalama" / "x.py").write_text("x", encoding="utf-8")
     (pk / ".env").write_text("SIR=1", encoding="utf-8")
+    (pk / ".ofis" / "ekler" / "patron-video.mp4").write_bytes(b"v" * 4096)
+    _eski_sinir = Y.PROJE_AZAMI_DOSYA
+    Y.PROJE_AZAMI_DOSYA = 1024
     sp = Y.al("proje", kok=kok, ek_hedefler=[], projeler=[("Ofisim", pk), ("Kayip", ANA / "yok")])
+    Y.PROJE_AZAMI_DOSYA = _eski_sinir
     with zipfile.ZipFile(sp["arsiv"]) as z:
         pa = set(z.namelist())
     sina("proje dosyasi arsivde (projeler/Ofisim/...)", "projeler/Ofisim/semuparfum-rapor/rapor.md" in pa)
@@ -268,6 +272,9 @@ try:
     sina("  projedeki sir (.env) YOK, atlandigi soylendi",
          not any(a.endswith(".env") for a in pa) and any(s.endswith(".env") for s in sp["sirlar_atlandi"]))
     sina("  klasoru bulunamayan proje SOYLENDI", any("Kayip" in b for b in sp["projeler_bulunamayan"]))
+    sina("  projedeki COK BUYUK dosya arsive girmedi, atlandigi SOYLENDI",
+         not any(a.endswith("patron-video.mp4") for a in pa)
+         and any(b.endswith("patron-video.mp4") for b in sp["buyuk_atlandi"]), str(sp.get("buyuk_atlandi")))
     sina("  arsiv dogrulamadan gecti (manifest proje dosyalarini da tasiyor)", Y.dogrula(Path(sp["arsiv"]))["tamam"])
     sina("sinama koku (gercek ofis degil) gercek projeleri OKUMADI",
          not any(a.startswith("projeler/") for a in adlar))

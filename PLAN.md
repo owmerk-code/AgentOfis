@@ -31,13 +31,14 @@ başlar.
 | B6 | Bekleyen soru ilgili terminalin üstünde | BİTTİ 08.10 |
 | B7 | Terminalde hangi HESAPLA çalıştığı | BİTTİ 08.10 (Gemini satırı kapalı: patron kararı) |
 | **C — Medya ve tasarım (kalanlar)** | | |
-| C1 | Flow ile GÖRSEL uçtan uca (Nano Banana, ürün referanslı) — profesyonel seviye, genel | beceri var, canlı ölçülmedi |
+| C1 | GÖRSEL uçtan uca, profesyonel, genel | 08.10 ölçüldü (Brave): Flow Nano Banana kutuyu UYDURDU; ürün görseli GPT + referans fotoğraf (`gorsel_uret(referanslar)`) birebir → beceri/lider bloğu buna göre; 4:5/1:1/9:16 teslim |
 | C2 | Müzik ve seslendirme FLOW'UN KENDİSİNDEN (08.10 patron: "flow'da var"; dış servis yok); kurguda ses katmanı | YOK |
-| C3 | Flow 1080p "Yükseltilmiş" bedeli; teslim çözünürlüğü kararı | ölçülmedi |
-| C4 | Flow'u süren belirlenimci araç (Belle işi 1,21 M jeton / 48 dk; güç kısmaz, hız+kota) | YOK |
+| C3 | Flow 1080p "Yükseltilmiş" bedeli; teslim çözünürlüğü kararı | BİTTİ 08.10: ölçüldü 0 kredi (896→896, 8 sn klip ~45 sn); kapı 1080p'yi sormaz, 4K sorar; teslim 1080p kliplerle (keskinlik farkı görüldü) |
+| C4 | Flow'u süren belirlenimci araç (Belle işi 1,21 M jeton / 48 dk; güç kısmaz, hız+kota) | ERTELENDİ 08.10: Sonnet'le Flow turu ~3 dk'ya indi; çok video işi gelince süre/kota rakamıyla yeniden bakılır |
 | C5 | Tasarım akışı: bir istekten 3 seçenek, telefon/masaüstü önizlemesi, sürümler (41-liste #26) | İPTAL 08.10 (patron: gerek yok) |
-| C6 | Codex/GPT görseli KALIR (08.10 patron: "ikisini de kullanacağız") — bedeli ve kalitesi ölçülür, güç kısmadan düşürülür | açık |
-| C7 | Kurgu kuralları (yazı ürüne binmez, temiz kapanış) gerçekte ölçülmedi | büyük işlerle testte |
+| C6 | Codex/GPT görseli KALIR (08.10 patron: "ikisini de kullanacağız") — bedeli ve kalitesi ölçülür, güç kısmadan düşürülür | BİTTİ 08.10 (yarı jeton, aynı kalite; referans desteği) |
+| C7 | Kurgu kuralları (yazı ürüne binmez, temiz kapanış) | BİTTİ 08.10: `kurgu.yazi_carpismasi` (rembg maskesi; gerçek kötü kurguda %79/%100 yakaladı); premium kapanış kartı canlıda |
+| C9 | Kurgu/montaj araçları (08.10 patron: hazır videoyu sohbetten düzenle) | BİTTİ 08.10: video eki 2 GB akışla; medya_isle sahneler/kes/ses_ayir/sessizlik_kes/kare_ara (RIFE)/vokal_ayir (MDX-Net); kurgu hız/bulanık dolgu/odak/filtre/seslendirme+müzik kısma/logo/geçişler; beceri `video-duzenle` |
 | C8 | Otomatik içerik hattı: uzun videodan klip → kurgu → paylaşım onaya (E89) | İPTAL 08.10 (patron: YouTube yayını yok) |
 | **D — Bilgisayar** | | |
 | D1 | Bilgisayar kullanımı: fare/klavye ile masaüstü uygulaması; her riskli adım sorulur (41-liste #29, E47) | YOK (kapıda "masaüstü" sınıfı var, yetenek yok) |
