@@ -67,8 +67,8 @@ def oku(ofis) -> dict:
     kapali = bildirim_kapalilar(db, pid)
     out = {
         "calisma": {
-            "ajan_kipi": db.ayar_oku(pid, Koltuk.TERMINAL_KIPI, "arka") or "arka",
-            "lider_kipi": db.ayar_oku(pid, tui.LIDER_KIP_AYARI, "arka") or "arka",
+            "ajan_kipi": tui.kip_oku(db, pid),
+            "lider_kipi": tui.kip_oku(db, pid, lider=True),
             "efor": roller.efor_modu(db, pid),
             "efor_modlari": list(roller.EFOR_MODLARI),
             "kabin_izle": kabin_izle_acik_mi(db, pid),
@@ -154,8 +154,8 @@ def yaz(ofis, anahtar: str, deger) -> None:
     from . import karne
     db, pid = ofis.db, ofis.proje_id
     if anahtar in ("ajan_kipi", "lider_kipi"):
-        if deger not in ("arka", "gercek"):
-            raise AyarHatasi("Kip 'arka' ya da 'gercek' olmali.")
+        if deger != "gercek":
+            raise AyarHatasi("Arka plan kipi kaldirildi (08.10.2026, patron: 'arka plan kipi istemiyorum, her sey gercek calisacak'): ajanlar ve lider her zaman gercek terminalde calisir.")
         if deger == "gercek":
             from . import terminal as _tr
             if _tr.pty_durumu():

@@ -14,21 +14,27 @@ veri bir SAHNEDIR, sistemin konusu degil.
 
 Sahte motorla kosar -- jeton yakmaz, tekrarlanabilir.
 
-Kullanim:  python veri/ornek_ofis.py [--db yol]
+Kullanim:  python testler/ornek_ofis.py [--db yol]
+
+YALNIZ SINAMA (08.10.2026): ilk acilista artik kurulmaz; gercek ofis
+bos baslar (patron: "sahte motor sahte kip istemiyorum, her sey gercek").
 """
 
 from __future__ import annotations
 
 import argparse
 import sys
+import os
+import tempfile
 from pathlib import Path
 
+os.environ.setdefault("OFIS_SINAMA_MOTORU", "1")   # sahte motor yalniz sinamada
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from ofis import Ofis, Veritabani, Koltuk, Lider
 from ofis.motor.sahte import SahteMotor
 
-VARSAYILAN = Path(__file__).resolve().parent / "ornek.sqlite3"
+VARSAYILAN = Path(tempfile.gettempdir()) / "agentofis-ornek.sqlite3"
 
 
 def kur(db_yolu: Path) -> None:

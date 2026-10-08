@@ -76,9 +76,12 @@ sina("butun bolumler var", all(k in v for k in ("calisma", "bildirim", "modeller
                                                  "yedek", "takimlar")), str(list(v)))
 sina("iki takim, liderleriyle", {t["ad"]: t["lider"] for t in v["takimlar"]}
      == {"MAGAZA": "ayse", "YAZILIM": "demir"}, str(v["takimlar"])[:200])
-ayarlar.yaz(ofis, "lider_kipi", "arka")
-sina("liderin kipi yazilir", ayarlar.oku(ofis)["calisma"]["lider_kipi"] == "arka")
-sina("gecersiz kip reddedilir", "arka" in hata(lambda: ayarlar.yaz(ofis, "lider_kipi", "x")))
+sina("kip varsayilani gercek (ajan ve lider)",
+     ayarlar.oku(ofis)["calisma"]["ajan_kipi"] == "gercek"
+     and ayarlar.oku(ofis)["calisma"]["lider_kipi"] == "gercek", str(ayarlar.oku(ofis)["calisma"]))
+ayarlar.yaz(ofis, "lider_kipi", "gercek")
+sina("arka plan kipi YAZILAMAZ (kaldirildi)", "kaldirildi" in hata(lambda: ayarlar.yaz(ofis, "lider_kipi", "arka")))
+sina("gecersiz kip reddedilir", "kaldirildi" in hata(lambda: ayarlar.yaz(ofis, "lider_kipi", "x")))
 sina("kapi modeli (fable) kademeye GIRMEZ", "KAPI" in hata(lambda: ayarlar.yaz(
     ofis, "kademe", {"motor": "claude", "kademe": "guclu", "model": "fable"})))
 ayarlar.yaz(ofis, "kademe", {"motor": "claude", "kademe": "hizli", "model": "haiku"})
@@ -173,7 +176,7 @@ JS = (KOK / "web" / "ayarlar.js").read_text(encoding="utf-8")
 HTML = (KOK / "web" / "index.html").read_text(encoding="utf-8")
 sina("Ayarlar dugmesi ve betigi sayfada", 'id="ayarlar-ac"' in HTML and "/varlik/ayarlar.js" in HTML)
 sina("tasinan anahtarlar ust cubukta gizli", 'id="efor-sec" hidden' in HTML
-     and 'id="kip-sec" hidden' in HTML and 'id="bildirim-anahtar" hidden' in HTML)
+     and 'id="kip-sec"' not in HTML and 'id="bildirim-anahtar" hidden' in HTML)
 sina("dokuz bolum (Beceriler, Eklentiler ve MCP dahil)", all(f'["{b}"' in JS for b in (
     "entegrasyon", "beceri", "kaynak", "takim", "modeller", "calisma", "bildirim", "guvenlik", "yedek"))
      and "Eklentiler ve MCP" in JS and "Yedek ve sağlık" in JS)

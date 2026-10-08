@@ -3,7 +3,7 @@
 
 Sinanan: oneriler OLCULMUS tekrardan dogar (esik alti tek olay oneri
 DEGIL, 7 gunden eski sayilmaz), her biri kanit tasir; ret dongusu is
-basina, canli engeli ve kota payi takim basina; saglik uyarisi oneri olur;
+basina, kota payi takim basina; saglik uyarisi oneri olur;
 Onayla gelistirici listesine yazar, Gereksiz bir daha getirmez; panel ve
 kabuk.
 """
@@ -56,8 +56,6 @@ db.olay_yaz(P, "takildi", "#4 kilit bekliyor")
 db.olay_yaz(P, "takildi", "#5 onay bekliyor")
 for i in range(3):
     db.olay_yaz(P, "ret", f"#{g['no']} geri gonderildi: olcut {i}", gorev_id=g["id"])
-for _ in range(2):
-    db.olay_yaz(P, "canli_engel", "uretime dagitim (--prod) | vercel --prod", gorev_id=g["id"])
     db.olay_yaz(P, "kota_payi_dolu", f"WEB takiminin kota payi doldu [{KA}:claude:5s:202610061200]")
 eski = (datetime.now(timezone.utc) - timedelta(days=8)).strftime("%Y-%m-%dT%H:%M:%S+00:00")
 for _ in range(3):
@@ -77,7 +75,6 @@ sina("3 kez ayni uyari oneri; tek uyari degil",
      any("3 kez" in b for b in bas) and not any("tek seferlik" in " ".join(o["ornekler"]) for o in on))
 sina("takilan isler oneri", "takildi" in tur)
 sina("ret dongusu IS basina", any(f"#{g['no']} işi 3 kez" in b for b in bas), str(bas))
-sina("canli engeli TAKIM basina (adiyla)", any(b.startswith("WEB ") and "canlıya" in b for b in bas))
 sina("kota payi TAKIM basina", any(b.startswith("WEB ") and "kota payı" in b for b in bas))
 sina("saglik UYARISI oneri, bilgi bulgusu degil",
      "Modelsiz ajan: ece" in bas and "bilgi bulgusu" not in bas)

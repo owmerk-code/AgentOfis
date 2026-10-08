@@ -19,9 +19,9 @@ başlar.
 | # | İş | Durum (08.10, doğrulandı) |
 |---|---|---|
 | **A — Gerçek kullanıma hazırlık** | | |
-| A1 | Güvenli sıfırlama (41-liste #38): silinecekler önce listelenir, patron YAZARAK onaylar, önce yedek | YOK (yalnız "düzeni sıfırla" var) |
-| A2 | Gerçek ofisi temiz başlangıca alma (deneme sohbetleri, karar/olgu, karnedeki 6 deneme kaydı) — A1 ile, patron onayıyla | bekliyor |
-| A3 | Belgeler: CLAUDE.md "Güncel durum" 29.09'da kalmış; Gemini satırı eski | eski |
+| A1 | Güvenli sıfırlama (41-liste #38): silinecekler önce listelenir, patron YAZARAK onaylar, önce yedek | BİTTİ 08.10 (`sifirla.py`, 63 sınama) |
+| A2 | Gerçek ofisi temiz başlangıca alma — A1 ile, patron onayıyla; + sahte motor/örnek ofis yalnız sınamada, deneme kipi ve arka plan kipi kaldırıldı | BİTTİ 08.10 (patron SIFIRLA yazdı; elle kalan: Ofisim deneme klasörleri, veri/ örnek dosyaları) |
+| A3 | Belgeler: CLAUDE.md "Güncel durum" | BİTTİ 08.10 |
 | **B — Ekranın işlevsel eksikleri (görünüş değil)** | | |
 | B1 | Karar ekranı: seçenekli soru, önerilen seçili, toplu kabul | YOK |
 | B2 | Her işin gerçek durumu tek ekranda (onay/kredi/giriş bekliyor, hangi adımda) | kısmen (kanban + iş kartı) |

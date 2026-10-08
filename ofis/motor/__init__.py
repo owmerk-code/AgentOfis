@@ -18,6 +18,8 @@ bir gorev sahiplenmis, kilidi almis olur.
 
 from __future__ import annotations
 
+import os
+
 from .tip import (
     Motor, MotorOlayi, MotorHatasi, MotorYokHatasi, MotorLimitHatasi,
     OLAY_TURLERI,
@@ -51,12 +53,27 @@ _DEFTER = {
     # "hazir" gosteriyor, ekip onerisi ve lider zinciri onu seciyordu --
     # kullanilmayacak bir motoru "hazir" gostermek yanlis gosteren
     # gostergedir.
-    SahteMotor.ad: SahteMotor,
     # GEMINI GERI TAKILDI (04.10.2026) -- ama Gemini CLI DEGIL: o arac
     # 18.06.2026'dan beri Google AI Pro'ya kapali. Yerine Antigravity CLI
     # (`agy`); olculdu: Pro taniniyor, akis, kanca (yalniz red), MCP, ayri ev.
     AntigravityMotoru.ad: AntigravityMotoru,
 }
+
+#: SAHTE MOTOR YALNIZ SINAMADA (08.10.2026, patron: "sahte motor sahte kip
+#: istemiyorum, her sey gercek calisacak"). Jeton yakmayan sinama motoru
+#: urunun defterinde DURMAZ: gercek ofiste `sahte` adli motor yoktur, ajan
+#: ona atanamaz, panel ve komut satiri onu goremez. Sinama ortami
+#: (`testler/_temizlik.py`) bu isareti ofis ice aktarilmadan ONCE koyar;
+#: alt surecler (kabuk, MCP sunucusu) isareti ortamdan miras alir.
+#: Isarete CAGRI aninda bakilir, ice aktarma aninda degil: deneme seti
+#: ofisi isaret konmadan once ice aktariyor.
+SINAMA_ISARETI = "OFIS_SINAMA_MOTORU"
+
+
+def _defter() -> dict:
+    if os.environ.get(SINAMA_ISARETI) == "1":
+        return {**_DEFTER, SahteMotor.ad: SahteMotor}
+    return _DEFTER
 
 
 def motor_kaydet(sinif) -> None:
@@ -68,7 +85,7 @@ def motor_kaydet(sinif) -> None:
 
 
 def kayitli_motorlar() -> tuple:
-    return tuple(sorted(_DEFTER))
+    return tuple(sorted(_defter()))
 
 
 def motor_ac(ad: str, **ayar) -> Motor:
@@ -79,7 +96,7 @@ def motor_ac(ad: str, **ayar) -> Motor:
     beklenenden baska olurdu.
     """
     ad = str(ad or "").strip().lower()
-    sinif = _DEFTER.get(ad)
+    sinif = _defter().get(ad)
     if sinif is None:
         raise MotorHatasi(
             f"Bilinmeyen motor: {ad!r}. Kayitli olanlar: {', '.join(kayitli_motorlar())}"
@@ -95,7 +112,7 @@ def musait_motorlar() -> dict:
     UYDURMAZ, baglantiyi olcer.
     """
     sonuc = {}
-    for ad, sinif in _DEFTER.items():
+    for ad, sinif in _defter().items():
         try:
             sonuc[ad] = bool(sinif().musait_mi())
         except Exception:

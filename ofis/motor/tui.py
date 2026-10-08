@@ -232,18 +232,27 @@ def kapat(oturum_id: str) -> str:
     return k["terminal"].kapat(duzgun=True, bekle=8) if k else "yok"
 
 
-#: Ayar anahtari (koltuk da bunu okur): 'arka' | 'gercek'.
+#: Ayar anahtari (koltuk da bunu okur). URUNDE TEK DEGER 'gercek'
+#: (08.10.2026, patron: "arka plan kipi istemiyorum, her sey gercek
+#: calisacak"); panel ve ayarlar 'arka' YAZMAZ. 'arka' yalniz sinamalarin
+#: deftere elle yazdigi deger (sahte motorlu duman sinamalari).
 KIP_AYARI = "terminal_kipi"
+GERCEK = "gercek"
 
 
-#: Liderin turlari (triyaj, plan, inceleme, rapor) icin AYRI ayar:
-#: 'arka' (varsayilan) | 'gercek'. OLCULDU (01.10.2026, ayni kucuk tur):
+#: Liderin turlari (triyaj, plan, inceleme, rapor) icin AYRI ayar; 08.10'dan
+#: beri o da varsayilan 'gercek'. OLCULDU (01.10.2026, ayni kucuk tur):
 #: arka kip claude 3 sn / codex 4-6 sn, gercek terminal claude ~10 sn /
 #: codex ~9 sn (hazir-isareti yamasindan SONRA bile; farkin cogu CLI'in
 #: kendi acilisi). Lider bir iste 3-4 tur kosar -> is basina ~20 sn.
 #: Liderin turlari kisa ve sonucu patron sohbette gorur; isci terminali
 #: gorunur kalir. Isteyen lideri de gercek terminale alir (tek ayar).
 LIDER_KIP_AYARI = "lider_terminal_kipi"
+
+
+def kip_oku(db, proje_id: str, *, lider: bool = False) -> str:
+    """Etkin kip -- TEK okuma yeri. Ayar yoksa 'gercek'."""
+    return db.ayar_oku(proje_id, LIDER_KIP_AYARI if lider else KIP_AYARI, GERCEK) or GERCEK
 
 
 def kipe_gore(db, proje_id: str, motor, *, ajan_ad: str = "",
@@ -257,9 +266,9 @@ def kipe_gore(db, proje_id: str, motor, *, ajan_ad: str = "",
     kapi modelinin "tavan zorunlu" kuralini delerdi. Desteklemeyen motor
     da arkada kalir ve bu GORUNUR bir uyari olur.
     """
-    if db.ayar_oku(proje_id, KIP_AYARI, "arka") != "gercek":
+    if kip_oku(db, proje_id) != GERCEK:
         return motor
-    if lider and db.ayar_oku(proje_id, LIDER_KIP_AYARI, "arka") != "gercek":
+    if lider and kip_oku(db, proje_id, lider=True) != GERCEK:
         return motor
     if butce_usd:
         return motor

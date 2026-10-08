@@ -40,8 +40,12 @@ Kullanim:  python testler/olcum_hafiza.py
 
 from __future__ import annotations
 
+import os
 import sys
 import tempfile
+
+# Sahte motor yalniz sinama isaretiyle kayitlidir (ofis/motor).
+os.environ["OFIS_SINAMA_MOTORU"] = "1"
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))

@@ -864,8 +864,8 @@ def uygula(ofis, no: int, *, kademe: str = "", fabrika=None,
         olculen = kurulu_surum(motor)
         model = roller.model_sec(motor, "hizli", roller.kademe_haritasi(db, pid))
         model = model_coz(db, pid, motor, model)
-        from .motor.tui import KIP_AYARI
-        gercek = db.ayar_oku(pid, KIP_AYARI, "arka") == "gercek"
+        from .motor.tui import GERCEK, kip_oku
+        gercek = kip_oku(db, pid) == GERCEK
         deneme = (deneme_turu(motor, model, fabrika=fabrika, gercek_terminal=gercek)
                   if olculen == yeni else
                   {"basarili": False, "sebep": f"surum olculdu: {olculen or 'yok'}"})

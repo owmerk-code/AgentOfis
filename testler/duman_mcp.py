@@ -686,14 +686,8 @@ def _izin(arac_adi: str, girdi: dict) -> dict:
     return _json.loads(_si.arac("izin_sor", tool_name=arac_adi, input=girdi))
 
 
-# CANLI KIP (06.10.2026, K16): magaza/reklam hesabina yazma deneme kipinde
-# hic sorulmadan reddedilir (`duman_canli.py`). Asagidaki onay akisi CANLI
-# kipteki kapiyi olcer; once deneme kipindeki ret de bir kez gorulur.
-_dr = _izin("mcp__claude_ai_Meta_Reklamlar__ads_activate_entity", {"id": "1"})
-sina("deneme kipinde reklam yazmasi SORULMADAN reddedildi",
-     _dr.get("behavior") == "deny" and "CANLI KAPALI" in _dr.get("message", ""), str(_dr)[:160])
-from ofis import canli as _canli  # noqa: E402
-_canli.ayarla(ofis.db, ofis.proje_id, ofis.tahta.gorev(g["no"])["kanat_id"], True)
+# CANLI (08.10.2026): deneme kipi KALDIRILDI; magaza/reklam hesabina yazma
+# reddedilmez, asagidaki onay akisinda SORULUR (`duman_canli.py`).
 
 
 # OKUMA serbest -- her seyi durduran bir kapi da karar vermiyordur.

@@ -151,6 +151,8 @@ print("\n-- 9. koltuk kipi --")
 from ofis.koltuk import Koltuk  # noqa: E402
 kol = Koltuk(ofis, motor_fabrikasi=lambda ad, **k: SahteTui() if ad == "sahte-tui"
              else SahteMotor(cevap="x"))
+# 'arka' urunde yazilamaz (08.10); sinama deftere ELLE yazar ve kuralin ona uydugunu olcer.
+db.ayar_yaz(ofis.proje_id, "terminal_kipi", "arka")
 sina("arka kipte sarilmaz", not isinstance(kol._motor_ac("sahte-tui"), tui.TuiMotoru))
 db.ayar_yaz(ofis.proje_id, "terminal_kipi", "gercek")
 sina("gercek kipte sarilir", isinstance(kol._motor_ac("sahte-tui"), tui.TuiMotoru))
@@ -201,9 +203,15 @@ try:
         sina("olmayan terminal: hata", ws.receive_json().get("tur") == "hata")
     sina("kip okunuyor", ist.get("/api/terminal_kipi").json().get("kip") in ("arka", "gercek"))
     sina("yanlis kip 400", ist.post("/api/terminal_kipi", json={"kip": "uzay"}).status_code == 400)
+    # 08.10.2026: arka plan kipi URUNDEN kaldirildi -- panel 'arka' yazamaz.
+    _once = db.ayar_oku(ofis.proje_id, "terminal_kipi", "")
     r = ist.post("/api/terminal_kipi", json={"kip": "arka"})
-    sina("kip yazildi", r.status_code == 200 and
-         db.ayar_oku(ofis.proje_id, "terminal_kipi", "") == "arka")
+    sina("panel 'arka' kipini REDDEDER (kaldirildi), ayar degismez",
+         r.status_code == 400 and "kaldirildi" in r.text
+         and db.ayar_oku(ofis.proje_id, "terminal_kipi", "") == _once, r.text[:200])
+    r = ist.post("/api/terminal_kipi", json={"kip": "gercek"})
+    sina("kip yazildi (gercek)", r.status_code == 200 and
+         db.ayar_oku(ofis.proje_id, "terminal_kipi", "") == "gercek")
 except ImportError as exc:
     print(f"  [ATLANDI] fastapi yok: {exc}")
 
@@ -229,14 +237,19 @@ _o2 = list(tui.kipe_gore(db, ofis.proje_id, SahteTui(), ajan_ad="lale").tur_kos(
 _acik = [x["oturum_id"] for x in tui.acik_oturumlar() if x["ajan"] == "lale"]
 sina("lider her turda TEMIZ terminal, eskisi kapandi (tek terminal kalir)",
      _o1 != _o2 and _acik == [_o2], f"{_o1} {_o2} {_acik}")
-# 01.10: liderin turlari AYRI ayar (varsayilan arka; olculdu, is basina ~20 sn).
-sina("lider turu varsayilan olarak ARKADA (isci gercek terminalde olsa da)",
-     not isinstance(tui.kipe_gore(db, ofis.proje_id, SahteTui(), ajan_ad="lale", lider=True),
-                    tui.TuiMotoru))
-db.ayar_yaz(ofis.proje_id, tui.LIDER_KIP_AYARI, "gercek")
-sina("lider ayari 'gercek' ise lider de gercek terminalde",
+# 08.10: liderin ayari yoksa o da GERCEK terminalde (arka plan kipi kaldirildi).
+with db.baglanti() as _c:
+    _c.execute("DELETE FROM ayar WHERE proje_id = ? AND anahtar = ?",
+               (ofis.proje_id, tui.LIDER_KIP_AYARI))
+sina("lider turu VARSAYILAN olarak gercek terminalde",
      isinstance(tui.kipe_gore(db, ofis.proje_id, SahteTui(), ajan_ad="lale", lider=True),
                 tui.TuiMotoru))
+with db.baglanti() as _c:
+    _c.execute("DELETE FROM ayar WHERE proje_id = ? AND anahtar = ?",
+               (ofis.proje_id, tui.KIP_AYARI))
+sina("hic ayar yokken isci de gercek terminalde (kip_oku varsayilani)",
+     tui.kip_oku(db, ofis.proje_id) == "gercek" and
+     isinstance(tui.kipe_gore(db, ofis.proje_id, SahteTui(), ajan_ad="lale"), tui.TuiMotoru))
 db.ayar_yaz(ofis.proje_id, tui.LIDER_KIP_AYARI, "arka")
 db.ayar_yaz(ofis.proje_id, "terminal_kipi", "arka")
 

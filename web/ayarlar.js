@@ -447,22 +447,6 @@ async function ayarModeller(kap, v) {
       ayarSatir(kap, t.ad, olc.length ? "şu an kullandığı: " + olc.join(" · ")
                                       : "kullanımı henüz ölçülmedi", k);
     }
-    // DENEME / CANLI (06.10): kapaliyken canli sisteme dokunan eylem reddedilir.
-    ayarAltBaslik(kap, "Canlı kip (takım başına)");
-    kap.append(el("div", "ayar-aciklama",
-      "Kapalıyken (deneme kipi) takımın ajanları canlıya dokunamaz: üretime dağıtım (--prod), canlı ödeme, " +
-      "paket yayımı, bağlı mağaza/reklam hesabına yazma reddedilir — senin \"deploy et\" sözün bile açmaz. " +
-      "Açıkken yayın ve para yine sana sorulur."));
-    for (const t of org.kanatlar || []) {
-      ayarSatir(kap, t.ad, t.canli ? "CANLI açık" : "deneme kipi",
-        ayarAnahtar(!!t.canli, async (a) => {
-          if (a && !confirm(`${t.ad} takımında CANLI kip açılsın mı?\n\nAjanlar üretime dağıtabilir, ` +
-                            "bağlı mağaza/reklam hesabına yazabilir (yayın ve para yine sorulur).")) return;
-          await eylem(`/api/kanat/${t.id}/duzenle`, { canli: a },
-                      () => `${t.ad}: ` + (a ? "canlı kip AÇIK" : "deneme kipi"));
-          ayarlarCiz();
-        }));
-    }
   } catch (e) { kap.append(el("div", "form-ipucu uyari", "takımlar okunamadı: " + e.message)); }
 
   ayarAltBaslik(kap, "Hesabı önceden sıraya al");
@@ -507,17 +491,12 @@ async function ayarModeller(kap, v) {
 
 async function ayarCalisma(kap, v) {
   const c = v.calisma;
-  const KIP = [["arka", "arka plan"], ["gercek", "gerçek terminal"]];
-  const kipYaz = async (yol, kip) => {
-    try { await yolla(yol, { kip }); } catch (e) { bildir(String(e.message || e), "kotu"); }
-    ayarlarCiz(); try { cizKip(); } catch (_) {}
-  };
-  ayarSatir(kap, "Ajanların terminali",
-    "Gerçek: Claude/Codex kendi terminalinde çalışır, panoda canlı görünür, içine yazabilirsin. Sonraki turlardan itibaren geçerli. Riskli adım iki kipte de sorulur.",
-    ayarSecim(KIP, c.ajan_kipi, (k) => kipYaz("/api/terminal_kipi", k)));
-  ayarSatir(kap, "Liderin terminali",
-    "Liderin turları (planlama, inceleme, rapor). Arka plan daha hızlı ölçüldü; tavan gereken tur her durumda arkada koşar.",
-    ayarSecim(KIP, c.lider_kipi, (k) => ayarYaz("lider_kipi", k)));
+  // 08.10: arka plan kipi kaldirildi; tek kip gercek terminal (secim yok).
+  ayarSatir(kap, "Ajanların ve liderin terminali",
+    "Claude ve Codex ajanları kendi gerçek terminalinde çalışır: panoda canlı görünür, içine yazabilirsin. " +
+    "İki istisna, ikisi de motorun sınırı: Gemini (Antigravity) gerçek terminal penceresi açmıyor; " +
+    "harcama tavanı gereken kapı turu (Fable hakemi) tavanı yalnız arkada uygulayabiliyor.",
+    el("span", "ayar-deger", "gerçek terminal"));
   const EFOR = { zorluk: "zorluğa göre", dusuk: "hepsi low", normal: "hepsi medium",
                  yuksek: "hepsi high", cok_yuksek: "hepsi xhigh" };
   ayarSatir(kap, "Efor",

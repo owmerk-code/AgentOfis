@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
-"""DENEME / CANLI AYRIMI (06.10.2026, Asama 4 / K16). Jeton yakmaz.
+"""CANLI SISTEME DOKUNAN EYLEM (06.10 olcum; 08.10.2026 kural). Jeton yakmaz.
 
-Takimin canli bayragi KAPALIYKEN (varsayilan) canliya dokunan eylem tek
-kapida SORULMADAN reddedilir -- patronun izni bile acmaz; ACIKKEN bugunku
-kapi aynen isler. Sinanan: kaliplar (dogru pozitif + yanlis pozitif yok),
-betik icindeki canli komut, baglayici yazma/okuma, uctan uca kapi (claude
-ve codex ayni `izin_sor`), takim ayrimi, panel ayari.
+08.10 (patron: "sahte kip istemiyorum, her sey gercek calisacak"): takim
+"deneme kipi" KALDIRILDI. Canliya dokunan eylem REDDEDILMEZ, tek kapida
+SORULUR; patronun kalici izni acar; para her zaman sorulur. Sinanan:
+kaliplar (dogru pozitif + yanlis pozitif yok), betik icindeki canli komut,
+baglayici yazma/okuma, uctan uca kapi (claude ve codex ayni `izin_sor`),
+panelde deneme kipi ayari YOK.
 """
 
 from __future__ import annotations
@@ -94,47 +95,48 @@ def kapi(ajan, no, arac, girdi):
     return json.loads(M.arac_izin_sor(_Oturum(ajan, no), {"tool_name": arac, "input": girdi}))
 
 
+def onay_sayisi():
+    with db.baglanti() as c:
+        return c.execute("SELECT COUNT(*) FROM onay").fetchone()[0]
+
+
+o0 = onay_sayisi()
 r = kapi("ece", ga["no"], "Bash", {"command": "vercel --prod"})
-sina("deneme kipinde 'vercel --prod' REDDEDILDI (sorulmadan)",
-     r["behavior"] == "deny" and "CANLI KAPALI" in r["message"], str(r)[:200])
+sina("'vercel --prod' REDDEDILMEDI, SORULDU (onay karti acildi)",
+     r["behavior"] == "deny" and "CANLI KAPALI" not in r["message"] and onay_sayisi() == o0 + 1,
+     str(r)[:200])
 with db.baglanti() as c:
-    onay = c.execute("SELECT COUNT(*) FROM onay").fetchone()[0]
-    eng = c.execute("SELECT COUNT(*) FROM olay WHERE tur = 'canli_engel'").fetchone()[0]
-sina("  onay karti ACILMADI, engel kayda gecti", onay == 0 and eng == 1, f"onay={onay} engel={eng}")
+    sina("  'canli_engel' olayi artik dogmuyor",
+         c.execute("SELECT COUNT(*) FROM olay WHERE tur = 'canli_engel'").fetchone()[0] == 0)
 IZ.tanimla(db, ofis.proje_id, desen="vercel --prod", veren="insan", kaynak="insan",
            gerekce="sinama: kalici izin")
 r = kapi("ece", ga["no"], "Bash", {"command": "vercel --prod"})
-sina("patronun KALICI izni bile deneme kipini ACMAZ", "CANLI KAPALI" in r.get("message", ""), str(r)[:200])
+sina("patronun KALICI izni canliya cikmayi acar", r["behavior"] == "allow", str(r)[:200])
 r = kapi("ece", ga["no"], "Bash", {"command": "npm install --production"})
 sina("canli olmayan komut etkilenmedi", r["behavior"] == "allow", str(r)[:200])
+o1 = onay_sayisi()
 r = kapi("can", gb["no"], "mcp__claude_ai_Shopify__update-product", {"id": "1", "title": "x"})
-sina("magaza takiminda baglayiciya yazma reddedildi", "CANLI KAPALI" in r.get("message", ""), str(r)[:200])
+sina("baglanmis magazaya yazma SORULDU (ret degil)",
+     r["behavior"] == "deny" and "CANLI KAPALI" not in r.get("message", "") and onay_sayisi() == o1 + 1,
+     str(r)[:200])
 r = kapi("can", gb["no"], "mcp__claude_ai_Shopify__get-product", {"id": "1"})
 sina("  okuma serbest", r["behavior"] == "allow", str(r)[:200])
+o2 = onay_sayisi()
+r = kapi("ece", ga["no"], "Bash", {"command": "export K=sk_live_51Habc && node odeme.js"})
+sina("canli odeme anahtari SORULDU", r["behavior"] == "deny" and onay_sayisi() == o2 + 1, str(r)[:200])
+b = C.bulgu("Bash", {"command": "npm publish"}, "paket yayimi")
+sina("canli bulgusu yayin sinifi, sorulur", b["sinif"] == "yayin" and b["sorulur"] and "paket" in b["sebep"])
 
-C.ayarla(db, ofis.proje_id, KA, True)
-r = kapi("ece", ga["no"], "Bash", {"command": "vercel --prod"})
-sina("canli ACIKKEN kipin reddi yok; kalici izinle gecti", r["behavior"] == "allow", str(r)[:200])
-r = kapi("can", gb["no"], "mcp__claude_ai_Shopify__update-product", {"id": "1", "title": "x"})
-sina("TAKIM AYRI: WEB'in canlisi MAGAZA'yi acmadi", "CANLI KAPALI" in r.get("message", ""))
-IZ.kaldir(db, ofis.proje_id, IZ.liste(db, ofis.proje_id)[0]["id"], sebep="sinama")
-r = kapi("ece", ga["no"], "Bash", {"command": "vercel --prod"})
-sina("canli acik + izinsiz: bugunku kapi SORUYOR (yayin)",
-     r["behavior"] == "deny" and "CANLI KAPALI" not in r["message"] and "ONAY" in r["message"].upper(),
-     str(r)[:200])
-
-print("\n3. panel")
+print("\n3. panel: deneme kipi ayari yok")
 from fastapi.testclient import TestClient  # noqa: E402
 from ofis.panel import olustur  # noqa: E402
 ist = TestClient(olustur(db.yol))
-r = ist.post(f"/api/kanat/{KB}/duzenle", json={"canli": True})
-sina("panelden canli acildi", r.status_code == 200 and C.acik_mi(db, KB))
 org = ist.get("/api/organizasyon").json()
-sina("organizasyon canli bayragini veriyor",
-     all(bool(k["canli"]) for k in org["kanatlar"] if k["id"] in (KA, KB)))
-ist.post(f"/api/kanat/{KB}/duzenle", json={"canli": False})
-sina("panelden kapatildi", not C.acik_mi(db, KB))
-sina("takimsiz/bilinmeyen takim DENEME sayilir", not C.acik_mi(db, "") and not C.acik_mi(db, "yok"))
+sina("organizasyon 'canli' bayragi vermiyor", all("canli" not in k for k in org["kanatlar"]))
+sina("canli modulunde bayrak islevleri yok",
+     not any(hasattr(C, a) for a in ("acik_mi", "ayarla", "ret_metni")))
+js = (Path(__file__).resolve().parent.parent / "web" / "ayarlar.js").read_text(encoding="utf-8")
+sina("ayarlar ekraninda 'deneme kipi' yok", "deneme kipi" not in js and "Canlı kip" not in js)
 
 print(f"\n== sonuc: {GECEN} gecti, {KALAN} kaldi ==")
 sys.exit(1 if KALAN else 0)

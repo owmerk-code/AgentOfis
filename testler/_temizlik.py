@@ -73,6 +73,8 @@ if not os.environ.get("OFIS_CLAUDE_EV"):
     os.environ["OFIS_CLAUDE_JSON"] = os.path.join(os.environ["OFIS_CLAUDE_EV"], "claude.json")
 if not os.environ.get("OFIS_EV"):
     os.environ["OFIS_EV"] = tempfile.mkdtemp(prefix="ofis-ev-sinama-")
+# Sahte (jeton yakmayan) motor yalniz sinamada kayitlidir (ofis/motor).
+os.environ["OFIS_SINAMA_MOTORU"] = "1"
 
 #: Gercek kokteki hafiza dosyalari: sinama bunlara DOKUNMAMALI. Surec
 #: basinda damgalari alinir, sonunda karsilastirilir (bekci).

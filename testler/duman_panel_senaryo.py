@@ -36,7 +36,7 @@ from pathlib import Path
 
 KOK = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(KOK))
-sys.path.insert(0, str(KOK / "veri"))
+sys.path.insert(0, str(KOK / "testler"))
 
 import ofis.panel as P                          # noqa: E402
 from ofis import kabin as KB, tarayici as T     # noqa: E402

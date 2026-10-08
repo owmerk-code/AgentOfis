@@ -120,7 +120,7 @@ sina("plan: tek is is adli klasore", "ISININ ADIYLA" in pm or "isi ISININ ADIYLA
 
 print("\n7. ornek ofis")
 import importlib.util  # noqa: E402
-spec = importlib.util.spec_from_file_location("ornek_ofis", Y.OFIS_KODU / "veri" / "ornek_ofis.py")
+spec = importlib.util.spec_from_file_location("ornek_ofis", Y.OFIS_KODU / "testler" / "ornek_ofis.py")
 oo = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(oo)
 odb = kok / "ornek.sqlite3"

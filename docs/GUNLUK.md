@@ -14970,3 +14970,56 @@ karşılık bulmadı -- tek örnek, genelleme değil.
 
 AÇIK: Flow'un 1080p büyütme bedeli ölçülmedi (ajan 720p indirdi, kurgu 1080'e
 ölçekledi); taslak kare agy'nin kendi görsel aracıyla (Flow Nano Banana değil).
+
+## 08.10.2026 — A AŞAMASI: TEMİZ BAŞLANGIÇ, "HER ŞEY GERÇEK"
+
+Patron: "şuana kadar gerçek iş proje olmadı, denemeleri temizle; sahte motor
+sahte kip arka plan kipi istemiyorum, her şey gerçek çalışacak".
+
+**Güvenli sıfırlama (`ofis/sifirla.py`, `kabuk sifirla`, Ayarlar > Yedek):**
+plan (hiçbir şey silmez) → yedek + doğrulama (doğrulanmazsa HİÇBİR ŞEY
+silinmez) → patron `SIFIRLA` yazarsa siler. Korunan: kadro, ayar, hesap,
+kural, izin, zamanlı iş, kasa, motor girişleri, kabin profili, beceriler,
+Flow kataloğu, ölçümler, araçlar, patron dosyaları, kod deposunun kendi
+Claude kaydı, `.playwright-mcp` rakip dökümü, EN YENİ yedek. Ev/masaüstü
+kök sayılmaz (Claude oturum eşleşmesi patronun projelerine taşmasın; mutasyonla
+ölçüldü). Codex kayıtları silinmeden önce KOPYADA ölçüldü: `codex login
+status` ve gerçek tur (gpt-6-luna, boş klasör) geçti.
+
+**Gerçek ofiste uygulama (patron panelden SIFIRLA yazdı, 02:14):** 1.431 kalem
+silindi; yedek `AgentOfis-yedek-20261008-021420-sifirlama-oncesi.zip`
+(120 MB, bilgisayar + Drive). İki kalem silinemedi: gölge depoların git
+nesneleri salt okunur (`WinError 5`) → `_sil` salt okunuru açar. Panel
+açıktı; otomatik CLI güncellemesi (claude 2.1.293, codex 0.161.0) sıfırlamayla
+AYNI SANİYEDE deneme turu başlattı, yeni kayıt bıraktı → sıfırlama artık
+güncelleme kilidini alır (biri sürerken öteki başlamaz). Silinemeyenin adı
+artık olayda yazar. Elle (patron) silinecek: `Masaüstü\Ofisim` içindeki
+deneme klasörleri (araç patron dosyasına dokunmaz); `veri/` altındaki eski
+örnek dosyaları (`ornek.sqlite3`, `ornek-brifing.md`, `ornek-calisma/`).
+
+**Sahte motor YALNIZ sınamada:** `ofis/motor` onu ancak
+`OFIS_SINAMA_MOTORU=1` iken kaydeder (çağrı anında bakılır; deneme seti ofisi
+işaretten önce içe aktarıyor). Ürün: `claude, codex, gemini`; `ise-al
+--motor sahte` → "Bilinmeyen motor". Örnek ofis `testler/ornek_ofis.py`;
+`baslat.bat` ilk açılışta GERÇEK ofis kurar (geçici klasörde denendi).
+
+**Deneme kipi kaldırıldı:** canlıya dokunan eylem (--prod, canlı ödeme, paket
+yayımı, mağaza/reklam yazma) artık REDDEDİLMEZ, tek kapıda SORULUR (yayın
+sınıfı; patronun açık sözü / kalıcı izni açar, para her zaman sorulur).
+Mutasyon: kural kaldırılınca Shopify'a yazma SORULMADAN geçiyordu (sınama
+yakaladı) — yani deneme kipi kalkınca bu bulgu zorunluydu.
+
+**Arka plan kipi kaldırıldı:** `tui.kip_oku` varsayılanı `gercek`; panel ve
+ayarlar `arka` yazamaz; üst çubuktaki anahtar ve Ayarlar seçimi gitti.
+Kalan iki istisna MOTOR SINIRI: Gemini (agy) gerçek terminal penceresi
+açmıyor (PLAN E2); tavan gereken kapı turu (fable) tavanı yalnız arkada
+uygulayabiliyor.
+
+**Haiku 5.5 (07.10 çıktı):** güncelleme "hiçbir kademede yok" diye sordu;
+patron REDDETTİ ("gerekirse kullanırız"). Dışlanan listesine konmadı (eski
+Haiku'nun gerekçesi — kodlama 19,5 — yenisi için geçerli değil: Terminal-Bench
+4.0 %39,2 / Sonnet 5.5 %70,6; OSWorld %72,4 / %83,9). Elle atanabilir.
+
+### 08.10 ANAYASADAN TAŞINAN: MALİYET
+
+- **MALİYET (03.10, `testler/carpan.py`):** basit iş ofiste doğrudan Claude'un **~1,6–1,8×**'i (sabah 3,9×). Claude önbelleği 5 dakika (`CLAUDE_CODE_PROMPT_CACHE_TTL=5m`, ~%30 ucuz lider turu); RET ÖLÇÜTE BAĞLI (`lider.ret_dayanagi`: `OLCUT:` alıntısı ya da `BOZULDU:`, yoksa bir kez sorulur). Liderin triyaj+planı TEK TUR (`hedef_ver(hazir_plan=)`, geçmezse plan turu); "anlattı yapmadı" koruması (`yazilacak_dosyalar`); her tur `jeton_dokumu`, terminal turuna ölçülmüş birimden `maliyet_tahmini_usd` (`ev/fiyat_olcumu.json`). Asıl sabit bedel: Claude her yeni oturumda ~12k (Haiku)/~23k (Sonnet) jetonu 1 sa önbelleğe yazar. Yalın lider (güç kısar) ve çatal/`--fork-session` (Sonnet'te önbellek kullanmıyor, ölçüldü) DENENDİ, GERİ ALINDI. Araştırma `docs/arastirma/`. KARMA (karne + çapraz kontrol, varsayılan): 20 işlik sette 19/20, gereksiz ret 0, Claude payı yalnız-Claude'a göre %40 az (Codex Plus 5 sa +26 puan). Ofis köke bırakılan YENİ yardımcı dosyayı `.ofis/` altına taşır (`degisim.yardimcilari_topla`). Sıradaki: Ponytail ölçümü, Caveman (muhtemelen faydasız).

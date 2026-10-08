@@ -23,7 +23,7 @@ Kullanıcı Türkçe konuşur, **cevaplar Türkçe ve sade** olur. Günlük işl
 Satılmayacak.
 
 **Alan-bağımsız (mimari kısıt):** çekirdekte sektör adı geçmez. Alana özgü
-bilgi projeye `olgu`/`karar` olarak girer, koda değil. `veri/ornek_ofis.py`
+bilgi projeye `olgu`/`karar` olarak girer, koda değil. `testler/ornek_ofis.py`
 bir sahnedir.
 
 **Bitti çizgisi (27.09, kullanıcı):** sistem **Claude + Codex (GPT)
@@ -43,7 +43,7 @@ motor matrisinden geçmeden deftere girmez.
 | **Projeler masaüstünde** `Masaüstü\<proje>` (Ofisim = genel işler, iş adlı alt klasörler) | Kök ofisin içinde AÇILAMAZ (`yollar.ofis_icinde_mi`). Projede ofisin tek izi gizli `.ofis/` (ekler, karalama). |
 | **Ofis kendini geliştirir, kendini KURMAZ** | Ajan kendi kaynağına (`ofis/`) yazamaz; teslim eder, insan inceler ve kurar. |
 | **Ajanlar ortak kökte** (yazma alanı gerçek yoldur) | Yazma kilidi ancak çakışma fiziksel olarak mümkünse anlamlı. |
-| **Her takım ayrı** (06.10, patron) | Hafıza/belge/karar/kural takımın + ORTAK (`kanat_id` ''); takımın kendi klasörü (yeni takım `Masaüstü\<takım>`), kota payı, kiti, canlı bayrağı. Git: dal değil İŞ BAŞINA KAYIT (ortak kökte iki dal olmaz). |
+| **Her takım ayrı** (06.10, patron) | Hafıza/belge/karar/kural takımın + ORTAK (`kanat_id` ''); takımın kendi klasörü (yeni takım `Masaüstü\<takım>`), kota payı, kiti. Git: dal değil İŞ BAŞINA KAYIT (ortak kökte iki dal olmaz). |
 | **Ürünü (Muratify) almıyoruz** | Rakip olarak izleniyor; bkz. günlük "RAKİP" bölümleri. |
 
 ### Hesaplar ve model politikası
@@ -146,7 +146,7 @@ PROTOKOL    ofis MCP sunucusu (stdio JSON-RPC, 20 araç)
 ÇEKİRDEK    kadro · DAG tahta · yazma kilidi · kanıt kapısı · karar günlüğü
             orkestra (halka) · lider (3 kapı) · sohbet (ön kapı) · takım
 BELLEK      olay · olgu (çift-zamanlı) · bilgi/kural/ders · brifing K1–K4
-MOTORLAR    claude (stream-json) · codex (app-server) · gemini (Antigravity agy) · sahte
+MOTORLAR    claude (stream-json) · codex (app-server) · gemini (Antigravity agy) · sahte (YALNIZ sınamada)
 ```
 
 Kural: **dayanıklı kısım çekirdeğe, çürüyecek kısım fişe.** Motor bir
@@ -170,7 +170,7 @@ matrisin ölçümüyle karşılaştırır.
 | `ofis/bellek.py` | Olgular, karar günlüğü, bilgi kapısı (`bilgi_ekle`), `[[bağ]]`, kurallar (yalnız insandan). 06.10: sohbetten hafıza önerisi (`sohbet_onerileri`, alıntı denetimli, patron "Yaz"), birleştirme (`birlesim_adaylari`/`birlestir`, `konu_takma`). |
 | `ofis/belge.py` · `arama.py` | Belge kütüphanesi (06.10): PDF/Word/Excel/CSV/metin → yerli parçalar (`.ofis/belgeler/`), `belge_ara` MCP aracı, brifing ve triyaja kaynaklı ilk 3 parça. `arama.sirala` hafıza seçimi + belge aramasının TEK kuralı (kelime kapısı + harf dizisi sırası; ölçüldü `olcum_anlamsal.py`: 13→15/30, yerel anlam modeli 19/30 ama 1 GB → alınmadı). |
 | `ofis/telefon.py` · `web/telefon.*` · `web/sw.js` | TELEFON (06.10, Tailscale): panelin GİRİŞ kapısı `_UzakKapi` her HTTP+websocket isteğini süzer — uzak = adres yerel değil YA DA aktarıcı izi (`x-forwarded-for`, `tailscale-user-*`) YA DA Host bilgisayarın adı değil (`tailscale serve` 127.0.0.1'den iletir); uzak websocket HEP ret; uzak HTTP yalnız eşleşmiş cihaz (bilgisayarda tek kullanımlık kod, anahtar özetle, HttpOnly+Secure çerez, Ayarlar > Telefon'dan acil kesme) ve `telefon.IZINLI` uçlar. Web Push (VAPID DER evde; masaüstü bildirimleriyle aynı olaylar). |
-| `ofis/pay.py` · `kit.py` · `canli.py` · `git_kaydi.py` · `onizleme.py` · `eksik.py` | AŞAMA 4 (06.10): takım kota payı (takım % = hesap doluluğu × takımın jeton oranı; dolunca yeni işi bekler) · takım kiti (bitti tanımı + marka; yasak kelime incelemede TARANIR) · deneme/canlı (takım bayrağı, varsayılan deneme: canlı eylem tek kapıda sorulmadan ret) · iş başına git kaydı (kapanışta ölçülen dosyalar `#no başlık`, kartta `git revert`) · önizleme (127.0.0.1 küçük sunucu) · ofisin kendi eksik önerisi (ölçülmüş tekrar → kart, `kabuk eksikler`). Kök TEK çözücü: `tahta.kanat_koku` → `Ofis.kok_klasoru(kanat)` / `Ofis.isin_koku(iş)`; kilit KÖKE göre çakışır. |
+| `ofis/pay.py` · `kit.py` · `canli.py` · `git_kaydi.py` · `onizleme.py` · `eksik.py` | AŞAMA 4 (06.10): takım kota payı (takım % = hesap doluluğu × takımın jeton oranı; dolunca yeni işi bekler) · takım kiti (bitti tanımı + marka; yasak kelime incelemede TARANIR) · canlı eylem ölçümü (`canli.py`: --prod, canlı ödeme, paket yayımı, mağaza/reklam yazma → tek kapıda SORULUR; 08.10'da takım "deneme kipi" KALDIRILDI, sorulmadan ret güç kısıyordu) · iş başına git kaydı (kapanışta ölçülen dosyalar `#no başlık`, kartta `git revert`) · önizleme (127.0.0.1 küçük sunucu) · ofisin kendi eksik önerisi (ölçülmüş tekrar → kart, `kabuk eksikler`). Kök TEK çözücü: `tahta.kanat_koku` → `Ofis.kok_klasoru(kanat)` / `Ofis.isin_koku(iş)`; kilit KÖKE göre çakışır. |
 | `ofis/puan.py` · `tahmin.py` · `dosya.py` | Teslime 1–5 puan (düşük puanın gerekçesi ajanın dersi, karnede temiz sayılmaz) · ön tahmin (karneden süre/jeton; kota % yalnız tutarlı pencere ölçümünde) · `atomik_yaz` (benzersiz geçici dosya + Windows yeniden deneme; eşzamanlı yazan süreçler artık düşmüyor). |
 | `ofis/brifing.py` | Dört katmanlı brifing (K1 kimlik/rol · K2 künye+kural+olgu · K3 kararlar · K4 iş+kanıt+not), devir paketi. |
 | `ofis/koltuk.py` | Seat Runner: kilit → brifing → motor → olaylar → nabız → kanıt → inceleme. Zincir/devir, kaçak freni, not/durdurma kanalı, disk ölçümü, gölge anlık, kabin izleme. |
@@ -185,7 +185,7 @@ matrisin ölçümüyle karşılaştırır.
 | `ofis/postane.py` | Soru/onay, patronun notu (`NOT_KURALI`), imza/kapsam ile onay eşleştirme. |
 | `ofis/danisma.py` | Ajana sorulan soruyu teslim eder (araçsız, salt okunur); cevaplanamazsa insana yükseltir. |
 | `ofis/mcp_sunucu.py` | Ofis MCP: durum · kanit_ekle · karar_yaz · sohbete_yaz · soru_sor · onay_iste · bilgi_yaz · gorev_ac · gorsel_uret/iste · video_uret/durum/iste · video_kurgula · video_denetle · medya_isle · izin_sor (kanca) · giris_iste. Kimlik ORTAMDAN gelir. |
-| `ofis/motor/tui.py` | GERÇEK TERMİNAL KİPİ: iç motoru (claude/codex) ConPTY'de gerçek CLI olarak koşturan sarmalayıcı; brifing yapıştırılır, olaylar CLI'ın oturum dosyasından okunur, terminal turlar arası açık kalır. Ayar `terminal_kipi` (`arka`/`gercek`); tek kural `kipe_gore` (işçi + lider; tavan gereken tur arkada). |
+| `ofis/motor/tui.py` | GERÇEK TERMİNAL KİPİ: iç motoru (claude/codex) ConPTY'de gerçek CLI olarak koşturan sarmalayıcı; brifing yapıştırılır, olaylar CLI'ın oturum dosyasından okunur, terminal turlar arası açık kalır. TEK KİP `gercek` (08.10, patron: "arka plan kipi istemiyorum"; `kip_oku` varsayılanı, panel/ayarlar `arka` yazamaz; `arka` yalnız sınamanın elle yazdığı değer); tek kural `kipe_gore`. İstisna motor sınırı: Gemini'nin TUI'si yok, tavan gereken kapı turu (fable) arkada. |
 | `ofis/kanca.py` | Gerçek terminal (TUI) kancası: CLI'ın her araç çağrısını arka plan kipindeki AYNI kapıya sorar; hata = deny; `--oz-sinama`. |
 | `ofis/izin.py` | Patronun ACIKCA istedigi riskli eylem (push, deploy) sorulmaz: lider planda patronun sozunden KELIMESI KELIMESINE alintiyla izin yazar, ofis sinifi olcer, olumsuz cumleyi reddeder; is basina ve kalici (insan). Para ve silme izinle acilmaz. |
 | `ofis/riskli.py` | Riskli eylem ölçütü (geri alınabilir mi · dışarı çıkıyor mu · para var mı) + sert durak; kabuk kuralları; araç adı polaritesi (okuma serbest, tanınmayan sorulur); şifre/kart alanı. |
@@ -193,7 +193,7 @@ matrisin ölçümüyle karşılaştırır.
 | `ofis/kabin.py` | Panelin içindeki paylaşılan başsız Chrome (kare akışı), öğe seçici. `IndirmeYeri` (07.10): işin indirmeleri `.ofis/indirilenler/`e — CDP indirme ayarı YALNIZ ayarı yapan bağlantı açıkken geçerli (ölçüldü), tutucu iplik iş boyunca açık tutar. |
 | `ofis/giris.py` | Giriş isteği: şifre ajana geçmez, insan kabinde girer, iş onun oturumuyla sürer. |
 | `ofis/motor/tip.py` | Motor sözleşmesi: olay akışı, bayraklar, `durum_notu`, `limit_oku`, `TurKanali`, `SurecKafesi` (Job Object), `etkilesimli_komut`. |
-| `ofis/motor/claude.py` · `codex.py` · `antigravity.py` · `sahte.py` · `gemini.py` | Adaptörler. Claude: `.exe` doğrudan, `--permission-prompt-tool` kancası; SICAK BEKLEYEN SÜREÇ (06.10): liderin bir sonraki süreci aynı komutla önceden açılıp bekler (`tur_kos(sicak=True)`, `sicak_isit`, panel `_lider_isit_arkada` 2 dk'da bir; ömür 10 dk) — lider turu 9–12 sn → 3,5–6,4 sn, güç aynı. Codex: app-server (onay kapısı, steer, interrupt), `exec` yalnız görselde. Gemini = `antigravity.py` (`agy`, Google AI Pro; ajan başına ev, kanca ret = çıkış 2, kanca komutu TIRNAKSIZ + tur öncesi öz-sınama, istem ve tur içi not stdin `stream-json`'dan, Durdur = süreç kesilir + `--conversation`; video aracı yok → Flow kabinde; gerçek set 20/20); eski `gemini.py` (Gemini CLI) Pro'ya kapalı. |
+| `ofis/motor/claude.py` · `codex.py` · `antigravity.py` · `sahte.py` · `gemini.py` | Adaptörler (`sahte` yalnız `OFIS_SINAMA_MOTORU=1` iken kayıtlı; `_temizlik` koyar; ürün onu hiç görmez). Claude: `.exe` doğrudan, `--permission-prompt-tool` kancası; SICAK BEKLEYEN SÜREÇ (06.10): liderin bir sonraki süreci aynı komutla önceden açılıp bekler (`tur_kos(sicak=True)`, `sicak_isit`, panel `_lider_isit_arkada` 2 dk'da bir; ömür 10 dk) — lider turu 9–12 sn → 3,5–6,4 sn, güç aynı. Codex: app-server (onay kapısı, steer, interrupt), `exec` yalnız görselde. Gemini = `antigravity.py` (`agy`, Google AI Pro; ajan başına ev, kanca ret = çıkış 2, kanca komutu TIRNAKSIZ + tur öncesi öz-sınama, istem ve tur içi not stdin `stream-json`'dan, Durdur = süreç kesilir + `--conversation`; video aracı yok → Flow kabinde; gerçek set 20/20); eski `gemini.py` (Gemini CLI) Pro'ya kapalı. |
 | `ofis/zincir.py` · `hesap.py` · `plan.py` | Nöbet zinciri (hesap üzerinde, önceden geçiş), çoklu hesap (anahtar referansla), abonelik planı. |
 | `ofis/motor_saglik.py` · `kullanim.py` · `tavan.py` · `butce.py` | Oturum/kota hafızası; hesap pencereleri (tur koşmadan okunur); kaçak freni + jeton tavanı; Fable kapı payı. |
 | `ofis/degisim.py` · `geri_al.py` | Diskte ölçülen fark (beyan dışı yazma, canlı izleme) · gölge git ile tur geri alma. |
@@ -210,7 +210,7 @@ matrisin ölçümüyle karşılaştırır.
 | `ofis/ekip.py` · `sablon.py` | Ekip önerisi (lider önerir, insan onaylar) · takım şablonları (9 hazır: mağaza, mobil, SaaS, web, bot, içerik, stüdyo, araştırma, bilgisayar + patronun kaydettikleri `sablon_ozel`). |
 | ORGANİZASYON (05.10) | `/api/organizasyon` + panel: şirket ağacı ve takımın "⚙ Yönet"i AYNI uçlar; "Yeni ajan" penceresi (meslek kartı → katalog motor/model, karakter, motor durumu bayraklardan). Kurallar `kadro`da: `katalogdan_al`, `tasi` (açık işli/lider taşınmaz), `cikar` → ARŞİV (`ajan.arsiv`, ad geri dönmez, `liste()` arşivi göstermez), `lider_yap`, `karakter`. Takım yalnız BOŞSA ya da "ajanlarıyla" silinir (ajanlar arşive; açık iş varsa hiçbir şey yapılmaz). Yeni takım TEK AKIŞ (`/api/sablon/<ad>/onizleme` + `/api/takim/kur`: önce her şey denetlenir, sorun varsa HİÇBİR ŞEY kurulmaz; kuran insan, ayrıca onay yok). Hata pencerenin içinde + üstte bildirim (alt çubuk çekmecenin altında kalıyordu). Arayüz: panelin İÇİNDE pencere (Esc/Geri/dışarı tıkla kapatır, "Tam sayfa"), takım kartları, avatarlı ajan kartları, "⋯" menüleri, sürükle-bırak taşıma. |
 | `ofis/saglik.py` · `yetenek.py` · `denetim.py` · `baglayici.py` · `klasor.py` · `sartname.py` · `guncelleme.py` · `motor_karti.py` | Tıkanma teşhisi · yetenek envanteri · denetim kaydı · claude.ai bağlayıcıları · dış klasör kapısı · şartname kapısı (fable, araçsız) · otomatik güncelleme · motor kartı. |
-| `ofis/yedek.py` · `depo.py` | Günlük ZIP (bilgisayar + Drive) · gizli GitHub (kod + defterin metni, üç kapı), `metinden_defter`. |
+| `ofis/yedek.py` · `depo.py` · `sifirla.py` | Günlük ZIP (bilgisayar + Drive) · gizli GitHub (kod + defterin metni, üç kapı), `metinden_defter` · GÜVENLİ SIFIRLAMA (08.10): önce liste → yedek + doğrulama → patron `SIFIRLA` yazarsa siler; kadro/ayar/hesap/giriş/beceri/patron dosyası ve EN YENİ yedek kalır; güncelleme kilidiyle çakışmaz (`kabuk sifirla`, Ayarlar > Yedek). |
 | `ofis/panel.py` · `web/` | Panel: pano yerleşimi (sütun→yığın→sekme, `agentofis.yerlesim.v2`), ofis haritası, terminal panoları, takım sohbeti, kod/diff, kabin, hesap panosu, kuyruk. |
 | `ofis/kabuk.py` | Komut satırı (~30 komut): kur · ise-al · konus · hedef · devam · not · durdur · iptal · ekip · hesap · kullanim · saglik · yedek · geri-al · guncelle · panel … |
 | `testler/` | Duman sınamaları (jeton yakmaz), deneme seti (`deneme.py`, gerçek motor), motor matrisi (`matris.py`), yük ölçümü, hafıza isabeti. |
@@ -251,34 +251,32 @@ matrisin ölçümüyle karşılaştırır.
 - **Yedek:** günlük ZIP (bilgisayar + Drive), gizli GitHub (defter metin
   olarak); gölge depoyla tur geri alma.
 
-## Güncel durum (29.09.2026)
+## Güncel durum (08.10.2026)
 
 - **Fazlar:** F0–F3 KAPANDI (güvenilirlik, motor eşitliği Claude+Codex,
   güvenlik). Açık: **F4** model seçimi + hafıza · **F5** gece otopilotu,
   bildirim, **sesli komut** · **F6** şirket yapısı, yeni motorlar · **F7**
   medya · **F8** panel · **F9** masaüstü · **F10** kabul. Ayrıntı `PLAN.md`.
 - **Codex ajanı kapı varken tam erişimle** koşar (workspace-write'ta `git add` bile yapamıyordu, push sandbox kullanıcısı yüzünden düşüyordu); riskli adım kapıda.
-- **Gerçek terminal kipi** kuruldu ve panelde (üst çubuk anahtarı, ajan panosu = gerçek terminal); lider de gerçek terminalde (her tur temiz); varsayılan hâlâ `arka`.
+- **TEMİZ BAŞLANGIÇ (08.10, patron: "gerçek iş yapmadık, denemeler yaptık"):** deneme izleri `kabuk sifirla` ile silindi (1.431 kalem; yedek `AgentOfis-yedek-20261008-021420-sifirlama-oncesi.zip`). "Her şey gerçek": sahte motor ve örnek ofis (`testler/ornek_ofis.py`) yalnız sınamada; ilk açılış (`baslat.bat`) GERÇEK ofis kurar (Ofisim + GENEL + lider arda/Opus); deneme kipi ve arka plan kipi kaldırıldı.
+- **Gerçek terminal kipi** tek kip (ajan panosu = gerçek terminal; lider de gerçek terminalde, her tur temiz).
   30.09 düzeltmeleri: brifing kopyası ajan başına ofis evinde (ortak kökte
   `BRIFING.md` YOK), yapıştırmanın ardına elle yazılan sahip satırı, güven
   sorusu ekrana bakarak, codex oturum dosyası tur işaretiyle.
 - **Aşama 1 (gerçek iş kalitesi) sürüyor:** `testler/gercek_set.py` patron gibi
   sohbetten 12 iş verir; gece 03:30 iki motor (`gece_kos.py`). 30.09: codex
-  14 işin 14'ü iki motorda geçti (01.10; G13 Excel, G14 form+patron izni dahil); tek koşuda claude 13/14, codex 12/14 (kalanlar düzeltildi, yeniden geçti). Set 18 işe çıktı (not, durdur/sürdür, Word, proje); 01.10 tek koşuda claude **17/18** (kalan G15 tek savunulabilir ret), codex **14/18** (4 kök sebep düzeltildi, dördü yeniden geçti) → 18 işin 18'i iki motorda. Codex haftalık eşiği dolunca `gercek_set.py --kota-esigi 0.95` (yalnız geçici ofiste). Patronun GERÇEK ofisinin kopyasında (`testler/ofis_kopyasi.py`, lider demir/Opus) 4/4 iş bitti. Liderin turları varsayılan ARKA kipte (`lider_terminal_kipi`), işçi gerçek terminalde; basit iş ~70–80 sn. Gece görevi DEVRE DIŞI (PC gece kapalı), set gündüz koşulur. Kural: gerçek motorla geçmeyen "bitti" değil.
+  14 işin 14'ü iki motorda geçti (01.10; G13 Excel, G14 form+patron izni dahil); tek koşuda claude 13/14, codex 12/14 (kalanlar düzeltildi, yeniden geçti). Set 18 işe çıktı (not, durdur/sürdür, Word, proje); 01.10 tek koşuda claude **17/18** (kalan G15 tek savunulabilir ret), codex **14/18** (4 kök sebep düzeltildi, dördü yeniden geçti) → 18 işin 18'i iki motorda. Codex haftalık eşiği dolunca `gercek_set.py --kota-esigi 0.95` (yalnız geçici ofiste). Patronun GERÇEK ofisinin kopyasında (`testler/ofis_kopyasi.py`, lider demir/Opus) 4/4 iş bitti. Gece görevi DEVRE DIŞI (PC gece kapalı), set gündüz koşulur. Kural: gerçek motorla geçmeyen "bitti" değil.
 - **AYRIM (01.10, uygulandı):** ofisin evi `AgentOfis\ev`, Ofisim `Masaüstü\Ofisim`. Ölçüldü: ajan artık ofisin anayasasını GÖRMÜYOR (önce ilk satırını okuyordu). Açık: `.playwright-mcp/` proje kökünde (ölçmeden taşınmadı); kapı satır içi Python silmesini görmüyor.
 - **ÇOK TAKIM (01.10, patron: "ofis sadece tanım"):** bir işin takımı TEK kural (`Orkestra.isin_takimi`/`takimin_isi`, `Kadro.gorevin_lideri`); halka `kanat_id` süzgeci alır (sohbet kendi takımıyla koşar, Sürdür bütün ofis); iş takımsız açılmaz (veri göçü 2). Her yeni özellik çok takımla sınanır (`duman_cok_takim.py`).
 - **GÖMÜLÜ TARAYICI (02.10):** ajan tarayıcı gereken işe başlarken kabin kapalıysa ofis AÇAR (yalnız çalışan panel, `KABIN_ACICI`); "ajanlar burada" varsayılan açık; başsız Chrome normal kimlikle (Google "HeadlessChrome"u engelliyordu); adres çubuğu Chrome gibi arar; Chrome gibi SEKMELER ve Google ile açılış; önceki oturumdan kalan eski ayarlı kabin açılışta kapanır; sınama kabini ayrı kapıda (`OFIS_KABIN_KAPI`). Motorların KENDİ Chrome eklentileri ofiste KAPALI (Claude `--no-chrome`: etkileşimli kipte patronun kişisel Chrome'unu süren 21 araç geliyordu; codex evinde eklenti yok). İki motor aynı tarayıcı işinde ölçüldü: ikisi de temiz (yazma `browser_type`, tıklama `browser_click`, `browser_evaluate` yalnız okuma).
 - **F5 "ben yokken" altyapısı (01.10):** kuyruk + dönüş raporu, kesintiden devam, masaüstü bildirimi, zamanlayıcı — dördü canlı (8911, gerçek motor) ölçüldü. Kalan F5: telefon, onay yorgunluğu (E80), bağlam göstergesi, ses (en son).
 - **Güncelleme hemen:** 30 dakikada bir ölçer, uyguladıktan sonra yeniden
   ölçer (`olc_ve_ilerle`). CLI güncellemesinin deneme turu, ofis gerçek terminal kipindeyse terminalde de koşar (30.09).
-- **Sınamalar:** **5047/5047** (07.10; 95 dosya; tam takım ÇIKIŞ KODUYLA koşulur — kod 3 = artık klasör) + gerçek set (`gercek_set.py`, her gece 03:30). Deneme seti 15/15
+- **Sınamalar:** **5108/5108** (08.10; 96 dosya; tam takım ÇIKIŞ KODUYLA koşulur — kod 3 = artık klasör) + gerçek set (`gercek_set.py`, her gece 03:30). Deneme seti 15/15
   (Claude ve Codex, işçi+lider).
-- **MALİYET (03.10, `testler/carpan.py`):** basit iş ofiste doğrudan Claude'un **~1,6–1,8×**'i (sabah 3,9×). Claude önbelleği 5 dakika (`CLAUDE_CODE_PROMPT_CACHE_TTL=5m`, ~%30 ucuz lider turu); RET ÖLÇÜTE BAĞLI (`lider.ret_dayanagi`: `OLCUT:` alıntısı ya da `BOZULDU:`, yoksa bir kez sorulur). Liderin triyaj+planı TEK TUR (`hedef_ver(hazir_plan=)`, geçmezse plan turu); "anlattı yapmadı" koruması (`yazilacak_dosyalar`); her tur `jeton_dokumu`, terminal turuna ölçülmüş birimden `maliyet_tahmini_usd` (`ev/fiyat_olcumu.json`). Asıl sabit bedel: Claude her yeni oturumda ~12k (Haiku)/~23k (Sonnet) jetonu 1 sa önbelleğe yazar. Yalın lider (güç kısar) ve çatal/`--fork-session` (Sonnet'te önbellek kullanmıyor, ölçüldü) DENENDİ, GERİ ALINDI. Araştırma `docs/arastirma/`. KARMA (karne + çapraz kontrol, varsayılan): 20 işlik sette 19/20, gereksiz ret 0, Claude payı yalnız-Claude'a göre %40 az (Codex Plus 5 sa +26 puan). Ofis köke bırakılan YENİ yardımcı dosyayı `.ofis/` altına taşır (`degisim.yardimcilari_topla`). Sıradaki: Ponytail ölçümü, Caveman (muhtemelen faydasız).
-- **Kullanıcının belirttiği eksikler (29.09):** her panoda her zaman açık
-  yazma yeri; sesli orkestratör;
-  seçenekli karar ekranı; "her iş gerçek
-  durumuyla" ekranı; gece otopilotu.
-- **Gerçek terminal kararı (29.09, ölçüldü):** iki motorda kanca riskli komutu durdurdu, not tur sürerken ulaştı; yerleşik izin kipleri (Claude Auto, Codex "Approve for me") push/rm'i SORMADAN yaptı → gerçek terminalde de karar ofisin kancası. Ayrıntı günlükte.
+- **MALİYET (03.10, `testler/carpan.py`):** basit iş ofiste doğrudan Claude'un ~1,6–1,8×'i; Claude önbelleği 5 dk; ret ölçüte bağlı (`lider.ret_dayanagi`); triyaj+plan tek tur; KARMA (karne + çapraz kontrol) 20 işte 19/20, Claude payı %40 az. Yalın lider ve `--fork-session` denendi, geri alındı. Tam metin: günlük "08.10 ANAYASADAN TAŞINAN: MALİYET".
+- **Kalan işler:** `PLAN.md` "00. KALAN İŞLER — 08.10" (A–F; ses, görünüş, uygulama en son).
+- **Gerçek terminal kararı (29.09, ölçüldü):** iki motorda kanca riskli komutu durdurdu, not tur sürerken ulaştı; yerleşik izin kipleri push/rm'i SORMADAN yaptı → karar ofisin kancası.
 
 ## Kalıcı dersler (ilkeler)
 

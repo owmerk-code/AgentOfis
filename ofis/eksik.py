@@ -7,7 +7,6 @@ ve kanitini (kac kez, ornekler) tasir. Kaynaklar (son 7 gun):
 
 * ayni sebeple tekrar DUSEN is (`hata`)  * TAKILAN isler (`takildi`)
 * tekrar eden ofis UYARISI (`uyari`)    * ayni iste ret DONGUSU (`ret` >= 3)
-* takimin CANLI engeline tekrar takilmasi (`canli_engel`)
 * takimin KOTA PAYININ tekrar dolmasi (`kota_payi_dolu`)
 * saglik denetiminin UYARI bulgulari (panelde ayrica gosterilmeyenler)
 
@@ -27,7 +26,7 @@ from datetime import datetime, timedelta, timezone
 AYAR = "eksik_kararlari"
 GUN = 7
 #: Ayni sebebin kac tekrari "desen" sayilir.
-ESIK = {"hata": 2, "takildi": 2, "uyari": 3, "ret": 3, "canli_engel": 2, "kota_payi_dolu": 2}
+ESIK = {"hata": 2, "takildi": 2, "uyari": 3, "ret": 3, "kota_payi_dolu": 2}
 
 
 def _norm(metin: str) -> str:
@@ -83,7 +82,7 @@ def topla(ofis, *, simdi_=None) -> list:
             "SELECT o.tur, o.govde, o.gorev_id, g.no AS gorev_no, g.kanat_id "
             "FROM olay o LEFT JOIN gorev g ON g.id = o.gorev_id WHERE o.proje_id = ? "
             "AND o.olusturuldu >= ? AND o.tur IN ('hata', 'takildi', 'uyari', 'ret', "
-            "'canli_engel', 'kota_payi_dolu') ORDER BY o.rowid DESC",
+            "'kota_payi_dolu') ORDER BY o.rowid DESC",
             (pid, esik))]
         adlar = {r[0]: r[1] for r in c.execute("SELECT id, ad FROM kanat WHERE proje_id = ?", (pid,))}
     out = []
@@ -119,10 +118,8 @@ def topla(ofis, *, simdi_=None) -> list:
                               len(ornek)))
     # 5-6) takim basina
     for tur, baslik, oneri in (
-            ("canli_engel", "takımı canlıya çıkmaya {n} kez takıldı",
-             "Bu takım canlıya çıkmak istiyor: gerekiyorsa Ayarlar > Canlı kip'i aç; gerekmiyorsa işler önizlemeyle bitsin."),
             ("kota_payi_dolu", "takımının kota payı {n} kez doldu",
-             "Payı artırmayı ya da işleri dağıtmayı düşün (Ayarlar > Takım kota payı).")):
+             "Payı artırmayı ya da işleri dağıtmayı düşün (Ayarlar > Takım kota payı)."),):
         tk: dict = {}
         for r in rows:
             if r["tur"] == tur:

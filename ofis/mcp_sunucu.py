@@ -1285,34 +1285,23 @@ def arac_izin_sor(oturum: Oturum, args: dict) -> str:
             bulgu = riskli.suphe_bulgusu(
                 arac, str(girdi.get("command") or girdi)[:200], alinti)
 
-    # DENEME / CANLI (06.10.2026, K16): takimin canli bayragi kapaliysa canli
-    # sisteme dokunan eylem SORULMAZ, REDDEDILIR (patron sozu de acmaz).
-    # Olcum saf (ofise dokunmaz); ofis yalniz CANLI eylemde okunur ve orada
-    # bir sey patlarsa kapi KAPALI kalir -- canli olmayan eylem etkilenmez.
+    # CANLI SISTEM (08.10.2026, patron: "sahte kip istemiyorum, her sey gercek
+    # calisacak"): 06.10'daki takim "deneme kipi" canliya dokunan eylemi
+    # SORMADAN reddediyordu. Artik REDDEDILMEZ, SORULUR (yayin sinifi; kural
+    # `canli.py`). Riskli olcutu onu zaten soruyorsa o bulgu kalir. Olcum
+    # patlarsa kapi KAPALI kalir.
     from ofis import canli as _canli
-    _kanat_c, _kok_c = "", ""
+    _kok_c = ""
     try:
-        _kanat_c = getattr(oturum, "kanat", "") or ""
-        _kok_c = oturum.ofis.kok_klasoru(_kanat_c or None)
+        _kok_c = oturum.ofis.kok_klasoru(getattr(oturum, "kanat", "") or None)
     except Exception:                    # noqa: BLE001 -- betik yolu surecin klasorunden
         pass
     try:
         _sebep = _canli.degerlendir(arac, girdi, bulgu, _kok_c)
     except Exception as exc:             # noqa: BLE001
         return ret(f"Ofis kapisi canli denetimini yapamadi ({exc}). Eylem YAPILMADI.")
-    if _sebep:
-        try:
-            _acik = _canli.acik_mi(oturum.ofis.db, _kanat_c)
-        except Exception:                # noqa: BLE001 -- okunamazsa DENEME sayilir
-            _acik = False
-        if not _acik:
-            try:
-                oturum.ofis.db.olay_yaz(oturum.proje_id, "canli_engel",
-                                        f"{_sebep} | {str(girdi.get('command') or arac)[:200]}",
-                                        ajan_ad=oturum.ajan_ad)
-            except Exception:            # noqa: BLE001 -- kayit dusse de RET
-                pass
-            return ret(_canli.ret_metni(_sebep))
+    if _sebep and (bulgu is None or not bulgu.get("sorulur")):
+        bulgu = _canli.bulgu(arac, girdi, _sebep)
 
     if bulgu is None:
         return izin()

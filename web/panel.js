@@ -6624,26 +6624,6 @@ async function cizEfor() {
     kap.appendChild(not);
   }
 }
-/* AJAN TERMINALI KIPI: 'arka' (yapili akis) | 'gercek' (Claude/Codex'in
-   kendi terminali). Kural koltukta; panel yalniz ayari yazar. Degisiklik
-   SONRAKI turlardan itibaren gecerli -- kosan tur yarida degismez. */
-async function cizKip() {
-  const kap = $("#kip-sec");
-  if (!kap) return;
-  let d;
-  try { d = await al("/api/terminal_kipi"); }
-  catch (e) { kap.title = "kip okunamadi: " + e.message; return; }
-  kap.querySelectorAll("button").forEach(b =>
-    b.classList.toggle("secili", b.dataset.kip === d.kip));
-}
-document.querySelectorAll("#kip-sec button").forEach(b => {
-  b.onclick = async () => {
-    try { await yolla("/api/terminal_kipi", { kip: b.dataset.kip }); }
-    catch (e) { bildir("kip değiştirilemedi: " + (e.message || e), "kotu"); }
-    cizKip();
-  };
-});
-cizKip();
 
 document.querySelectorAll("#efor-sec button").forEach(b => {
   b.onclick = async () => {

@@ -905,7 +905,8 @@ class Veritabani:
         # TAKIM KITI (06.10.2026): bitti tanimi (satir satir) + marka kiti (JSON).
         ("kanat", "bitti_tanimi", "TEXT NOT NULL DEFAULT ''"),
         ("kanat", "marka_kiti", "TEXT NOT NULL DEFAULT ''"),
-        # DENEME / CANLI (06.10.2026): 0 = deneme kipi (canli eylem reddedilir).
+        # DENEME / CANLI (06.10.2026). 08.10.2026'dan beri OKUNMAZ (deneme kipi
+        # kaldirildi, `canli.py`); sutun eski defterler icin durur.
         ("kanat", "canli", "INTEGER NOT NULL DEFAULT 0"),
         # KADRO SONRASI DEVAM (06.10.2026): oneriyi doguran patron mesaji AYNEN.
         ("ekip_onerisi", "patron_mesaji", "TEXT NOT NULL DEFAULT ''"),

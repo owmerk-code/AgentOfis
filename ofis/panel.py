@@ -754,7 +754,6 @@ class KanatDuzenGovdesi(BaseModel):
     kota_payi: int | None = None  # None = dokunma; 0 = sinirsiz; 1..100
     bitti_tanimi: str | None = None   # satir satir; None = dokunma
     marka: dict | None = None         # {logo, renkler, ses_tonu, yasak}; None = dokunma
-    canli: bool | None = None         # None = dokunma; True = canli kip (bayrak)
 
 
 class TakimUyesi(BaseModel):
@@ -2495,21 +2494,20 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
 
     @uygulama.get("/api/terminal_kipi")
     def api_terminal_kipi():
-        """Ajanlar hangi kipte kosar: 'arka' (yapili akis) | 'gercek'
-        (Claude/Codex'in kendi terminali). Kural koltukta (`_motor_ac`);
-        panel yalniz ayari okur/yazar."""
+        """Ajanlar hangi kipte kosar. 08.10.2026'dan beri tek kip: 'gercek'
+        (Claude/Codex'in kendi terminali). Kural `motor/tui.kipe_gore`."""
         from . import terminal as _tr
-        from .koltuk import Koltuk
+        from .motor import tui as _tui
         ofis = ofis_ac()
-        return {"kip": ofis.db.ayar_oku(ofis.proje_id, Koltuk.TERMINAL_KIPI, "arka"),
+        return {"kip": _tui.kip_oku(ofis.db, ofis.proje_id),
                 "pty": _tr.pty_durumu() or "hazir"}
 
     @uygulama.post("/api/terminal_kipi")
     def api_terminal_kipi_yaz(govde: KipGovdesi):
         from . import terminal as _tr
         from .koltuk import Koltuk
-        if govde.kip not in ("arka", "gercek"):
-            raise HTTPException(400, "Kip 'arka' ya da 'gercek' olmali.")
+        if govde.kip != "gercek":
+            raise HTTPException(400, "Arka plan kipi kaldirildi (08.10.2026, patron: 'arka plan kipi istemiyorum, her sey gercek calisacak'): ajanlar ve lider her zaman gercek terminalde calisir.")
         if govde.kip == "gercek" and _tr.pty_durumu():
             raise HTTPException(400, _tr.pty_durumu())
         ofis = ofis_ac()
@@ -2918,7 +2916,7 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
         ofis = ofis_ac()
         with ofis.db.baglanti() as conn:
             kanatlar = [dict(r) for r in conn.execute(
-                "SELECT id, ad, onek, renk, klasor, kota_payi, canli FROM kanat WHERE proje_id = ? "
+                "SELECT id, ad, onek, renk, klasor, kota_payi FROM kanat WHERE proje_id = ? "
                 "ORDER BY olusturuldu", (ofis.proje_id,)).fetchall()]
             acik = {r["sahip"]: r["n"] for r in conn.execute(
                 "SELECT sahip, COUNT(*) AS n FROM gorev WHERE proje_id = ? AND "
@@ -3007,9 +3005,6 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
                          marka=govde.marka)
             except ValueError as exc:
                 raise HTTPException(400, f"Ad/renk kaydedildi; takim kiti degismedi: {exc}")
-        if govde.canli is not None:
-            from . import canli as _canli
-            _canli.ayarla(ofis.db, ofis.proje_id, kid, govde.canli)
         if govde.kota_payi is not None:
             from . import pay as _pay
             try:
