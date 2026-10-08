@@ -4106,6 +4106,50 @@ async function cizRaporlar(kap) {
                      kes(raporTemiz(x.govde) || "(metin yok)", 320)));
     if (x.gorev_no) { o.style.cursor = "pointer";
                       o.onclick = () => gorevAc(x.gorev_no); }
+    // RAPOR + KARARLARI (08.10, B3): bu iste verilen kararlar ve senden
+    // bekleyen kararlar raporun altinda.
+    if ((x.kararlar || []).length) {
+      const kk = el("div", "rapor-kararlar");
+      kk.append(el("div", "dt-alt", "bu işte verilen kararlar"));
+      for (const k of x.kararlar)
+        kk.append(el("div", "rapor-karar",
+          `${k.veren === "insan" ? "sen" : k.veren}: ${kes(k.karar, 140)}` + (k.gerekce ? ` — ${kes(k.gerekce, 100)}` : "")));
+      o.append(kk);
+    }
+    for (const b of x.bekleyen || []) {
+      const kb = el("div", "rapor-bekleyen");
+      kb.append(el("b", null, b.tur === "soru" ? "? senden karar bekliyor: " : "⏸ onayını bekliyor: "),
+                document.createTextNode(kes(b.metin, 200)));
+      if (b.tur === "soru") {
+        const sat = el("div", "istek-eylem");
+        let secili = b.secim && b.secim.onerilen != null ? b.secim.onerilen : null;
+        if (b.secim) {
+          const sec = el("div", "secenekler");
+          const dg = b.secim.secenekler.map((t, i) => {
+            const d = el("button", "secenek" + (i === secili ? " secili" : ""), t + (i === b.secim.onerilen ? "  ★" : ""));
+            d.onclick = (e) => { e.stopPropagation(); secili = i; dg.forEach((z, j) => z.classList.toggle("secili", j === i)); };
+            return d;
+          });
+          sec.append(...dg);
+          kb.append(sec);
+        }
+        const girdi = el("input");
+        girdi.placeholder = b.secim ? "İstersen not ekle…" : "Kararın…";
+        girdi.onclick = (e) => e.stopPropagation();
+        const dug = el("button", "dugme olumlu", "Cevapla");
+        dug.onclick = (e) => {
+          e.stopPropagation();
+          const ek = girdi.value.trim();
+          const metin = b.secim && secili != null ? b.secim.secenekler[secili] + (ek ? " — " + ek : "") : ek;
+          if (metin) eylem(`/api/soru/${b.id}/cevap`, { metin }, "karar gönderildi");
+        };
+        sat.append(girdi, dug);
+        kb.append(sat);
+      } else {
+        kb.append(el("span", "dt-alt", "  — sağdaki “Senden bekleniyor” kartından"));
+      }
+      o.append(kb);
+    }
     kap.append(o);
   }
 }

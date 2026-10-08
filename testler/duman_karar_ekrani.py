@@ -119,10 +119,29 @@ sina("toplu kabul kayda gecti", ol == 1)
 r = ist.post("/api/sorular/onerilenleri_kabul", json={})
 sina("ikinci basista cevaplanacak bir sey yok", r.json().get("cevaplanan") == [])
 
-print("\n4. arayuz")
+print("\n4. rapor + kararlari (B3)")
+g2 = ofis.tahta.gorev_ac("rapor isi", neden="n", ana_hedef="h", kabul_olcutu="k", kanat_id=KA)
+g2 = ofis.tahta.sahiplen(g2["no"], "can", g2["revizyon"])
+ofis.bellek.karar_yaz("Kisa surum yeterli", "patron hiz istedi", "lale", tur="kapsam", gorev_id=g2["id"])
+db.olay_yaz(ofis.proje_id, "rapor", "Rapor hazir, iki secenek var.", ajan_ad="lale", gorev_id=g2["id"])
+ofis.postane.soru_sor("can", "insan", "Hangi surum yayinlansin?", gorev_no=g2["no"],
+                      secenekler=["Kisa", "Uzun"], onerilen=0)
+rp = ist.get("/api/raporlar").json()
+r2 = next((x for x in rp if x.get("gorev_no") == g2["no"]), {})
+sina("rapor isinde verilen karar raporla geliyor",
+     any(k["karar"] == "Kisa surum yeterli" for k in r2.get("kararlar", [])), str(r2)[:300])
+sina("senden bekleyen karar (secenekli) raporla geliyor",
+     any(b_["tur"] == "soru" and (b_.get("secim") or {}).get("onerilen") == 0 for b_ in r2.get("bekleyen", [])),
+     str(r2.get("bekleyen"))[:300])
+sina("baska isin karari bu rapora karismaz",
+     all(k["karar"] == "Kisa surum yeterli" for k in r2.get("kararlar", [])))
+
+print("\n5. arayuz")
 JS = (Path(__file__).resolve().parent.parent / "web" / "panel.js").read_text(encoding="utf-8")
 sina("toplu kabul dugmesi ve onerilen isareti panelde",
      "Önerilenlerin hepsini kabul et" in JS and "★ önerilen" in JS and "secenek" in JS)
+sina("soru kendi terminalinin ustunde (B6) ve rapor kararlari (B3) panelde",
+     "function bekleyenSeridi" in JS and "pano-bekleyen" in JS and "rapor-bekleyen" in JS)
 araclar = {a["name"]: a for a in M.ARACLAR} if hasattr(M, "ARACLAR") else {}
 sema = json.dumps(araclar.get("soru_sor", {}).get("inputSchema", {})) if araclar else ""
 sina("soru_sor aracinda secenekler ve onerilen alani", (not araclar) or ("secenekler" in sema and "onerilen" in sema), sema[:200])

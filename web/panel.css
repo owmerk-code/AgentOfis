@@ -2061,3 +2061,9 @@ details > summary.hf-bas { cursor: pointer; }
 .pano-bekleyen-soru { font-size: var(--yz-alt); line-height: 1.4; margin-bottom: 4px; }
 .pano-bekleyen-soru b { color: var(--kotu); font-weight: 600; }
 .pano-bekleyen .istek-eylem { margin-top: 6px; }
+
+/* RAPOR + KARARLARI (08.10, B3) */
+.rapor-kararlar { margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--cizgi); }
+.rapor-karar { font-size: 11px; color: var(--metin-2); margin-top: 2px; }
+.rapor-bekleyen { margin-top: 6px; padding: 6px 8px; border-left: 3px solid var(--kotu); background: rgba(212,103,79,.06); font-size: var(--yz-alt); }
+.rapor-bekleyen b { color: var(--kotu); font-weight: 600; }

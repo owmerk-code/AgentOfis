@@ -1631,10 +1631,34 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
         with db.baglanti() as conn:
             rows = conn.execute(
                 "SELECT o.govde, o.ajan_ad, o.olusturuldu, g.no AS gorev_no, "
-                "g.baslik FROM olay o LEFT JOIN gorev g ON g.id = o.gorev_id "
+                "g.baslik, g.id AS gorev_id FROM olay o LEFT JOIN gorev g ON g.id = o.gorev_id "
                 "WHERE o.proje_id = ? AND o.tur = 'rapor' "
                 "ORDER BY o.id DESC LIMIT ?", (ofis.proje_id, adet)).fetchall()
-        return [dict(r) for r in rows]
+            # RAPOR + KARARLARI (08.10.2026, B3): raporun isinde VERILMIS
+            # kararlar ve senden BEKLEYEN kararlar (soru/onay) raporun altinda;
+            # ayri panolarda aramak zorunda kalinmasin.
+            kararlar: dict = {}
+            for k in conn.execute(
+                    "SELECT gorev_id, tur, karar, gerekce, veren, olusturuldu FROM karar "
+                    "WHERE proje_id = ? AND gorev_id IS NOT NULL ORDER BY olusturuldu",
+                    (ofis.proje_id,)):
+                kararlar.setdefault(k["gorev_id"], []).append(
+                    {kk: k[kk] for kk in ("tur", "karar", "gerekce", "veren", "olusturuldu")})
+        sorular = ofis.postane.insan_bekleyenler()
+        onaylar = ofis.postane.bekleyen_onaylar()
+        out = []
+        for r in rows:
+            d = dict(r)
+            gid, no = d.pop("gorev_id", None), d.get("gorev_no")
+            d["kararlar"] = kararlar.get(gid, [])[-8:] if gid else []
+            d["bekleyen"] = ([{"tur": "soru", "id": s["id"], "metin": s["govde"],
+                               "kim": s["gonderen"], "secim": s.get("secim")}
+                              for s in sorular if no and s.get("gorev_no") == no]
+                             + [{"tur": "onay", "id": o["id"], "metin": o["eylem"],
+                                 "kim": o.get("isteyen") or ""}
+                                for o in onaylar if no and o.get("gorev_no") == no])
+            out.append(d)
+        return out
 
     @uygulama.get("/api/hesaplar")
     def api_hesaplar():
