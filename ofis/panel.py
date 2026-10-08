@@ -2344,6 +2344,17 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
                          daemon=True).start()
         return {"surduruldu": True, "sebep": ""}
 
+    @uygulama.post("/api/sorular/onerilenleri_kabul")
+    def api_onerilenleri_kabul(govde: dict = None):
+        """TOPLU KABUL (B1): onerilen secenegi olan bekleyen sorularin hepsi
+        onerilenle cevaplanir; onay kartlari DOKUNULMAZ."""
+        ofis = ofis_ac()
+        r = ofis.postane.onerilenleri_kabul("insan")
+        if r:
+            ofis.db.olay_yaz(ofis.proje_id, "toplu_kabul",
+                             f"{len(r)} soru onerilenle cevaplandi", ajan_ad="insan")
+        return {"cevaplanan": r, **_surdur_gerekirse(ofis, True)}
+
     @uygulama.post("/api/soru/{mesaj_id}/cevap")
     def api_cevapla(mesaj_id: str, govde: CevapGovdesi):
         ofis = ofis_ac()

@@ -464,8 +464,13 @@ def arac_soru_sor(oturum: Oturum, args: dict) -> str:
             alici = oturum.ofis.kadro.gorevin_lideri(g or {})["ad"]
         except Exception:
             alici = "insan"
-    oturum.ofis.postane.soru_sor(oturum.ajan_ad, alici, soru,
-                                 gorev_no=oturum.gorev_no, mod="bekleyen")
+    try:
+        oturum.ofis.postane.soru_sor(oturum.ajan_ad, alici, soru,
+                                     gorev_no=oturum.gorev_no, mod="bekleyen",
+                                     secenekler=args.get("secenekler"),
+                                     onerilen=args.get("onerilen"))
+    except Exception as exc:                      # noqa: BLE001 -- ajana sebebi soylenir
+        return f"HATA: soru iletilmedi -- {exc}. Duzeltip yeniden sor."
     return (f"Soru '{alici}' adresine iletildi ve cevap bekleniyor.\n"
             "SIMDI DUR: tahminle devam etme, turu burada bitir. "
             "Cevap gelince kaldigin yerden surdurulecek.")
@@ -1597,6 +1602,12 @@ ARACLAR = [
                 "soru": {"type": "string", "description": "Sorun, acik ve tek konulu."},
                 "kime": {"type": "string",
                          "description": "'lider' (varsayilan), 'insan' ya da ajan adi."},
+                "secenekler": {"type": "array", "items": {"type": "string"},
+                               "description": ("Istege bagli: cevap birkac secenekten biriyse "
+                                               "2-6 kisa secenek. Patron tek tikla secer.")},
+                "onerilen": {"type": "string",
+                             "description": ("Istege bagli: senin onerdigin secenegin AYNI "
+                                             "metni. Patron onerilenleri topluca kabul edebilir.")},
             },
             "required": ["soru"],
         },

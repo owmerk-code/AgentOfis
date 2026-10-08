@@ -180,11 +180,67 @@ class Postane:
 
     # -- sorular -----------------------------------------------------------
 
+    @staticmethod
+    def secim_dogrula(secenekler, onerilen=None) -> dict:
+        """SECENEKLI SORU (08.10.2026, B1): 2-6 kisa, ayri secenek; onerilen
+        secenegin SIRASI (0'dan) ya da AYNI metni. Gecersiz secim soruyu
+        reddeder (sessizce serbest soruya cevirmek, ajanin yanlisini
+        ogrenmemesi olurdu). Doner: {"secenekler", "onerilen"} ya da {}."""
+        if not secenekler:
+            return {}
+        if not isinstance(secenekler, (list, tuple)):
+            raise PostaneHatasi("`secenekler` bir liste olmali.")
+        temiz = [" ".join(str(x).split())[:200] for x in secenekler]
+        if len(temiz) < 2 or len(temiz) > 6 or any(not x for x in temiz):
+            raise PostaneHatasi("Secenekli soru 2-6 dolu secenek ister.")
+        if len({x.casefold() for x in temiz}) != len(temiz):
+            raise PostaneHatasi("Secenekler birbirinden farkli olmali.")
+        oneri = None
+        if onerilen is not None and str(onerilen).strip() != "":
+            if isinstance(onerilen, int) or str(onerilen).strip().isdigit():
+                oneri = int(onerilen)
+            else:
+                ham = " ".join(str(onerilen).split()).casefold()
+                oneri = next((i for i, x in enumerate(temiz) if x.casefold() == ham), None)
+                if oneri is None:
+                    raise PostaneHatasi(f"Onerilen ('{onerilen}') seceneklerden biri degil.")
+            if not 0 <= oneri < len(temiz):
+                raise PostaneHatasi(f"Onerilen sirasi gecersiz: {onerilen}")
+        return {"secenekler": temiz, "onerilen": oneri}
+
+    @staticmethod
+    def _secim_ac(satir: dict) -> dict:
+        """Defterdeki JSON -> `secim` alani (panel ve kabuk okur)."""
+        import json as _json
+        try:
+            satir["secim"] = _json.loads(satir.get("secenekler") or "") or None
+        except (ValueError, TypeError):
+            satir["secim"] = None
+        return satir
+
+    def onerilenleri_kabul(self, alici: str = "insan") -> list:
+        """TOPLU KABUL (08.10.2026, B1): onerilen secenegi olan BEKLEYEN
+        sorularin hepsini onerilenle cevaplar. Yalniz SORU -- onay kartlari
+        (para, silme, yayin) tek tek sorulmaya devam eder."""
+        cevaplanan = []
+        for s in self.bekleyen_sorular(alici):
+            secim = s.get("secim") or {}
+            i = secim.get("onerilen")
+            if i is None:
+                continue
+            cevap = secim["secenekler"][i]
+            self.cevapla(s["id"], cevap)
+            cevaplanan.append({"id": s["id"], "gonderen": s["gonderen"], "cevap": cevap})
+        return cevaplanan
+
     def soru_sor(self, gonderen: str, alici: str, govde: str, *,
-                 gorev_no=None, mod: str = "bekleyen", kaynak: str = "") -> dict:
+                 gorev_no=None, mod: str = "bekleyen", kaynak: str = "",
+                 secenekler=None, onerilen=None) -> dict:
         govde = (govde or "").strip()
         if not govde:
             raise PostaneHatasi("Bos soru sorulamaz.")
+        import json as _json
+        secim = self.secim_dogrula(secenekler, onerilen)
         if mod not in ("sessiz", "uyandiran", "bekleyen"):
             raise PostaneHatasi(f"Bilinmeyen mesaj modu: {mod}")
         # Alici DOGRULANIR. Var olmayan bir ada yazilan soru hicbir zaman
@@ -206,15 +262,17 @@ class Postane:
         with self.db.baglanti() as conn:
             conn.execute(
                 "INSERT INTO mesaj (id, proje_id, gonderen, alici, govde, mod, "
-                "gorev_id, cevap, cevaplandi, okundu, olusturuldu, kaynak) "
-                "VALUES (?, ?, ?, ?, ?, ?, ?, '', NULL, 0, ?, ?)",
+                "gorev_id, cevap, cevaplandi, okundu, olusturuldu, kaynak, secenekler) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, '', NULL, 0, ?, ?, ?)",
                 (mesaj_id, self.proje_id, gonderen, alici, govde, mod,
-                 gorev_id, simdi(), kaynak or ""),
+                 gorev_id, simdi(), kaynak or "",
+                 _json.dumps(secim, ensure_ascii=False) if secim else ""),
             )
         self.db.olay_yaz(self.proje_id, "soru",
                          f"{gonderen} -> {alici}: {govde[:200]}",
                          ajan_ad=gonderen, gorev_id=gorev_id)
-        return {"id": mesaj_id, "alici": alici, "govde": govde, "mod": mod}
+        return {"id": mesaj_id, "alici": alici, "govde": govde, "mod": mod,
+                "secim": secim or None}
 
     def cevapla(self, mesaj_id: str, cevap: str, *, cevaplayan: str = "insan") -> dict:
         cevap = (cevap or "").strip()
@@ -254,7 +312,7 @@ class Postane:
             degerler.append(soran)
         sorgu += " ORDER BY m.olusturuldu, m.rowid"
         with self.db.baglanti() as conn:
-            return [dict(r) for r in conn.execute(sorgu, degerler).fetchall()]
+            return [self._secim_ac(dict(r)) for r in conn.execute(sorgu, degerler).fetchall()]
 
     def insan_bekleyenler(self) -> list:
         """Yalnizca INSANA yonelmis bekleyen sorular.

@@ -231,6 +231,18 @@ class AntigravityMotoru(Motor):
             "Antigravity CLI (agy) kurulu degil -- patron kurar: "
             "irm https://antigravity.google/cli/install.ps1 | iex")
 
+    def giris_durumu(self) -> dict:
+        """Hangi Google hesabiyla calisiyor (08.10.2026, B7: terminal
+        basliginda hesap). agy girisi sistem anahtarligindadir; ETKIN hesap
+        patronun `~/.gemini/google_accounts.json`unda (`active`; yalniz
+        okunur). Plan dosyada yok -- uydurulmaz."""
+        kaynak = Path(os.environ.get("OFIS_AGY_KAYNAK_EV") or Path.home())
+        try:
+            d = json.loads((kaynak / ".gemini" / "google_accounts.json").read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return {}
+        return {"eposta": str(d.get("active") or ""), "plan": ""} if isinstance(d, dict) else {}
+
     def ev(self, ajan_ad: str) -> Path:
         """Ajanin AYRI evi (USERPROFILE): ayarlar, konusmalar, kanca, MCP."""
         if self._ev_koku:

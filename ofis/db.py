@@ -888,6 +888,9 @@ class Veritabani:
         # PATRONUN SECTIGI MODEL (08.10.2026): fable/astra yalniz patronun
         # sozuyle (`izin.plan_modeli`); bos = ajanin kendi modeli.
         ("gorev", "patron_modeli", "TEXT NOT NULL DEFAULT ''"),
+        # SECENEKLI SORU (08.10.2026, B1 karar ekrani): {"secenekler": [...],
+        # "onerilen": i | null}; bos = serbest metinli soru.
+        ("mesaj", "secenekler", "TEXT NOT NULL DEFAULT ''"),
         # ORGANIZASYON (05.10.2026): cikarilan ajan SILINMEZ (ad geri donmez,
         # gecmisi okunur kalir) -- arsive gider, hicbir takimda gorunmez.
         ("ajan", "arsiv", "INTEGER NOT NULL DEFAULT 0"),

@@ -62,9 +62,12 @@ from .motor import motor_ac, MotorHatasi
 #:
 #: `fable` BILEREK YOK: kullanici olctu, tek prompt 5 saatlik limiti
 #: bitiriyor (bkz. CLAUDE.md model politikasi).
+#: `haiku` CIKARILDI (08.10.2026): 05.10 patron karari "Haiku hicbir yerde
+#: yok" (kodlama 19,5) yedek zincirde unutulmustu -- limit dolunca is
+#: sessizce Haiku 4.5'e dusuyordu (gercek defterin kopyasinda olculdu).
+#: Yedek, gucu kisan basamak olmamali.
 VARSAYILAN_ZINCIR = (
     ("claude", "sonnet"),
-    ("claude", "haiku"),
     ("codex", ""),
 )
 

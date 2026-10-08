@@ -101,6 +101,9 @@ print("\n2. zorluk -> model eslemesi")
 # 05.10.2026: Haiku hicbir kademede yok (kodlama 19,5); kolay is Sonnet + dusuk efor.
 sina("claude kolay -> sonnet (haiku YOK)", R.model_sec("claude", "hizli") == "sonnet"
      and "haiku" not in R.KADEME_MODEL["claude"].values())
+from ofis.zincir import VARSAYILAN_ZINCIR  # noqa: E402
+sina("yedek zincirde de haiku YOK (08.10: limitte is Haiku 4.5'e dusuyordu)",
+     not any("haiku" in (m or "") for _, m in VARSAYILAN_ZINCIR), str(VARSAYILAN_ZINCIR))
 sina("gemini guclu -> 3.8 flash high (3.1 pro DEGIL)",
      R.model_sec("gemini", "guclu") == "gemini-3.8-flash-high")
 sina("claude zor -> opus", R.model_sec("claude", "guclu") == "opus")

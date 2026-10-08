@@ -691,6 +691,24 @@ function hesapPenceresi(motor, hesap) {
   const h = hesap && hesap !== motor ? hesap : "";
   return (D.pencereler || []).find(p => p.motor === motor && (p.hesap || "") === h) || null;
 }
+/* HANGI HESAP (08.10, B7): terminal basliginda ajanin HANGI aboneligiyle
+   calistigi -- e-posta ve plan, hesap tablosundan (`/api/hesaplar`, tek
+   kaynak). Bilinmiyorsa uydurulmaz: rozet yok. */
+const PLAN_AD = { max: "Max", max5: "Max 5x", max20: "Max 20x", pro: "Pro", plus: "Plus",
+                  pro200: "Pro", team: "Team", ultra: "Ultra" };
+function hesapKaydi(motor, hesap) {
+  if (!motor) return null;
+  const hs = ((D.hesaplar || {}).hesaplar || [])
+    .filter(r => r.motor === motor && r.durum !== "kapali");
+  const h = hesap && hesap !== motor ? hesap : "";
+  return hs.find(r => (r.hesap || "") === h || r.ad === hesap) || (h ? null : hs[0]) || null;
+}
+function hesapEtiketi(r) {
+  if (!r) return "";
+  const kim = r.eposta ? r.eposta.split("@")[0] : r.ad;
+  const plan = r.plan ? (PLAN_AD[r.plan] || r.plan) : "";
+  return kim + (plan ? " · " + plan : "");
+}
 
 function panoKur(a, secenek) {
   const s = secenek || {};
@@ -753,7 +771,15 @@ function panoKur(a, secenek) {
   // Bizde olculuyor (saglayicinin kendi bildirimi) ama yalniz Hesap
   // sekmesindeydi. Olcum yoksa rozet YOK -- uydurulan bir yuzde,
   // yanlis gosteren gostergenin en sinsi turu olurdu.
+  const hMotor = sonTur.motor || a.motor;
+  const hSatir = hesapKaydi(hMotor, sonTur.motor ? sonTur.hesap : "");
   const pen = hesapPenceresi(sonTur.motor, sonTur.hesap);
+  if (hSatir && !pen) {
+    const hr = el("span", "pano-limit", hesapEtiketi(hSatir));
+    hr.title = `${hSatir.saglayici || hMotor} hesabı: ${hSatir.eposta || hSatir.ad}` +
+      (sonTur.motor ? " (son turda bununla çalıştı)" : " (ajanın motorunun ilk hesabı; tur bitince ölçülen yazılır)");
+    bas.append(hr);
+  }
   if (pen) {
     const parca = Object.entries(pen.pencereler)
       .map(([ad, w]) => `${ad} ${pencereYazi(w)}`);
@@ -761,7 +787,7 @@ function panoKur(a, secenek) {
       .some(w => w.kullanim != null && w.kullanim >= 0.8);
     // E63: HANGI HESAPTAN yedigi basta yazar -- iki codex hesabi varsa
     // yuzdeyi yanlis hesaba baglamak kolaydir.
-    const hesapAd = pen.hesap || pen.motor;
+    const hesapAd = hesapEtiketi(hSatir) || pen.hesap || pen.motor;
     const r = el("span", "pano-limit" + (dolu ? " dolu" : ""), `${hesapAd}: ${parca.join(" · ")}`);
     r.title = `${pen.motor}${pen.hesap ? "/" + pen.hesap : ""} hesabının TOPLAM kullanımı — ` +
       (pen.yas_dk == null ? "ölçüm yaşı bilinmiyor" : `${pen.yas_dk} dk önce ölçüldü`) +
@@ -3192,19 +3218,52 @@ async function cizBekleyenler() {
     kap.append(o);
   }
 
+  // TOPLU KABUL (08.10, B1): onerilen secenegi olan sorularin hepsi tek
+  // tikla onerilenle cevaplanir. Onay kartlari (para, silme, yayin) DAHIL DEGIL.
+  const onerili = b.sorular.filter(s => s.secim && s.secim.onerilen != null);
+  if (onerili.length) {
+    const tk = el("div", "istek-eylem toplu-kabul");
+    const dg = el("button", "dugme olumlu", `Önerilenlerin hepsini kabul et (${onerili.length})`);
+    dg.title = "Ajanların önerdiği seçenekle cevaplar: " +
+      onerili.map(s => `${s.gonderen}: ${s.secim.secenekler[s.secim.onerilen]}`).join(" · ") +
+      ". Onay kartları (para, silme, yayın) bundan etkilenmez.";
+    dg.onclick = () => eylem("/api/sorular/onerilenleri_kabul", {},
+                             (r) => `${(r.cevaplanan || []).length} soru önerilenle cevaplandı`);
+    tk.append(dg);
+    kap.append(tk);
+  }
   for (const s of b.sorular) {
     const o = el("div", "istek soru");
     const ust = el("div", "istek-bas");
     ust.append(el("span", "istek-kim", s.gonderen), el("span", null, "soruyor"));
     if (s.gorev_no) ust.append(el("span", null, "#" + s.gorev_no));
     o.append(ust, el("div", "istek-govde", s.govde));
+    // SECENEKLI SORU (B1): secenekler dugme; onerilen hazir secili gelir.
+    let secili = s.secim && s.secim.onerilen != null ? s.secim.onerilen : null;
+    if (s.secim) {
+      const sec = el("div", "secenekler");
+      const dugmeler = s.secim.secenekler.map((t, i) => {
+        const d = el("button", "secenek" + (i === secili ? " secili" : ""),
+                     t + (i === s.secim.onerilen ? "  ★ önerilen" : ""));
+        d.onclick = () => {
+          secili = i;
+          dugmeler.forEach((x, j) => x.classList.toggle("secili", j === i));
+        };
+        return d;
+      });
+      sec.append(...dugmeler);
+      o.append(sec);
+    }
     const satir = el("div", "istek-eylem");
     const girdi = el("input");
-    girdi.placeholder = "Cevabın…";
+    girdi.placeholder = s.secim ? "İstersen not ekle (ya da kendi cevabını yaz)…" : "Cevabın…";
     const dg = el("button", "dugme olumlu", "Cevapla");
     const gonder = () => {
-      if (!girdi.value.trim()) return;
-      eylem(`/api/soru/${s.id}/cevap`, { metin: girdi.value }, "cevap gönderildi");
+      const ek = girdi.value.trim();
+      const metin = s.secim && secili != null
+        ? s.secim.secenekler[secili] + (ek ? " — " + ek : "") : ek;
+      if (!metin) return;
+      eylem(`/api/soru/${s.id}/cevap`, { metin }, "cevap gönderildi");
     };
     dg.onclick = gonder;
     girdi.addEventListener("keydown", (e) => { if (e.key === "Enter") gonder(); });

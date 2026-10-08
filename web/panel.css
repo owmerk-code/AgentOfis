@@ -465,6 +465,14 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
          border: 1px solid var(--cizgi-acik); color: var(--metin-2); }
 .dugme:hover { background: var(--zemin); color: var(--metin); }
 .dugme.olumlu { border-color: rgba(95,185,138,.55); color: var(--iyi); }
+/* SECENEKLI SORU (08.10, B1): secenekler dugme; onerilen hazir secili. */
+.secenekler { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.secenek { background: var(--zemin); color: var(--metin); border: 1px solid var(--cizgi-acik);
+  border-radius: 6px; padding: 5px 10px; font: inherit; font-size: var(--yz-alt); cursor: pointer; text-align: left; }
+.secenek:hover { border-color: var(--metin-3); }
+.secenek.secili { border-color: var(--iyi); color: var(--iyi); background: rgba(95,185,138,.08); }
+.toplu-kabul { margin: 0 0 10px; }
+.toplu-kabul .dugme { width: 100%; }
 .dugme.olumsuz { border-color: rgba(212,103,79,.55); color: var(--kotu); }
 
 .sekmeler { display: flex; border-bottom: 1px solid var(--cizgi); flex: none; }
