@@ -3447,11 +3447,53 @@ async function cizDurum(kap) {
     kap.append(d);
   }
 
+  await cizDeger(kap);
   if ((r.sira || []).length) {
     kap.append(el("div", "dt-baslik", "LİDERE GİDEN SIRA — henüz başlamadı"));
     for (const k of r.sira)
       kap.append(el("div", "dt-ajan dt-sirada",
         `${k.lider}: ${k.metin}` + (k.yas_sn != null ? ` (${sureKisa(k.yas_sn)} önce)` : "")));
+  }
+}
+
+/* DEGER (08.10, B5): bu hafta ne uretildi, neye mal oldu -- olculmus kayittan. */
+async function cizDeger(kap) {
+  let v;
+  try { v = await al("/api/deger?gun=7"); } catch (_) { return; }
+  kap.append(el("div", "dt-baslik", "BU HAFTA — son 7 gün"));
+  const k = el("div", "dt-ajan");
+  const yuzde = v.ilk_seferde_oran != null ? ` (%${Math.round(v.ilk_seferde_oran * 100)})` : "";
+  k.append(el("div", "dt-nerede",
+    `${v.biten} iş bitti · ilk seferde geçen ${v.ilk_seferde}${yuzde} · geri dönen ${v.geri_donen} · iptal ${v.iptal}`));
+  const ek = [];
+  if (v.sure_dk_orta != null) ek.push(`bir iş ortalama ${v.sure_dk_orta < 60 ? v.sure_dk_orta + " dk" : (v.sure_dk_orta / 60).toFixed(1) + " sa"}`);
+  if (v.puan_ort != null) ek.push(`teslim puanı ${String(v.puan_ort).replace(".", ",")}/5 (${v.puanli} iş)`);
+  ek.push(`senden istenen: ${v.insana.soru} soru, ${v.insana.onay} onay`);
+  k.append(el("div", "dt-alt", ek.join(" · ")));
+  // Gunluk biten is: kucuk cubuklar (olculen sayi; 0 da yazilir).
+  const enCok = Math.max(1, ...v.gunluk.map((g) => g.biten));
+  const cub = el("div", "dg-cubuklar");
+  for (const g of v.gunluk) {
+    const c = el("div", "dg-cubuk");
+    const i = el("i");
+    i.style.height = `${Math.round((g.biten / enCok) * 28) + 2}px`;
+    c.title = `${g.tarih}: ${g.biten} iş bitti`;
+    c.append(i, el("span", null, g.gun));
+    cub.append(c);
+  }
+  k.append(cub);
+  kap.append(k);
+  for (const h of v.harcama || []) {
+    const r = hesapKaydi(h.motor, h.hesap);
+    const pen = (v.pencereler || []).find((p) => p.motor === h.motor && (p.hesap || "") === (h.hesap || ""));
+    const kota = pen ? Object.entries(pen.pencereler).filter(([, x]) => x != null)
+      .map(([ad, x]) => `${({ "5s": "5 saat", "7g": "hafta", "7g_kapi": "Fable haftası" })[ad] || ad} %${Math.round(x * 100)}`).join(" · ") : "";
+    const d = el("div", "dt-ajan");
+    d.append(el("b", null, (r ? hesapEtiketi(r) : h.hesap || h.motor)),
+             el("span", "dt-alt", ` ${h.motor}`));
+    d.append(el("div", "dt-alt",
+      `${h.tur} tur · ${jetonYaz(h.jeton)} jeton · ${h.sure_dk} dk çalıştı` + (kota ? ` — şu an ${kota}` : "")));
+    kap.append(d);
   }
 }
 

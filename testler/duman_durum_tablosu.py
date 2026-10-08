@@ -128,15 +128,53 @@ with db.baglanti() as c:
     c.execute("UPDATE gorev SET durum = 'bitti' WHERE id = ?", (g_onay["id"],))
 sina("biten is listede degil", g_onay["no"] not in {i["no"] for i in DT.isler(ofis)})
 
-print("\n4. panel")
+print("\n4. deger ozeti (B5)")
+import json as _json  # noqa: E402
+from ofis import deger as DG  # noqa: E402
+from datetime import datetime, timedelta, timezone  # noqa: E402
+eski = (datetime.now(timezone.utc) - timedelta(days=20)).isoformat(timespec="seconds")
+with db.baglanti() as c:
+    for g_, ret_ in ((g_onay, False), (g_giris, True), (g_kredi, False)):
+        c.execute("INSERT INTO olay (proje_id, ajan_ad, gorev_id, tur, govde, olusturuldu) VALUES (?,?,?,?,?,datetime('now'))",
+                  (ofis.proje_id, "lale", g_["id"], "kapandi", "kapandi"))
+        if ret_:
+            c.execute("INSERT INTO olay (proje_id, ajan_ad, gorev_id, tur, govde, olusturuldu) VALUES (?,?,?,?,?,datetime('now'))",
+                      (ofis.proje_id, "lale", g_["id"], "ret", "eksik"))
+    # 20 gun onceki kapanis HAFTAYA girmez
+    c.execute("INSERT INTO olay (proje_id, ajan_ad, gorev_id, tur, govde, olusturuldu) VALUES (?,?,?,?,?,?)",
+              (ofis.proje_id, "lale", g_soru["id"], "kapandi", "eski", eski))
+    c.execute("INSERT INTO teslim_puani (gorev_id, proje_id, puan, gerekce, veren, olusturuldu) VALUES (?,?,?,?,?,datetime('now'))",
+              (g_onay["id"], ofis.proje_id, 4, "iyi", "insan"))
+    c.execute("INSERT INTO teslim_puani (gorev_id, proje_id, puan, gerekce, veren, olusturuldu) VALUES (?,?,?,?,?,datetime('now'))",
+              (g_kredi["id"], ofis.proje_id, 5, "cok iyi", "insan"))
+for motor, hesap, jeton in (("claude", "", 1000), ("claude", "", 500), ("codex", "codex2", 300)):
+    db.olay_yaz(ofis.proje_id, "tur_ozeti", _json.dumps({"motor": motor, "hesap": hesap, "jeton": jeton,
+                                                          "sure_ms": 60000}), ajan_ad="ece")
+v = DG.ozet(db, ofis.proje_id)
+sina("bu hafta biten 3 (20 gun onceki sayilmaz)", v["biten"] == 3, str(v["biten"]))
+sina("ilk seferde 2 / oran %67", v["ilk_seferde"] == 2 and v["ilk_seferde_oran"] == 0.67, str(v))
+sina("geri donen is sayisi (bu hafta ret alan)", v["geri_donen"] >= 1, str(v["geri_donen"]))
+sina("puan ortalamasi 4,5 (2 is)", v["puan_ort"] == 4.5 and v["puanli"] == 2)
+h = {(x["motor"], x["hesap"]): x for x in v["harcama"]}
+sina("hesap basina harcama: claude 2 tur 1500 jeton, codex2 300",
+     h[("claude", "")]["tur"] == 2 and h[("claude", "")]["jeton"] == 1500 and h[("codex", "codex2")]["jeton"] == 300,
+     str(v["harcama"]))
+sina("insandan istenen soru/onay sayilari", v["insana"]["soru"] >= 1 and v["insana"]["onay"] >= 3, str(v["insana"]))
+sina("7 gunluk seri, bugun 3", len(v["gunluk"]) == 7 and v["gunluk"][-1]["biten"] == 3, str(v["gunluk"]))
+
+print("\n5. panel")
 from fastapi.testclient import TestClient  # noqa: E402
 from ofis.panel import olustur  # noqa: E402
-r = TestClient(olustur(db.yol)).get("/api/durum")
+_ist = TestClient(olustur(db.yol))
+rd = _ist.get("/api/deger?gun=7")
+sina("GET /api/deger", rd.status_code == 200 and rd.json()["biten"] == 3, rd.text[:200])
+r = _ist.get("/api/durum")
 sina("GET /api/durum", r.status_code == 200 and r.json()["isler"], r.text[:200])
 JS = (Path(__file__).resolve().parent.parent / "web" / "panel.js").read_text(encoding="utf-8")
 HTML = (Path(__file__).resolve().parent.parent / "web" / "index.html").read_text(encoding="utf-8")
 sina("Durum panosu kayitli ve cizici var",
      'durum:    { ad: "Durum"' in JS and "async function cizDurum" in JS and 'id="pano-durum"' in HTML)
+sina("deger bolumu Durum panosunda", "async function cizDeger" in JS and "BU HAFTA" in JS)
 
 print(f"\n== sonuc: {GECEN} gecti, {KALAN} kaldi ==")
 sys.exit(1 if KALAN else 0)

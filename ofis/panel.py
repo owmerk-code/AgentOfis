@@ -2374,6 +2374,14 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
         from . import durum_tablosu as _dt
         return _dt.tablo(ofis_ac())
 
+    @uygulama.get("/api/deger")
+    def api_deger(gun: int = 7):
+        """DEGER OZETI (B5): biten / ilk seferde / geri donen is, sure, puan,
+        insana giden soru-onay, hesap basina harcama ve kota."""
+        from . import deger as _d
+        o = ofis_ac()
+        return _d.ozet(o.db, o.proje_id, gun=max(1, min(int(gun), 90)))
+
     @uygulama.post("/api/sorular/onerilenleri_kabul")
     def api_onerilenleri_kabul(govde: dict = None):
         """TOPLU KABUL (B1): onerilen secenegi olan bekleyen sorularin hepsi

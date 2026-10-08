@@ -2067,3 +2067,9 @@ details > summary.hf-bas { cursor: pointer; }
 .rapor-karar { font-size: 11px; color: var(--metin-2); margin-top: 2px; }
 .rapor-bekleyen { margin-top: 6px; padding: 6px 8px; border-left: 3px solid var(--kotu); background: rgba(212,103,79,.06); font-size: var(--yz-alt); }
 .rapor-bekleyen b { color: var(--kotu); font-weight: 600; }
+
+/* DEGER (08.10, B5) */
+.dg-cubuklar { display: flex; gap: 6px; align-items: flex-end; margin-top: 8px; height: 46px; }
+.dg-cubuk { display: flex; flex-direction: column; align-items: center; gap: 3px; flex: 1; }
+.dg-cubuk i { display: block; width: 100%; max-width: 22px; background: var(--iyi); opacity: .7; border-radius: 2px; }
+.dg-cubuk span { font-size: 10px; color: var(--metin-3); }
