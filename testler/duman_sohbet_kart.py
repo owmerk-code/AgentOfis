@@ -123,5 +123,51 @@ sina("panel sohbeti kartlarla ciziyor, onay/soru cizimi TEK (sag kutu ile ortak)
      'al("/api/kartlar"' in js and "function onayKartiYap" in js and "kap.append(onayKartiYap(a))" in js
      and "kart.append(onayKartiYap(a))" in js)
 
+print("\n5. kartta ajan (MODEL): isin SAHIBININ kendi turunda olculen model")
+ofis.kadro.ise_al("ece", "arayuz", kanat_id=kn, motor="sahte", model="claude-opus-5-5", klasor=str(K))
+
+
+def model_is(baslik, turlar):
+    """Istek + `cem`in aldigi is; turlar: [(ajan, tur_ozeti)] defter sirasiyla."""
+    g = ofis.tahta.gorev_ac(baslik, neden="n", ana_hedef="h", kabul_olcutu="k", kanat_id=kn)
+    m = ofis.postane.soru_sor("insan", "lale", baslik, mod="uyandiran")
+    with ofis.db.baglanti() as c:
+        c.execute("UPDATE gorev SET istek_id = ? WHERE id = ?", (m["id"], g["id"]))
+    ofis.tahta.sahiplen(g["no"], "cem", g["revizyon"])
+    for ajan, d in turlar:
+        ofis.db.olay_yaz(ofis.proje_id, "tur_ozeti", json.dumps(d), ajan_ad=ajan, gorev_id=g["id"])
+    return next(x for x in takim.kartlar(ofis) if x["id"] == m["id"])["isler"][0]
+
+
+GPT = {"motor": "codex", "model": "gpt-5.6-sol"}
+OPUS = {"motor": "claude", "model": "claude-opus-5-5"}
+i1 = model_is("m1", [("cem", GPT), ("lale", OPUS)])
+sina("isci GPT turu + liderin SONRADAN gelen Opus incelemesi -> isci modeli",
+     i1["model_ad"] == "GPT-5.6 Sol", str(i1))
+i2 = model_is("m2", [("lale", OPUS), ("ece", OPUS)])
+sina("sahibin turu yok, yalniz lider/baska ajan -> bos (yalniz ajan adi)",
+     i2["model_ad"] == "" and i2["sahip"] == "cem", str(i2))
+i3 = model_is("m3", [("cem", OPUS), ("cem", GPT), ("lale", OPUS)])
+sina("sahibin birden cok turu -> en sonuncusu", i3["model_ad"] == "GPT-5.6 Sol", str(i3))
+i4 = model_is("m4", [("cem", GPT), ("cem", {"motor": "codex", "model": None})])
+sina("sahibin son turu olculmemis -> onceki olculen", i4["model_ad"] == "GPT-5.6 Sol", str(i4))
+i5 = model_is("m5", [])
+sina("hic tur yok -> bos, 'olculmedi' sizmaz", i5["model_ad"] == "", str(i5))
+i6 = model_is("m6", [("cem", {"motor": "claude", "model": "sonnet"})])
+sina("takma ad (surum olculmedi) kartta SIZMAZ -> yalniz ajan adi", i6["model_ad"] == "", str(i6))
+
+import re
+import shutil
+import subprocess
+_m = re.search(r"const adModel = [^\n]+", js)
+sina("panel.js karti 'ajan (model)' diye cizer: adModel i.model_ad ve canli.model_ad ile cagrilir",
+     bool(_m) and "adModel(i.sahip, i.model_ad)" in js
+     and 'adModel(k.canli.kim || "", k.canli.model_ad)' in js)
+sina("node var (adModel gercekten calistirilir)", bool(shutil.which("node")))
+if _m and shutil.which("node"):
+    _o = subprocess.run(["node", "-e", _m.group(0) + '; console.log(adModel("cem","GPT-5.6 Sol")+"|"+adModel("cem",""))'],
+                        capture_output=True, text=True).stdout.strip()
+    sina("adModel: 'cem (GPT-5.6 Sol)' ve model yokken yalniz 'cem'", _o == "cem (GPT-5.6 Sol)|cem", _o)
+
 print(f"\n== sonuc: {GECEN} gecti, {KALAN} kaldi ==")
 sys.exit(1 if KALAN else 0)

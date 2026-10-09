@@ -4214,10 +4214,13 @@ function kartCiz(k, adlar, bekleyen) {
   const ds = el("div", "kart-durum " + sinif);
   ds.append(el("span", "kart-nokta"), el("b", null, ad));
   const isler = k.isler || [];
-  const kimler = isler.map((i) => i.sahip).filter(Boolean).filter((v, i, a) => a.indexOf(v) === i);
+  // Ajan etiketi: "kaan (GPT-5.6 Sol)"; model olculmediyse yalniz ajan adi.
+  const adModel = (ad, model) => (model ? `${ad} (${model})` : ad);
+  const kimler = isler.filter((i) => i.sahip).map((i) => adModel(i.sahip, i.model_ad))
+    .filter((v, i, a) => a.indexOf(v) === i);
   if (k.canli) {
     const s = el("span", "sohbet-sure"); s.dataset.bas = k.canli.basladi || k.an || "";
-    ds.append(document.createTextNode(" · " + (k.canli.kim || "") +
+    ds.append(document.createTextNode(" · " + adModel(k.canli.kim || "", k.canli.model_ad) +
               (k.canli.ne === "inceleme" ? " (lider inceliyor)" : "") + " · "), s);
     if (k.canli.son) ds.append(el("span", "kart-son", " — " + k.canli.son));
   } else if (k.durum === "bitti" || k.durum === "iptal") {

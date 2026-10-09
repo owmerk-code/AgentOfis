@@ -585,6 +585,37 @@ def _ofis_notu_mu(metin: str) -> bool:
     return str(metin or "").lstrip().startswith(_OFIS_NOTLARI)
 
 
+def _sahip_modelleri(ofis, kartlar_) -> dict:
+    """{(is_no, sahip_ajan): okunur model adi}. Yalniz `olay.ajan_ad == sahip`
+    olan tur_ozeti'leri; modeli bos (olculmemis) turlar atlanir, sonuncusu kazanir."""
+    import json as _json
+    from .guncelleme import model_adi as _model_adi
+    cift = {(i.get("no"), i.get("sahip")) for k in kartlar_ for i in (k.get("isler") or [])
+            if i.get("no") and i.get("sahip")}
+    cikti = {}
+    if not cift:
+        return cikti
+    nolar = sorted({n for n, _ in cift})
+    with ofis.db.baglanti() as c:
+        for no, ajan, govde in c.execute(
+                "SELECT g.no, o.ajan_ad, o.govde FROM olay o JOIN gorev g ON g.id = o.gorev_id "
+                "WHERE g.proje_id = ? AND o.tur = 'tur_ozeti' AND g.no IN (%s) ORDER BY o.rowid"
+                % ",".join("?" * len(nolar)), (ofis.proje_id, *nolar)):
+            if (no, ajan) not in cift:
+                continue
+            try:
+                d = _json.loads(govde)
+            except (ValueError, TypeError):
+                continue
+            if not isinstance(d, dict):
+                continue
+            ad = _model_adi(d.get("motor") or "", d.get("model") or "")
+            # Takma ad (`sonnet`) cozulmemis: surum OLCULMEMIS -> kartta yalniz ajan adi.
+            if ad and "olculmedi" not in ad:
+                cikti[(no, ajan)] = ad
+    return cikti
+
+
 def kartlar(ofis, *, kanat_id=None, adet: int = 120, kosuyor: bool = False) -> list:
     """Sohbetin kartlari, eskiden yeniye. Her kart:
 
@@ -677,6 +708,13 @@ def kartlar(ofis, *, kanat_id=None, adet: int = 120, kosuyor: bool = False) -> l
             for _i in _k.get("isler") or []:
                 if not _i.get("sahip") and son_sahip.get(_i.get("no")):
                     _i["sahip"] = son_sahip[_i["no"]]
+    # MODEL: isin SAHIBININ (gorev sahibi ajan) KENDI turlarinda OLCULEN model.
+    # Liderin inceleme turu ve baska ajanlarin turlari SAYILMAZ; birden cok
+    # olculmus tur varsa en sonuncusu. Olculmediyse bos (yalniz ajan adi).
+    model_sec = _sahip_modelleri(ofis, kartlar_)
+    for _k in kartlar_:
+        for _i in _k.get("isler") or []:
+            _i["model_ad"] = model_sec.get((_i.get("no"), _i.get("sahip") or "")) or ""
     for k in kartlar_:
         if k["tip"] not in ("istek", "soru_ajana"):
             continue
@@ -703,7 +741,8 @@ def kartlar(ofis, *, kanat_id=None, adet: int = 120, kosuyor: bool = False) -> l
         k["durum"] = durum
         k["canli"] = ({"kim": aktif.get("sahip") or "", "ne": aktif.get("durum") or "",
                        "basladi": aktif.get("basladi") or "", "son": d.get("son") or "",
-                       "no": aktif.get("no")} if aktif and durum in ("calisiyor", "karar", "durdu") else None)
+                       "no": aktif.get("no"),
+                       "model_ad": model_sec.get((aktif.get("no"), aktif.get("sahip") or "")) or ""} if aktif and durum in ("calisiyor", "karar", "durdu") else None)
         k["adim"] = d.get("adim") or 0
         k["adimlar"] = d.get("adimlar") or []
         # SONUC: is varsa liderin PATRONA taslaklari (temiz, sonuc ilk cumlede);
