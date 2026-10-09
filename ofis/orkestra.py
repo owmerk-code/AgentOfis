@@ -1250,8 +1250,19 @@ class Orkestra:
 
         def _incele(g):
             try:
-                return g, self.lider.incele(
-                    g["no"], butce_usd=butce_usd, zaman_asimi=zaman_asimi), None
+                sonuc = self.lider.incele(
+                    g["no"], butce_usd=butce_usd, zaman_asimi=zaman_asimi)
+                # SONUCSUZ INCELEME BIR KEZ YENIDEN (09.10 F1 canli, #5): codex
+                # brifingi gonderemedi, inceleme "sonucsuz" kaldi ve is
+                # incelemede ASILI durdu -- kimse yeniden denemedi. Teknik
+                # dusus cogu zaman gecicidir; ayni turda BIR kez daha denenir,
+                # yine duserse durur (kota bosuna yanmaz), uyari defterde.
+                if sonuc.get("hukum") == "belirsiz":
+                    self.db.olay_yaz(self.proje_id, "uyari",
+                                     f"#{g['no']} inceleme sonucsuz kaldi; BIR kez yeniden deneniyor.")
+                    sonuc = self.lider.incele(
+                        g["no"], butce_usd=butce_usd, zaman_asimi=zaman_asimi)
+                return g, sonuc, None
             except (LiderHatasi, KadroHatasi) as exc:
                 # KadroHatasi da (01.10.2026): lideri bulunamayan TEK is
                 # butun halkayi dusuruyordu; artik o is 'engel' olur.

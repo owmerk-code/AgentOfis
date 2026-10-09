@@ -104,7 +104,11 @@ def acilista_toparla(ofis) -> dict:
     # sorulani ise ofis cevaplatir -> halka surdurulur.
     ajana_soru = [m for m in ofis.postane.bekleyen_sorular()
                   if m.get("alici") and m.get("alici") != "insan"]
-    if ((sahipsiz or ajana_soru)
+    # INCELEMEDE BEKLEYEN IS (09.10 F1 canli, #5): inceleme duserse ya da panel
+    # inceleme sirasinda kapanirsa is incelemede kaliyordu; halkayi donduren
+    # olmadigi icin lider hic bakmadi.
+    incelemede = ofis.tahta.liste(durum="inceleme")
+    if ((sahipsiz or ajana_soru or incelemede)
             and not any(x.get("devam") for x in _kuyruk.bekleyenler(ofis))):
         lider = next((a["ad"] for a in ofis.kadro.liste() if a["lider_mi"]), "")
         if lider:
