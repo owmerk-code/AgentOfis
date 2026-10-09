@@ -200,6 +200,17 @@ def takimi_hazirla(db, proje_id: str, kanat_id: str) -> None:
 
 # -- sinama -------------------------------------------------------------------
 
+def arac_ortami() -> dict:
+    """Calisan ofisin evindeki ikili araclar (ffmpeg, RIFE): kopya onlari
+    CALISTIRIR, kopyalamaz/baglamaz. 09.10 F1 canli (#6): kopyanin evi bos,
+    `duman_kurgu` "ffmpeg ajan PATH'inde" sinamasindan kaldi; kurulum karti
+    yine acilmadi. Yalniz var olan yol verilir."""
+    araclar = Path(kaynak()) / "ev" / "araclar"
+    adaylar = {"OFIS_FFMPEG_KLASORU": araclar / "ffmpeg" / "bin",
+               "OFIS_RIFE": araclar / "rife" / "rife-ncnn-vulkan.exe"}
+    return {k: str(v) for k, v in adaylar.items() if v.exists()}
+
+
 def _temiz_ortam() -> dict:
     """OFIS_* degiskenleri SILINIR: panelin gercek evi/defteri/kabini sinamaya
     sizmasin (`_temizlik` bos olani kendisi kurar)."""
@@ -213,7 +224,8 @@ def sinama_kos(kok, *, dosyalar=None, sinir: float = DOSYA_SINIRI_SN) -> dict:
         [kok / "testler" / d for d in dosyalar]
     sonuc = {"dosya": 0, "gecti": 0, "kaldi": 0, "kotu": [], "sure_sn": 0.0}
     bas = time.time()
-    ortam = dict(_temiz_ortam(), PYTHONDONTWRITEBYTECODE="1", PYTHONIOENCODING="utf-8")
+    ortam = dict(_temiz_ortam(), PYTHONDONTWRITEBYTECODE="1", PYTHONIOENCODING="utf-8",
+                 **arac_ortami())
     for f in liste:
         sonuc["dosya"] += 1
         try:
@@ -417,6 +429,18 @@ def kapanista(db, pid: str, kok: str, gorev: dict, *, arkada: bool = True) -> di
     return _sinan_ve_kartla(db, pid, gorev, d)
 
 
+def yeniden_sina(db, pid: str, no: int) -> dict:
+    """Sinamasi KALAN teslimi yeniden sinar (sebep ortamdaydi, isteydi degil:
+    09.10 #6 -- kopyada ffmpeg yoktu). Kurulmus/reddedilmis teslime dokunmaz."""
+    d = teslim_durumu(db, pid, no)
+    if d.get("durum") != "sinama_kaldi":
+        raise GelistirmeHatasi(f"#{no} yeniden sinanmaz: durumu '{d.get('durum') or 'yok'}'.")
+    d["durum"] = "sinaniyor"
+    _yaz(db, pid, no, d)
+    sonuc = yarim_sinamalari_surdur(db, pid, arkada=False)
+    return teslim_durumu(db, pid, no) if no in sonuc else d
+
+
 def yarim_sinamalari_surdur(db, pid: str, *, arkada: bool = True) -> list:
     """Panel ACILIRKEN: sinamasi yarim kalmis teslimleri yeniden sinar.
 
@@ -617,6 +641,8 @@ def onizleme_hazirla() -> dict:
     ev.mkdir(exist_ok=True)
     os.environ["OFIS_EV"] = str(ev)
     os.environ["OFIS_KABIN_KAPI"] = str(_bos_kapi())
+    for _k, _v in arac_ortami().items():          # ffmpeg/RIFE calisan ofisten
+        os.environ.setdefault(_k, _v)
     kapi = _bos_kapi(8920)
     db_yolu = ev / "onizleme" / "ofis.sqlite3"
     db_yolu.parent.mkdir(parents=True, exist_ok=True)

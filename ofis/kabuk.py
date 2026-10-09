@@ -1282,6 +1282,19 @@ def komut_gelistirme(a) -> None:
     if a.islem == "esitle":
         yaz(str(G.esitle(G.varsayilan_klasor())))
         return
+    if a.islem == "sina":
+        # Sinamasi KALAN teslim (sebep ortamsa) yeniden sinanir; gecerse kart acilir.
+        if a.no is None:
+            yaz("sina icin is numarasi gerekli: gelistirme sina <no>")
+            return
+        try:
+            d = G.yeniden_sina(ofis.db, ofis.proje_id, a.no)
+        except G.GelistirmeHatasi as exc:
+            yaz(f"SINANMADI: {exc}")
+            return
+        s_ = d.get("sinama") or {}
+        yaz(f"#{a.no} -- {d.get('durum')} (sinama {s_.get('gecti')} gecti, {s_.get('kaldi')} kaldi)")
+        return
     if a.islem == "reddet":
         # Sinamasi GECMEYEN teslimin karti yoktur; patronun reddi buradan.
         if a.no is None:
@@ -2298,8 +2311,8 @@ def ayristirici() -> argparse.ArgumentParser:
     bl.add_argument("icerik", nargs="?", default="")
     bl.set_defaults(islev=komut_bilgi)
 
-    gl = alt.add_parser("gelistirme", help="ofis gelistirme teslimleri: durum | esitle | reddet <no> | geri-al <no>")
-    gl.add_argument("islem", nargs="?", default="durum", choices=["durum", "esitle", "reddet", "geri-al"])
+    gl = alt.add_parser("gelistirme", help="ofis gelistirme teslimleri: durum | esitle | sina <no> | reddet <no> | geri-al <no>")
+    gl.add_argument("islem", nargs="?", default="durum", choices=["durum", "esitle", "sina", "reddet", "geri-al"])
     gl.add_argument("no", nargs="?", type=int, default=None)
     gl.set_defaults(islev=komut_gelistirme)
 

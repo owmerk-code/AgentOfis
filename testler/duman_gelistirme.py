@@ -381,5 +381,23 @@ git(kok, "reset", "-q", "--hard", "origin/main")
 git(kok, "config", "--unset", "core.autocrlf")
 git(KAY, "config", "--unset", "core.autocrlf")
 
+print("\n14. kopya calisan ofisin araclarini CALISTIRIR (09.10 canli: ffmpeg yoktu); kalan teslim yeniden sinanir")
+_ao = G.arac_ortami()
+sina("arac ortami yalniz VAR OLAN yollari verir", all(Path(v).exists() for v in _ao.values()), str(_ao))
+_gk3 = (OFIS_KODU / "ofis" / "gelistirme.py").read_text(encoding="utf-8")
+sina("  sinama ve onizleme bu ortami kullanir", "**arac_ortami()" in _gk3 and "arac_ortami().items()" in _gk3)
+n14 = is_kapat("sinamasi kalan", "testler/duman_k14.py", "import sys\nprint('  [KALDI] ortam')\nsys.exit(1)\n")
+bekle(n14)
+sina("  sinama kaldi", G.teslim_durumu(db, ofis.proje_id, n14).get("durum") == "sinama_kaldi")
+Path(kok, "testler", "duman_k14.py").write_text("print('  [gecti] ortam')\n", encoding="utf-8")   # ortam duzeldi
+git(kok, "commit", "-qam", f"#{n14} ortam")
+_ys14 = G.yeniden_sina(db, ofis.proje_id, n14)
+sina("  yeniden sinandi, gecti, KART acildi", _ys14.get("durum") == "kart", str(_ys14.get("durum")))
+try:
+    G.yeniden_sina(db, ofis.proje_id, n14)
+    sina("  karti acik teslim yeniden sinanmaz (hata)", False)
+except G.GelistirmeHatasi:
+    sina("  karti acik teslim yeniden sinanmaz (hata)", True)
+
 print(f"\n== sonuc: {GECEN} gecti, {KALAN} kaldi ==")
 sys.exit(1 if KALAN else 0)
