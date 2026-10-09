@@ -1282,6 +1282,18 @@ def komut_gelistirme(a) -> None:
     if a.islem == "esitle":
         yaz(str(G.esitle(G.varsayilan_klasor())))
         return
+    if a.islem == "reddet":
+        # Sinamasi GECMEYEN teslimin karti yoktur; patronun reddi buradan.
+        if a.no is None:
+            yaz("reddet icin is numarasi gerekli: gelistirme reddet <no>")
+            return
+        try:
+            G.reddet(ofis, a.no)
+        except G.GelistirmeHatasi as exc:
+            yaz(f"REDDEDILMEDI: {exc}")
+            return
+        yaz(f"#{a.no} kurulmadi; kopyada geri alindi.")
+        return
     with ofis.db.baglanti() as c:
         satirlar = c.execute("SELECT anahtar, deger FROM ayar WHERE proje_id = ? AND anahtar LIKE ?",
                              (ofis.proje_id, "gelistirme_teslim:%")).fetchall()
@@ -2286,8 +2298,8 @@ def ayristirici() -> argparse.ArgumentParser:
     bl.add_argument("icerik", nargs="?", default="")
     bl.set_defaults(islev=komut_bilgi)
 
-    gl = alt.add_parser("gelistirme", help="ofis gelistirme teslimleri: durum | esitle | geri-al <no>")
-    gl.add_argument("islem", nargs="?", default="durum", choices=["durum", "esitle", "geri-al"])
+    gl = alt.add_parser("gelistirme", help="ofis gelistirme teslimleri: durum | esitle | reddet <no> | geri-al <no>")
+    gl.add_argument("islem", nargs="?", default="durum", choices=["durum", "esitle", "reddet", "geri-al"])
     gl.add_argument("no", nargs="?", type=int, default=None)
     gl.set_defaults(islev=komut_gelistirme)
 

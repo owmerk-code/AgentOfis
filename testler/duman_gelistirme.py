@@ -166,6 +166,21 @@ with db.baglanti() as c:
 sina("sebep deftere yazildi (hangi dosya kaldi)", any("SINAMA GECMEDI" in x and "duman_bozuk" in x for x in _o))
 G.reddet(ofis, n2)
 sina("reddedilen kayit kopyada geri alindi", not Path(kok, "testler", "duman_bozuk.py").exists())
+# 09.10: reddet DURUST -- ikinci kez ya da sinama surerken reddedilmez, sebep soylenir.
+try:
+    G.reddet(ofis, n2)
+    sina("  zaten reddedilmis teslim ikinci kez reddedilmez (hata)", False)
+except G.GelistirmeHatasi:
+    sina("  zaten reddedilmis teslim ikinci kez reddedilmez (hata)", True)
+_ds = dict(G.teslim_durumu(db, ofis.proje_id, n2), durum="sinaniyor")
+G._yaz(db, ofis.proje_id, 99, dict(_ds, no=99))
+try:
+    G.reddet(ofis, 99)
+    sina("  sinama SURERKEN reddedilmez (dosyalar sinamanin altindan degismesin)", False)
+except G.GelistirmeHatasi:
+    sina("  sinama SURERKEN reddedilmez (dosyalar sinamanin altindan degismesin)", True)
+with db.baglanti() as c:
+    c.execute("DELETE FROM ayar WHERE anahtar = ?", (G._kayit_anahtari(99),))
 
 print("\n6. reddet karti")
 n3 = is_kapat("istenmeyen", "istenmeyen.py", "x = 1\n")

@@ -435,11 +435,21 @@ def kur(ofis, no: int) -> dict:
 def reddet(ofis, no: int) -> dict:
     """Patron kurmadi: kopyada o kayitlar geri alinir (kopya calisan koda doner)."""
     d = teslim_durumu(ofis.db, ofis.proje_id, no)
+    if not d:
+        raise GelistirmeHatasi(f"#{no} bir gelistirme teslimi degil.")
+    if d.get("durum") in ("kuruldu", "reddedildi", "geri_alindi"):
+        raise GelistirmeHatasi(f"#{no} zaten '{d.get('durum')}'.")
+    # Sinama SURERKEN geri alinmaz: kopyanin dosyalari sinamanin altindan degisir.
+    if d.get("durum") == "sinaniyor":
+        raise GelistirmeHatasi(f"#{no} su an sinaniyor; sinama bitince reddedilir.")
     hl = [k["commit"] for k in reversed(d.get("kayitlar") or [])]
     if hl:
         r = _git(d["kok"], *_kimlik(), "revert", "--no-edit", *hl)
         if r.returncode != 0:
+            # YALAN KAYIT YOK (09.10): eskiden geri alma dussa da "kopyada geri
+            # alindi" yaziliyor ve durum 'reddedildi' oluyordu.
             _git(d["kok"], "revert", "--abort")
+            raise GelistirmeHatasi(f"#{no} kopyada geri alinamadi: " + _metin(r)[:300])
     d["durum"] = "reddedildi"
     _yaz(ofis.db, ofis.proje_id, no, d)
     ofis.db.olay_yaz(ofis.proje_id, "gelistirme", f"#{no} kurulmadi (patron reddetti); kopyada "
