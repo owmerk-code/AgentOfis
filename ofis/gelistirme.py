@@ -167,13 +167,35 @@ BITTI_TANIMI = [
     "ayri defter), adres gomulu tarayicida acildi, tiklandi; ekran goruntusu kanit.",
     "Kurmak patronun karari: is kapaninca ofis tam sinamayi kosar, gecerse patrona kurulum karti gider.",
 ]
+#: 09.10 F1 canli dersleri (#5, #6). Defter yolu kurulurken eklenir (bkz. `bitti_tanimi`).
+BITTI_TANIMI_EK = [
+    "Defterden OKUYAN/YAZAN degisiklik (kart, pano, rapor, hafiza) GERCEK DEFTERIN KOPYASINDA "
+    "denendi: {defter} dosyasini sqlite3 backup ile gecici klasore kopyala (aslina YAZMA), "
+    "her kayit icin sonucu kanita yaz. Sahte sinama sahnesi gercek defterdeki gibi kurulur "
+    "(isci turu + liderin BASKA modelle inceleme turu, ret, kesinti). #5 yalniz isci turu "
+    "kuran sinamayla gecti, gercek defterde 5 kartin 5'i yanlisti.",
+    "Satir sonlari KORUNUR: `sed -i` ya da dosyayi toptan yeniden yazma YOK (dosyalar karisik "
+    "CRLF/LF). Python ile newline='' oku, tek yeri degistir (s.count(eski)==1), ayni bicimde yaz; "
+    "`git diff --stat` yalniz gercek degisikligi gostermeli.",
+    "Yazma alani DISINDA bir dosya gerekiyorsa yazmadan once lidere `soru_sor` ile sor; lider "
+    "danisma cevabinda `ALAN_EKLE: yol` yazar, ofis kilidi olcer ve alani genisletir.",
+]
+
+
+def bitti_tanimi() -> list:
+    """Gelistirme takiminin bitti tanimi (calisan ofisin defter yolu icinde)."""
+    defter = str(Path(kaynak()) / "veri" / "ofis.sqlite3").replace("\\", "/")
+    return BITTI_TANIMI + [m.format(defter=defter) for m in BITTI_TANIMI_EK]
 
 
 def takimi_hazirla(db, proje_id: str, kanat_id: str) -> None:
-    """Gelistirme takimi kuruldu: bitti tanimi kite yazilir (bossa)."""
+    """Gelistirme takimi kuruldu: bitti tanimi kite yazilir. Kit bossa ya da
+    hala ESKI varsayilansa (patron degistirmediyse) yenisi yazilir; patronun
+    elle yazdigina dokunulmaz."""
     from . import kit
-    if not kit.oku(db, kanat_id).get("bitti_tanimi"):
-        kit.yaz(db, proje_id, kanat_id, bitti_tanimi=BITTI_TANIMI)
+    mevcut = kit.oku(db, kanat_id).get("bitti_tanimi") or []
+    if not mevcut or list(mevcut) == list(BITTI_TANIMI):
+        kit.yaz(db, proje_id, kanat_id, bitti_tanimi=bitti_tanimi())
 
 
 # -- sinama -------------------------------------------------------------------

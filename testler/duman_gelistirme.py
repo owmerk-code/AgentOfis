@@ -245,6 +245,17 @@ from ofis import kit as _kit  # noqa: E402
 _bt = _kit.oku(db, r.json().get("id", ""))["bitti_tanimi"] if r.status_code == 200 else []
 sina("gelistirme takiminin bitti tanimi yazildi (kopya, sinama, onizleme, kurulum karari)",
      any("onizle" in x for x in _bt) and any("REDDEDILIR" in x for x in _bt), str(_bt)[:200])
+# 09.10 F1 dersleri: gercek defterin kopyasi (YOLU ile), satir sonu, ALAN_EKLE.
+sina("  bitti taniminda 09.10 dersleri: defter kopyasi (yol), satir sonu, alan genisletme",
+     any("GERCEK DEFTERIN KOPYASINDA" in x and "/veri/ofis.sqlite3" in x for x in _bt)
+     and any("sed -i" in x for x in _bt) and any("ALAN_EKLE" in x for x in _bt), str(_bt)[-300:])
+_kid = r.json().get("id", "")
+_kit.yaz(db, ofis.proje_id, _kid, bitti_tanimi=G.BITTI_TANIMI)          # eski varsayilan
+G.takimi_hazirla(db, ofis.proje_id, _kid)
+sina("  ESKI varsayilan kit yenisine guncellenir", len(_kit.oku(db, _kid)["bitti_tanimi"]) == len(G.bitti_tanimi()))
+_kit.yaz(db, ofis.proje_id, _kid, bitti_tanimi=["patronun kendi maddesi"])
+G.takimi_hazirla(db, ofis.proje_id, _kid)
+sina("  patronun ELLE yazdigi kite dokunulmaz", _kit.oku(db, _kid)["bitti_tanimi"] == ["patronun kendi maddesi"])
 
 _k = subprocess.run([sys.executable, "-m", "ofis.kabuk", "--db", str(db_yolu), "gelistirme"],
                     capture_output=True, text=True, encoding="utf-8", errors="replace",
