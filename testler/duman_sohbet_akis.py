@@ -178,7 +178,9 @@ sina("once liderin akan cumlesi, ALTINDA adimlar",
      JS.index('if (x.tur === "sohbet" && x.bekliyor && x.akis) {') < JS.index("kap.append(adimBlogu("))
 sina("canli sure yazilir", "setInterval(sureleriYaz, 1000)" in JS)
 sina("istek surerken sohbet tazelenir, kaydirma korunur",
-     'querySelector(".sohbet-adimlar.suruyor")' in JS and 'kap.dataset.altta !== "0"' in JS)
+     # 09.10 KARTLAR: suren kart (calisiyor/dusunuyor/karar/sirada) varken tazelenir.
+     'querySelector(".kd-calisiyor, .kd-dusunuyor, .kd-karar, .kd-sirada")' in JS
+     and 'kap.dataset.altta !== "0"' in JS)
 
 sina("not cipi uc durumu ayiriyor", "ulaşmadı — iş kapandı" in JS and "iş incelemede — lider görür" in JS)
 sina("Iletilemedi balonunda Tekrar dene ve Kapat",

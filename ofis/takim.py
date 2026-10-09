@@ -530,3 +530,201 @@ def akis(ofis, *, kanat_id=None, adet: int = 80) -> list:
             elif x["gorev_durum"] == "inceleme":
                 x["incelemede"] = True
     return ogeler
+
+
+# ---------------------------------------------------------------------------
+# SOHBET KARTLARI (09.10.2026, patron: "verilen islerin yaniti karisik; ne is
+# verdim, ne isi yapti hepsi birbirine girmis" -> "A, basla"). Claude Code /
+# Codex gibi: HER ISTEK TEK KART, tek durum, tek cevap. Ic isleyis (dagitim
+# notu, ret, inceleme, kesinti, donus raporu) sohbete girmez; kartin katli
+# ayrintisinda ya da gunlukte durur. Kart DEFTERDEN turetilir (`akis`), kopya
+# tutulmaz.
+
+#: Kart durumlari -- panelin tek durum dili.
+KART_DURUMLARI = ("sirada", "dusunuyor", "calisiyor", "karar", "durdu", "bitti",
+                  "iptal", "iletilemedi", "cevapsiz")
+#: Sohbetten CIKAN ofis olaylari (gunlukte ve bildirimde kalirlar).
+_KARTA_GIRMEZ = ("ozet",)
+
+
+def _rapor_taslaklari(ofis, nolar) -> dict:
+    """{is_no: liderin PATRONA taslagi} -- kapanan isin temiz sonucu."""
+    if not nolar:
+        return {}
+    out = {}
+    with ofis.db.baglanti() as c:
+        # Liderin taslagi yoksa (is patronun KABULUYLE kapandi) ajanin patrona
+        # son teslim mesaji; ikisi de yoksa sonuc yok (uydurulmaz).
+        for r in c.execute(
+                "SELECT g.no, o.tur, o.govde FROM olay o JOIN gorev g ON g.id = o.gorev_id "
+                "WHERE g.proje_id = ? AND o.tur IN ('rapor_taslak', 'ajan_sohbet') AND g.no IN (%s) "
+                "ORDER BY o.rowid" % ",".join("?" * len(nolar)), (ofis.proje_id, *nolar)):
+            metin = (r["govde"] or "").strip()
+            if r["tur"] == "rapor_taslak":
+                out[r["no"]] = ("lider", metin)
+            elif (out.get(r["no"]) or ("", ""))[0] != "lider":
+                out[r["no"]] = ("ajan", metin)
+    return {n: m for n, (_k, m) in out.items()}
+
+
+def _duraklatilmis(ofis, nolar) -> set:
+    if not nolar:
+        return set()
+    with ofis.db.baglanti() as c:
+        return {r[0] for r in c.execute(
+            "SELECT no FROM gorev WHERE proje_id = ? AND duraklatildi != '' AND no IN (%s)"
+            % ",".join("?" * len(nolar)), (ofis.proje_id, *nolar))}
+
+
+#: Ofisin ARA notlari -- patrona SONUC degildir (kesinti, dagitim, devam).
+_OFIS_NOTLARI = ("Ofis kapanmadan önce", "İş tamamlandı (ofisin özeti", "Bu işi ekibe dağıtıyorum",
+                 "Kadro kuruldu, iş başlıyor")
+
+
+def _ofis_notu_mu(metin: str) -> bool:
+    return str(metin or "").lstrip().startswith(_OFIS_NOTLARI)
+
+
+def kartlar(ofis, *, kanat_id=None, adet: int = 120, kosuyor: bool = False) -> list:
+    """Sohbetin kartlari, eskiden yeniye. Her kart:
+
+    `{id, tip, an, metin, ekler, kime, durum, canli, sonuc, sonuc_ekler, isler,
+      sure_sn, kabul, ayrinti, akis, sira_no, sebep}`
+    `tip`: istek (lidere) · soru_ajana (@ajan soru) · soru_sana (ajan sana
+    soruyor, istege bagli degil) · sirada · iletilemedi.
+    """
+    ogeler = akis(ofis, kanat_id=kanat_id, adet=adet)
+    kartlar_, istek_kart, id_kart = [], {}, {}
+    for x in ogeler:
+        t = x["tur"]
+        if t == "sohbet":
+            k = {"id": x["id"], "tip": "istek", "an": x["an"], "metin": x["metin"],
+                 "ekler": x.get("ekler") or [], "kime": x["kime"],
+                 "bekliyor": x["bekliyor"], "istek_durum": x.get("istek_durum") or {},
+                 "akis": x.get("akis") or "", "ayrinti": [], "sonuc": "",
+                 "sonuc_ekler": [], "isler": (x.get("istek_durum") or {}).get("isler") or []}
+            kartlar_.append(k)
+            istek_kart[x["id"]] = k
+            id_kart[x["id"]] = k
+        elif t == "sirada":
+            kartlar_.append({"id": x["id"], "tip": "sirada", "an": x["an"], "metin": x["metin"],
+                             "ekler": x.get("ekler") or [], "kime": x["kime"],
+                             "durum": "sirada", "sira_no": x.get("sira_no"), "ayrinti": []})
+        elif t == "iletilemedi":
+            kartlar_.append({"id": x["id"], "tip": "iletilemedi", "an": x["an"],
+                             "metin": x["metin"], "ekler": x.get("ekler") or [],
+                             "durum": "iletilemedi", "sebep": x.get("sebep") or "",
+                             "ayrinti": []})
+        elif t == "soru" and x["kimden"] == "insan":
+            k = {"id": x["id"], "tip": "soru_ajana", "an": x["an"], "metin": x["metin"],
+                 "ekler": x.get("ekler") or [], "kime": x["kime"], "bekliyor": x["bekliyor"],
+                 "ayrinti": [], "sonuc": "", "sonuc_ekler": [], "isler": [],
+                 "gorev_no": x.get("gorev_no")}
+            kartlar_.append(k)
+            id_kart[x["id"]] = k
+        elif t == "cevap":
+            k = id_kart.get(x["id"])
+            if k is not None:
+                k["cevap"] = x["metin"]
+                k["cevap_ekler"] = x.get("ekler") or []
+                k["sure_sn"] = x.get("sure_sn")
+                k["kabul"] = x.get("kabul") or ""
+                if x.get("isler"):
+                    k["isler"] = x["isler"]
+        elif t == "soru" and x["kime"] == "insan" and not x.get("istek"):
+            if x["bekliyor"]:
+                kartlar_.append({"id": x["id"], "tip": "soru_sana", "an": x["an"],
+                                 "metin": x["metin"], "kimden": x["kimden"],
+                                 "gorev_no": x.get("gorev_no"), "durum": "karar",
+                                 "ayrinti": []})
+        elif t in _KARTA_GIRMEZ:
+            continue
+        else:
+            k = istek_kart.get(x.get("istek") or "")
+            if k is None and x.get("gorev_no"):
+                k = next((c for c in istek_kart.values()
+                          if any(i.get("no") == x["gorev_no"] for i in c["isler"])), None)
+            if k is not None:
+                k["ayrinti"].append(x)
+                if t == "bildirim" and x.get("ekler"):
+                    # Yalniz SON teslimin dosyalari (eski surumler ayrintida).
+                    k.setdefault("_son_ek", {})[x.get("gorev_no") or 0] = list(x["ekler"])
+    # ---- durum, canli satir, sonuc
+    tum_nolar = sorted({i["no"] for k in kartlar_ for i in (k.get("isler") or []) if i.get("no")})
+    taslak = _rapor_taslaklari(ofis, tum_nolar)
+    durakli = _duraklatilmis(ofis, tum_nolar)
+    bekleyen_soru = {}
+    for s in ofis.postane.insan_bekleyenler():
+        if s.get("gorev_id"):
+            bekleyen_soru.setdefault(s["gorev_id"], []).append(s["id"])
+    gid = {}
+    if tum_nolar:
+        with ofis.db.baglanti() as c:
+            gid = {r[0]: r[1] for r in c.execute(
+                "SELECT no, id FROM gorev WHERE proje_id = ? AND no IN (%s)"
+                % ",".join("?" * len(tum_nolar)), (ofis.proje_id, *tum_nolar))}
+    bekleyen_onay = {o.get("gorev_no") for o in ofis.postane.bekleyen_onaylar() if o.get("gorev_no")}
+    # ISI KIM YAPTI: kesintide is birakilinca `sahip` bosalir (09.10 canli);
+    # defterdeki SON sahiplenme kaydi yazilir.
+    if tum_nolar:
+        with ofis.db.baglanti() as c:
+            son_sahip = {r[0]: r[1] for r in c.execute(
+                "SELECT g.no, o.ajan_ad FROM olay o JOIN gorev g ON g.id = o.gorev_id "
+                "WHERE g.proje_id = ? AND o.tur = 'sahiplenildi' AND o.ajan_ad != '' "
+                "AND g.no IN (%s) ORDER BY o.rowid" % ",".join("?" * len(tum_nolar)),
+                (ofis.proje_id, *tum_nolar))}
+        for _k in kartlar_:
+            for _i in _k.get("isler") or []:
+                if not _i.get("sahip") and son_sahip.get(_i.get("no")):
+                    _i["sahip"] = son_sahip[_i["no"]]
+    for k in kartlar_:
+        if k["tip"] not in ("istek", "soru_ajana"):
+            continue
+        isler = k.get("isler") or []
+        nolar = [i["no"] for i in isler]
+        d = k.pop("istek_durum", {}) or {}
+        aktif = d.get("aktif")
+        karar = any(n in bekleyen_onay or gid.get(n) in bekleyen_soru for n in nolar)
+        acik = [i for i in isler if i.get("durum") not in ("bitti", "iptal")]
+        if karar:
+            durum = "karar"
+        elif any(n in durakli for n in nolar if any(i["no"] == n and i["durum"] not in ("bitti", "iptal") for i in isler)):
+            durum = "durdu"
+        elif acik:
+            durum = "calisiyor"
+        elif isler:
+            durum = "iptal" if all(i.get("durum") == "iptal" for i in isler) else "bitti"
+        elif k.get("cevap"):
+            durum = "bitti"
+        elif k.get("bekliyor"):
+            durum = "dusunuyor" if kosuyor else "cevapsiz"
+        else:
+            durum = "bitti"
+        k["durum"] = durum
+        k["canli"] = ({"kim": aktif.get("sahip") or "", "ne": aktif.get("durum") or "",
+                       "basladi": aktif.get("basladi") or "", "son": d.get("son") or "",
+                       "no": aktif.get("no")} if aktif and durum in ("calisiyor", "karar", "durdu") else None)
+        k["adim"] = d.get("adim") or 0
+        k["adimlar"] = d.get("adimlar") or []
+        # SONUC: is varsa liderin PATRONA taslaklari (temiz, sonuc ilk cumlede);
+        # yoksa cevabin kendisi. Ara notu ("ekibe dagitiyorum") sonuc degildir.
+        parca = [taslak[n] for n in nolar if taslak.get(n)]
+        if parca and not acik:
+            k["sonuc"] = "\n\n".join(parca)
+        elif k.get("cevap") and not acik and not _ofis_notu_mu(k["cevap"]):
+            k["sonuc"] = k["cevap"]
+        for _l in (k.pop("_son_ek", {}) or {}).values():
+            for e in _l:
+                if e not in k["sonuc_ekler"]:
+                    k["sonuc_ekler"].append(e)
+        for e in k.pop("cevap_ekler", []) or []:
+            if e not in k["sonuc_ekler"]:
+                k["sonuc_ekler"].append(e)
+        if k["sonuc"]:
+            from . import ekler as _ek
+            k["sonuc"], _yeni = _ek.ayikla(k["sonuc"])
+            for e in _yeni:
+                if e not in k["sonuc_ekler"]:
+                    k["sonuc_ekler"].append(e)
+        k.pop("cevap", None)
+    return kartlar_

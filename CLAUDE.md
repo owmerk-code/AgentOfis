@@ -85,8 +85,8 @@ motor matrisinden geçmeden deftere girmez.
   karne kipinde ya da ayar `kademe` iken.
 - **Model açıkça verilir** (verilmeyen iş hesabın varsayılanına düşer,
   ölçüldü: on kat maliyet).
-- **Model/CLI güncellemesi otomatik** (`guncelleme.py`): aynı ailenin yeni
-  nesli, takma adın yeni hedefi, CLI sürümü → deneme turu geçerse uygulanır,
+- **Model/CLI güncellemesi otomatik** (`guncelleme.py`): takma adın yeni
+  hedefi, CLI sürümü, emekliye ayrılan model (codex'te 'yeni nesil' 09.10'dan beri SORULUR: 5.6 Sol→6.1 Sol patronun seçimini ezdi) → deneme turu geçerse uygulanır,
   geri alınabilir; yeni aile ve kapı modeli insana sorulur. Takma adlar
   ofisin onayladığı kimliğe sabitlenir (sessiz kayma yok).
 
@@ -171,7 +171,7 @@ matrisin ölçümüyle karşılaştırır.
 | `ofis/tahta.py` | Görev, DAG, yazma kilidi (kira+nabız), kanıt kapısı, CAS, `iptal_et`, `medya_hedefi`, kök-göreli alan doğrulama. |
 | `ofis/bellek.py` | Olgular, karar günlüğü, bilgi kapısı (`bilgi_ekle`), `[[bağ]]`, kurallar (yalnız insandan). 06.10: sohbetten hafıza önerisi (`sohbet_onerileri`, alıntı denetimli, patron "Yaz"), birleştirme (`birlesim_adaylari`/`birlestir`, `konu_takma`). |
 | `ofis/belge.py` · `arama.py` | Belge kütüphanesi (06.10): PDF/Word/Excel/CSV/metin → yerli parçalar (`.ofis/belgeler/`), `belge_ara` MCP aracı, brifing ve triyaja kaynaklı ilk 3 parça. `arama.sirala` hafıza seçimi + belge aramasının TEK kuralı (kelime kapısı + harf dizisi sırası; ölçüldü `olcum_anlamsal.py`: 13→15/30, yerel anlam modeli 19/30 ama 1 GB → alınmadı). |
-| `ofis/telefon.py` · `web/telefon.*` · `web/sw.js` | TELEFON (06.10, Tailscale): panelin GİRİŞ kapısı `_UzakKapi` her HTTP+websocket isteğini süzer — uzak = adres yerel değil YA DA aktarıcı izi (`x-forwarded-for`, `tailscale-user-*`) YA DA Host bilgisayarın adı değil (`tailscale serve` 127.0.0.1'den iletir); uzak websocket HEP ret; uzak HTTP yalnız eşleşmiş cihaz (bilgisayarda tek kullanımlık kod, anahtar özetle, HttpOnly+Secure çerez, Ayarlar > Telefon'dan acil kesme) ve `telefon.IZINLI` uçlar. Web Push (VAPID DER evde; masaüstü bildirimleriyle aynı olaylar). |
+| `ofis/telefon.py` · `web/telefon.*` · `web/sw.js` | TELEFON (06.10, Tailscale): panelin GİRİŞ kapısı `_UzakKapi` uzak isteği tanır (adres, aktarıcı izi, Host); uzak websocket HEP ret; uzak HTTP yalnız eşleşmiş cihaz (tek kullanımlık kod, HttpOnly+Secure çerez, acil kesme) ve `telefon.IZINLI` uçlar. Web Push (VAPID evde). Ayrıntı günlükte. |
 | `ofis/pay.py` · `kit.py` · `canli.py` · `git_kaydi.py` · `onizleme.py` · `eksik.py` | AŞAMA 4 (06.10): takım kota payı (takım % = hesap doluluğu × takımın jeton oranı; dolunca yeni işi bekler) · takım kiti (bitti tanımı + marka; yasak kelime incelemede TARANIR) · canlı eylem ölçümü (`canli.py`: --prod, canlı ödeme, paket yayımı, mağaza/reklam yazma → tek kapıda SORULUR; 08.10'da takım "deneme kipi" KALDIRILDI, sorulmadan ret güç kısıyordu) · iş başına git kaydı (kapanışta ölçülen dosyalar `#no başlık`, kartta `git revert`) · önizleme (127.0.0.1 küçük sunucu) · ofisin kendi eksik önerisi (ölçülmüş tekrar → kart, `kabuk eksikler`). Kök TEK çözücü: `tahta.kanat_koku` → `Ofis.kok_klasoru(kanat)` / `Ofis.isin_koku(iş)`; kilit KÖKE göre çakışır. |
 | `ofis/puan.py` · `tahmin.py` · `dosya.py` | Teslime 1–5 puan (düşük puanın gerekçesi ajanın dersi, karnede temiz sayılmaz) · ön tahmin (karneden süre/jeton; kota % yalnız tutarlı pencere ölçümünde) · `atomik_yaz` (benzersiz geçici dosya + Windows yeniden deneme; eşzamanlı yazan süreçler artık düşmüyor). |
 | `ofis/brifing.py` | Dört katmanlı brifing (K1 kimlik/rol · K2 künye+kural+olgu · K3 kararlar · K4 iş+kanıt+not), devir paketi. |
@@ -187,7 +187,7 @@ matrisin ölçümüyle karşılaştırır.
 | `ofis/postane.py` | Soru/onay, patronun notu (`NOT_KURALI`), imza/kapsam ile onay eşleştirme. |
 | `ofis/danisma.py` | Ajana sorulan soruyu teslim eder (araçsız, salt okunur); cevaplanamazsa insana yükseltir. |
 | `ofis/mcp_sunucu.py` | Ofis MCP: durum · kanit_ekle · karar_yaz · sohbete_yaz · soru_sor · onay_iste · bilgi_yaz · gorev_ac · gorsel_uret/iste · video_uret/durum/iste · video_kurgula · video_denetle · medya_isle · masaustu_bak/eylem · izin_sor (kanca) · giris_iste. Kimlik ORTAMDAN gelir. Riskli bulgunun kararı TEK yerde: `_kapi_karari` (izin_sor + masaüstü). Araç sözlük dönerse sonuçta görsel (MCP `image`). |
-| `ofis/motor/tui.py` | GERÇEK TERMİNAL KİPİ — TEK KİP `gercek` (08.10, patron; `arka` yalnız sınamada; kural `kipe_gore`): iç motor (claude/codex/agy) ConPTY'de gerçek CLI; brifing yapıştırılır, olaylar CLI'ın oturum dosyasından, terminal turlar arası açık. Not ulaştı mı CLI'ın KAYDINDAN (`tui_kullanici_metni`; sıradaki not için tur sonunda 20 sn). CLI'ın kendi sorusu (agy "Allow access…") `ekran_sorusu` ile reddedilir + devam mesajı. Tur terminali sahiplendiği an "koşuyor" (08.10: aynı liderin paralel iki incelemesinde açılan terminal kapatılıyordu). Çağıran bırakırsa CLI durur. Geçici dosyalar `ev/tui` (2 günde süpürülür). İstisna: tavanlı şartname turu. |
+| `ofis/motor/tui.py` | GERÇEK TERMİNAL KİPİ — TEK KİP `gercek` (08.10, patron; `arka` yalnız sınamada; kural `kipe_gore`): iç motor (claude/codex/agy) ConPTY'de gerçek CLI; brifing yapıştırılır, olaylar CLI'ın oturum dosyasından, terminal turlar arası açık. Not ulaştı mı CLI'ın KAYDINDAN (`tui_kullanici_metni`; sıradaki not için tur sonunda 20 sn). CLI'ın kendi soruları `ekran_sorulari` (agy: oluşturma/düzenleme/URL ONAY, çalışma alanı dışı RET); agy yazabilen tur `accept-edits`, izin `read_url(*)` (`url(*)` agy siler, ölçüldü). Panelden gelen terminal otomatik cevapları CLI'a gitmez (`terminal.insan_girdisi`; codex'i kesiyordu). Tur terminali sahiplendiği an "koşuyor" (08.10: aynı liderin paralel iki incelemesinde açılan terminal kapatılıyordu). Çağıran bırakırsa CLI durur. Geçici dosyalar `ev/tui` (2 günde süpürülür). İstisna: tavanlı şartname turu. |
 | `ofis/kanca.py` | Gerçek terminal (TUI) kancası: CLI'ın her araç çağrısını arka plan kipindeki AYNI kapıya sorar; hata = deny; `--oz-sinama`. |
 | `ofis/izin.py` | Patronun ACIKCA istedigi riskli eylem (push, deploy) sorulmaz: lider planda patronun sozunden KELIMESI KELIMESINE alintiyla izin yazar, ofis sinifi olcer, olumsuz cumleyi reddeder; is basina ve kalici (insan). Para ve silme izinle acilmaz. |
 | `ofis/riskli.py` | Riskli eylem ölçütü (geri alınabilir mi · dışarı çıkıyor mu · para var mı) + sert durak; kabuk kuralları; araç adı polaritesi (okuma serbest, tanınmayan sorulur); şifre/kart alanı. |
@@ -244,9 +244,10 @@ matrisin ölçümüyle karşılaştırır.
   paketiyle kaldığı yerden sürer; pencere eşikteyse (işçi %80/%85, lider
   %95/%97) hesap önceden sona alınır.
 - **Tur içi not ve Durdur:** defter üzerinden; Claude stdin/interrupt, Codex
+- **Ret freni (09.10):** 3. retten sonra iş ajana dönmez; duraklar, patrona seçenekli soru (kabul / bir tur daha / iptal), cevap uygulanır (`lider.RET_FRENI`, `tahta.insan_kabul`). Lider eksiklerin HEPSİNİ bir kerede yazar. **Sıra:** yeni istek önceki işin bitmesini beklemez (`konus(ara_ver=)`).
   steer/interrupt. Durdurulan iş arıza değil, Sürdür aynı oturumdan devam.
 - **Genel kanal:** çok takımlı ofiste "Tüm ofis"ten `@TAKIM` o takımın liderine; adres yoksa ofis takım ÖNERİR (model yok), insan seçer.
-- **Takım sohbeti:** adres yok → lider; `@ajan` → işi varsa not, boşsa soru;
+- **Takım sohbeti (09.10, KARTLAR):** her istek TEK kart (`takim.kartlar`, `/api/kartlar`): tek durum, canlı satır, sonuç, son dosyalar, kararlar kartın içinde, ayrıntı katlı; ofis notları sohbete girmez. Adres yok → lider; `@ajan` → işi varsa not, boşsa soru; `@ajan iş:` → lider planlar ama sahip o ajan.
   `@ajan iş:` → lider planlar ama sahip o ajan.
 - **Bağlam (06.10):** her tur `baglam` {dolu, sınır, oran} bildirir (son çağrı; sınır motorun kendi bildirimi, Claude terminal kipinde arka kipte öğrenilen); panel ajan başlığında %; aynı işte %80'i geçince sonraki tur devir paketli TEMİZ oturum (`oturum_tazelendi`). Sınır bilinmezse karar yok.
 - **Güncelleme penceresi (06.10):** model/CLI yalnız `guncelleme.mesgul` boşken (canlı süreçli `calisiyor` iş, sıradaki mesaj); incelemedeki iş ve ölü süreç kaydı engellemez; insan CLI onayı meşgulken ret.
@@ -272,7 +273,7 @@ matrisin ölçümüyle karşılaştırır.
 - **F5 "ben yokken" altyapısı (01.10):** kuyruk + dönüş raporu, kesintiden devam, masaüstü bildirimi, zamanlayıcı — dördü canlı (8911, gerçek motor) ölçüldü. Kalan F5: telefon, onay yorgunluğu (E80), bağlam göstergesi, ses (en son).
 - **Güncelleme hemen:** 30 dakikada bir ölçer, uyguladıktan sonra yeniden
   ölçer (`olc_ve_ilerle`). CLI güncellemesinin deneme turu, ofis gerçek terminal kipindeyse terminalde de koşar (30.09).
-- **Sınamalar:** **SAYI** (09.10; 104 dosya; tam takım ÇIKIŞ KODUYLA koşulur — kod 3 = artık klasör) + gerçek set (`gercek_set.py`, her gece 03:30). Deneme seti 15/15
+- **Sınamalar:** **5458/5458** (09.10; 106 dosya; tam takım ÇIKIŞ KODUYLA koşulur — kod 3 = artık klasör) + gerçek set (`gercek_set.py`, her gece 03:30). Deneme seti 15/15
   (Claude ve Codex, işçi+lider).
 - **MALİYET (03.10, `testler/carpan.py`):** basit iş ofiste doğrudan Claude'un ~1,6–1,8×'i; Claude önbelleği 5 dk; ret ölçüte bağlı (`lider.ret_dayanagi`); triyaj+plan tek tur; KARMA (karne + çapraz kontrol) 20 işte 19/20, Claude payı %40 az. Yalın lider ve `--fork-session` denendi, geri alındı. Tam metin: günlük "08.10 ANAYASADAN TAŞINAN: MALİYET".
 - **Kalan işler:** `PLAN.md` "00. KALAN İŞLER — 08.10" (A–F; ses, görünüş, uygulama en son).

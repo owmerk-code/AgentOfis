@@ -782,8 +782,10 @@ function panoKur(a, secenek) {
   const sonTur = (a.sicil || {}).son_tur || {};
   // ILK TUR (06.10, patron: "hangi model yazmiyor"): olcum ancak tur bitince
   // gelir; o zamana kadar ajanin AYARINDAKI model yazilir (ve oyle soylenir).
-  const olculen = [sonTur.motor, sonTur.model].filter(Boolean).join(" ");
-  const ayar = [a.motor, a.model].filter(Boolean).join(" ");
+  // OKUNUR AD (09.10.2026, patron: "sonnet yaziyor hangi ai model belli degil"):
+  // sunucu takma adi sabitlenen kimlige cevirip okunur ad verir (`model_ad`).
+  const olculen = [sonTur.motor, sonTur.model_ad || sonTur.model].filter(Boolean).join(" ");
+  const ayar = [a.motor, a.model_ad || a.model].filter(Boolean).join(" ");
   // AJANIN KENDI MODELI vs SON TUR (07.10.2026, patron: "lider neden fable
   // 5.1, tiklayinca opus 5.5 gorunuyor?"): son tur kapi modeline (hakem)
   // yukseltilmis inceleme ya da hesap zinciri devriyse rozet yalniz olculeni
@@ -3184,7 +3186,28 @@ async function cizBekleyenler() {
     kap.append(d);
   }
 
-  for (const a of b.onaylar) {
+  for (const a of b.onaylar) kap.append(onayKartiYap(a));
+
+  // TOPLU KABUL (08.10, B1): onerilen secenegi olan sorularin hepsi tek
+  // tikla onerilenle cevaplanir. Onay kartlari (para, silme, yayin) DAHIL DEGIL.
+  const onerili = b.sorular.filter(s => s.secim && s.secim.onerilen != null);
+  if (onerili.length) {
+    const tk = el("div", "istek-eylem toplu-kabul");
+    const dg = el("button", "dugme olumlu", `Önerilenlerin hepsini kabul et (${onerili.length})`);
+    dg.title = "Ajanların önerdiği seçenekle cevaplar: " +
+      onerili.map(s => `${s.gonderen}: ${s.secim.secenekler[s.secim.onerilen]}`).join(" · ") +
+      ". Onay kartları (para, silme, yayın) bundan etkilenmez.";
+    dg.onclick = () => eylem("/api/sorular/onerilenleri_kabul", {},
+                             (r) => `${(r.cevaplanan || []).length} soru önerilenle cevaplandı`);
+    tk.append(dg);
+    kap.append(tk);
+  }
+  for (const s of b.sorular) kap.append(soruKartiYap(s));
+  ofisOnerileriCiz(kap, on);
+}
+
+/* ONAY KARTI -- sagdaki kutu ve sohbet karti AYNI cizimi kullanir (09.10). */
+function onayKartiYap(a) {
     // GIRIS ISTEGI: sifre ajana gecmez; insan kendisi girer, "yaptim" der.
     if (a.giris) {
       const g = a.giris;
@@ -3230,8 +3253,7 @@ async function cizBekleyenler() {
       satir.prepend(girdi);
       satir.append(ver, red);
       o.append(satir);
-      kap.append(o);
-      continue;
+      return o;
     }
     const o = el("div", "istek onay");
     const ust = el("div", "istek-bas");
@@ -3283,24 +3305,11 @@ async function cizBekleyenler() {
     };
     satir.append(girdi, ver, hep, ...(proje ? [proje] : []), red);
     o.append(satir);
-    kap.append(o);
-  }
+    return o;
+}
 
-  // TOPLU KABUL (08.10, B1): onerilen secenegi olan sorularin hepsi tek
-  // tikla onerilenle cevaplanir. Onay kartlari (para, silme, yayin) DAHIL DEGIL.
-  const onerili = b.sorular.filter(s => s.secim && s.secim.onerilen != null);
-  if (onerili.length) {
-    const tk = el("div", "istek-eylem toplu-kabul");
-    const dg = el("button", "dugme olumlu", `Önerilenlerin hepsini kabul et (${onerili.length})`);
-    dg.title = "Ajanların önerdiği seçenekle cevaplar: " +
-      onerili.map(s => `${s.gonderen}: ${s.secim.secenekler[s.secim.onerilen]}`).join(" · ") +
-      ". Onay kartları (para, silme, yayın) bundan etkilenmez.";
-    dg.onclick = () => eylem("/api/sorular/onerilenleri_kabul", {},
-                             (r) => `${(r.cevaplanan || []).length} soru önerilenle cevaplandı`);
-    tk.append(dg);
-    kap.append(tk);
-  }
-  for (const s of b.sorular) {
+/* SORU KARTI -- sagdaki kutu ve sohbet karti AYNI cizimi kullanir (09.10). */
+function soruKartiYap(s) {
     const o = el("div", "istek soru");
     const ust = el("div", "istek-bas");
     ust.append(el("span", "istek-kim", s.gonderen), el("span", null, "soruyor"));
@@ -3337,9 +3346,7 @@ async function cizBekleyenler() {
     girdi.addEventListener("keydown", (e) => { if (e.key === "Enter") gonder(); });
     satir.append(girdi, dg);
     o.append(satir);
-    kap.append(o);
-  }
-  ofisOnerileriCiz(kap, on);
+    return o;
 }
 
 /* OFISIN KENDI EKSIGI (06.10, K17): acil kartlarin ALTINDA -- karar bekler ama
@@ -4013,7 +4020,7 @@ function medyaKullaniliyor(kap) {
 setInterval(async () => {
   const kap = $("#pano-sohbet");
   if (!kap || document.hidden || !panoAcik("sohbet") || _sohbetAkisZaman) return;
-  if (!kap.querySelector(".sohbet-adimlar.suruyor")) return;
+  if (!kap.querySelector(".kd-calisiyor, .kd-dusunuyor, .kd-karar, .kd-sirada")) return;
   if (medyaKullaniliyor(kap)) return;
   await sohbetiTazele(kap);
 }, 3000);
@@ -4060,7 +4067,8 @@ function surenIsler() {
   return s;
 }
 
-async function cizSohbet(kap) {
+/* ESKI sohbet cizimi (09.10.2026'ya dek): kartlara gecildi, bkz. cizSohbet. */
+async function cizSohbetEski(kap) {
   let r;
   try { r = await al("/api/takim" + (D.kanat ? "?kanat=" + D.kanat : "")); }
   catch (e) { return kap.append(el("div", "form-ipucu uyari", "takım sohbeti okunamadı: " + e.message)); }
@@ -4145,6 +4153,229 @@ async function cizSohbet(kap) {
     kap.dataset.altta = (kap.scrollHeight - kap.scrollTop - kap.clientHeight < 40) ? "1" : "0";
     kap.dataset.kaydir = String(kap.scrollTop);
   };
+  if (kosuyor) sohbetAkisIzle();
+}
+
+/* ─────────────── SOHBET KARTLARI (09.10.2026) ───────────────
+   Patron: "verilen islerin yaniti karisik; ne is verdim, ne isi yapti hepsi
+   birbirine girmis" -> secim A (tek akis, Claude Code / Codex gibi). HER ISTEK
+   TEK KART: istek · tek durum satiri · (senden karar) · sonuc · dosyalar ·
+   katli ayrinti. Ofisin ic notlari (dagitim, ret, kesinti, donus raporu)
+   sohbete girmez; gunlukte ve kartin katli ayrintisinda durur. */
+const SOHBET_KART_DURUM = {
+  sirada: ["Sırada", "durum-bekliyor"], dusunuyor: ["Lider düşünüyor", "durum-calisiyor"],
+  calisiyor: ["Çalışıyor", "durum-calisiyor"], karar: ["Senden karar bekliyor", "durum-bekleyen"],
+  durdu: ["Durdu", "durum-inceleme"], bitti: ["Bitti", "durum-bitti"],
+  iptal: ["İptal edildi", "durum-kotu"], iletilemedi: ["İletilemedi", "durum-kotu"],
+  cevapsiz: ["Cevap gelmedi", "durum-kotu"],
+};
+
+function eklerKutusu(ekler) {
+  const kap = el("div", "sohbet-ekler");
+  for (const y of ekler || []) {
+    const ad = y.split("/").pop();
+    const url = "/api/ek/" + encodeURIComponent(ad);
+    if (/\.(mp4|webm|mov|m4v|mp3|wav|ogg|m4a)$/i.test(ad)) {
+      const vid = /\.(mp4|webm|mov|m4v)$/i.test(ad);
+      const m = el(vid ? "video" : "audio", "sohbet-ek-oynat");
+      m.src = url; m.controls = true; m.preload = "metadata"; m.title = y;
+      kap.append(m); continue;
+    }
+    const a = el("a", "sohbet-ek");
+    a.href = url; a.target = "_blank"; a.rel = "noopener"; a.title = y;
+    if (/\.(png|jpe?g|gif|webp|bmp)$/i.test(ad)) {
+      const im = el("img"); im.src = url; im.alt = ad; im.loading = "lazy"; a.append(im);
+    } else a.textContent = "📄 " + ad.replace(/^\d{8}-\d{6}-/, "");
+    kap.append(a);
+  }
+  return kap;
+}
+
+async function kartIslem(yol, govde, iyi) {
+  try { await yolla(yol, govde || {}); bildir(iyi, "iyi"); }
+  catch (e) { bildir(String(e.message || e).slice(0, 160), "uyari"); }
+  yenile();
+}
+
+function kartCiz(k, adlar, bekleyen) {
+  const kart = el("div", "kart kart-" + k.tip + " kd-" + (k.durum || ""));
+  kart.dataset.kart = k.id;
+  // 1) ISTEK (senin sozun)
+  const ist = el("div", "kart-istek");
+  const ust = el("div", "kart-ust");
+  const kime = k.tip === "soru_sana" ? (k.kimden + " sana soruyor") : ("sen → " + (k.kime || "lider"));
+  ust.append(el("b", null, kime), el("span", "sohbet-saat", " · " + saat(k.an)));
+  ist.append(ust);
+  const y = el("div", "kart-metin"); kalinYaz(y, k.metin); ist.append(y);
+  if ((k.ekler || []).length) ist.append(eklerKutusu(k.ekler));
+  kart.append(ist);
+  // 2) TEK DURUM SATIRI
+  const [ad, sinif] = SOHBET_KART_DURUM[k.durum] || [k.durum || "", ""];
+  const ds = el("div", "kart-durum " + sinif);
+  ds.append(el("span", "kart-nokta"), el("b", null, ad));
+  const isler = k.isler || [];
+  const kimler = isler.map((i) => i.sahip).filter(Boolean).filter((v, i, a) => a.indexOf(v) === i);
+  if (k.canli) {
+    const s = el("span", "sohbet-sure"); s.dataset.bas = k.canli.basladi || k.an || "";
+    ds.append(document.createTextNode(" · " + (k.canli.kim || "") +
+              (k.canli.ne === "inceleme" ? " (lider inceliyor)" : "") + " · "), s);
+    if (k.canli.son) ds.append(el("span", "kart-son", " — " + k.canli.son));
+  } else if (k.durum === "bitti" || k.durum === "iptal") {
+    if (kimler.length) ds.append(document.createTextNode(" · " + kimler.join(", ")));
+    if (k.sure_sn != null) ds.append(document.createTextNode(" · " + sureYazi(k.sure_sn)));
+  } else if (k.durum === "sirada") {
+    ds.append(document.createTextNode(` · ${k.sira_no}. sırada`));
+  } else if (k.durum === "iletilemedi" && k.sebep) {
+    ds.append(el("span", "kart-son", " — " + k.sebep));
+  } else if (k.durum === "dusunuyor") {
+    const s = el("span", "sohbet-sure"); s.dataset.bas = k.an || "";
+    ds.append(document.createTextNode(" · "), s);
+  }
+  // durum satirinin dugmeleri
+  const dug = el("span", "kart-dugmeler");
+  const acikIsler = isler.filter((i) => !["bitti", "iptal"].includes(i.durum));
+  if (k.durum === "sirada") {
+    const b = el("button", "sohbet-cip", "İptal");
+    b.onclick = () => kartIslem("/api/kuyruk/" + encodeURIComponent(k.id) + "/iptal", {}, "iş sıradan çıkarıldı");
+    dug.append(b);
+  }
+  if (k.durum === "iletilemedi") {
+    const b1 = el("button", "sohbet-cip", "Tekrar dene");
+    b1.onclick = () => kartIslem("/api/kuyruk/" + encodeURIComponent(k.id) + "/tekrar", {}, "yeniden sıraya kondu");
+    const b2 = el("button", "sohbet-cip", "Kapat");
+    b2.onclick = () => kartIslem("/api/kuyruk/" + encodeURIComponent(k.id) + "/kapat", {}, "kaldırıldı");
+    dug.append(b1, b2);
+  }
+  for (const i of acikIsler) {
+    const tahta = ((D.tahta && Object.values(D.tahta).flat()) || []).find((g) => g.no === i.no) || {};
+    const b = el("button", "sohbet-cip", (tahta.duraklatildi ? "Sürdür" : "Duraklat") + (acikIsler.length > 1 ? " #" + i.no : ""));
+    b.onclick = () => kartIslem(`/api/gorev/${i.no}/` + (tahta.duraklatildi ? "surdur" : "duraklat"), {},
+                                tahta.duraklatildi ? `#${i.no} sürüyor` : `#${i.no} duraklatıldı`);
+    const ip = el("button", "sohbet-cip", "İptal" + (acikIsler.length > 1 ? " #" + i.no : ""));
+    ip.title = "işin ayrıntısı açılır; iptal sebebi orada yazılır";
+    ip.onclick = () => gorevAc(i.no);
+    dug.append(b, ip);
+  }
+  if (dug.childNodes.length) ds.append(dug);
+  kart.append(ds);
+  // 3) SENDEN KARAR: bu istegin islerine bagli onay ve sorular KARTIN ICINDE
+  const nolar = new Set(isler.map((i) => i.no));
+  if (k.tip === "soru_sana") {
+    const s = ((bekleyen && bekleyen.sorular) || []).find((x) => x.id === k.id);
+    if (s) kart.append(soruKartiYap(s));
+  } else if (bekleyen && nolar.size) {
+    for (const a of bekleyen.onaylar || []) if (nolar.has(a.gorev_no)) kart.append(onayKartiYap(a));
+    for (const s of bekleyen.sorular || []) if (nolar.has(s.gorev_no)) kart.append(soruKartiYap(s));
+  }
+  // 4) LIDERIN YAZILMAKTA OLAN CEVABI (dusunurken akar)
+  if (k.durum === "dusunuyor" || (k.akis && !k.sonuc)) {
+    const l = el("div", "sohbet-balon lider " + (k.akis ? "akiyor" : "bekliyor") + " kart-akis");
+    l.dataset.mesaj = k.id;
+    const yz = el("span", "sohbet-yazi"); yz.textContent = k.akis || "düşünüyor…";
+    l.append(yz); kart.append(l);
+  }
+  // 5) SONUC + DOSYALAR
+  if (k.sonuc) {
+    const so = el("div", "kart-sonuc");
+    const t = el("div", "kart-metin"); kalinYaz(t, k.sonuc); so.append(t);
+    if (k.sonuc.length > TAKIM_KATLA_HARF) {
+      so.classList.add("katli");
+      const tk = el("button", "sohbet-cip", "Tamamını oku");
+      tk.onclick = () => { const z = so.classList.toggle("katli"); tk.textContent = z ? "Tamamını oku" : "Kısalt"; };
+      so.append(tk);
+    }
+    kart.append(so);
+  }
+  if ((k.sonuc_ekler || []).length) kart.append(eklerKutusu(k.sonuc_ekler));
+  // 6) ALT: kabul / duzeltme / is cipleri
+  const alt = el("div", "sohbet-altlar");
+  if (k.durum === "bitti" && isler.length) {
+    if (k.kabul) alt.append(el("span", "sohbet-cip durum-bitti", "✓ kabul ettin"));
+    else {
+      const kb = el("button", "sohbet-cip", "Kabul et");
+      kb.title = "teslimi kabul et (karar günlüğüne yazılır)";
+      kb.onclick = () => kartIslem("/api/mesaj/" + encodeURIComponent(k.id) + "/kabul", {}, "kabul edildi");
+      alt.append(kb);
+    }
+    const dz = el("button", "sohbet-cip", "Düzeltme iste");
+    dz.onclick = () => {
+      const g = $("#sohbet-girdi"); if (!g) return;
+      g.value = `Düzeltme (${isler.map((i) => "#" + i.no).join(" ")}): `;
+      g.focus(); g.setSelectionRange(g.value.length, g.value.length);
+    };
+    alt.append(dz);
+  }
+  for (const i of isler) {
+    const c = el("button", "sohbet-cip durum-" + i.durum, `#${i.no} ${GOREV_DURUM[i.durum] || i.durum}`);
+    c.title = (i.baslik || "") + " — işin ayrıntısı";
+    c.onclick = () => gorevAc(i.no);
+    alt.append(c);
+  }
+  if (kimler.length && adlar.includes(kimler[0])) {
+    const t = el("button", "sohbet-cip", "Terminalde göster");
+    t.onclick = () => { D.secilenAjan = kimler[0]; if (D.yerlesim) panoSec("ofis"); cizOfis(); };
+    alt.append(t);
+  }
+  if (alt.childNodes.length) kart.append(alt);
+  // 7) KATLI AYRINTI: verilen isler, islem satirlari, ajanlarin mesajlari
+  if (k.tip !== "sirada" && k.tip !== "iletilemedi" && k.tip !== "soru_sana"
+      && (isler.length || (k.ayrinti || []).length || (k.adimlar || []).length)) {
+    const sahte = { id: k.id, bekliyor: false,
+                    istek_durum: { isler, adimlar: k.adimlar || [], adim: k.adim || 0 } };
+    kart.append(adimBlogu(sahte, k.ayrinti || [], adlar, false));
+  }
+  return kart;
+}
+
+function kartSeridi(kartlar) {
+  const say = { calisiyor: 0, karar: 0, durdu: 0, sirada: 0 };
+  let ilk = {};
+  for (const k of kartlar) {
+    const d = k.durum === "dusunuyor" ? "calisiyor" : k.durum;
+    if (d in say) { say[d]++; ilk[d] = ilk[d] || k.id; }
+  }
+  const ad = { calisiyor: "sürüyor", karar: "senden karar bekliyor", durdu: "durdu", sirada: "sırada" };
+  const p = Object.keys(say).filter((d) => say[d]);
+  if (!p.length) return null;
+  const s = el("div", "kart-serit");
+  for (const d of p) {
+    const b = el("button", "sohbet-cip " + (SOHBET_KART_DURUM[d] || ["", ""])[1], `${say[d]} ${ad[d]}`);
+    b.onclick = () => {
+      const h = document.querySelector(`#pano-sohbet [data-kart="${CSS.escape(ilk[d])}"]`);
+      if (h) h.scrollIntoView({ block: "center", behavior: "smooth" });
+    };
+    s.append(b);
+  }
+  return s;
+}
+
+async function cizSohbet(kap) {
+  let r, bek = null;
+  try { r = await al("/api/kartlar" + (D.kanat ? "?kanat=" + D.kanat : "")); }
+  catch (e) { return kap.append(el("div", "form-ipucu uyari", "takım sohbeti okunamadı: " + e.message)); }
+  try { bek = await al("/api/bekleyenler"); } catch (_) { bek = D.bekleyen || null; }
+  const kartlar = r.kartlar || [];
+  const adlar = ((D.ofis && D.ofis.ajanlar) || []).map((a) => a.ad);
+  const bas = el("div", "takim-bas");
+  bas.append(el("b", null, "Takım sohbeti"),
+             el("span", "takim-ipucu", "yaz → lidere · @ad → ajana sor ya da not · @ad iş: … → işi ona ver"));
+  kap.append(bas);
+  const serit = kartSeridi(kartlar);
+  if (serit) kap.append(serit);
+  if (!kartlar.length)
+    return kap.append(el("div", "bos-yazi",
+      "Takım sohbeti boş. Alttaki satıra yaz: adres yoksa lidere gider; " +
+      "@ad ile bir ajana sorarsın, @ad iş: … ile işi o ajana verirsin."));
+  const kosuyor = (r.kosu && r.kosu.calisiyor) || (r.danisma && r.danisma.calisiyor);
+  if (!kosuyor) gecicIpuclariniGeriAl();
+  for (const k of kartlar) kap.append(kartCiz(k, adlar, bek));
+  if (kap.dataset.altta !== "0") kap.scrollTop = kap.scrollHeight;
+  else kap.scrollTop = Number(kap.dataset.kaydir || 0);
+  kap.onscroll = () => {
+    kap.dataset.altta = (kap.scrollHeight - kap.scrollTop - kap.clientHeight < 40) ? "1" : "0";
+    kap.dataset.kaydir = String(kap.scrollTop);
+  };
+  sureleriYaz();
   if (kosuyor) sohbetAkisIzle();
 }
 

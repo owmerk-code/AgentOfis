@@ -99,8 +99,8 @@ mc = json.loads((ev / ".gemini" / "config" / "mcp_config.json").read_text(encodi
 sina("MCP: sistemin sunuculari (alwaysLoad ayiklandi)",
      set(mc["mcpServers"]) == {"ofis", "tarayici"} and "alwaysLoad" not in mc["mcpServers"]["ofis"])
 st = json.loads((ev / ".gemini" / "antigravity-cli" / "settings.json").read_text(encoding="utf-8"))
-sina("izin: komut + her MCP sunucusu kancaya ulasir",
-     set(st["permissions"]["allow"]) == {"command(*)", "mcp(ofis/*)", "mcp(tarayici/*)"})
+sina("izin: komut + web okuma (url) + her MCP sunucusu kancaya ulasir",
+     set(st["permissions"]["allow"]) == {"command(*)", "read_url(*)", "mcp(ofis/*)", "mcp(tarayici/*)"})
 turler = [o.tur for o in ol]
 sina("olay sirasi basladi..bitti", turler[0] == "basladi" and turler[-1] == "bitti")
 otr = [o for o in ol if o.tur == "oturum"]

@@ -372,7 +372,14 @@ class AntigravityMotoru(Motor):
             _beceri.ev_esitle(cfg / "skills")
         except Exception:                       # noqa: BLE001
             pass
-        izin = ["command(*)"] + [f"mcp({ad}/*)" for ad in sunucular]
+        # `url(*)` (09.10.2026, F1 canli + OLCULDU): agy'nin kendi URL okuma araci
+        # her alan adi icin "Allow access to this URL?" diye SORDU, tur kilitlendi.
+        # Kanca 'allow' dese de soru kalkmadi (olculdu). `url(*)` YANLISTI: agy
+        # acilista onu GECERSIZ diye SILIYOR (url(example.com) dahil, olculdu);
+        # kendi kaydettigi bicim `read_url(<alan>)`, `read_url(*)` butun
+        # sitelerde sorusuz okudu (example.com, btk.gov.tr; olculdu) ve kalir.
+        # Web okumak ofiste serbest (tarayici gibi).
+        izin = ["command(*)", "read_url(*)"] + [f"mcp({ad}/*)" for ad in sunucular]
         ayar = {"permissions": {"allow": izin}}
         if guvenilen:
             ayar["trustedWorkspaces"] = [str(k) for k in guvenilen]
@@ -650,8 +657,12 @@ class AntigravityMotoru(Motor):
             argv += ["--model", str(model)]
         if EFOR_CEVRIMI.get(efor) and not str(model or "").endswith(("-low", "-medium", "-high")):
             argv += ["--effort", EFOR_CEVRIMI[efor]]
-        if not yazabilir:
-            argv += ["--mode", "plan"]
+        # DOSYA DUZENLEMESI AGY'YE SORULMAZ (09.10.2026, F1 canli): etkilesimli
+        # kipte agy "Accept this file edit?" / "Allow creation of this file?"
+        # diye sordu, tur iki kez KILITLENDI. Karari ofisin kapisi veriyor
+        # (kanca her araci agy'den ONCE denetler); agy'nin kendi "otomatik
+        # onayla" kipi (ekranda: "shift+tab to auto-approve file edits").
+        argv += ["--mode", "accept-edits" if yazabilir else "plan"]
         for ek in ek_klasorler or ():
             argv += ["--add-dir", str(ek)]
         if oturum_id:
@@ -714,12 +725,26 @@ class AntigravityMotoru(Motor):
             # kendi sorusunu sorar ve cevap gelene kadar TUR DURUR. Ofis "3.
             # No, deny access" basar; kalici izin (`allowNonWorkspaceAccess`)
             # patronun karari, ofis kendiliginden acmaz.
-            "ekran_sorusu": {"isaret": "Allow access to this file?", "tus": "3",
+            # OLUSTURMA SORUSU (09.10.2026, F1 canli: tur bu soruda KILITLENDI;
+            # elle "1" verilince ajan surdu). agy her araci once ofisin
+            # kancasina sorar; kanca reddetseydi soru hic cikmazdi -> soru
+            # geldiyse kapi zaten gecirmistir: ONAYLANIR. Basit kurulumda
+            # yeniden URETILEMEDI (tek satir/150 satir, liste/accept-edits);
+            # tetikleyicisi bilinmiyor, kural buna dayanmaz.
+            "ekran_sorulari": [
+                {"isaret": "Allow creation of this file?", "tus": "1", "kabul": True,
+                 "ne": "calisma alanina dosya olusturma"},
+                {"isaret": "Accept this file edit?", "tus": "1", "kabul": True,
+                 "ne": "calisma alanindaki dosya duzenlemesi"},
+                {"isaret": "Allow access to this URL?", "tus": "1", "kabul": True,
+                 "ne": "web adresi okuma (read_url(*) kurali tutmazsa)"},
+                {"isaret": "Allow access to this file?", "tus": "3",
                              "ne": "calisma alani DISI dosya erisimi",
                              "devam": ("OFIS: {yol} calisma alaninin DISINDA; erisim reddedildi "
                                        "(izin patronun). Ofisin kaynak koduna ve baska klasorlere "
                                        "gerek yok: araclarin tarifi araclarin kendisinde. Isine "
                                        "kendi klasorunle KALDIGIN YERDEN devam et.")},
+            ],
         }
 
     @staticmethod

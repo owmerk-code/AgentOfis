@@ -755,7 +755,14 @@ class Sohbet:
                zaman_asimi=None, azami_tik: int = 8, paralel: int = 3,
                izinli_araclar: tuple = (), ek_klasorler=None,
                tarayici_alani=None, tarayici_kabini: str = "",
-               atanan: str = "", kaynak: str = ""):
+               atanan: str = "", kaynak: str = "", ara_ver=None):
+        # ARA VER (09.10.2026, F1 canli: doviz istegi, kargo isi 2 saat donerken
+        # SIRADA BEKLEDI -- sira, onceki istegin isi BITMEDEN sonrakine
+        # gecmiyordu). `ara_ver()` True donerse halka her adimdan sonra birakilir:
+        # isler kapanmaz, sonraki istegin halkasi HEPSINI birlikte surdurur;
+        # bu istegin ozeti isler bitince ofisin modelsiz cevabiyla gelir
+        # (`kuyruk.askida_kalanlari_kapat`).
+        self._ara_ver = ara_ver
         mesaj = (mesaj or "").strip()
         if not mesaj:
             raise SohbetHatasi("Bos mesaj gonderilemez.")
@@ -901,6 +908,7 @@ class Sohbet:
                 self._akis.yeni_bolum("duz", sabit=cevap)
                 yield {"tur": "surduruluyor", "govde":
                        "Acik is var, halka donuyor.", "ek": {}}
+                ara = False
                 for adim in self.orkestra.kos(
                         azami_tik=azami_tik, butce_usd=butce_usd,
                         zaman_asimi=zaman_asimi, paralel=paralel,
@@ -911,6 +919,14 @@ class Sohbet:
                            "ek": adim}
                     if adim.get("bitti"):
                         break
+                    if self._ara_var_mi():
+                        ara = True
+                        break
+                if ara:
+                    self.ofis.postane.cevapla(kayit["id"], cevap, cevaplayan=lider["ad"])
+                    yield {"tur": "ara", "govde": "Sirada yeni istek var; isler suruyor.", "ek": {}}
+                    yield {"tur": "bitti", "govde": "", "ek": {"yol": "cevap", "ara": True}}
+                    return
                 rapor = self._rapor(lider, mesaj,
                                     {"gorevler": self._acik_ve_yeni(lider.get("kanat_id"))},
                                     butce_usd, zaman_asimi)
@@ -1043,11 +1059,27 @@ class Sohbet:
             if adim.get("bitti"):
                 son_adim = adim
                 break
+            if self._ara_var_mi():
+                # Istek CEVAPSIZ kalir: isler bitince ofisin ozetiyle kapanir.
+                self.ofis.db.olay_yaz(self.ofis.proje_id, "uyari",
+                                      "Sirada yeni istek var: halka ona birakildi; bu istegin "
+                                      "isleri birlikte suruyor, bitince ozet duser.",
+                                      ajan_ad="ofis")
+                yield {"tur": "ara", "govde": "Sirada yeni istek var; isler suruyor.", "ek": {}}
+                yield {"tur": "bitti", "govde": "", "ek": {"yol": karar["karar"], "ara": True}}
+                return
 
         rapor = self._rapor(lider, mesaj, plan, butce_usd, zaman_asimi)
         self.ofis.postane.cevapla(kayit["id"], rapor, cevaplayan=lider["ad"])
         yield {"tur": "rapor", "govde": rapor, "ek": {}}
         yield {"tur": "bitti", "govde": "", "ek": {"yol": karar["karar"]}}
+
+    def _ara_var_mi(self) -> bool:
+        f = getattr(self, "_ara_ver", None)
+        try:
+            return bool(f and f())
+        except Exception:                         # noqa: BLE001 -- olcum halkayi durdurmaz
+            return False
 
     def _acik_is_var(self, kanat_id=None) -> bool:
         """Kosulabilecek acik is var mi? (Bekleyen degil, ILERLEYEBILIR.)"""

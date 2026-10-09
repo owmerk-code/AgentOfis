@@ -360,7 +360,10 @@ def _kuyrugu_kostur(db_yolu, proje_ad: str) -> None:
                                               tarayici_alani=k["tarayici_alani"] or None,
                                               tarayici_kabini=kabin_cdp,
                                               atanan=k["atanan"],
-                                              kaynak=("ekip" if k.get("kaynak") == "ekip" else "")):
+                                              kaynak=("ekip" if k.get("kaynak") == "ekip" else ""),
+                                              # Sirada yeni istek varsa halka ona birakilir
+                                              # (09.10 F1: doviz istegi 2 saat bekledi).
+                                              ara_ver=lambda: bool(_kuyruk.bekleyenler(o))):
                         if _durdurulduysa(o, "Lider turu"):
                             break
                     _kuyruk.bitir(o, k["id"], "bitti")
@@ -376,6 +379,11 @@ def _kuyrugu_kostur(db_yolu, proje_ad: str) -> None:
                                   f"Siradaki is dustu ({k['metin'][:60]}): {exc}")
         finally:
             _kuyruk.raporu_yaz(o, seri)
+            # Ara verilmis isteklerin isleri bittiyse ozetleri burada duser.
+            try:
+                _kuyruk.askida_kalanlari_kapat(o)
+            except Exception:            # noqa: BLE001 -- ozet sirayi dusurmez
+                pass
     _arkada_calistir(db_yolu, proje_ad, isi, "sira")
 
 
@@ -972,6 +980,8 @@ def _ajan_sicili(ofis, ad: str) -> dict:
                 sicil["son_tur"] = {
                     "jeton": d.get("jeton"), "maliyet_usd": d.get("maliyet_usd"),
                     "model": d.get("model"), "basarili": d.get("basarili"),
+                    "model_ad": __import__("ofis.guncelleme", fromlist=["x"]).model_adi(
+                        d.get("motor") or "", d.get("model") or ""),
                     "arac": d.get("arac_sayisi"),
                     # MOTOR: 22.09'da `tur_ozeti`ye eklendi ama panele
                     # hic ulasmiyordu. Pano rozetinde OLCULEN motor
@@ -1361,6 +1371,7 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
             k["calisan"] = len([g for g in gorevler
                                 if g["kanat_id"] == k["id"] and g["durum"] == "calisiyor"])
 
+        from . import guncelleme as _gnc
         ajanlar = []
         for a in ofis.kadro.liste():
             yer = _oda(ofis, a)
@@ -1369,6 +1380,9 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
                 "meslek_baslik": _R.MESLEK_BASLIK.get(a["meslek"], a["meslek"]),
                 "karakter": a.get("karakter") or "",
                 "motor": a["motor"], "model": a["model"] or "hesap varsayilani",
+                # OKUNUR AD (09.10): takma ad ofisin sabitledigi kimlige cevrilir.
+                "model_ad": _gnc.model_adi(a["motor"], _gnc.model_coz(
+                    ofis.db, ofis.proje_id, a["motor"], a["model"] or "")),
                 "efor": a["efor"], "tur": a["tur"], "faz": a["faz"],
                 "kanat_id": a["kanat_id"], "oturum_var": bool(a["oturum_id"]),
                 "ders": len(ofis.kadro.dersler(a["ad"])),
@@ -2765,8 +2779,13 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
                     istek = await soket.receive_json()
                     tur = istek.get("tur")
                     if tur == "girdi":
+                        # Tarayicinin terminal bileseninin OTOMATIK cevaplari
+                        # (renk/kimlik) CLI'a gitmez: Esc'leri turu kesiyordu.
+                        _g = _tr.insan_girdisi(str(istek.get("govde") or ""))
+                        if not _g:
+                            continue
                         try:
-                            t.yaz(str(istek.get("govde") or ""))
+                            t.yaz(_g)
                         except _tr.TerminalHatasi:
                             return
                     elif tur == "boyut":
@@ -3834,6 +3853,21 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
             x["akis"] = akan.get(str(x["id"]), "") if x["bekliyor"] else ""
         return {"ogeler": ogeler, "kosu": dict(_KOSU),
                 "danisma": dict(_DANISMA)}
+
+    @uygulama.get("/api/kartlar")
+    def api_kartlar(kanat: str = "", adet: int = 120):
+        """SOHBET KARTLARI (09.10.2026, patron: "ne is verdim, ne isi yapti
+        hepsi birbirine girmis"): her istek TEK kart, tek durum, tek sonuc
+        (`takim.kartlar`). Liderin yazilmakta olan cevabi da karta eklenir."""
+        from . import takim as _takim
+        from .sohbet import akislar
+        ofis = ofis_ac()
+        kosuyor = bool(_KOSU.get("calisiyor") or _DANISMA.get("calisiyor"))
+        k = _takim.kartlar(ofis, kanat_id=(kanat or None), adet=adet, kosuyor=kosuyor)
+        akan = akislar(ofis.db, ofis.proje_id)
+        for x in k:
+            x["akis"] = akan.get(str(x["id"]), "") if x.get("durum") in ("dusunuyor", "cevapsiz") else ""
+        return {"kartlar": k, "kosu": dict(_KOSU), "danisma": dict(_DANISMA)}
 
     @uygulama.post("/api/mesaj/{mesaj_id}/kabul")
     def api_kabul(mesaj_id: str):

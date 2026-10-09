@@ -967,6 +967,20 @@ class Tahta:
     #: Duraklatilabilen durumlar: henuz kapanmamis ve inceleme disinda.
     DURAKLAR = ("bekliyor", "hazir", "calisiyor")
 
+    def insan_kabul(self, no: int) -> dict:
+        """PATRON ISI OLDUGU GIBI KABUL ETTI (09.10.2026, ret freni). Is hangi
+        ACIK durumda olursa olsun (kesintiden sonra 'hazir', duraklatilmis
+        'calisiyor', 'inceleme') kapanir; KANIT KAPISI yine gecerli (`kapat`).
+        Olculdu: kabul aninda is kesinti yuzunden 'hazir'di, eski yol kapatmadi."""
+        g = self.gorev(no)
+        if g["durum"] in (BITTI, IPTAL):
+            raise TahtaHatasi(f"#{no} zaten '{g['durum']}'.")
+        if g["durum"] != INCELEME:
+            with self.db.baglanti() as conn:
+                conn.execute("UPDATE gorev SET durum = ?, duraklatildi = '', revizyon = revizyon + 1, "
+                             "guncellendi = ? WHERE id = ?", (INCELEME, simdi(), g["id"]))
+        return self.kapat(no, self.gorev(no)["revizyon"], kapatan="insan")
+
     def duraklat(self, no: int, kim: str = "insan") -> dict:
         """ISI DURAKLATIR (02.10.2026; rakipte is basina "Duraklat" var).
 

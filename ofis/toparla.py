@@ -112,6 +112,9 @@ def acilista_toparla(ofis) -> dict:
                          + " (aynı ajanla, kaldığı yerden sürecek)")
         if yeniden:
             parca.append(f"{yeniden} istek plan aşamasında kalmıştı, baştan çalışacak")
+        if not parca:
+            # 09.10 canli: yalniz "devam" varken metin "bulundu: ." diye BOS kaliyordu.
+            parca.append("açık işler kaldığı yerden sürdürülüyor")
         ofis.db.olay_yaz(ofis.proje_id, "kesinti_toparlandi",
                          "Ofis kapanmadan önce yarım kalanlar bulundu: " + "; ".join(parca) + ".",
                          ajan_ad="ofis")

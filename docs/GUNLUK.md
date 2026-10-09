@@ -15503,3 +15503,49 @@ hiçbir şey bilmiyorsun):
   çıktı UTF-8'e sabitlendi (Türkçe pencere adları bozulmasın).
 Fren de canlıda çalıştı: patron yazarken deneme "son 30 sn'de fare/klavye
 kullanıldı" deyip başlamadı.
+
+## 09.10.2026 — F1 İLK TUR (patronun panelinde, gerçek ajanlarla): 3 iş, 9 kök neden
+
+İşler: #1 birim çevirici (ece/Sonnet) · #2 kargo karşılaştırma raporu
+(defne/Gemini Flash) · #3 TCMB döviz kuru (kaan/GPT-5.6 Sol). Patron: "2 saatte
+bir iş yapamadık", "sürekli takılacak mı". İşin kendisi kısaydı (#1 2 dk, #3
+1,5 dk); süre aşağıdaki hatalarda gitti. Hepsi SAHTE sınamada görünmüyordu.
+
+1. **Codex incelemesi 2. saniyede kesildi, sarmalayıcı bekledi.** Codex 0.162
+   açılışta renk/kimlik sorar (OSC 10/11, DA); panelde terminal görünümü
+   açıkken xterm.js cevaplıyor, panel cevabı KLAVYE GİRDİSİ diye iletiyordu;
+   Esc ile başladığı için turn_aborted. → `terminal.insan_girdisi` (otomatik
+   cevaplar düşer) + codex `turn_aborted` tur sonu.
+2-4. **Gemini (agy) terminali kendi soruları:** "Allow creation of this file?",
+   "Accept this file edit?", "Allow access to this URL?" — her biri turu
+   kilitledi. Basit kurulumda ilk ikisi YENİDEN ÜRETİLEMEDİ (tetik bilinmiyor).
+   → yazabilen tur `--mode accept-edits`; izin `read_url(*)` (OLÇÜLDÜ: `url(*)`
+   ve `url(alan)` agy açılırken GEÇERSİZ diye siliniyor; kendi kaydettiği biçim
+   `read_url(alan)`; `read_url(*)` example.com + btk.gov.tr sorusuz). Önceki
+   ölçümüm ajan sayfayı okumadan "soru çıkmadı" dediği için YANLIŞTI. Yedek:
+   bilinen sorular `ekran_sorulari` listesinde kendiliğinden cevaplanır
+   (çalışma alanı dışı erişim yine RET). Kanca `{"decision":"allow"}` URL
+   sorusunu KALDIRMADI (ölçüldü).
+5. **Lider eksikleri parça parça söyledi** (her ret yeni satır) → inceleme
+   kuralı 10: eksiklerin HEPSİ bir kerede; sonraki incelemede önce önceki
+   gerekçe, ilk seferde görülebilecek yeni eksik için tekrar ret yok.
+6. **Ret döngüsü freni yoktu** (#2 11 ret) → `RET_FRENI=3`: iş duraklar,
+   patrona seçenekli soru (kabul / bir tur daha / iptal), cevap uygulanır.
+   Kabul ilk sürümde 'hazir' işi kapatmadı ama "kabul edildi" YAZDI (yalan
+   kayıt) → `tahta.insan_kabul` her açık durumdan, karar ancak kapanınca.
+7. **Sıra önceki isteğin işi bitmeden ilerlemiyordu** (döviz isteği 1 saat
+   bekledi) → `konus(ara_ver=)`: sırada yeni istek varsa halka her adımdan sonra
+   ona bırakılır; bırakılan isteğin özeti işler bitince ofisten.
+8. **Model sorulmadan değişti:** "sol" ailesinde gpt-5.6-sol → gpt-6.1-sol
+   "yeni nesil" sayıldı; patron 11 sn'de geri aldı. → codex model değişimi
+   yalnız EMEKLİLİKTE kendiliğinden, öteki sorulur.
+9. **Sohbet karmaşası** (patron: "ne iş verdim ne işi yaptı birbirine
+   girmiş"; seçim A) → `takim.kartlar` + `/api/kartlar`: her istek TEK kart
+   (tek durum, canlı satır, sonuç = liderin PATRONA özeti ya da ajanın son
+   teslimi, yalnız son teslimin dosyası, kararlar kartın içinde, katlı
+   ayrıntı); dönüş raporu/kesinti/dağıtım notu sohbete girmez. Onay/soru
+   çizimi tek işlev (`onayKartiYap`, `soruKartiYap`), sağ kutu ile ortak.
+Ayrıca: model rozeti takma ad yerine gerçek ad (`guncelleme.model_adi`:
+"Sonnet 5.5", "GPT-5.6 Sol"); boş "yarım kalanlar bulundu: ." metni.
+Gözlem: Gemini Flash kaynak eşleştirmesinde zayıf (11 tur); araştırma işinde
+başka modelle karşılaştırılacak.

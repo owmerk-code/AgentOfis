@@ -180,6 +180,16 @@ w = next(k_ for k_ in org["kanatlar"] if k_["ad"] == "WEB")
 sina("takimin lideri ve ajanin motor/model/Turkce meslek adi",
      w["lider"] == "ozel" and any(a["meslek_baslik"] == "Araştırma" and a["motor"] == "claude"
                                   for a in w["ajanlar"]))
+from ofis import guncelleme as _G  # noqa: E402
+db.ayar_yaz(pid, _G.TAKMA_AD_ONEKI + "sonnet", "claude-sonnet-5-5")
+_aj = {a_["ad"]: a_ for a_ in ist.get("/api/ofis").json()["ajanlar"]}
+_ad = next((a_ for a_ in _aj.values() if a_["motor"] == "claude" and a_["model"] == "sonnet"), None)
+sina("rozet: takma ad yerine SABITLENEN gercek model adi (Sonnet 5.5)",
+     _ad is not None and _ad["model_ad"] == "Sonnet 5.5", str(_ad and _ad.get("model_ad")))
+sina("model adlari okunur (GPT-5.6 Sol, Gemini 3.8 Flash High, surum bilinmezse uydurulmaz)",
+     _G.model_adi("codex", "gpt-5.6-sol") == "GPT-5.6 Sol"
+     and _G.model_adi("gemini", "gemini-3.8-flash-high") == "Gemini 3.8 Flash High"
+     and "olculmedi" in _G.model_adi("claude", "opus"))
 sec = ist.get("/api/kadro/secenek").json()
 sina("secenekler: katalog + motor durumu + model secenekleri",
      sec["katalog"]["video"]["motor"] == "claude"

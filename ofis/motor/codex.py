@@ -1827,6 +1827,13 @@ class CodexMotoru(Motor):
                 int(son.get("total_tokens") or 0)
         elif tur == "event_msg" and pt == "task_complete":
             return olaylar, True
+        elif tur == "event_msg" and pt == "turn_aborted":
+            # KESILEN TUR (09.10.2026, OLCULDU F1): codex turu kendisi kesti
+            # ("interrupted"); sarmalayici bunu tur sonu saymiyor, zaman
+            # asimina dek bos bekliyordu. Ofis durdurduysa wrapper onu ayrica
+            # bilir; degilse sebep soylenir.
+            durum["kesildi"] = str(p.get("reason") or "kesildi")
+            return olaylar, True
         return olaylar, False
 
     def _istek_metni(self, metin: str, mcp_yapilandirma: str) -> str:

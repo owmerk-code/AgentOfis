@@ -382,6 +382,28 @@ def model_listesi(db, proje_id: str) -> dict:
     return out
 
 
+def model_adi(motor: str, model: str) -> str:
+    """Panelde okunur model adi (09.10.2026, patron: "sonnet yaziyor, hangi ai
+    model belli degil"). TEK yer: rozet, son tur, organizasyon bunu yazar.
+    Takma ad (`sonnet`) cozulmeden gelirse surum UYDURULMAZ."""
+    m = str(model or "").strip()
+    if not m:
+        return ""
+    if m in TAKMA_ADLAR:
+        return m.capitalize() + " (surum olculmedi)"
+    if m.startswith("claude-"):
+        parca = m[len("claude-"):].split("-")
+        sayi = [p for p in parca[1:] if p.isdigit() and len(p) <= 2]
+        return (parca[0].capitalize() + (" " + ".".join(sayi) if sayi else "")).strip()
+    if m.startswith("gpt-"):
+        parca = m[len("gpt-"):].split("-")
+        return "GPT-" + parca[0] + "".join(" " + p.capitalize() for p in parca[1:])
+    if m.startswith("gemini-"):
+        parca = m.split("-")
+        return "Gemini " + " ".join([parca[1]] + [p.capitalize() for p in parca[2:]])
+    return m
+
+
 def model_coz(db, proje_id: str, motor: str, model: str) -> str:
     """Takma adi ofisin SABITLEDIGI gercek kimlige cevirir.
 
@@ -982,6 +1004,13 @@ def otomatik_ayarla(db, proje_id: str, acik: bool) -> None:
 
 def otomatik_uygulanir_mi(db, proje_id: str, o: dict) -> bool:
     """Bu oneri insana SORULMADAN uygulanabilir mi."""
+    # MODEL DEGISIMI YALNIZ EMEKLILIKTE KENDILIGINDEN (09.10.2026, F1 canli):
+    # "sol" ailesinde gpt-5.6-sol -> gpt-6.1-sol "yeni nesil" sayilip kaan'in
+    # (bilgisayar/tarayici) modeli SORULMADAN degisti; patron 11 sn sonra geri
+    # aldi. Iki model farkli islere secilmis farkli modeller (katalog: tarayici
+    # 5.6 Sol, akil 6.1 Sol). Emekliye ayrilmayan modelin degisimi insana sorulur.
+    if o.get("tur") == "model" and o.get("motor") == "codex"             and not str(o.get("sebep") or "").startswith("EMEKLILIK"):
+        return False
     return (o.get("tur") in OTOMATIK_TURLER
             and not db.ayar_oku(proje_id, OTOMATIK_DENENDI_ONEKI + o.get("anahtar", ""), ""))
 

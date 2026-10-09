@@ -573,11 +573,13 @@ NPM["@openai/codex"] = "0.158.0"
 G.kontrol(d8, p8)
 r8 = G.otomatik_ilerle(of8, fabrika=tamam)
 sira8 = [x["anahtar"].split(":")[0] for x in r8]
-sina("OTOMATIK: CLI ve ayni aile uygulandi, once CLI",
-     len(r8) >= 2 and all(x.get("basarili") for x in r8)
-     and sira8[0] == "cli" and set(sira8[1:]) == {"model"},
-     str(r8))
-sina("ajan (ay) yeni nesilde", of8.kadro.ajan("ay")["model"] == "gpt-7-sol")
+# 09.10.2026 (patron): codex modeli EMEKLILIK disinda kendiliginden degismez.
+sina("OTOMATIK: yalniz CLI uygulandi; ayni aile modeli KENDILIGINDEN gecmedi",
+     len(r8) == 1 and r8[0].get("basarili") and sira8 == ["cli"], str(r8))
+sina("ajan (ay) eski modelinde kaldi; yeni nesil patrona SORULUR",
+     of8.kadro.ajan("ay")["model"] != "gpt-7-sol"
+     and any(o.get("yeni") == "gpt-7-sol" for o in G.insana_dusenler(d8, p8)),
+     str([o.get("ozet") for o in G.insana_dusenler(d8, p8)]))
 sina("CLI yeni surumde", SURUM["codex"] == "0.158.0")
 g = G.gecmis(d8, p8)
 sina("otomatik uygulananin VEREN'i ofis", bool(g) and g[-1]["veren"] == "ofis", str(g[-1:]))
@@ -693,6 +695,16 @@ try:
          not _d5["basarili"] and "BIRINCI" in _d5["sebep"] and "IKINCI" in _d5["sebep"], str(_d5))
 finally:
     G._terminal_denemesi = _asil_t
+
+print("\nMODEL DEGISIMI: emeklilik disinda SORULUR (09.10 F1: 5.6 Sol -> 6.1 Sol sorulmadan gecti)")
+_o_nesil = {"tur": "model", "motor": "codex", "eski": "gpt-5.6-sol", "yeni": "gpt-6.1-sol",
+            "sebep": "ayni ailenin yeni nesli", "anahtar": "model:codex:gpt-5.6-sol->gpt-6.1-sol"}
+_o_emekli = dict(_o_nesil, sebep="EMEKLILIK: 2026-11-01", anahtar="model:codex:emekli")
+sina("codex 'yeni nesil' model degisimi KENDILIGINDEN uygulanmaz (patrona sorulur)",
+     G.otomatik_uygulanir_mi(db, pid, _o_nesil) is False)
+sina("emekliye ayrilan model kendiliginden degisir (yoksa is durur)",
+     G.otomatik_uygulanir_mi(db, pid, _o_emekli) is True)
+sina("CLI surumu yine kendiliginden", G.otomatik_uygulanir_mi(db, pid, {"tur": "cli", "anahtar": "cli:x"}) is True)
 
 print(f"\n== sonuc: {GECEN} gecti, {KALAN} kaldi")
 sys.exit(1 if KALAN else 0)

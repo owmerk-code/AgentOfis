@@ -795,6 +795,25 @@ sina("patronun sozu brifingde AYNEN ve 'onay_iste cagirma' kuraliyla",
      "a.txt'ye merhaba yaz" in _pb and "onay_iste` CAGIRMA" in _pb, _pb[-400:])
 sina(".ofis/ekler/ klasoru is basinda HAZIR", (_pk / ".ofis" / "ekler").is_dir())
 
+print("\nSIRADA YENI ISTEK VARSA HALKA ONA BIRAKILIR (09.10 F1: doviz istegi 2 saat bekledi)")
+_ao = Ofis.proje_ac(Veritabani(_pk / "ara.sqlite3"), "Ara", amac="a", basari_olcutu="b", kok_klasor=str(_pk))
+_akn = _ao.kanat_ac("A", "A")
+_ao.kadro.ise_al("lale", "lider", lider_mi=True, kanat_id=_akn, motor="sahte", klasor=str(_pk))
+_ao.kadro.ise_al("cem", "backend", kanat_id=_akn, motor="sahte", klasor=str(_pk))
+_aol = list(Sohbet(_ao, motor_fabrikasi=lambda ad, **a: _AkisMotor(cevap="")).konus(
+    "a.txt'ye merhaba yaz", azami_tik=6, ara_ver=lambda: True))
+_turler = [o["tur"] for o in _aol]
+sina("ara verildi: plan + tek adim, RAPOR YOK", "ara" in _turler and "rapor" not in _turler
+     and _turler.count("tik") == 1, str(_turler))
+with _ao.db.baglanti() as _c:
+    _cvp = _c.execute("SELECT cevap FROM mesaj WHERE gonderen='insan' ORDER BY rowid DESC LIMIT 1").fetchone()
+sina("  istek ACIK kaldi (isler bitince ofisin ozeti kapatir)", _cvp is not None and not _cvp[0], str(_cvp))
+sina("  is KAPANMADI, halka birakildi (sonraki istegin halkasi surdurur)",
+     _ao.tahta.liste()[0]["durum"] != "bitti", str([g["durum"] for g in _ao.tahta.liste()]))
+_bol2 = list(Sohbet(_ao, motor_fabrikasi=lambda ad, **a: _AkisMotor(cevap="")).konus(
+    "a.txt'ye merhaba yaz", azami_tik=6, ara_ver=lambda: False))
+sina("ara_ver False iken eskisi gibi: halka sonuna dek, rapor var", "rapor" in [o["tur"] for o in _bol2])
+
 print("\n'BAKAMIYORUM' CEVABI PATRONA GITMEZ, IS AJANA VERILIR (30.09, G09)")
 _bo = Ofis.proje_ac(Veritabani(_pk / "b.sqlite3"), "Bakamam", amac="a", basari_olcutu="b",
                     kok_klasor=str(_pk))

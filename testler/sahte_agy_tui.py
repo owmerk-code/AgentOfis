@@ -155,6 +155,16 @@ while True:
             # GERCEK agy gibi: ret turu KESER, yeni mesaj bekler.
             print("Interrupted - What should Antigravity CLI do instead?\n> ", flush=True)
             continue
+    if "#OLUSTUR#" in m:
+        # GERCEK agy'nin (09.10 F1) olusturma sorusu, aynen.
+        print("Create file\nC:\\Users\\pc\\Desktop\\genel-agentofis\\rapor.md  +136\n"
+              "Allow creation of this file?\n> 1. Yes, allow creation\n  2. No, deny creation\n"
+              "\u2191/\u2193 Navigate \u00b7 tab Amend \u00b7 f full diff", flush=True)
+        while True:
+            ch = msvcrt.getwch()
+            if ch in "12":
+                break
+        Path(os.environ["USERPROFILE"], "sahte_agy_olustur.txt").write_text(ch, encoding="utf-8")
     if "#YAVAS#" in m or "#YUT#" in m:
         sira = []
         kesildi = mesgulken_oku(sira, 6)

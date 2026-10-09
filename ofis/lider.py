@@ -134,6 +134,47 @@ BILGI_DESENI = re.compile(r"^\s*BILGI\s*:\s*(.+?)\s*->\s*(.+)$",
 #: degil; lider her seyi yazmaya kalkarsa brifing gurultuyle dolar.
 AZAMI_INCELEME_BILGI = 5
 
+#: RET FRENI (09.10.2026, F1 canli: kargo raporu ALTI kez geri dondu, her tur
+#: 7-15 dk; patron "2 saatte bir is yapamadik"). Bu kadar retten sonra is
+#: ajana DONMEZ: duraklar, patrona secenekli soru gider, cevap uygulanir.
+RET_FRENI = 3
+RET_FRENI_KAYNAK = "ret_freni"
+FREN_KABUL = "Olduğu gibi kabul et"
+FREN_TUR = "Bir tur daha dene"
+FREN_IPTAL = "İptal et"
+
+
+def ret_freni_cevabi(ofis, gorev_id: str, cevap: str) -> dict:
+    """Patronun ret freni sorusuna cevabi -> eylem (postane.cevapla cagirir)."""
+    with ofis.db.baglanti() as c:
+        r = c.execute("SELECT no FROM gorev WHERE id = ?", (gorev_id,)).fetchone()
+    if not r:
+        return {}
+    no, tahta = int(r["no"]), ofis.tahta
+    g = tahta.gorev(no)
+    cevap = " ".join(str(cevap or "").split())
+    if cevap == FREN_TUR:
+        if g.get("duraklatildi"):
+            tahta.devam_ettir(no, kim="insan")
+        return {"eylem": "tur", "gorev_no": no}
+    if cevap == FREN_IPTAL:
+        tahta.iptal_et(no, sebep="patron: ret freni sonrasi iptal", iptal_eden="insan")
+        return {"eylem": "iptal", "gorev_no": no}
+    if cevap == FREN_KABUL:
+        # KAYIT YALAN SOYLEMEZ (09.10 olculdu: is kapanmadan "kabul edildi"
+        # yaziliyordu): once kapanir, karar ancak kapandiysa yazilir.
+        try:
+            tahta.insan_kabul(no)
+        except Exception as exc:                      # noqa: BLE001 -- sebep soylenir
+            ofis.db.olay_yaz(ofis.proje_id, "uyari",
+                             f"#{no} kabul UYGULANAMADI: {exc}", ajan_ad="ofis", gorev_id=gorev_id)
+            return {"eylem": "hata", "gorev_no": no, "sebep": str(exc)}
+        ofis.db.olay_yaz(ofis.proje_id, "karar",
+                         f"insan: #{no} ret freni sonrasi OLDUGU GIBI KABUL edildi.",
+                         ajan_ad="insan", gorev_id=gorev_id)
+        return {"eylem": "kabul", "gorev_no": no}
+    return {}
+
 
 class LiderHatasi(RuntimeError):
     pass
@@ -611,6 +652,16 @@ class Lider:
             "   ajanin kaniti eksik anlatti diye GERI GONDERME: kapat ve",
             "   neyi kendin gordugunu gerekceye yaz. Senin bagimsiz okuman,",
             "   ajanin anlatisindan GUCLU bir kanittir.",
+            # 09.10 olculdu (F1 #2, gemini isci / opus lider): rapor DORT kez geri
+            # dondu, her seferinde BASKA bir eksikle (once tablo kaynaklari, sonra
+            # tek bir satir) -- hepsi ilk incelemede gorulebilirdi; her ret bir
+            # isci turu (~15 dk) yakti.
+            "10. Geri gonderiyorsan eksiklerin HEPSINI bu incelemede yaz: ciktinin",
+            "   TAMAMINI olcute karsi oku, tek tek degil liste halinde. Daha once",
+            "   geri gonderdigin iste once ONCEKI gerekcenin duzelip duzelmedigine",
+            "   bak; ilk incelemede gorebilecegin YENI bir eksik icin tekrar geri",
+            "   gonderme (onu PATRONA satirinda not et), yalniz duzeltmenin",
+            "   BOZDUGU bir sey ya da hala karsilanmayan olcut geri dondurur.",
             "",
             "### Hukmunu TAM OLARAK su bicimde yaz",
             "",
@@ -1078,8 +1129,23 @@ class Lider:
             gerekce = f"{gerekce} [{dayanak}]"
         self.ofis.tahta.geri_gonder(guncel["no"], guncel["revizyon"],
                                     gerekce=gerekce, gonderen=lider_ad)
+        _ret = self.ofis.tahta.ret_sayisi(no)
+        if _ret >= RET_FRENI:
+            # RET FRENI: is ajana donmez; patron karar verir.
+            try:
+                self.ofis.tahta.duraklat(no, kim="ofis (ret freni)")
+                self.ofis.postane.soru_sor(
+                    lider_ad, "insan",
+                    f"#{no} '{guncel.get('baslik', '')}' {_ret} kez geri gonderildi. Son "
+                    f"gerekce: {gerekce[:400]} -- Ne yapalim? (Kabul: is oldugu gibi "
+                    "kapanir; bir tur daha: ajan son gerekceyle surdurur.)",
+                    gorev_no=no, kaynak=RET_FRENI_KAYNAK,
+                    secenekler=[FREN_KABUL, FREN_TUR, FREN_IPTAL])
+            except Exception as exc:                  # noqa: BLE001 -- fren olmazsa SOYLENIR
+                self.db.olay_yaz(self.proje_id, "uyari", f"#{no} ret freni kurulamadi: {exc}",
+                                 ajan_ad=lider_ad, gorev_id=guncel["id"])
         return {"hukum": "geri", "gerekce": gerekce, "gorev_no": no,
-                "ders": bool(ders)}
+                "ders": bool(ders), "fren": _ret >= RET_FRENI}
 
     def _bilgileri_yaz(self, no: int, hukum: str, lider_ad: str) -> tuple:
         """`BILGI:` satirlarini hafizaya yazar -- YALNIZ is kapanirken.

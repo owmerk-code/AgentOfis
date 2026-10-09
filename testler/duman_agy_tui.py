@@ -115,6 +115,10 @@ argv = json.loads((EV / "sahte_agy_argv.json").read_text(encoding="utf-8"))
 sina("kapanan terminal --conversation ile KALDIGI konusmadan acildi",
      "--conversation" in argv and oid in argv and bit3.get("oturum_id") == oid, str(argv))
 sina("model bayrakla verildi", "--model" in argv and "gemini-3.8-flash-low" in argv)
+_ayar = json.loads((ic.ev("ece") / ".gemini" / "antigravity-cli" / "settings.json").read_text(encoding="utf-8"))
+sina("agy izin listesinde url(*) (adres sorusu turu kilitliyordu, 09.10 F1)", "read_url(*)" in _ayar["permissions"]["allow"], str(_ayar))
+sina("yazabilen tur --mode accept-edits ile acildi (agy dosya duzenlemesini SORMAZ; kapi kancada, 09.10 F1)",
+     argv[argv.index("--mode") + 1:argv.index("--mode") + 2] == ["accept-edits"] if "--mode" in argv else False, str(argv))
 kapat_hepsi()
 
 print("\n4. gorsel teslimi, kota, durdur, salt okunur")
@@ -177,6 +181,17 @@ sina("  patrona gorunur olay: yol + 'izin patronun'",
      any(o.tur == "arac_sonuc" and "mcp_sunucu.py" in o.govde and "REDDETTI" in o.govde for o in ol),
      str([o.govde[:90] for o in ol if o.tur == "arac_sonuc"]))
 kapat_hepsi()
+# OLUSTURMA SORUSU (09.10.2026 F1 canli): agy calisma alanina dosya olustururken
+# sordu, tur KILITLENDI. Kapi araci zaten gecirdigi icin ofis ONAYLAR.
+ol, bit, _ = kos("#OLUSTUR# rapor yaz", zaman_asimi=40)
+_sec4 = ic.ev("ece") / "sahte_agy_olustur.txt"
+sina("agy'nin OLUSTURMA sorusu 'Evet' (1) ile kapandi, tur bitti (kilitlenmedi)",
+     bit.get("basarili") and _sec4.is_file() and _sec4.read_text(encoding="utf-8") == "1",
+     str(bit)[:200])
+sina("  gorunur olay: ofis ONAYLADI (kapi zaten gecirmisti), hata sayilmaz",
+     any(o.tur == "arac_sonuc" and "ONAYLADI" in o.govde and not o.ek.get("hatali") for o in ol),
+     str([o.govde[:90] for o in ol if o.tur == "arac_sonuc"]))
+kapat_hepsi()
 # YARIDA BIRAKILAN TUR (08.10.2026 canli: fren turu kesti, agy arkada yasadi,
 # ikinci terminal acildi): cagiran akisi birakinca CLI durur ve terminal kapanir.
 _m = tui.TuiMotoru(ic, ajan_ad="ece")
@@ -192,7 +207,7 @@ sina("yarida birakilan tur: ajanin terminali KAPANDI (arkada CLI kalmadi)",
 kapat_hepsi()
 ol, bit, _ = kos("salt okunur inceleme", yazabilir=False, ajan="lale")
 argv = json.loads((ic.ev("lale") / "sahte_agy_argv.json").read_text(encoding="utf-8"))
-sina("salt okunur tur --mode plan ile acildi", "--mode" in argv and "plan" in argv, str(argv))
+sina("salt okunur tur --mode plan ile acildi (accept-edits YOK)", "--mode" in argv and "plan" in argv and "accept-edits" not in argv, str(argv))
 kapat_hepsi()
 
 print("\n5. patronun agy kurulumu yoksa terminal ACILMAZ")

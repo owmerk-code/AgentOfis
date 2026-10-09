@@ -609,8 +609,14 @@ class TuiMotoru(Motor):
         # this file? ... outside workspace" sordu, kimse cevaplamadi, tur
         # KILITLENDI). Ofisin kapisindan gecmeyen bu soru ekranda taninir ve
         # plandaki tusla (agy: "No, deny") kapatilir; izin vermek patronun.
-        ekran_sorusu = plan.get("ekran_sorusu")
-        son_ekran, gorulen_soru = 0.0, 0
+        # 09.10.2026 (F1 canli): agy calisma alanina dosya OLUSTURURKEN de sordu
+        # ("Allow creation of this file?"), tur kilitlendi. Soru LISTESI: her
+        # sorunun kendi tusu; ofisin kapisi o araci ZATEN gecirdiyse (`kabul`)
+        # soru onaylanir, degilse reddedilir.
+        ekran_sorulari = list(plan.get("ekran_sorulari") or ([plan["ekran_sorusu"]]
+                                                             if plan.get("ekran_sorusu") else []))
+        son_ekran = 0.0
+        gorulen = [0] * len(ekran_sorulari)
         son_nabiz = time.monotonic()
         artik = b""
         while True:
@@ -632,14 +638,17 @@ class TuiMotoru(Motor):
                         t.yaz(plan.get("durdur", "\x1b"))
                     except TerminalHatasi:
                         pass
-            if ekran_sorusu and simdi - son_ekran >= 1.5:
-                son_ekran = simdi
-                _ekr = duz_metin(t.gecmis())
+            _ekr = None
+            for _si, ekran_sorusu in enumerate(ekran_sorulari):
+                if simdi - son_ekran < 1.5:
+                    break
+                if _ekr is None:
+                    _ekr = duz_metin(t.gecmis())
                 _kac = _ekr.count(ekran_sorusu["isaret"])
-                if _kac > gorulen_soru:
-                    gorulen_soru = _kac
+                if _kac > gorulen[_si]:
+                    gorulen[_si] = _kac
                     _kuyruk = _ekr[_ekr.rfind(ekran_sorusu["isaret"]) - 600:]
-                    _m = re.search(r"Read:\s*(.+?)\s*Reason", _kuyruk, re.S)
+                    _m = re.search(r"(?:Read|File|Path):\s*(.+?)\s*(?:Reason|Allow)", _kuyruk, re.S)
                     _yol = "".join(_m.group(1).split()) if _m else "?"
                     try:
                         t.yaz(ekran_sorusu["tus"])
@@ -651,10 +660,18 @@ class TuiMotoru(Motor):
                             _yapistir(t, ekran_sorusu["devam"].format(yol=_yol))
                     except TerminalHatasi:
                         pass
-                    yield MotorOlayi("arac_sonuc",
-                                     f"{ekran_sorusu['ne']} istendi ({_yol}); ofis REDDETTI "
-                                     "(izin patronun); ajan kendi klasoruyle surdurur.",
-                                     {"hatali": True, "cagri_id": "", "arac": "ekran_sorusu"})
+                    if ekran_sorusu.get("kabul"):
+                        yield MotorOlayi("arac_sonuc",
+                                         f"{ekran_sorusu['ne']} ({_yol}): CLI'in kendi sorusu; "
+                                         "ofisin kapisi bu araci ZATEN gecirmisti -> ofis ONAYLADI.",
+                                         {"hatali": False, "cagri_id": "", "arac": "ekran_sorusu"})
+                    else:
+                        yield MotorOlayi("arac_sonuc",
+                                         f"{ekran_sorusu['ne']} istendi ({_yol}); ofis REDDETTI "
+                                         "(izin patronun); ajan kendi klasoruyle surdurur.",
+                                         {"hatali": True, "cagri_id": "", "arac": "ekran_sorusu"})
+            if _ekr is not None:
+                son_ekran = simdi
             if dokum is None or not dokum.exists():
                 dokum = plan["dokum"]()
             if dokum is not None and dokum.exists():
@@ -733,13 +750,17 @@ class TuiMotoru(Motor):
             oturum_id = gercek
         if durduruldu_an is not None and not sebep:
             sebep = "durduruldu"
+        if not sebep and durum.get("kesildi"):
+            sebep = "kesildi"
         if sebep == "cikis":
             with _KILIT:
                 _ACIK.pop(oturum_id, None)
         if sebep:
             yield MotorOlayi("hata", {"durduruldu": "Tur insanin istegiyle DURDURULDU.",
                                       "zaman_asimi": f"Tur {sinir:.0f} sn'de bitmedi.",
-                                      "cikis": "Terminal kapandi."}.get(sebep, sebep)
+                                      "cikis": "Terminal kapandi.",
+                                      "kesildi": "CLI turu KENDISI kesti (" + str(durum.get("kesildi"))
+                                                 + "); ofis durdurmadi."}.get(sebep, sebep)
                              + ("" if sebep == "durduruldu" else
                                 " Ekranin sonu: " + " ".join(
                                     duz_metin(t.gecmis()).split())[-500:]),

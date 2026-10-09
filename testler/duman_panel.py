@@ -736,8 +736,10 @@ ofis.db.ayar_yaz(ofis.proje_id, _G.ANAHTAR_BEKLEYEN, _json.dumps([{
 # OTOMATIK MOD (29.09.2026): ayni aile onerisi insana DUSMEZ (ofis
 # kendisi dener); otomatik kapaliyken eski davranis -- karar insanda.
 _on = istemci.get("/api/oneriler").json()
-sina("otomatik ACIKKEN ayni aile onerisi insana DUSMUYOR",
-     _on["guncelleme"] == [] and _on.get("otomatik") is True, str(_on)[:160])
+# 09.10.2026 (patron): CODEX modeli emeklilik disinda KENDILIGINDEN degismez;
+# otomatik acikken de 'yeni nesil' onerisi patrona DUSER.
+sina("otomatik ACIKKEN codex model onerisi insana DUSUYOR (patron secer)",
+     len(_on["guncelleme"]) == 1 and _on.get("otomatik") is True, str(_on)[:160])
 _G.otomatik_ayarla(ofis.db, ofis.proje_id, False)
 sina("guncelleme onerisi panele geliyor (otomatik kapali)",
      len(istemci.get("/api/oneriler").json()["guncelleme"]) == 1)

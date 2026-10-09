@@ -42,6 +42,27 @@ KAPANIS_BEKLEME_SN = 15.0
 _ANSI = re.compile(r"\x1b\[[0-9;?]*[ -/]*[@-~]|\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)|\x1b.")
 
 
+#: TERMINALIN KENDI CEVAPLARI (09.10.2026, OLCULDU F1): codex 0.162 acilista
+#: terminale renk (OSC 10/11) ve kimlik (DA) sorar; paneldeki xterm.js bu
+#: sorulari KENDISI cevaplar ve panel cevabi KLAVYE GIRDISI diye CLI'a
+#: iletiyordu. Cevap Esc ile basladigi icin codex turu "interrupted" diye
+#: KESTI (liderin capraz incelemesi 2. saniyede dustu, sarmalayici bekledi).
+#: Insanin yazdigi tuslar gecer; yalniz bu otomatik cevaplar dusurulur.
+import re as _re
+TERMINAL_CEVABI = _re.compile(
+    r"\x1b\][0-9]+;rgb:[0-9a-fA-F/]+(?:\x07|\x1b\\)"     # OSC 10/11/12 renk cevabi
+    r"|\x1b\[\?[0-9;]*c"                                   # DA1 cihaz kimligi
+    r"|\x1b\[>[0-9;]*c"                                     # DA2
+    r"|\x1b\[[0-9]+;[0-9]+R"                                # imlec konumu raporu
+    r"|\x1b\[\?[0-9;]*\$y"                                 # DECRQM cevabi
+    r"|\x1bP[>!|][^\x1b]*\x1b\\")                          # DCS cevaplari (XTVERSION...)
+
+
+def insan_girdisi(metin: str) -> str:
+    """Panelden gelen girdiden terminalin OTOMATIK cevaplarini ayiklar."""
+    return TERMINAL_CEVABI.sub("", str(metin or ""))
+
+
 class TerminalHatasi(RuntimeError):
     pass
 

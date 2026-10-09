@@ -499,6 +499,24 @@ sina("acilistaki birinci tur ikincinin acilisinda KAPATILMADI, ikisi de basarili
 for _k in list(tui.acik_oturumlar()):
     tui.kapat(_k["oturum_id"])
 
+print("\n-- panelin terminal bileseninin OTOMATIK cevaplari CLI'a gitmez (09.10) --")
+from ofis.terminal import insan_girdisi as _ig  # noqa: E402
+_ESC = chr(27)
+_cevap = (_ESC + "]10;rgb:d7d7/dddd/e6e6" + _ESC + "\\" + _ESC + "]11;rgb:0d0d/0f0f/1313" + chr(7)
+          + _ESC + "[?1;2c" + _ESC + "[>0;276;0c" + _ESC + "[12;40R")
+sina("renk (OSC 10/11), kimlik (DA1/DA2), imlec raporu dusuruldu (codex'i 'interrupted' ile kesiyordu)",
+     _ig(_cevap) == "", repr(_ig(_cevap)))
+sina("insanin tuslari aynen gecer (yazi, Enter, Esc, ok, yapistirma)",
+     _ig("merhaba\r") == "merhaba\r" and _ig(_ESC) == _ESC and _ig(_ESC + "[A") == _ESC + "[A"
+     and _ig(_ESC + "[200~x" + _ESC + "[201~") == _ESC + "[200~x" + _ESC + "[201~")
+sina("karisik girdide yalniz cevap ayiklanir", _ig("a" + _ESC + "[?1;2c" + "b") == "ab")
+_d = {}
+_ol, _bitti = _XM().tui_cevir({"type": "event_msg", "payload": {"type": "turn_aborted",
+                                                                "reason": "interrupted"}}, _d) \
+    if hasattr(_XM, "tui_cevir") else ([], False)
+sina("codex 'turn_aborted' TUR SONUDUR (zaman asimina dek beklenmez), sebebi saklanir",
+     _bitti is True and _d.get("kesildi") == "interrupted", str((_bitti, _d)))
+
 print("\n-- gecici dosyalar %TEMP%'te birikmez (08.10) --")
 from ofis import yollar as _yol  # noqa: E402
 _gk = tui.gecici_klasor()

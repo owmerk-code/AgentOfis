@@ -299,7 +299,12 @@ class Postane:
         self.db.olay_yaz(self.proje_id, "cevap",
                          f"{cevaplayan} -> {row['gonderen']}: {cevap[:200]}",
                          ajan_ad=cevaplayan, gorev_id=row["gorev_id"])
-        return {"id": mesaj_id, "cevap": cevap}
+        eylem = {}
+        if (row["kaynak"] or "") == "ret_freni" and row["gorev_id"]:
+            # RET FRENI (09.10.2026): patronun secimi DOGRUDAN uygulanir.
+            from ofis.lider import ret_freni_cevabi
+            eylem = ret_freni_cevabi(self.ofis, row["gorev_id"], cevap)
+        return {"id": mesaj_id, "cevap": cevap, **({"eylem": eylem} if eylem else {})}
 
     def bekleyen_sorular(self, alici: str = None, *, soran: str = None) -> list:
         """Cevabi gelmemis, ajani DURDURAN sorular."""
