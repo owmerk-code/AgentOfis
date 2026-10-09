@@ -256,6 +256,81 @@ def bagimliliklari_kur(kok) -> list:
     return kurulan
 
 
+def satir_sonlarini_geri_koy(eski: bytes, yeni: bytes) -> bytes:
+    """`yeni`nin satir sonlarini `eski`deki gibi yapar; ICERIGE dokunmaz.
+    Degisen/eklenen satir, komsu eski satirin satir sonunu alir."""
+    import difflib
+
+    def ayir(veri):
+        parca = veri.split(b"\n")
+        govde, son = [], []
+        for i, s in enumerate(parca):
+            if i == len(parca) - 1:
+                govde.append(s)
+                son.append(b"")
+            elif s.endswith(b"\r"):
+                govde.append(s[:-1])
+                son.append(b"\r\n")
+            else:
+                govde.append(s)
+                son.append(b"\n")
+        return govde, son
+
+    e_govde, e_son = ayir(eski)
+    y_govde, _ = ayir(yeni)
+    hedef = [b"\n"] * len(y_govde)
+    for etiket, a1, a2, b1, b2 in difflib.SequenceMatcher(None, e_govde, y_govde,
+                                                          autojunk=False).get_opcodes():
+        for j in range(b1, b2):
+            if etiket == "equal":
+                hedef[j] = e_son[a1 + (j - b1)]
+            else:
+                hedef[j] = e_son[min(max(a1 - 1, 0), len(e_son) - 1)] or b"\n"
+    hedef[-1] = b""
+    return b"".join(g + s for g, s in zip(y_govde, hedef))
+
+
+def satir_sonu_onar(kok, no: int) -> list:
+    """Isin kayitlari bir dosyanin SATIR SONLARINI toptan degistirdiyse geri
+    koyar ve `#no` kaydi olarak yazar. Doner: onarilan dosyalar.
+
+    09.10 F1 canli (#6): ajan `sed -i` ile `web/panel.js`'i degistirdi; asil
+    degisiklik 7 satirdi, fark 14.793 satir oldu (karisik CRLF/LF dosya tumden
+    CRLF'e dondu). Boyle bir kayit kurulumda cakisir ve okunamaz; ajan onu yine
+    `sed` ile "duzeltmeye" calisti. Olcu: satir sonu yok sayilinca fark
+    kuculuyorsa (yari bile degil) bozulma satir sonundadir."""
+    dal = _git(kok, "rev-parse", "--abbrev-ref", "origin/HEAD").stdout.decode().strip() or "origin/main"
+
+    def sayi(*ek):
+        r = _git(kok, "diff", "--numstat", *ek, f"{dal}..HEAD")
+        out = {}
+        for satir in r.stdout.decode("utf-8", "replace").splitlines():
+            parca = satir.split("\t")
+            if len(parca) == 3 and parca[0].isdigit() and parca[1].isdigit():
+                out[parca[2]] = int(parca[0]) + int(parca[1])
+        return out
+
+    ham, cr_haric = sayi(), sayi("--ignore-cr-at-eol")
+    onarilan = []
+    for yol, n in ham.items():
+        if n < 40 or n <= 2 * cr_haric.get(yol, 0) + 20:
+            continue
+        eski = _git(kok, "show", f"{dal}:{yol}")
+        if eski.returncode != 0:
+            continue
+        p = Path(kok) / yol
+        try:
+            p.write_bytes(satir_sonlarini_geri_koy(eski.stdout, p.read_bytes()))
+        except OSError:
+            continue
+        onarilan.append(yol)
+    if onarilan:
+        _git(kok, "add", "--", *onarilan)
+        _git(kok, *_kimlik(), "commit", "-q", "-m",
+             f"#{no} satir sonlari kayitli haline geri kondu (ofis): " + ", ".join(onarilan))
+    return onarilan
+
+
 def _esitle_once(db, pid: str, kok, gorev: dict) -> bool:
     """Sinamadan ONCE kopya calisan ofisin son koduna esitlenir (isin kaydi
     ustune tasinir). Doner: sinama yapilabilir mi.
@@ -293,6 +368,11 @@ def kapanista(db, pid: str, kok: str, gorev: dict, *, arkada: bool = True) -> di
             return None
         if not _esitle_once(db, pid, kok, gorev):
             return None
+        _onarilan = satir_sonu_onar(kok, gorev["no"])
+        if _onarilan:
+            db.olay_yaz(pid, "gelistirme", f"#{gorev['no']}: satir sonlari toptan degismisti "
+                        f"({', '.join(_onarilan)}); ofis kayitli haline geri koydu.",
+                        gorev_id=gorev["id"])
         kayitlar = _isin_kayitlari(kok, gorev["no"])
     except Exception as exc:                     # noqa: BLE001 -- is kapandi
         db.olay_yaz(pid, "uyari", f"#{gorev.get('no')} gelistirme teslimi okunamadi: {exc}",
