@@ -1162,6 +1162,75 @@ _KOD_GONDERIM = re.compile(
     r"\bftplib\b|\bparamiko\b|\bfetch\s*\([^)]*method\s*:\s*['\"](?:post|put|patch|delete)")
 
 
+_PY_ALT_SUREC = re.compile(
+    r"(?i)^(?:subprocess\.\w+|os\.(?:system|popen|exec\w*|spawn\w*|startfile))$")
+_PY_ALT_SUREC_ADLARI = {"run", "popen", "call", "check_call", "check_output",
+                        "getoutput", "getstatusoutput", "system"}
+
+
+def _py_kabuk_metni(kaynak: str) -> str | None:
+    """Python betiginde ALT SURECE GIDEN metin: cagrinin argumanlari (kaynak
+    hali + icindeki metinler), argumandaki adlara atanan degerler ve o adlara
+    `append/extend/insert` ile eklenenler. Ayristirilamazsa None (cagiran
+    dosyanin TAMAMINI tarar -- eski, temkinli davranis).
+
+    09.10 F1 canli (#6): `duman_sohbet_kart.py` node'u calistirmak icin
+    `subprocess` kullaniyordu; kapi bu yuzden DOSYANIN TAMAMINI kabuk
+    kurallariyla taradi ve sinamadaki ornek metin "git push"u (bir onay
+    kartinin basligi) DISARIYA GONDERIM sandi -- yanlis alarm, patron
+    yarim saat bekletildi. Tehlike alt surece GIDEN metindedir."""
+    import ast
+    try:
+        agac = ast.parse(kaynak)
+    except (SyntaxError, ValueError):
+        return None
+    yerel = set()                    # `from subprocess import run` gibi
+    for n in ast.walk(agac):
+        if isinstance(n, ast.ImportFrom) and n.module in ("subprocess", "os"):
+            yerel |= {(a.asname or a.name) for a in n.names}
+    degerler = {}                    # ad -> o ada yazilan ifadeler
+    for n in ast.walk(agac):
+        if isinstance(n, ast.Assign):
+            for t in n.targets:
+                for ad in ast.walk(t):
+                    if isinstance(ad, ast.Name):
+                        degerler.setdefault(ad.id, []).append(n.value)
+        elif isinstance(n, (ast.AnnAssign, ast.AugAssign)) and isinstance(n.target, ast.Name) and n.value:
+            degerler.setdefault(n.target.id, []).append(n.value)
+        elif (isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute)
+              and isinstance(n.func.value, ast.Name)
+              and n.func.attr in ("append", "extend", "insert", "join", "format")):
+            degerler.setdefault(n.func.value.id, []).extend(n.args)
+    parcalar, sabitler, gorulen = [], [], set()
+
+    def topla(dugum, derinlik=0):
+        try:
+            parcalar.append(ast.unparse(dugum))
+        except Exception:                        # noqa: BLE001
+            pass
+        for alt in ast.walk(dugum):
+            if isinstance(alt, ast.Constant) and isinstance(alt.value, str):
+                sabitler.append(alt.value)
+            elif isinstance(alt, ast.Name) and derinlik < 4 and alt.id not in gorulen:
+                gorulen.add(alt.id)
+                for d in degerler.get(alt.id, ()):
+                    topla(d, derinlik + 1)
+
+    for n in ast.walk(agac):
+        if not isinstance(n, ast.Call):
+            continue
+        try:
+            ad = ast.unparse(n.func)
+        except Exception:                        # noqa: BLE001
+            continue
+        if _PY_ALT_SUREC.match(ad) or (ad in yerel and ad.lower() in _PY_ALT_SUREC_ADLARI):
+            for a in list(n.args) + [k.value for k in n.keywords]:
+                topla(a)
+    # Kaynak hali satir satir; metinler BOSLUKLA (`k = ["git"]; k.append("push")`
+    # -> "git push", kabuk kurali boyle eslesir).
+    return "\n".join(parcalar) + "\n" + " ".join(sabitler)
+
+
 def betik_degerlendir(arac: str, girdi: dict, kok: str) -> dict | None:
     """Komut bir BETIK DOSYASI calistiriyorsa dosyanin ICINI tarar.
 
@@ -1188,14 +1257,24 @@ def betik_degerlendir(arac: str, girdi: dict, kok: str) -> dict | None:
         # kabuk betigiyse (yoksa yorumdaki `rm`, metindeki "deploy" soru
         # dusururdu).
         kurallar = [("silme", KOD_SILME), ("masaustu", dict(KABUK_KURALLARI)["masaustu"])]
-        if _KOD_KABUK_CAGRISI.search(alt) or yol.lower().endswith((".sh", ".ps1")):
-            kurallar = list(KABUK_KURALLARI)
         bulunan, sinif = "", ""
         for s_, kaliplar in kurallar:
             bulunan = _esles(alt, kaliplar)
             if bulunan:
                 sinif = s_
                 break
+        if not bulunan and (_KOD_KABUK_CAGRISI.search(alt) or yol.lower().endswith((".sh", ".ps1"))):
+            # Kabuk betigi: TAMAMI. Python: yalniz alt surece GIDEN metin
+            # (bkz. `_py_kabuk_metni`); ayristirilamazsa yine TAMAMI.
+            hedef = alt
+            if yol.lower().endswith(".py"):
+                hedef = _py_kabuk_metni(alt)
+                hedef = alt if hedef is None else hedef.lower()
+            for s_, kaliplar in KABUK_KURALLARI:
+                bulunan = _esles(hedef, kaliplar)
+                if bulunan:
+                    sinif = s_
+                    break
         if not bulunan:
             g = _KOD_GONDERIM.search(alt)
             if g:

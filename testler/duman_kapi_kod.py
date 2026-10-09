@@ -112,6 +112,16 @@ BETIKLER = {
     "temizle.ps1": ("Remove-Item -Recurse out\n", "silme"),
     "kur.sh": ("rm -rf build\n", "silme"),
     "derle.sh": ("echo derleniyor\n", None),
+    # 09.10 F1 canli (#6): subprocess'li SINAMA dosyasindaki ornek metin "git push"
+    # (onay kartinin basligi) DISARIYA GONDERIM sayildi -- yalnis alarm.
+    "sinama.py": ('import subprocess\nonay_iste("cem", "git push")\n'
+                  'subprocess.run(["node", "-e", kod], capture_output=True)\n', None),
+    # Alt surece GIDEN metin yine taranir: degisken, liste eklemesi, f-string, ice aktarilan ad.
+    "degisken.py": ('import subprocess\nkomut = "git push origin main"\nsubprocess.run(komut, shell=True)\n', "gonderim"),
+    "liste.py": ('import subprocess\nk = ["git"]\nk.append("push")\nsubprocess.run(k)\n', "gonderim"),
+    "fmetin.py": ('import os\nhedef = "origin"\nos.system(f"git push {hedef}")\n', "gonderim"),
+    "iceaktar.py": ('from subprocess import run\nrun(["git", "push"])\n', "gonderim"),
+    "bozuk.py": ('import subprocess\nsubprocess.run("git push"\n  def (\n', "gonderim"),   # ayristirilamaz -> TAMAMI
 }
 for ad, (icerik, beklenen) in BETIKLER.items():
     (D / ad).write_text(icerik, encoding="utf-8")
