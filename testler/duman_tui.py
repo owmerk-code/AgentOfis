@@ -456,6 +456,39 @@ sina("once yapistirma, sonra duz yazilmis sahip satiri, sonra Enter",
      _st.yazilan[0].startswith("\x1b[200~") and _st.yazilan[1].strip() == tui.SAHIP_SATIRI
      and "\x1b[200~" not in _st.yazilan[1] and _st.yazilan[-1] == "\r", str(_st.yazilan)[:200])
 
+
+class _YavasYapistiran:
+    """codex 0.162 gibi: uzun yapistirmayi ~2 sn isler, sonra '[Pasted Content]' cizer."""
+    def __init__(self):
+        self.yazilan, self.t0 = [], None
+
+    def yaz(self, x):
+        if x.startswith("\x1b[200~"):
+            self.t0 = _t.monotonic()
+        self.yazilan.append((round(_t.monotonic() - (self.t0 or _t.monotonic()), 2), x))
+
+    def gecmis(self):
+        if self.t0 and _t.monotonic() - self.t0 > 2.0:
+            return "> [Pasted Content 40000 chars]"
+        return "> Satir0:bubirolcum" + "." * int((_t.monotonic() - (self.t0 or _t.monotonic())) * 100)
+
+
+import time as _t  # noqa: E402
+_yv = _YavasYapistiran()
+tui._yapistir(_yv, "x" * 40000, bitti_isareti="Pasted Content")
+_enter = [z for z, x in _yv.yazilan if x == "\r"]
+sina("UZUN yapistirma: Enter CLI isledikten SONRA (09.10: codex Enter'i yutuyordu, inceleme 2 kez dustu)",
+     _enter and _enter[0] >= 2.0, str(_yv.yazilan)[-200:])
+_yk = _YavasYapistiran()
+_b = _t.monotonic()
+tui._yapistir(_yk, "kisa not", bitti_isareti="Pasted Content")
+sina("  kisa metin beklemez (eski hiz)", _t.monotonic() - _b < 2.0)
+sina("  gonderme beklemesi boya gore (41 bin harf 10 sn'ye sigmiyordu)",
+     tui.gonderme_denemesi(500) == 4 and tui.gonderme_denemesi(41000) * 2.5 >= 25
+     and tui.gonderme_denemesi(10 ** 7) == 24)
+sina("  codex plani isareti verir", 'yapistirma_isareti": "Pasted Content"' in
+     (Path(tui.__file__).parent / "codex.py").read_text(encoding="utf-8"))
+
 for x in tui.acik_oturumlar():
     tui.kapat(x["oturum_id"])
 print("\n-- 18. NOT ULASTI MI: motorun KAYDINDAKI kullanici mesaji (08.10) --")

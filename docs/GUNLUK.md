@@ -15590,3 +15590,33 @@ yedeği alındı). Görülen ama hata OLMAYAN: masaüstü işinde gömülü tara
 açıldı ("Ajanlar kabinde" kuralı, 02.10 patron kararı). Mesajda "Ofisim"
 yazmam yanlıştı: takımın kökü `genel-agentofis`; plan kapısı yakaladı, lider
 düzeltti.
+
+## 09.10.2026 — F1 OFİS GELİŞTİRME DENEMESİ (#5): ilk tur bulguları
+
+"Ofis geliştirme" takımı panelden kuruldu (ada lider Opus · asli backend Sonnet
+· baris kalite GPT-6.1 Sol); kopya `Masaüstü\AgentOfis-gelistirme` son
+kayıttan alındı, push KAPALI, boş `ev/`, gerçek defter yok (ölçüldü). İş:
+"kartta ajan adının yanında o işin son turunda ölçülen model". asli işi
+kopyada yaptı, sınamasını yazdı, değişikliği geri alıp sınamanın kaldığını
+KENDİSİ kanıtladı, önizleme panelinde ekran görüntüsü verdi.
+
+1. **Codex incelemesi iki kez "GÖNDERİLMEDİ".** Lider incelemesi çapraz kural
+   gereği codex'e gitti; brifing (farkın tamamı) ~40 bin harf. ÖLÇÜLDÜ (boş
+   klasör, gpt-6-luna, Enter'sız ve Enter'lı): codex uzun yapıştırmayı 4-8 sn
+   işliyor, bitince "[Pasted Content N chars]"; Enter'dan oturum dosyasına 6
+   bin harf ~1 sn, 34 bin ~4 sn, 41-48 bin ~6 sn. Ofis 1,2 sn'de Enter'a basıp
+   toplam 10 sn bekliyordu. Boy SINIRI YOK (48 bin gönderildi). →
+   `tui._yapistirma_bitsin` (codex planı `yapistirma_isareti`, 1000 harften
+   uzunda) + `gonderme_denemesi(boy)` (4 + boy/5000 deneme, en çok 24). Gerçek
+   codex'te 41 bin: gönderildi (11,4 sn).
+2. **Kopyanın `ev/`i "beyan dışı yazma" sayıldı** (önizleme panelinin kota
+   dosyaları) → `degisim._gez` geliştirme kopyasında kök `ev/`i atlar
+   (`.git/config` işareti; kopya olmayan projede `ev` adlı klasör ölçülür).
+3. **Lider cevabının ilk cümlesi yanıltıcı:** "kartlarda artık yazıyor" — iş
+   incelenmemiş ve kurulmamıştı; ofisin kendi notu ("1 iş henüz bitmedi —
+   incelemede") cevabın sonuna eklendi, yani gerçek durum yazıldı ama ilk
+   cümle değil. (Açık: geliştirme takımında rapor "kopyada yapıldı, kurulum
+   kartını bekliyor" demeli.)
+4. Tam takımda `duman_deneme` D17 kaldı: koltuğun ikinci `sahiplenildi`
+   kaydını kaldırınca "(kaldigi yerden)" bilgisi de gitti → `tahta.sahiplen(
+   devam=)` kendi kaydına yazar.

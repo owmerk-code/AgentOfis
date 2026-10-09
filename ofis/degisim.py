@@ -141,6 +141,17 @@ def ofis_dosyalari(db_yolu) -> tuple:
     return tuple(b + ek for ek in ("", "-wal", "-shm", "-journal"))
 
 
+def _gelistirme_kopyasi_mi(kokp: Path) -> bool:
+    """Kok ofisin GELISTIRME KOPYASI mi (`gelistirme.kopya_hazirla` isaretler).
+
+    Ucuz olcu: git cagrilmaz, `.git/config` okunur (canli tarama sik kosar)."""
+    try:
+        metin = (kokp / ".git" / "config").read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return False
+    return "[agentofis]" in metin and "gelistirme = 1" in metin
+
+
 def _gez(kokp: Path, haric=()):
     """Olculecek dosyalar: `(kok-goreli yol, Path)`.
 
@@ -150,8 +161,13 @@ def _gez(kokp: Path, haric=()):
     bir dosyayi gosterirdi -- ya da tersi.
     """
     atla = {os.path.normcase(os.path.abspath(h)) for h in haric or ()}
+    # GELISTIRME KOPYASININ `ev/`i (09.10 canli, #5): kopyanin kendi evi
+    # (onizleme panelinin kota/oturum dosyalari) KOD degildir; olculunce
+    # "beyan disi yazma" uyarisi cikiyordu. Kok duzeyinde atlanir.
+    kopya = _gelistirme_kopyasi_mi(kokp)
     for dizin, altlar, dosyalar in os.walk(kokp):
-        altlar[:] = [a for a in altlar if a not in ATLANAN_KLASOR]
+        altlar[:] = [a for a in altlar if a not in ATLANAN_KLASOR
+                     and not (kopya and a == "ev" and Path(dizin) == kokp)]
         for ad in dosyalar:
             p = Path(dizin) / ad
             if p.suffix.lower() in ATLANAN_UZANTI:

@@ -312,7 +312,8 @@ class Koltuk:
         # bayrakla yonetseydik is kilitsiz kosardi ve Yasa 1 sessizce
         # delinirdi -- kilit makinesi bunu hic gormezdi.
         if gorev["sahip"] != ajan_ad or gorev["durum"] != "calisiyor":
-            gorev = self.ofis.tahta.sahiplen(no, ajan_ad, gorev["revizyon"])
+            gorev = self.ofis.tahta.sahiplen(no, ajan_ad, gorev["revizyon"],
+                                             devam=bool(devam))
             yield self._olay(
                 "sahiplenildi",
                 f"#{no} {gorev['baslik']} -> {ajan_ad}"

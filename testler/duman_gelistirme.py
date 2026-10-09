@@ -266,5 +266,22 @@ sina("onizleme: masaustu bildirimi kapali", _db2.ayar_oku(_pid, _B.AYAR, "acik")
 import shutil as _sh  # noqa: E402
 _sh.rmtree(G.onizleme_proje_koku(), ignore_errors=True)
 
+print("\n9. kopyanin ev/i disk olcusune girmez (09.10 canli: yanlis 'beyan disi' uyarisi)")
+from ofis import degisim as _dg  # noqa: E402
+_dk = Path(tempfile.mkdtemp(prefix="ofis-gel-ev-"))
+for _y in ("ev/gemini_ev/_kota/x.txt", "ofis/a.py", "alt/ev/b.txt"):
+    (_dk / _y).parent.mkdir(parents=True, exist_ok=True)
+    (_dk / _y).write_text("x", encoding="utf-8")
+subprocess.run(["git", "init", "-q", str(_dk)], check=True)
+_once = sorted(r for r, _ in _dg._gez(_dk))
+sina("kopya olmayan klasorde ev/ OLCULUR (patronun projesinde ev adli klasor olabilir)",
+     "ev/gemini_ev/_kota/x.txt" in _once, str(_once))
+subprocess.run(["git", "-C", str(_dk), "config", "agentofis.gelistirme", "1"], check=True)
+_sonra = sorted(r for r, _ in _dg._gez(_dk))
+sina("  gelistirme kopyasinda kok ev/ ATLANIR, kod ve alt klasordeki ev/ olculur",
+     "ev/gemini_ev/_kota/x.txt" not in _sonra and "ofis/a.py" in _sonra and "alt/ev/b.txt" in _sonra,
+     str(_sonra))
+_sh.rmtree(_dk, ignore_errors=True)
+
 print(f"\n== sonuc: {GECEN} gecti, {KALAN} kaldi ==")
 sys.exit(1 if KALAN else 0)

@@ -1747,6 +1747,8 @@ class CodexMotoru(Motor):
             # Giris satiri var ve "loading" bitti (olculdu, 01.10).
             "hazir_mi": lambda e: "\u203a" in e[-450:] and "loading" not in e[-450:].lower(),
             "durdur": "\x1b", "ev": str(ev),
+            # Uzun yapistirma bitince giris satiri (olculdu 09.10, 0.162).
+            "yapistirma_isareti": "Pasted Content",
         }
 
     @staticmethod

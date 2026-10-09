@@ -779,7 +779,8 @@ class Tahta:
 
     # -- sahiplenme --------------------------------------------------------
 
-    def sahiplen(self, no: int, ajan_ad: str, beklenen_revizyon: int) -> dict:
+    def sahiplen(self, no: int, ajan_ad: str, beklenen_revizyon: int, *,
+                 devam: bool = False) -> dict:
         """Gorevi al ve yazma alanini KILITLE.
 
         Kilit alinamazsa gorev baslamaz. Bu, Yasa 1'in ("yazma tek iplikli
@@ -819,8 +820,11 @@ class Tahta:
                     "ajan_ad, alindi, son_nabiz) VALUES (?, ?, ?, ?, ?, ?, ?)",
                     (uuid.uuid4().hex, self.proje_id, yol, gorev["id"], ajan_ad, an, an),
                 )
+        # `devam`: ayni oturumdan surme isareti defterde KALIR (koltugun
+        # ikinci kaydi kaldirilinca bu bilgi kayboluyordu; deneme D17 olcer).
         self.db.olay_yaz(self.proje_id, "sahiplenildi",
-                         f"#{no} {gorev['baslik']} -> {ajan_ad}",
+                         f"#{no} {gorev['baslik']} -> {ajan_ad}"
+                         + (" (kaldigi yerden)" if devam else ""),
                          ajan_ad=ajan_ad, gorev_id=gorev["id"])
         return self.gorev(no)
 

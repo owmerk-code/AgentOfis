@@ -94,11 +94,61 @@ def _iz(metin: str) -> str:
     return " ".join(str(metin or "").split())[:60]
 
 
-def _yapistir(t, metin: str, *, sahip: str = SAHIP_SATIRI) -> None:
+#: Bundan uzun yapistirmada CLI'in "yapistirma bitti" isareti beklenir.
+UZUN_YAPISTIRMA = 1000
+#: Isaret bu kadar surede gelmezse yine de devam edilir (eski davranis).
+YAPISTIRMA_AZAMI_SN = 90.0
+
+
+def _yapistirma_bitsin(t, isaret: str, onceki: int, azami_sn: float) -> None:
+    """CLI yapistirmayi ISLEYENE kadar bekler.
+
+    OLCULDU (09.10.2026, codex 0.162): uzun yapistirmayi codex harf harf
+    isliyor -- 40 bin harf 4-8 sn; bitince giris satirinda "[Pasted Content N
+    chars]" cikar. Ofis 1,2 sn'de Enter'a basiyordu; Enter yapistirmanin
+    icinde kayboldu, oturum dosyasi buyumedi, lider incelemesi IKI KEZ
+    "GONDERILMEDI" diye dustu (#5, gelistirme kopyasi; brifingde farkin
+    tamami vardi). Kisa yapistirmada isaret hic cikmayabilir: ekran 2 sn
+    durgunsa da bitti sayilir."""
+    from ..terminal import duz_metin
+    bas = time.monotonic()
+    son, durgun = -1, 0.0
+    while time.monotonic() - bas < azami_sn:
+        time.sleep(0.25)
+        try:
+            e = duz_metin(t.gecmis())
+        except Exception:                       # noqa: BLE001 -- olcemezsek eski davranis
+            return
+        if e.count(isaret) > onceki:
+            time.sleep(0.3)
+            return
+        if len(e) == son:
+            durgun += 0.25
+            if durgun >= 2.0 and time.monotonic() - bas > 3.0:
+                return
+        else:
+            son, durgun = len(e), 0.0
+
+
+def _yapistir(t, metin: str, *, sahip: str = SAHIP_SATIRI, bitti_isareti: str = "",
+              azami_sn: float = YAPISTIRMA_AZAMI_SN) -> None:
     """Cok satirli metni TEK mesaj olarak gonderir (bracketed paste) ve
-    ardina talimatin sahibini YAZAR (bkz. SAHIP_SATIRI)."""
+    ardina talimatin sahibini YAZAR (bkz. SAHIP_SATIRI). `bitti_isareti`
+    verilirse uzun metinde CLI'in yapistirmayi bitirmesi beklenir
+    (bkz. `_yapistirma_bitsin`)."""
+    bekle = bool(bitti_isareti) and len(metin) > UZUN_YAPISTIRMA
+    onceki = 0
+    if bekle:
+        from ..terminal import duz_metin
+        try:
+            onceki = duz_metin(t.gecmis()).count(bitti_isareti)
+        except Exception:                       # noqa: BLE001
+            bekle = False
     t.yaz("\x1b[200~" + metin.replace("\r\n", "\n") + "\x1b[201~")
-    time.sleep(0.8)
+    if bekle:
+        _yapistirma_bitsin(t, bitti_isareti, onceki, azami_sn)
+    else:
+        time.sleep(0.8)
     if sahip:
         t.yaz(" " + sahip)
         time.sleep(0.4)
@@ -163,6 +213,16 @@ def _guven_sec(t, evet: str, deneme: int = 6) -> bool:
         t.yaz("\r")
         return True
     return False
+
+
+def gonderme_denemesi(boy: int) -> int:
+    """Uzun mesajda gonderme suresi uzar: deneme sayisi (2,5 sn'lik) boya gore.
+
+    OLCULDU (09.10.2026, codex 0.162, gpt-6-luna, bos klasor): Enter'dan
+    oturum dosyasina 6 bin harf ~1 sn, 34 bin ~4 sn, 41-48 bin ~6 sn (toplam
+    yapistirma+gonderme 14 sn). Sabit 4 deneme (10 sn) 41 binde "gonderilmedi"
+    dedi; lider incelemesi (#5, brifingde farkin tamami) iki kez dustu."""
+    return min(24, 4 + max(0, int(boy)) // 5000)
 
 
 def _gonderildi_mi(t, dokum_bul, onceki: int, deneme: int = 4) -> bool:
@@ -576,8 +636,9 @@ class TuiMotoru(Motor):
         dokum = plan["dokum"]()
         if dokum and dokum.exists():
             kayit["ofset"] = dokum.stat().st_size
-        _yapistir(t, metin)
-        if not _gonderildi_mi(t, plan["dokum"], kayit["ofset"]):
+        _yapistir(t, metin, bitti_isareti=plan.get("yapistirma_isareti", ""))
+        if not _gonderildi_mi(t, plan["dokum"], kayit["ofset"],
+                              deneme=gonderme_denemesi(len(metin))):
             # OLCULDU (30.09.2026, gercek set G01, claude): mesaj gitmedi,
             # tur yine de zaman asimina (10 dk) kadar "bitti" bekledi -- hic
             # gelmeyecek bir sonu. Gonderilemeyen tur HEMEN duser; ekranin
@@ -625,7 +686,7 @@ class TuiMotoru(Motor):
             if kanal is not None:
                 for kimlik_, not_ in kanal.al():
                     try:
-                        _yapistir(t, not_)
+                        _yapistir(t, not_, bitti_isareti=plan.get("yapistirma_isareti", ""))
                     except TerminalHatasi:
                         continue        # bildirilmeyen not sonraki turun basinda gider
                     if kullanici is None:
