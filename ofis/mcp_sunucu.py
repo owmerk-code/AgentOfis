@@ -1617,6 +1617,7 @@ def arac_masaustu_bak(oturum: Oturum, args: dict):
     if dur:
         return dur
     try:
+        _m.bakisi_tazele()       # patronun ESKI dokunusu yeni bakista engel degil
         g, kok = _masaustu_goruntu(oturum)
         ozet = _masaustu_ozeti(g, pencere_adi=str(args.get("pencere") or ""),
                                ogeler=args.get("ogeler", True) is not False)
@@ -1675,8 +1676,9 @@ def arac_masaustu_eylem(oturum: Oturum, args: dict):
                         "eylem=bekle) ya da `soru_sor` ile lidere danis.")
         if eylem != "bekle" and _m.patron_etkin_mi():
             return ("HATA: PATRON SU AN BILGISAYARI KULLANIYOR (ofisin son eyleminden sonra "
-                    "klavye/fare hareketi var). Eylem YAPILMADI. Biraz bekleyip `masaustu_bak` "
-                    "ile yeniden bak; uzun surerse `soru_sor` ile patrona sor.")
+                    "klavye/fare hareketi var). Eylem YAPILMADI. Birkac saniye bekleyip `masaustu_bak` "
+                    "ile yeniden bak (patron 2 sn dokunmazsa yeni bakis engeli kaldirir); "
+                    "uzun surerse `soru_sor` ile patrona sor.")
         if eylem in ("tikla", "cift_tikla", "sag_tikla"):
             _m.tikla(ex, ey, dugme="sag" if eylem == "sag_tikla" else "sol",
                      kez=2 if eylem == "cift_tikla" else 1)

@@ -50,6 +50,9 @@ AZAMI_KENAR = 1568
 #: Patron eylemi sayilmayan pay: SendInput'un kendisi de "son girdi"
 #: zamanini gunceller; ofisin eyleminden sonraki bu kadar ms yok sayilir.
 KENDI_PAYI_MS = 400
+#: Ajan ekrana yeniden baktiginda patron bu kadar suredir dokunmuyorsa
+#: olcu tazelenir (bkz. `bakisi_tazele`).
+SAKIN_MS = 2000
 
 
 class MasaustuHatasi(RuntimeError):
@@ -241,6 +244,29 @@ def patron_etkin_mi(pay_ms: int = KENDI_PAYI_MS) -> bool:
         return (simdi - s.dwTime) & 0xFFFFFFFF < 3000
     return ((s.dwTime - _SON_EYLEM_TIK[0]) & 0xFFFFFFFF) > pay_ms \
         and ((s.dwTime - _SON_EYLEM_TIK[0]) & 0xFFFFFFFF) < 0x7FFFFFFF
+
+
+def bakisi_tazele(sakin_ms: int = SAKIN_MS) -> bool:
+    """Ajan ekrana YENIDEN bakiyor: patronun eski dokunusu artik engel degil.
+
+    OLCULMUS KILITLENME (09.10 F1 canli, #4): olcu yalniz ofisin EYLEMIYLE
+    tazeleniyordu. Patron bir kez dokununca her eylem reddedildi, eylem
+    yapilamadigi icin olcu hic tazelenmedi -- ajan patron ekrandan cekildikten
+    sonra da sonsuza dek bekledi (patronun panelden "devam et" yazmasi bile
+    yeni dokunus sayildi). Tehlike ESKI ekran goruntusuyle davranmakti; ajan
+    yeni goruntu aliyorsa o tehlike yok. Patron SU AN kullaniyorsa (son
+    `sakin_ms` icinde girdi) tazelenmez. Goruntuden ONCE cagrilir: cekim
+    sirasindaki dokunus yine engeldir."""
+    _gerekli()
+    s = _SONGIRDI()
+    s.cbSize = ctypes.sizeof(_SONGIRDI)
+    if not ctypes.windll.user32.GetLastInputInfo(ctypes.byref(s)):
+        return False
+    simdi = ctypes.windll.kernel32.GetTickCount()
+    if ((simdi - s.dwTime) & 0xFFFFFFFF) < sakin_ms:
+        return False
+    _SON_EYLEM_TIK[0] = simdi
+    return True
 
 
 def tikla(ex: int, ey: int, *, dugme: str = "sol", kez: int = 1) -> None:

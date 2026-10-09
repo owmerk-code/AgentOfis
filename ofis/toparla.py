@@ -98,7 +98,14 @@ def acilista_toparla(ofis) -> dict:
                           "basladi = NULL, gorev_sinir = 0 WHERE id = ?", (SEBEP, k["id"]))
                 yeniden += 1
     sahipsiz = [n for n in birakilan if n not in bagli]
-    if sahipsiz and not any(x.get("devam") for x in _kuyruk.bekleyenler(ofis)):
+    # AJANA SORULMUS SORU (09.10 F1 canli, #4): kaan lidere sordu, panel
+    # yeniden acildi; is "beklemede" sayilip atlandi ve soruyu cevaplayacak
+    # halka hic donmedi. Patronu bekleyen soru beklemede kalir; ajana/lidere
+    # sorulani ise ofis cevaplatir -> halka surdurulur.
+    ajana_soru = [m for m in ofis.postane.bekleyen_sorular()
+                  if m.get("alici") and m.get("alici") != "insan"]
+    if ((sahipsiz or ajana_soru)
+            and not any(x.get("devam") for x in _kuyruk.bekleyenler(ofis))):
         lider = next((a["ad"] for a in ofis.kadro.liste() if a["lider_mi"]), "")
         if lider:
             k = _kuyruk.ekle(ofis, DEVAM_METNI, lider, kaynak="kesinti")

@@ -317,7 +317,14 @@ class Koltuk:
                 "sahiplenildi",
                 f"#{no} {gorev['baslik']} -> {ajan_ad}"
                 + (" (kaldigi yerden)" if devam else ""),
-                {"gorev_no": no, "ajan": ajan_ad, "devam": devam})
+                {"gorev_no": no, "ajan": ajan_ad, "devam": devam},
+                # Deftere `tahta.sahiplen` yazar (ajan adi + is ile); burada
+                # da yazmak ADSIZ ikinci kayit birakiyordu (09.10 canli).
+                yaz=False)
+        else:
+            # Ayni sahip, zaten 'calisiyor' (soru/onay sonrasi surdurme):
+            # kosan surec BU surec olur (bkz. `tahta.kosani_yaz`).
+            self.ofis.tahta.kosani_yaz(no)
 
         # BIRIKMIS JETON TAVANI -- tur BASLAMADAN.
         #
@@ -1342,9 +1349,11 @@ class Koltuk:
             guncel = self.ofis.tahta.gorev(no)
             try:
                 self.ofis.tahta.incelemeye_ver(no, guncel["revizyon"])
+                # Deftere `tahta.incelemeye_ver` yazar; ikinci kayit cift
+                # satir birakiyordu (09.10 canli, 'sahiplenildi' ile ayni).
                 yield self._olay("incelemede", f"#{no} incelemeye verildi",
                                  {"gorev_no": no}, ajan_ad=ajan_ad,
-                                 gorev_id=gorev["id"])
+                                 gorev_id=gorev["id"], yaz=False)
             except TahtaHatasi as exc:
                 yield self._olay("uyari", f"Incelemeye verilemedi: {exc}",
                                  {"gorev_no": no})

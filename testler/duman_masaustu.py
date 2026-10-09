@@ -227,5 +227,51 @@ sina("tools/call sonucunda metin + PNG gorsel blogu",
 adlar = [a["name"] for a in M.ARACLAR]
 sina("araclar listede", "masaustu_bak" in adlar and "masaustu_eylem" in adlar)
 
+print("\n9. patron dokundu -> ajan yeniden bakinca surer (09.10 F1 canli kilitlenme)")
+import ctypes as _ct  # noqa: E402
+import importlib.util as _iu  # noqa: E402
+_sp = _iu.spec_from_file_location("ofis._ms_gercek", Path(MS.__file__))
+MS2 = _iu.module_from_spec(_sp)
+sys.modules["ofis._ms_gercek"] = MS2
+_sp.loader.exec_module(MS2)          # sahtelenmemis kopya
+_SAAT = {"simdi": 0, "girdi": 0}
+
+
+class _U32:
+    @staticmethod
+    def GetLastInputInfo(ref):
+        ref._obj.dwTime = _SAAT["girdi"]
+        return 1
+
+
+class _K32:
+    @staticmethod
+    def GetTickCount():
+        return _SAAT["simdi"]
+
+
+class _Ct:
+    windll = type("W", (), {"user32": _U32, "kernel32": _K32})
+    sizeof = staticmethod(_ct.sizeof)
+    byref = staticmethod(_ct.byref)
+
+
+MS2.ctypes = _Ct
+MS2._SON_EYLEM_TIK[0] = 8000                       # ofisin son eylemi
+_SAAT.update(simdi=10000, girdi=9000)              # patron 9000'de dokundu
+sina("eylemden sonra patron dokundu -> etkin", MS2.patron_etkin_mi())
+sina("  patron 1 sn once dokundu: yeni bakis TAZELEMEZ (su an kullaniyor)",
+     MS2.bakisi_tazele() is False and MS2.patron_etkin_mi())
+_SAAT.update(simdi=12000)                          # 3 sn dokunmadi
+sina("  patron 3 sn dokunmadi: yeni bakis tazeler, eylem SERBEST (eskiden sonsuza dek kilitliydi)",
+     MS2.bakisi_tazele() is True and not MS2.patron_etkin_mi())
+_SAAT.update(simdi=13000, girdi=12600)             # bakistan sonra yine dokundu
+sina("  bakistan SONRA dokunus yine engel", MS2.patron_etkin_mi())
+_kaynak = Path(M.__file__).read_text(encoding="utf-8")
+_i = _kaynak.index("def arac_masaustu_bak")
+_g = _kaynak[_i:_i + 1500]
+sina("masaustu_bak tazeler, GORUNTUDEN ONCE",
+     "_m.bakisi_tazele()" in _g and _g.index("_m.bakisi_tazele()") < _g.index("_masaustu_goruntu(oturum)"))
+
 print(f"\n== sonuc: {GECEN} gecti, {KALAN} kaldi ==")
 sys.exit(1 if KALAN else 0)

@@ -244,7 +244,8 @@ class Tahta:
             g = dict(r) if r else {}
         return self.kok_klasor(g.get("kanat_id") or None)
 
-    def _alanlari_dogrula(self, alanlar, ek_klasorler=None, kok: str = None) -> None:
+    def _alanlari_dogrula(self, alanlar, ek_klasorler=None, kok: str = None,
+                          uyar: bool = True) -> None:
         """Yazma alani PROJE KOKUNDE gercekten var mi.
 
         OLCULMUS HATA (21.09.2026) -- ve bedeli $2'ydi:
@@ -354,7 +355,9 @@ class Tahta:
                 disarida.append(alan)
             else:
                 supheli.append(alan)
-        for alan in supheli:
+        # Uyari TEK KEZ yazilir (09.10 canli: plan kapisi + gorev_ac ayni
+        # uyariyi iki kez yaziyordu); plan kapisi `uyar=False` ile sorar.
+        for alan in (supheli if uyar else []):
             self.db.olay_yaz(
                 self.proje_id, "uyari",
                 f"Yazma alani '{alan}' proje kokunde yok -- yeni aciliyorsa "
@@ -726,6 +729,18 @@ class Tahta:
                     )
                     dusen += 1
         return dusen
+
+    def kosani_yaz(self, no: int) -> None:
+        """Isi BU surec kosturuyor: `kosan_surec` tazelenir.
+
+        09.10 F1 canli (#4): is lidere soru beklerken panel yeniden acildi;
+        yeni panel isi surdurdu ama sahip ve durum degismedigi icin
+        `sahiplen` cagrilmadi -- kayit OLU panelin kimligini tasidi. Sonuc:
+        `guncelleme.mesgul` ofisi BOS sandi (Flow olcumu is ortasinda
+        basladi) ve bir sonraki kesintide is yanlis toparlanirdi."""
+        with self.db.baglanti() as conn:
+            conn.execute("UPDATE gorev SET kosan_surec = ? WHERE proje_id = ? AND no = ? "
+                         "AND durum = ?", (_surec.kimlik(), self.proje_id, no, CALISIYOR))
 
     def nabiz(self, no: int) -> None:
         gorev = self.gorev(no)

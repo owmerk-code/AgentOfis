@@ -165,6 +165,40 @@ sina("  kendi takimindan cinar'a verebilir", ork._plani_dogrula(plan("cinar"), A
 sina("  takim verilmemis eski cagri (kanat None) eskisi gibi", ork._plani_dogrula(plan("tuna"), None,
                                                                                    patron_sozu="x") == "")
 
+# 09.10 (F1 canli): plan kapisi yazma alanini VARSAYILAN koke gore olcuyordu
+# (takimin klasoru degil) ve 'yazma alani yok' uyarisini gorev_ac ile IKI kez yaziyordu.
+_d4 = Path(tempfile.mkdtemp(prefix="ofis-cok-takim-alan-"))
+(_d4 / "anakok").mkdir()
+(_d4 / "webkok" / "sadece_web").mkdir(parents=True)
+(_d4 / "sadece_web").mkdir()           # ayni ad ANA kokun DISINDA da var -> eski kod 'disarida' der
+_o4 = Ofis.proje_ac(Veritabani(_d4 / "o.sqlite3"), "Alan", amac="a", basari_olcutu="b", kok_klasor=str(_d4 / "anakok"))
+_a4 = _o4.kanat_ac("ANA", "AN")
+_w4 = _o4.kanat_ac("WEB", "WB")
+_o4.takim_klasoru_ayarla(_w4, str(_d4 / "webkok"))
+_o4.kadro.ise_al("lena", "lider", kanat_id=_w4, lider_mi=True, motor="sahte", klasor=str(_d4 / "webkok"))
+_o4.kadro.ise_al("rus", "backend", kanat_id=_w4, motor="sahte", klasor=str(_d4 / "webkok"))
+_ork4 = _o4.orkestra
+
+
+def plan4(alan):
+    return {"gerekce": "tek kol", "kollar": [{"baslik": "x", "neden": "n", "kabul_olcutu": "k",
+                                               "sahip": "rus", "yazma_alani": [alan]}]}
+
+
+_r4 = _ork4._plani_dogrula(plan4("sadece_web/a.md"), _w4, patron_sozu="x")
+sina("plan kapisi TAKIMIN kokune gore olcer (WEB kokundeki klasor gecer)", _r4 == "", _r4)
+
+
+def _uyari_say():
+    with _o4.db.baglanti() as c:
+        return c.execute("SELECT COUNT(*) FROM olay WHERE tur='uyari' AND govde LIKE '%yeni_klasor%'").fetchone()[0]
+
+
+sina("  plan kapisi 'alan yok' uyarisini YAZMAZ", _ork4._plani_dogrula(plan4("yeni_klasor/a/b.md"), _w4, patron_sozu="x") == ""
+     and _uyari_say() == 0, str(_uyari_say()))
+_o4.tahta.gorev_ac("y", neden="n", ana_hedef="h", kabul_olcutu="k", kanat_id=_w4, yazma_alani=["yeni_klasor/a/b.md"])
+sina("  gorev_ac uyariyi TEK kez yazar", _uyari_say() == 1, str(_uyari_say()))
+
 # ---------------------------------------------------------------------------
 print("\n7. takim sohbeti: ofisin ise bagli olayi o takimda")
 db.olay_yaz(ofis.proje_id, "takildi", f"#{w1['no']} ust uste 3 kez dustu", ajan_ad="ofis", gorev_id=w1["id"])

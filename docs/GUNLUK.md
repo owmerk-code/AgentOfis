@@ -15549,3 +15549,44 @@ Ayrıca: model rozeti takma ad yerine gerçek ad (`guncelleme.model_adi`:
 "Sonnet 5.5", "GPT-5.6 Sol"); boş "yarım kalanlar bulundu: ." metni.
 Gözlem: Gemini Flash kaynak eşleştirmesinde zayıf (11 tur); araştırma işinde
 başka modelle karşılaştırılacak.
+
+## 09.10.2026 — F1 MASAÜSTÜ İŞİ (#4): Not Defteri'nde yaz + Kaydet penceresinden kaydet
+
+Patronun panelinde, gerçek ajanla (kaan / GPT-5.6 Sol): Not Defteri aç, satırı
+yaz, Kaydet penceresinden `Masaüstü\Ofisim\masaustu-deneme.txt`, kapat.
+SONUÇ: dosya diskte (42 bayt, UTF-8, "ü" doğru), Not Defteri kapandı, lider
+5 kanıtla kapattı. 7,8 dk; çoğu aşağıdaki kilitlenmelerde gitti. Altı kök
+neden, hepsi sahte sınamada görünmüyordu:
+
+1. **Onay koşu SÜRERKEN geldi, iş asılı kaldı.** Onay 14:13:00'te verildi; o an
+   liderin dönüş turu koşuyordu → `_surdur_gerekirse` "zaten koşuyor" deyip
+   bıraktı, tur bitince işi kimse sürdürmedi. → `_KOSU["yeniden"]` bayrağı;
+   koşu bitince (`_arkada_calistir`) halka BİR KEZ daha döner
+   (`_halkayi_yeniden_baslat`, aynı koşullar: açık iş, insanı bekleyen yok,
+   durdurulmamış).
+2. **Masaüstü "patron kullanıyor" kilidi KALICI oldu.** Ölçü yalnız ofisin
+   EYLEMİYLE tazeleniyordu; patron bir kez dokununca her eylem reddedildi,
+   eylem olmadığı için ölçü hiç tazelenmedi (patronun panelden "devam et"
+   yazması bile yeni dokunuş). Ajan 25-45 sn bekleyip yine takıldı. →
+   `masaustu.bakisi_tazele`: `masaustu_bak` ekran görüntüsünden ÖNCE ölçüyü
+   tazeler, patron son 2 sn dokunmuyorsa. Ölçü MCP sürecinde yaşar: düzeltme
+   ancak ajanın terminali yeniden açılınca geçerli olur (panel yeniden başlatıldı).
+3. **Lidere soru bekleyen iş açılışta sürmedi.** `acilista_toparla` soru/onay
+   bekleyen işi "beklemede" sayıp atlıyordu; ama alıcı LİDERse soruyu
+   cevaplatacak halka hiç dönmüyordu. → alıcısı insan olmayan bekleyen soru
+   varsa devam kaydı.
+4. **Süren işin süreç kimliği ESKİ panelin kaldı.** Aynı sahip + 'calisiyor'
+   işte `sahiplen` çağrılmıyor → `kosan_surec` ölü süreç → `guncelleme.mesgul`
+   ofisi BOŞ sandı ve Flow ölçümü iş ortasında başladı (bir sonraki kesintide iş
+   de yanlış toparlanırdı). → `tahta.kosani_yaz`, koltuk sürdürmede çağırır.
+5. **Çift olay:** `sahiplenildi` ve `incelemede` hem tahta hem koltuk yazıyordu
+   (ikincisi adsız) → koltuk `yaz=False`.
+6. **Plan kapısı yazma alanını VARSAYILAN köke göre ölçüyordu** (takımın
+   klasörü değil) ve "alan yok" uyarısını `gorev_ac` ile iki kez yazıyordu →
+   `kok=kok_klasor(kanat_id)`, `uyar=False`.
+Ayrıca: liderin bu hatadan çıkardığı "kilit 25 sn sonra bile sürer, bekle"
+TUZAK bilgisi YANLIŞ (ofisin hatası) → patron adına Yanlış diye kapatıldı (defter
+yedeği alındı). Görülen ama hata OLMAYAN: masaüstü işinde gömülü tarayıcı da
+açıldı ("Ajanlar kabinde" kuralı, 02.10 patron kararı). Mesajda "Ofisim"
+yazmam yanlıştı: takımın kökü `genel-agentofis`; plan kapısı yakaladı, lider
+düzeltti.

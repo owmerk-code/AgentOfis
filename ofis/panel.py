@@ -568,12 +568,43 @@ def _arkada_calistir(db_yolu, proje_ad: str, isi, adi: str) -> None:
         traceback.print_exc()
     finally:
         durduruldu = bool(_KOSU.get("dur"))
+        yeniden = bool(_KOSU.pop("yeniden", False))
         _KOSU.update(calisiyor=False, mesaj="", dur=False)
         # SIRA YOKLAMASI (01.10.2026): halka kosarken siraya giren is ya da
         # isci cikarken gelen is burada baslar -- yoksa ASILI kalirdi.
         # Insan durdurduysa sira kendiliginden SURMEZ.
         if not durduruldu:
-            _kuyrugu_baslat(db_yolu, proje_ad)
+            if not _kuyrugu_baslat(db_yolu, proje_ad) and yeniden:
+                _halkayi_yeniden_baslat(db_yolu, proje_ad)
+
+
+def _halkayi_yeniden_baslat(db_yolu, proje_ad: str) -> bool:
+    """Kosu SURERKEN gelen cevap/onay icin halkayi bir kez daha dondurur.
+
+    `_surdur_gerekirse` ile AYNI kosullar: acik is var, insani bekleyen
+    istek yok, ofis durdurulmamis. Kosullar tutmazsa dondurmez (bos tur
+    jeton yakar)."""
+    try:
+        _db = Veritabani(db_yolu)
+        pid = _proje_id_bul(_db, proje_ad)
+        if pid is None:
+            return False
+        o = Ofis(_db, pid)
+        if durdurma_istendi(o.db, o.proje_id):
+            return False
+        if o.postane.insan_bekleyenler() or o.postane.bekleyen_onaylar():
+            return False
+        if not [g for g in o.tahta.liste() if g["durum"] not in ("bitti", "iptal")]:
+            return False
+    except Exception:                    # noqa: BLE001 -- olcemezsek dondurmeyiz
+        return False
+    with _KUYRUK_KILIDI:
+        if _KOSU["calisiyor"]:
+            return False
+        _KOSU.update(dur=False, calisiyor=True, mesaj="halka surduruluyor (kosu sirasinda gelen cevap)")
+    threading.Thread(target=_halkayi_kostur, args=(db_yolu, proje_ad),
+                     daemon=True).start()
+    return True
 
 
 class CevapGovdesi(BaseModel):
@@ -2375,8 +2406,14 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
                     "sebep": f"{kalan} istek daha SENI bekliyor; hepsi "
                              "cevaplaninca halka doner (ya da 'surdur')."}
         if _KOSU["calisiyor"]:
+            # CEVAP KOSU SURERKEN GELDI (09.10 F1 canli): onay 14:13:00'te
+            # verildi, o an liderin donus turu kosuyordu; "zaten kosuyor"
+            # denip birakildi, tur bitince isi kimse surdurmedi (#4 asili
+            # kaldi). Kosu bitince halka BIR KEZ daha doner.
+            _KOSU["yeniden"] = True
             return {"surduruldu": False,
-                    "sebep": "ofis zaten kosuyor: " + (_KOSU["mesaj"] or "?")}
+                    "sebep": "ofis su an kosuyor; bitince is kendiliginden surer ("
+                             + (_KOSU["mesaj"] or "?") + ")"}
         # DURDURULMUS ofis kendiliginden KALKMAZ: insan "dur" dedi; son
         # cevabi vermesi "devam et" demek degildir. Surdur dugmesi acik.
         if durdurma_istendi(ofis.db, ofis.proje_id):

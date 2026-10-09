@@ -647,7 +647,11 @@ class Orkestra:
             if not alan:
                 continue
             try:
-                self.ofis.tahta._alanlari_dogrula(alan, ek_klasorler)
+                # TAKIMIN koku (09.10): varsayilan kok baska takimin
+                # klasoruydu; gorev_ac ile AYNI kok, ayni hukum.
+                self.ofis.tahta._alanlari_dogrula(
+                    alan, ek_klasorler, kok=self.ofis.tahta.kok_klasor(kanat_id or None),
+                    uyar=False)
             except TahtaHatasi as exc:
                 return str(exc)
             # KLASOR ADI KURALI YAPIDIR (01.10.2026 OLCULDU): planlama

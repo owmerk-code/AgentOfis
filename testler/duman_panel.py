@@ -479,6 +479,25 @@ with ofis.db.baglanti() as c:
                     "LIKE 'Panelden baslatilan halka dustu%'").fetchone()["n"]
 sina("halka DUSMEDI (hata olayi yok)", dus == 0, f"{dus} hata")
 
+# KOSU SURERKEN GELEN ONAY (09.10 F1 canli, #4 asili kaldi): o an 'zaten
+# kosuyor' denip birakiliyordu; kosu bitince halka BIR KEZ daha donmeli.
+g9 = ofis.tahta.gorev_ac("Onay bekleyen is", neden="n", ana_hedef="h",
+                         kabul_olcutu="k", yazma_alani=["onayli/"], kanat_id=kanat)
+o9 = ofis.postane.onay_iste("cinar", "Not Defteri ac", risk="yuksek", gorev_no=g9["no"])
+_P._KOSU.update(calisiyor=True, mesaj="liderin donus turu")
+y = istemci.post(f"/api/onay/{o9['id']}", json={"onayla": True})
+sina("kosu surerken gelen onay: hemen surdurulmez, sebep 'bitince surer'",
+     y.json().get("surduruldu") is False and "kendiliginden surer" in (y.json().get("sebep") or ""), y.text[:200])
+with ofis.db.baglanti() as c:
+    _once9 = c.execute("SELECT COALESCE(MAX(rowid),0) n FROM olay").fetchone()["n"]
+_P._arkada_calistir(db_yolu, "Panel Projesi", lambda o: None, "sahte kosu")   # kosu biter
+sina("  kosu bitince halka KENDILIGINDEN dondu", _kosu_bitsin() and _P._KOSU.get("yeniden") is None)
+with ofis.db.baglanti() as c:
+    _yeni9 = [r["tur"] for r in c.execute("SELECT tur FROM olay WHERE rowid > ?", (_once9,)).fetchall()]
+sina("  halka GERCEKTEN kostu (defterde tur_ozeti)", "tur_ozeti" in _yeni9, str(_yeni9)[:200])
+_P._arkada_calistir(db_yolu, "Panel Projesi", lambda o: None, "sahte kosu")
+sina("  bayrak yokken kosu bitisi halka DONDURMEZ", _P._KOSU["calisiyor"] is False)
+
 # -- /api/devam: elle surdur ---------------------------------------------
 y = istemci.post("/api/devam")
 sina("'surdur' dugmesi acik is varken kosturuyor",

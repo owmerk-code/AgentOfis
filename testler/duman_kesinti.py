@@ -239,6 +239,40 @@ with db.baglanti() as c:
     sina("  onay TEK kez", c.execute("SELECT COUNT(*) FROM onay WHERE isteyen='yaprak'"
                                      ).fetchone()[0] == 1)
 
+# 09.10 F1 canli (#4): ajan LIDERE sordu, panel yeniden acildi; is 'beklemede'
+# sayildi ve soruyu cevaplatacak halka hic donmedi. Patronu bekleyen soru beklemede
+# kalir; ajana sorulani ofis cevaplatir -> devam kaydi siraya girer.
+with db.baglanti() as c:
+    c.execute("UPDATE kuyruk SET durum = 'bitti' WHERE durum = 'bekliyor'")
+_s0 = acilista_toparla(ofis)
+sina("  yalniz patronu bekleyen varken devam KAYDI ACILMAZ", _s0["devam"] == 0, str(_s0))
+ofis.kadro.ise_al("serin", "backend", kanat_id=kn, motor="sahte", klasor=str(kok / "calisma"))
+gs = kosan_yap(gorev("lidere soran is", ["s/"]), "serin")
+kimlik_yaz(gs, olu)
+ofis.postane.soru_sor("serin", "demir", "hangi klasore yazayim?", gorev_no=gs["no"])
+_s1 = acilista_toparla(ofis)
+sina("LIDERE soru bekleyen is: acilista halka surdurulur (devam kaydi)",
+     _s1["devam"] == 1 and any(x.get("devam") for x in K.bekleyenler(ofis)), str(_s1))
+sina("  is birakilmaz, sahibi ayni (cevap gelince kaldigi yerden)",
+     ofis.tahta.gorev(gs["no"])["sahip"] == "serin" and gs["no"] not in _s1["birakilan"])
+# Cevap gelir, YENI panel isi surdurur: sahip/durum ayni oldugu icin `sahiplen`
+# cagrilmiyordu ve kayit OLU panelin kimligini tasiyordu (mesgul 'bos' sandi).
+for _m in ofis.postane.bekleyen_sorular(soran="serin"):
+    ofis.postane.cevapla(_m["id"], "s/ klasorune", cevaplayan="demir")
+from ofis.motor.sahte import SahteMotor  # noqa: E402
+_kts = Koltuk(ofis, motor_fabrikasi=lambda ad, **a: SahteMotor(cevap="tamam\nKANIT not: s/ yazildi"))
+try:
+    _kts.kos(gs["no"], "serin")
+except Exception as _e:  # noqa: BLE001 -- olcu kayitta
+    print("   (tur:", _e, ")")
+with db.baglanti() as c:
+    _ks = c.execute("SELECT kosan_surec FROM gorev WHERE no = ?", (gs["no"],)).fetchone()[0]
+sina("  surduren surec kaydi BU surec (olu panelin kimligi kalmaz)", _ks == surec.kimlik() or _ks == "",
+     f"{_ks} != {surec.kimlik()}")
+with db.baglanti() as c:
+    _adsiz = c.execute("SELECT COUNT(*) FROM olay WHERE tur='sahiplenildi' AND ajan_ad=''").fetchone()[0]
+sina("  'isi aldi' kaydi tek ve adli (adsiz ikinci kayit yok)", _adsiz == 0, str(_adsiz))
+
 # Sahne: cinar'in kosan (yasayan) isi kapanir -> cinar bosta; ayrica BASKA bosta
 # bir ajan (ayaz) var. Dagitim "ilk bostaki"ni degil ONCEKI SAHIBI secmeli.
 with db.baglanti() as c:
