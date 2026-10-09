@@ -239,11 +239,18 @@ sina("kabuk 'gelistirme': teslimler ve durumlari listelenir",
      repr(_k.stdout[-600:]) + ' ERR ' + _k.stderr[-600:])
 
 print("\n10. kopyanin KENDI paneli (onizleme)")
+# ORTAMDAN BAGIMSIZ (09.10 canli): bu sinama gelistirme KOPYASINDA da kosar
+# (kurulumdan once tam takim); orada kod zaten kopya. "Calisan ofis" kosulu
+# kurulur, ortamdan okunmaz.
+_asil_kopya_mi = G.kopya_mi
+G.kopya_mi = lambda kok: False
 try:
     G.onizleme_hazirla()
     sina("calisan ofiste onizleme paneli ACILMAZ", False)
 except G.GelistirmeHatasi:
     sina("calisan ofiste onizleme paneli ACILMAZ", True)
+finally:
+    G.kopya_mi = _asil_kopya_mi
 from ofis import yollar as _Y, bildirim as _B  # noqa: E402
 _asil_kod, _asil_ortam = _Y.OFIS_KODU, dict(os.environ)
 try:
@@ -298,6 +305,30 @@ sina("  biten/kurulan teslime DOKUNULMAZ (ikinci acilista bos)",
      G.yarim_sinamalari_surdur(db, ofis.proje_id, arkada=False) == [])
 _py = (OFIS_KODU / "ofis" / "panel.py").read_text(encoding="utf-8")
 sina("  panel acilisi bunu cagiriyor", "yarim_sinamalari_surdur(_db, pid)" in _py)
+
+print("\n11. kopyada eksik npm paketleri (09.10 canli: Remotion yoktu, tam sinama hep kaliyordu)")
+_dn = Path(tempfile.mkdtemp(prefix="ofis-gel-npm-"))
+sina("kilit dosyasi yoksa npm KOSMAZ", G.bagimliliklari_kur(_dn) == [])
+(_dn / "medya" / "remotion" / "node_modules").mkdir(parents=True)
+(_dn / "medya" / "remotion" / "package-lock.json").write_text("{}", encoding="utf-8")
+sina("  paketler zaten varsa npm KOSMAZ", G.bagimliliklari_kur(_dn) == [])
+_gk = (OFIS_KODU / "ofis" / "gelistirme.py").read_text(encoding="utf-8")
+sina("  baglanti (junction) VERILMEZ, kopya kendi paketini kurar; sinamadan once cagrilir",
+     "mklink" not in _gk and "bagimliliklari_kur(kok)" in _gk and "bagimliliklari_kur(hedef)" in _gk)
+_sh.rmtree(_dn, ignore_errors=True)
+
+print("\n12. sinamadan ONCE kopya calisan ofisin son koduna esitlenir (09.10 canli: D17 eski koddan kaldi)")
+(KAY / "testler" / "duman_yeni_duzeltme.py").write_text("print('  [gecti] calisan ofisin yeni duzeltmesi')\n", encoding="utf-8")
+git(KAY, "add", "-A")
+git(KAY, "commit", "-q", "-m", "calisan ofise sonradan giren duzeltme")
+n12 = is_kapat("eski tabanda yazilan is", "is12.py", "print(12)\n")
+d12 = bekle(n12)
+sina("kopyadaki sinama calisan ofisin SONRADAN giren kaydini da kostu",
+     Path(kok, "testler", "duman_yeni_duzeltme.py").is_file()
+     and d12.get("sinama", {}).get("dosya", 0) >= 3, str(d12.get("sinama"))[:200])
+sina("  isin kaydi son kodun USTUNDE (kurulacak sey = sinanan sey)",
+     git(kok, "log", "-1", "--format=%s").startswith(f"#{n12} ")
+     and "calisan ofise sonradan" in git(kok, "log", "--format=%s"), git(kok, "log", "-4", "--format=%s"))
 
 print(f"\n== sonuc: {GECEN} gecti, {KALAN} kaldi ==")
 sys.exit(1 if KALAN else 0)

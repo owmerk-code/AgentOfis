@@ -111,6 +111,10 @@ def kopya_hazirla(hedef=None) -> str:
     # KOPYANIN KENDI EVI: yoksa kopyanin kodu eski eve (~/.agentofis) duser.
     (hedef / "ev").mkdir(exist_ok=True)
     esitle(hedef)
+    try:
+        bagimliliklari_kur(hedef)
+    except GelistirmeHatasi:
+        pass                          # sinamadan once yeniden denenir ve SOYLENIR
     return str(hedef.resolve())
 
 
@@ -224,11 +228,70 @@ def _yaz(db, pid, no, d: dict) -> None:
     db.ayar_yaz(pid, _kayit_anahtari(no), json.dumps(d, ensure_ascii=False))
 
 
+#: Depoya girmeyen ama sinamanin ve ajanin istedigi paketler (npm kilidiyle).
+NPM_PROJELERI = ("medya/remotion",)
+
+
+def bagimliliklari_kur(kok) -> list:
+    """Kopyada EKSIK npm paketlerini kilit dosyasindan kurar (`npm ci`).
+
+    09.10 F1 canli: `node_modules` depoya girmez; kopyada Remotion yoktu ve tam
+    sinama `duman_kurgu`dan kaldi -- hicbir gelistirme kurulamazdi. Calisan
+    ofisin paketlerine BAGLANTI (junction) verilmez: kendi koduna yazma kapisi
+    yolu metin olarak olcer, baglantinin arkasini gormez; ajan kopyadan calisan
+    ofisin paketlerine yazabilirdi. Olculdu: npm onbellekten 257 paket 10 sn.
+    Doner: kurulan projeler (hata SOYLENIR, sinamayi durdurmaz)."""
+    kurulan = []
+    for alt in NPM_PROJELERI:
+        yer = Path(kok) / alt
+        if not (yer / "package-lock.json").is_file() or (yer / "node_modules").is_dir():
+            continue
+        p = subprocess.run(["npm", "ci", "--prefer-offline", "--no-audit", "--no-fund"],
+                           cwd=str(yer), capture_output=True, text=True, encoding="utf-8",
+                           errors="replace", timeout=900, shell=(os.name == "nt"),
+                           stdin=subprocess.DEVNULL, creationflags=PENCERE_YOK)
+        if p.returncode != 0:
+            raise GelistirmeHatasi(f"{alt}: npm ci basarisiz: " + ((p.stderr or "") + (p.stdout or ""))[-300:])
+        kurulan.append(alt)
+    return kurulan
+
+
+def _esitle_once(db, pid: str, kok, gorev: dict) -> bool:
+    """Sinamadan ONCE kopya calisan ofisin son koduna esitlenir (isin kaydi
+    ustune tasinir). Doner: sinama yapilabilir mi.
+
+    09.10 F1 canli (#5): kopya takim kurulurken alinmisti; sonra calisan
+    ofise giren duzeltmeler kopyada YOKTU ve tam sinama o eski hatalardan
+    kaldi (D17). Sinanan sey, KURULACAK seyin aynisi olmali: kurulum zaten
+    son koda cherry-pick'tir. Cakisma = kurulamaz -> sinanmaz, SOYLENIR."""
+    try:
+        e = esitle(kok)
+    except Exception as exc:                     # noqa: BLE001
+        e = {"tamam": False, "sebep": str(exc)}
+    try:
+        bagimliliklari_kur(kok)
+    except Exception as exc:                     # noqa: BLE001 -- sinama yine kosar, sebep yazili
+        db.olay_yaz(pid, "uyari", f"#{gorev['no']}: kopyaya paket kurulamadi: {exc}"[:500],
+                    gorev_id=gorev.get("id"))
+    if e.get("tamam"):
+        return True
+    sebep = str(e.get("sebep") or "")
+    if sebep.startswith("rebase cakisti"):
+        db.olay_yaz(pid, "gelistirme", f"#{gorev['no']}: isin kaydi calisan ofisin son koduyla "
+                    f"CAKISTI, kurulamaz; sinanmadi. {sebep[:300]}", gorev_id=gorev.get("id"))
+        return False
+    db.olay_yaz(pid, "uyari", f"#{gorev['no']}: kopya son koda esitlenemedi ({sebep[:200]}); "
+                "sinama kopyanin bugunku haliyle kosuyor.", gorev_id=gorev.get("id"))
+    return True
+
+
 def kapanista(db, pid: str, kok: str, gorev: dict, *, arkada: bool = True) -> dict | None:
     """Is kapandi (`tahta.kapat`): kok gelistirme kopyasiysa teslimi baslat.
     Sinama uzun (tam takim) -> arka iplikte. Hata isi geri acmaz, SOYLENIR."""
     try:
         if not kok or not kopya_mi(kok):
+            return None
+        if not _esitle_once(db, pid, kok, gorev):
             return None
         kayitlar = _isin_kayitlari(kok, gorev["no"])
     except Exception as exc:                     # noqa: BLE001 -- is kapandi
@@ -277,6 +340,8 @@ def yarim_sinamalari_surdur(db, pid: str, *, arkada: bool = True) -> list:
         if not g:
             continue
         gorev = {"id": g[0], "no": g[1], "baslik": g[2]}
+        if d.get("kok") and _esitle_once(db, pid, d["kok"], gorev):
+            d["kayitlar"] = _isin_kayitlari(d["kok"], gorev["no"]) or d.get("kayitlar") or []
         d["basladi"] = time.time()
         _yaz(db, pid, gorev["no"], d)
         db.olay_yaz(pid, "gelistirme", f"#{gorev['no']}: panel kapanmadan once sinama YARIM "
