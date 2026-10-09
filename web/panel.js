@@ -5383,7 +5383,9 @@ async function takimEkleAc() {
       sat.append(adKutu, rol, motor, model, sil);
       satirlar.push(kayit); liste.append(sat);
     };
+    let secilenSablon = "";
     const baslangic = async (anahtar) => {
+      secilenSablon = anahtar;
       Object.entries(kartDug).forEach(([x, d]) => d.classList.toggle("secili", x === anahtar));
       try {
         const o = await al(`/api/sablon/${encodeURIComponent(anahtar)}/onizleme`);
@@ -5417,7 +5419,8 @@ async function takimEkleAc() {
       for (const x of satirlar) if (!x.model.kapiOnayi()) return;
       kur.disabled = true; kur.textContent = "Kuruluyor…";
       try {
-        const r = await yolla("/api/takim/kur", { ad: ad.value, renk: renk.value, uyeler });
+        const r = await yolla("/api/takim/kur", { ad: ad.value, renk: renk.value, uyeler,
+                                                 sablon: secilenSablon });
         bildir(`${r.ad} takımı kuruldu: ${r.ajanlar.join(", ")}`, "iyi");
         D.kanat = r.id; D.kadroSec = null; await yenile(); organizasyonAc(r.id);
       } catch (e) {

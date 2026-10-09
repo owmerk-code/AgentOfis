@@ -66,6 +66,7 @@ PARCASI. Bunu soylemeden gostermek, yanlis gosteren bir gosterge olurdu.
 from __future__ import annotations
 
 import json
+import os
 import time
 import threading
 from datetime import datetime, timedelta, timezone
@@ -294,6 +295,13 @@ def tazele(db, proje_id: str, *, fabrika=None, zorla: bool = False,
     Donus: `{"okundu": [...], "okunamadi": [...], "atlandi": bool}`.
     """
     en_az = TAZELEME_SN if en_az_sn is None else en_az_sn
+    # SINAMADA GERCEK MOTOR OKUNMAZ (09.10.2026, OLCULDU): sahte motorla kosan
+    # sinamanin halkasi gercek claude/codex/agy'yi kota icin calistiriyordu
+    # (kota harcamaz ama gercek hesaba dokunur; sinama kapanirken agy gecici
+    # klasoru tutup artik birakti). Sahte okuyucu (`fabrika`) verilen sinama okur.
+    if fabrika is None and os.environ.get("OFIS_SINAMA_MOTORU") == "1":
+        return {"okundu": [], "okunamadi": [], "atlandi": True,
+                "sebep": "sinama: gercek motor okunmaz"}
     if not _TAZELEME_KILIDI.acquire(blocking=False):
         return {"okundu": [], "okunamadi": [], "atlandi": True,
                 "sebep": "baska bir tazeleme suruyor"}

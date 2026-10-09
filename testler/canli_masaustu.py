@@ -76,9 +76,16 @@ try:
     adim("ekran goruntusu alindi", Path(g.yol).is_file() and g.genislik <= M.AZAMI_KENAR,
          f"{g.genislik}x{g.yukseklik} olcek {g.olcek:.3f}")
     t = time.time()
-    ogeler = M.ogeler(pencere["hwnd"])
+    ogeler = []
+    for _ in range(10):                    # yeni acilan pencere hazir olana dek
+        ogeler = M.ogeler(pencere["hwnd"])
+        if ogeler:
+            break
+        time.sleep(0.5)
+    if not ogeler:
+        print("  PowerShell hatasi:", M.SON_HATA[0][:500])
     sure["ogeler"] = time.time() - t
-    alan = next((o for o in ogeler if o.get("tur") in ("Edit", "Document")), None)
+    alan = next((o for o in ogeler if M.yazi_alani_mi(o)), None)
     adim("ogeler okundu, yazi alani bulundu", alan is not None,
          f"{len(ogeler)} oge: " + ", ".join(f"{o.get('tur')}:{o.get('ad')!r}" for o in ogeler[:8]))
     if alan:
@@ -91,29 +98,28 @@ try:
         t = time.time()
         nokta = M.oge_noktada(ex, ey) or {}
         sure["oge_noktada"] = time.time() - t
-        adim("noktadaki oge = yazi alani (kapinin okuyacagi ad)", nokta.get("tur") in ("Edit", "Document"),
+        adim("noktadaki oge = yazi alani (kapinin okuyacagi ad)", M.yazi_alani_mi(nokta),
              str(nokta)[:160])
         dur_patron("tiklama")
         M.tikla(ex, ey)
         time.sleep(0.3)
         odak = M.odak_ogesi() or {}
-        adim("tiklamadan sonra odak yazi alaninda", odak.get("tur") in ("Edit", "Document"), str(odak)[:120])
+        adim("tiklamadan sonra odak yazi alaninda", M.yazi_alani_mi(odak), str(odak)[:120])
         dur_patron("yazma")
         t = time.time()
         M.yaz(YAZI)
         sure["yaz"] = time.time() - t
         time.sleep(0.4)
-        okunan = M._ps(f"""
-$k = $A::FromHandle([IntPtr]{int(pencere['hwnd'])})
-$c = New-Object System.Windows.Automation.OrCondition(
-  (New-Object System.Windows.Automation.PropertyCondition($A::ControlTypeProperty, [System.Windows.Automation.ControlType]::Edit)),
-  (New-Object System.Windows.Automation.PropertyCondition($A::ControlTypeProperty, [System.Windows.Automation.ControlType]::Document)))
-$e = $k.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $c)
-$m = ''
-try {{ $m = $e.GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).Current.Value }} catch {{
-  $m = $e.GetCurrentPattern([System.Windows.Automation.TextPattern]::Pattern).DocumentRange.GetText(-1) }}
-@{{ metin = $m }} | ConvertTo-Json -Compress
-""")
+        # Klasik yazi alani (sinif "Edit"): metin Windows'un kendi penceresinden (WM_GETTEXT).
+        import ctypes
+        _u = ctypes.windll.user32
+        _e = _u.FindWindowExW(pencere["hwnd"], 0, "Edit", None) or _u.FindWindowExW(
+            pencere["hwnd"], 0, "RichEditD2DPT", None)
+        _n = _u.SendMessageW(_e, 0x000E, 0, 0) if _e else 0           # WM_GETTEXTLENGTH
+        _t = ctypes.create_unicode_buffer(_n + 1)
+        if _e:
+            _u.SendMessageW(_e, 0x000D, _n + 1, _t)                    # WM_GETTEXT
+        okunan = {"metin": _t.value}
         metin = ((okunan or {}).get("metin") or "").replace("\r\n", "\n").replace("\r", "\n")
         adim("yazilan = Windows'tan geri okunan (Turkce harfler dahil)", metin == YAZI, repr(metin[:80]))
         dur_patron("tus")

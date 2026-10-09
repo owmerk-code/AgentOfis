@@ -913,6 +913,10 @@ class Tahta:
         from . import git_kaydi
         git_kaydi.kaydet(self.db, self.proje_id, self.gorev_koku(gorev), gorev,
                          kapatan=kapatan)
+        # OFIS GELISTIRME (09.10.2026): kok gelistirme kopyasiysa kapanan isin
+        # kaydi kopyada TAM sinamadan gecer, gecerse patrona kurulum karti.
+        from . import gelistirme
+        gelistirme.kapanista(self.db, self.proje_id, self.gorev_koku(gorev), gorev)
         return self.gorev(no)
 
     def giris_uygula(self, no: int, *, kaynak: str = "",

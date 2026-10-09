@@ -1263,6 +1263,39 @@ def komut_bilgi(a) -> None:
         yaz(f"- {o['konu']}: {o['icerik']}  ({o['kaynak'] or '-'})")
 
 
+def komut_gelistirme(a) -> None:
+    """OFIS GELISTIRME (09.10.2026): teslimlerin durumu, kopyayi esitleme,
+    kurulmus degisikligi geri alma (`git revert`)."""
+    from . import gelistirme as G
+    ofis = ofis_ac(a.db, a.proje)
+    if a.islem == "geri-al":
+        if a.no is None:
+            yaz("geri-al icin is numarasi gerekli: gelistirme geri-al <no>")
+            return
+        try:
+            d = G.geri_al(ofis, a.no)
+        except G.GelistirmeHatasi as exc:
+            yaz(f"GERI ALINMADI: {exc}")
+            return
+        yaz(f"#{a.no} geri alindi ({len(d.get('kurulan') or [])} kayit). Paneli yeniden baslat.")
+        return
+    if a.islem == "esitle":
+        yaz(str(G.esitle(G.varsayilan_klasor())))
+        return
+    with ofis.db.baglanti() as c:
+        satirlar = c.execute("SELECT anahtar, deger FROM ayar WHERE proje_id = ? AND anahtar LIKE ?",
+                             (ofis.proje_id, "gelistirme_teslim:%")).fetchall()
+    yaz(f"kopya: {G.varsayilan_klasor()}")
+    if not satirlar:
+        yaz("teslim yok")
+    for an, deger in satirlar:
+        import json as _j
+        d = _j.loads(deger or "{}")
+        s_ = d.get("sinama") or {}
+        yaz(f"  #{d.get('no')} {d.get('baslik', '')[:50]} -- {d.get('durum')}"
+            + (f" (sinama {s_.get('gecti')} gecti, {s_.get('kaldi')} kaldi)" if s_ else ""))
+
+
 def komut_eksikler(a) -> None:
     """OFISIN KENDI EKSIKLERI (06.10.2026, K17): bekleyen oneriler ve patronun
     ONAYLADIGI eksikler (gelistiricinin listesi, `ev/ofis_eksikleri.jsonl`)."""
@@ -2252,6 +2285,11 @@ def ayristirici() -> argparse.ArgumentParser:
     bl.add_argument("konu", nargs="?", default="")
     bl.add_argument("icerik", nargs="?", default="")
     bl.set_defaults(islev=komut_bilgi)
+
+    gl = alt.add_parser("gelistirme", help="ofis gelistirme teslimleri: durum | esitle | geri-al <no>")
+    gl.add_argument("islem", nargs="?", default="durum", choices=["durum", "esitle", "geri-al"])
+    gl.add_argument("no", nargs="?", type=int, default=None)
+    gl.set_defaults(islev=komut_gelistirme)
 
     ek = alt.add_parser("eksikler", help="ofisin kendi eksik onerileri ve onaylananlar")
     ek.set_defaults(islev=komut_eksikler)

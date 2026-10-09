@@ -42,6 +42,7 @@ başlar.
 | C8 | Otomatik içerik hattı: uzun videodan klip → kurgu → paylaşım onaya (E89) | İPTAL 08.10 (patron: YouTube yayını yok) |
 | **D — Bilgisayar** | | |
 | D1 | Bilgisayar kullanımı: fare/klavye ile masaüstü uygulaması; her riskli adım sorulur (41-liste #29, E47) | KOD BİTTİ 08.10 (`masaustu.py`, `masaustu_bak`/`masaustu_eylem`, 38 sınama); CANLI deneme patronun izniyle bekliyor (`testler/canli_masaustu.py --evet` + üç motorla tek tur) |
+| D2 | Ofis kendini geliştirir (09.10 patron, F1'den önce): ajanlar AgentOfis'i geliştirir, çalışan sistem patron onaylamadan değişmez | KOD BİTTİ 09.10 (`gelistirme.py`, şablon "Ofis geliştirme", kurulum kartı, önizleme paneli, kendi koda yazma RET; 38 sınama). Gerçek ajanla ilk iş F1'de |
 | **E — Kapanış ve sağlamlık** | | |
 | E1 | Kabinin ilk açılış ölümü: 20 açılışta tekrar etmediği ölçülecek (E12) | BİTTİ 08.10: 20/20 temiz açılış; kayıttaki 8 ölümün hepsi profil başka kabinde açıktı (çıkış 21; biri gösteri kabininin kilidi → Job Object); kayıt artık çıkış kodunu yazar |
 | E2 | Gemini kota yüzdesi (`limit_oku` yok); Gemini gerçek terminal penceresi (isteğe bağlı) | BİTTİ 08.10: `agy -p /usage` modelsiz (3 sn, 0 jeton), haftalık + 5 saatlik; sürüm koruması (eski agy'de modele soru olurdu); terminal 08.10'da yapılmıştı |

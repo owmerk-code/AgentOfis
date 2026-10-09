@@ -15443,3 +15443,63 @@ sahte; kapı, onay, fren, kira, MCP görsel bloğu gerçek). Canlı deneme
 (`testler/canli_masaustu.py --evet`: Not Defteri aç, Türkçe yaz, Windows'tan
 geri oku, kapat) ve üç motorla gerçek tur patronun izniyle yapılacak —
 kural: canlı masaüstü onaysız sürülmez.
+
+## 09.10.2026 — D2: OFİS KENDİNİ GELİŞTİRİR (geliştirme hattı)
+
+Patron: "ajanlar hem PC'yi hem agent sistemi kullanabilecek mi; Murat ajanların
+AgentSpace'i geliştirdiğini söyledi" → "daha iyi olacaksa F1'den önce". Sonra:
+"kopya yerine direkt agent sisteminde geliştirseler, paneli görüp tıklasalar?"
+Cevap (patrona verildi): doğrudan çalışan kodda geliştirmek ajanın kendi
+altındaki zemini değiştirmesi (bozarsa düzeltecek ajan da kalmaz; panel kodu
+açılışta yüklediği için değişikliği görmek de yeniden başlatma = kendini
+kapatma). Kopyada aynı şey yapılır: kopyanın KENDİ paneli açılır, tarayıcıda
+tıklanır, denenir; patron onaylayınca kurulur.
+
+**Ölçülen açık.** "Ajan kendi kaynağına yazamaz" kuruluş kararıydı ama
+UYGULANMIYORDU: `Write`/`Edit`/`apply_patch` çalışan ofisin `ofis/` dosyasına
+sorulmadan yazabiliyordu (kapı üçüne de `None`). Artık kapıda RET (soru değil):
+yerleşik yazma, yama ve o yola yazan kabuk komutu (cp/mv/yönlendirme/git
+reset…); okumak, `ev/`e yazmak ve kopyada çalışmak serbest. İlk sürümde kabuk
+kuralı `AgentOfis-gelistirme`yi de çalışan ofis sandı (yol sınırı) — düzeltildi.
+
+**Hat (`ofis/gelistirme.py`).** Şablon "Ofis geliştirme" (backend + kalite) →
+takımın kökü `Masaüstü\AgentOfis-gelistirme` (`git clone`; kopyanın kendi boş
+`ev/`'i — yoksa `yollar.varsayilan_ev` eski eve `~/.agentofis` düşerdi; push
+adresi kapalı). İş kapanınca (`tahta.kapat`) kopyadaki `#no` kaydı alınır, kopyada
+TAM sınama koşulur (OFIS_* ortamı SİLİNEREK — koparma denemesinde sızan 9
+değişkeni sınama yakaladı). Geçerse kurulum kartı (sıradan onay kartı: panel,
+telefon, bildirim hazır); kalırsa kart yok, sebep olaya. Onay → çalışan depoya
+cherry-pick (kaydedilmemiş değişiklik varsa DURUR, kart açık kalır); ret →
+kopyada revert; `kabuk gelistirme geri-al <no>` → revert. Kopya her kararda
+eşitlenir (rebase). Önizleme: kopyada `python -m ofis.gelistirme onizle` —
+yalnız kopyanın içinden, 8920+ panel kapısı, işletim sisteminden boş kabin
+kapısı (patronun 9222'si değil), kopyanın evinde ayrı defter, bildirim kapalı.
+Bitti tanımı takım kitine yazılır (codex/gemini ajanları da görsün).
+
+**Yan bulgu.** Sınamada halka kota tazelemesini çağırınca GERÇEK claude/codex/agy
+kota okuyordu (kota harcamaz ama gerçek hesaba dokunur; sınama kapanırken agy
+geçici klasörü tutup artık bıraktı). Kural: `OFIS_SINAMA_MOTORU=1` iken sahte
+okuyucu verilmemişse gerçek motor okunmaz.
+
+`duman_gelistirme.py` 38 sınama (gerçek git; "çalışan ofis" geçici depo).
+Gerçek ajanla ilk geliştirme işi F1'de.
+
+## 09.10.2026 — D1 CANLI MASAÜSTÜ DENEMESİ (patron izniyle): 9/9
+
+`testler/canli_masaustu.py --evet` patronun ekranında: Not Defteri açıldı,
+yazı alanı bulundu ve tıklandı, Türkçe harfli iki satır yazıldı, Windows'tan
+BİREBİR geri okundu, kaydetmeden kapatıldı (3,4 sn). Sahte düşük düzeyli
+duman sınamasının GÖREMEDİĞİ üç hata çıktı (kural: koşturmadığın şey için
+hiçbir şey bilmiyorsun):
+- Windows 10 Not Defteri yazı alanını ADSIZ "Pane" olarak bildiriyor; süzgeç
+  adsızları atıyordu → öğenin sınıf adı (`Edit`, `RichEdit…`) ve klavye odağı
+  da okunur, `yazi_alani_mi`, adsız öğe ajana "(adsız, yazı alanı, sınıf Edit)".
+- "Noktadaki öğe" HİÇ okunamıyordu: `System.Windows.Point` `WindowsBase`
+  kitaplığında, betik yüklemiyordu. Daha önemlisi: okunamayınca kapı adsız
+  tıklamayı SIRADAN sayıyordu — adı okunamayan bir "Gönder" sorulmadan
+  geçebilirdi. Artık okunamayan öğeye tıklama/Enter BELİRSİZ: her seferinde sorulur.
+- PowerShell hatası CLIXML olarak geliyor, süzgeç tamamen atıyordu (sebep
+  yutuluyordu) → `SON_HATA` + `_ps_hatasi` hatayı okunur metne çevirir;
+  çıktı UTF-8'e sabitlendi (Türkçe pencere adları bozulmasın).
+Fren de canlıda çalıştı: patron yazarken deneme "son 30 sn'de fare/klavye
+kullanıldı" deyip başlamadı.

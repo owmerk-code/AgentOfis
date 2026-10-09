@@ -1245,6 +1245,68 @@ def kabuk_degerlendir(arac: str, girdi: dict = None) -> dict | None:
     return None
 
 
+# ---------------------------------------------------------------------------
+# CALISAN OFISIN KODUNA YAZILMAZ (09.10.2026, OLCULDU): kurulus karari "ofis
+# kendini gelistirir, kendini KURMAZ" yaziliydi ama UYGULANMIYORDU -- Write,
+# Edit ve apply_patch calisan ofisin `ofis/` dosyasina sorulmadan yazabiliyordu.
+# Ofisin kodu GELISTIRME KOPYASINDA degisir (`ofis/gelistirme.py`), patron
+# kurulum kartiyla kurar. Kural yapi: RET (soru degil), dogru yol soylenir.
+
+_YAZMA_ARACLARI = {"Write": ("file_path",), "Edit": ("file_path",),
+                   "MultiEdit": ("file_path",), "NotebookEdit": ("notebook_path",)}
+_KABUK_YAZMA = re.compile(
+    r"(?i)(?:^|[\s;&|(])(?:cp|mv|copy|move|xcopy|robocopy|rm|del|erase|rmdir|rd|tee|"
+    r"set-content|add-content|out-file|copy-item|move-item|remove-item|new-item|"
+    r"sed\s+-i|git\s+(?:-c\s+\S+\s+)*(?:commit|checkout|reset|apply|am|cherry-pick|merge|pull|"
+    r"restore|revert|rebase|stash|clean))\b|>>?")
+
+
+def _kod_koku() -> str:
+    from .yollar import OFIS_KODU
+    return str(OFIS_KODU.resolve()).replace("\\", "/").lower().rstrip("/")
+
+
+def kendi_kodu_mu(yol) -> bool:
+    """Yol calisan ofisin kod klasorunde mi (`ev/` haric: orasi ofisin evi)."""
+    y = str(yol or "").strip().strip("'\"").replace("\\", "/").lower()
+    if not y or not (y[1:3] == ":/" or y.startswith("/")):
+        return False
+    try:
+        import os as _os
+        y = _os.path.normpath(y).replace("\\", "/").lower()
+    except (TypeError, ValueError):
+        return False
+    kok = _kod_koku()
+    return (y == kok or y.startswith(kok + "/")) and not y.startswith(kok + "/ev/")
+
+
+def kendi_kodu_bulgusu(arac: str, girdi: dict = None) -> dict | None:
+    """Calisan ofisin koduna YAZAN cagri -> RET bulgusu; yoksa None."""
+    g = girdi or {}
+    hedefler = [g.get(a) for a in _YAZMA_ARACLARI.get(arac, ())]
+    if arac in YAMA_ARACLARI:
+        metin = str(g.get("command") or g.get("input") or g.get("patch") or "")
+        hedefler += re.findall(r"(?im)^\s*\*\*\*\s*(?:add|update|delete)\s+file:\s*(.+)$", metin)
+    if arac in KABUK_ARACLARI:
+        komut = str(g.get("command") or "")
+        kok = _kod_koku()
+        duz = komut.replace("\\\\", "/").replace("\\", "/").lower()
+        _yer = re.search(re.escape(kok) + r"(?=$|[/\s\"'])(?!/ev(?:$|[/\s\"']))", duz)
+        if _yer and _KABUK_YAZMA.search(komut):
+            hedefler.append(kok)
+    bulunan = next((h for h in hedefler if h and kendi_kodu_mu(h)), None)
+    if not bulunan:
+        return None
+    b = _bulgu("kural", "calisan ofisin kodu", arac, str(bulunan), "")
+    b["ret"] = True
+    b["sorulur"] = True
+    b["sebep"] = ("CALISAN OFISIN KODUNA YAZILMAZ (" + str(bulunan)[:120] + "). Ofis kendini "
+                  "gelistirir ama kendini KURMAZ: degisikligi GELISTIRME KOPYASINDA yap "
+                  "(Masaustu\\AgentOfis-gelistirme; takimin klasoru). Is kapaninca ofis tam "
+                  "sinamayi kosar, patron kurulum kartiyla kurar.")
+    return b
+
+
 def arac_degerlendir(arac: str, girdi: dict = None) -> dict | None:
     """Bir ARAC CAGRISI insan onayi ister mi?
 
@@ -1259,6 +1321,9 @@ def arac_degerlendir(arac: str, girdi: dict = None) -> dict | None:
     ad = (arac or "").strip()
     if not ad:
         return None
+    _kk = kendi_kodu_bulgusu(ad, girdi)
+    if _kk:
+        return _kk
     if ad.startswith(KAPI_DISI_ONEKLER):
         return None
     if ad in YERLESIK_SERBEST:
@@ -1669,6 +1734,18 @@ def masaustu_degerlendir(eylem: str, *, oge: dict = None, pencere: dict = None,
         b["sebep"] = ("Ajan bir SIFRE / KIMLIK alanina yazmak istedi. Sifre ajanin elinde "
                       "olmamali: girisi patron kendisi yapar (`giris_iste`). Yazilan deger "
                       "bu karta bilerek konmadi.")
+        return b
+
+    # OKUNAMAYAN OGE (09.10.2026 canli olculdu: ogeyi okuyan betik hata veriyordu,
+    # kapi ADSIZ tiklamayi siradan sayiyordu -- 'Gonder' sorulmadan gecebilirdi).
+    # Ad okunamazsa tetikleyen eylem BELIRSIZ: her seferinde sorulur.
+    if oge.get("okunamadi") and (eylem in ("tikla", "cift_tikla", "sag_tikla", "surukle")
+                                  or (eylem == "tus" and "enter" in str(tuslar).lower())
+                                  or (eylem == "yaz" and str(metin).endswith("\n"))):
+        b = _b("belirsiz", "oge okunamadi", f"okunamayan oge | {yer}")
+        b["sebep"] = ("Tiklanan/odaktaki ogenin adi Windows'tan OKUNAMADI; gonder/sil/ode "
+                      "olup olmadigi bilinmiyor. Bu yuzden patrona soruluyor."
+                      + (f" (okuma hatasi: {oge.get('hata')})" if oge.get("hata") else ""))
         return b
 
     # RISKLI OGE: tiklama, Enter, ya da Enter'li yazi.

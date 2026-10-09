@@ -413,7 +413,9 @@ def on_pencere() -> dict | None:
 
 _UIA_BAS = r"""
 $ErrorActionPreference = 'Stop'
-Add-Type -AssemblyName UIAutomationClient, UIAutomationTypes
+$ProgressPreference = 'SilentlyContinue'
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+Add-Type -AssemblyName UIAutomationClient, UIAutomationTypes, WindowsBase
 $A = [System.Windows.Automation.AutomationElement]
 function Oge($e) {
   if ($null -eq $e) { return $null }
@@ -423,9 +425,23 @@ function Oge($e) {
   if (-not $r.IsEmpty) { $k = @([int]$r.Left, [int]$r.Top, [int]$r.Right, [int]$r.Bottom) }
   return [ordered]@{ ad = [string]$c.Name; tur = ($c.ControlType.ProgrammaticName -replace 'ControlType\.', '');
                      kimlik = [string]$c.AutomationId; etkin = [bool]$c.IsEnabled; kutu = $k;
-                     yardim = [string]$c.HelpText; sifre = [bool]$c.IsPassword }
+                     yardim = [string]$c.HelpText; sifre = [bool]$c.IsPassword;
+                     sinif = [string]$c.ClassName; odaklanir = [bool]$c.IsKeyboardFocusable }
 }
 """
+
+
+def _ps_hatasi(stderr: str) -> str:
+    """PowerShell hatasi CLIXML olarak gelir: `<S S="Error">...</S>` parcalari."""
+    import html
+    import re as _re
+    parca = _re.findall(r'<S S="Error">(.*?)</S>', stderr or "", _re.S)
+    metin = " ".join(html.unescape(x).replace("_x000D__x000A_", " ").strip() for x in parca)
+    return (metin or (stderr or "").strip())[:600]
+
+
+#: Son PowerShell hatasi (bos = yok).
+SON_HATA = [""]
 
 
 def _ps(govde: str, sure: float = 20.0):
@@ -439,11 +455,15 @@ def _ps(govde: str, sure: float = 20.0):
     except (OSError, subprocess.TimeoutExpired):
         return None
     cikti = (p.stdout or "").strip()
+    # SESSIZ KALMAZ (09.10.2026, canli deneme: Not Defteri'nin ogeleri bos
+    # geldi, sebep yutuluyordu): son hata saklanir, cagiran soyleyebilir.
+    SON_HATA[0] = "" if p.returncode == 0 else (_ps_hatasi(p.stderr) or f"cikis {p.returncode}")
     if not cikti:
         return None
     try:
         return json.loads(cikti.splitlines()[-1])
     except ValueError:
+        SON_HATA[0] = "JSON okunamadi: " + cikti[-300:]
         return None
 
 
@@ -482,7 +502,7 @@ foreach ($e in $hep) {{
   if ($l.Count -ge {int(azami)}) {{ break }}
   try {{ $o = Oge $e }} catch {{ continue }}
   if ($o.kutu -eq $null) {{ continue }}
-  if ([string]::IsNullOrWhiteSpace($o.ad) -and $o.tur -notin @('Edit','Document','ComboBox')) {{ continue }}
+  if ([string]::IsNullOrWhiteSpace($o.ad) -and $o.tur -notin @('Edit','Document','ComboBox') -and -not $o.odaklanir -and $o.sinif -notmatch '^(Edit|RichEdit)') {{ continue }}
   [void]$l.Add($o)
 }}
 ConvertTo-Json -InputObject @($l) -Compress -Depth 4
@@ -535,6 +555,26 @@ def kira_birak(sahip: str) -> None:
                 yol.unlink()
             except OSError:
                 pass
+
+
+def yazi_alani_mi(oge: dict) -> bool:
+    """Yazi yazilan alan mi. KLASIK programlar (09.10 olculdu: Windows 10 Not
+    Defteri) yazi alanini ADSIZ "Pane" diye bildirir; sinif adi (`Edit`,
+    `RichEdit...`) ya da klavye odagi bunu ele verir."""
+    o = oge or {}
+    return (o.get("tur") in ("Edit", "Document")
+            or str(o.get("sinif") or "").startswith(("Edit", "RichEdit"))
+            or (o.get("tur") == "Pane" and bool(o.get("odaklanir"))))
+
+
+def oge_etiketi(oge: dict) -> str:
+    """Ajana gosterilecek ad: adsiz ogede tur + sinif (bos birakilmaz)."""
+    o = oge or {}
+    ad = str(o.get("ad") or "").strip()
+    if ad:
+        return ad
+    return "(adsiz" + (", yazi alani" if yazi_alani_mi(o) else "") + (
+        f", sinif {o.get('sinif')}" if o.get("sinif") else "") + ")"
 
 
 # -- uygulama acma ------------------------------------------------------------

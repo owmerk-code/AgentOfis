@@ -772,6 +772,7 @@ class TakimKurGovdesi(BaseModel):
     ad: str
     renk: str = "#6BA3C7"
     onek: str = ""
+    sablon: str = ""
     uyeler: list[TakimUyesi] = []
 
 
@@ -2425,6 +2426,16 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
             except _giris.GirisHatasi as exc:
                 raise HTTPException(400, str(exc))
             return {**dict(r or {}), **_surdur_gerekirse(ofis, govde.surdur)}
+        # OFIS DEGISIKLIGI KURULUM KARTI (09.10.2026): once KURULUR, kart
+        # ancak kurulum basarisizsa ACIK kalir (patron sebebi gorur).
+        from . import gelistirme as _gel
+        _kart = next((o for o in ofis.postane.bekleyen_onaylar()
+                      if o["id"] == onay_id and str(o.get("ayrinti") or "").startswith(_gel.ISARET)), None)
+        if _kart is not None:
+            try:
+                _gel.karar(ofis, _kart, govde.onayla)
+            except _gel.GelistirmeHatasi as exc:
+                raise HTTPException(400, str(exc))
         try:
             r = ofis.postane.onay_cevapla(
                 onay_id, onayla=govde.onayla, not_=govde.not_,
@@ -3218,7 +3229,16 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
             gorulen.add(a_)
             if u.motor and not musait.get(u.motor):
                 raise HTTPException(400, f"'{a_}': '{u.motor}' motoru kurulu degil.")
-        kok = _takim_koku_hazirla(ofis, ad)
+        if govde.sablon == "gelistirme":
+            # OFIS GELISTIRME TAKIMI (09.10.2026): koku calisan ofisin KOPYASI.
+            import subprocess
+            from . import gelistirme as _gel
+            try:
+                kok = _gel.kopya_hazirla()
+            except (_gel.GelistirmeHatasi, OSError, subprocess.SubprocessError) as exc:
+                raise HTTPException(400, f"Gelistirme kopyasi kurulamadi: {exc}")
+        else:
+            kok = _takim_koku_hazirla(ofis, ad)
         kid = ofis.kanat_ac(ad, onek, govde.renk)
         ofis.takim_klasoru_ayarla(kid, kok)
         alinan = []
@@ -3235,6 +3255,8 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
         except (KadroHatasi, _R.RolHatasi) as exc:
             raise HTTPException(400, f"Kurulurken durdu: {exc}. Kurulanlar: "
                                      f"{', '.join(alinan) or '(yok)'} -- takim {ad} acik kaldi.")
+        if govde.sablon == "gelistirme":
+            _gel.takimi_hazirla(ofis.db, ofis.proje_id, kid)
         ofis.db.olay_yaz(ofis.proje_id, "kanat_acildi",
                          f"Yeni takim: {ad} -- {len(alinan)} ajan ({', '.join(alinan)})",
                          ajan_ad="insan")

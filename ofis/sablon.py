@@ -51,6 +51,15 @@ SABLONLAR = {
          ("tasarim", "Urun ve kampanya gorselleri."),
          ("reklam", "Kampanya kurar; butce ve yayin onaydan gecer."),
          ("destek", "Musteri yanitlarinin TASLAGINI yazar, gondermez."))),
+    # 09.10.2026 (patron): ajanlar OFISIN KENDISINI gelistirir. Takimin koku
+    # calisan ofisin KOPYASIDIR (`gelistirme.kopya_hazirla`); kapanan isin
+    # kaydi kopyada tam sinamadan gecer, patron kurulum kartiyla kurar.
+    "gelistirme": Sablon(
+        "gelistirme", "Ofis geliştirme",
+        "Ajanlar AgentOfis'in kendisini geliştirir: ayrı kopyada çalışır, tam "
+        "sınama geçerse kurulum kartı sana gelir; sen onaylamadan çalışan ofis değişmez.",
+        (("backend", "Ofisin kodunu yazar (Python, panel); sinamasini da yazar."),
+         ("kalite", "Bagimsiz sinama: degisiklik eski davranisi bozmadi, yeni sinama ateş ediyor."))),
     "mobil": Sablon(
         "mobil", "Mobil uygulama",
         "Mobil uygulama geliştirme: ölçüt, ekran, sunucu, test.",

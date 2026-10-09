@@ -73,6 +73,16 @@ sina("terminal penceresine yazmak REDDEDILIR", b.get("ret") is True)
 sina("not defteri acmak SORULUR, reddedilmez",
      (lambda b: b["sinif"] == "masaustu" and not b.get("ret"))(d("uygulama_ac", uygulama="notepad")))
 
+sina("adi OKUNAMAYAN ogeye tiklama BELIRSIZ (sorulur; Gonder olabilir)",
+     d("tikla", oge={"okunamadi": True})["sinif"] == "belirsiz")
+sina("okunamayan alana Enter'siz yazi siradan masaustu",
+     d("yaz", oge={"okunamadi": True}, metin="abc")["sinif"] == "masaustu")
+sina("adsiz klasik yazi alani (Pane, odak alir) yazi alani sayilir",
+     MS.yazi_alani_mi({"tur": "Pane", "ad": "", "odaklanir": True})
+     and MS.yazi_alani_mi({"tur": "Pane", "sinif": "Edit"}) and not MS.yazi_alani_mi({"tur": "Button"}))
+sina("PowerShell CLIXML hatasi okunur metne cevrilir",
+     "Cannot find type" in MS._ps_hatasi('#< CLIXML\n<Objs><S S="Error">New-Object : Cannot find type_x000D__x000A_</S></Objs>'))
+
 print("\n2. dusuk duzey (okuma)")
 sina("tus cozumu: ctrl+shift+s", MS.tus_birlesimi("ctrl+shift+s") == [0x11, 0x10, ord("S")])
 try:

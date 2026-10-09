@@ -1376,6 +1376,9 @@ def arac_izin_sor(oturum: Oturum, args: dict) -> str:
 
     if bulgu is None:
         return izin()
+    if bulgu.get("ret"):
+        # KURAL RET (09.10, kendi kodu): kart acilmaz, dogru yol soylenir.
+        return ret("REDDEDILDI (kural): " + bulgu["sebep"])
     _m = _kapi_karari(oturum, arac, girdi, bulgu)
     return izin() if _m is None else ret(_m)
 
@@ -1600,7 +1603,7 @@ def _masaustu_ozeti(g, *, pencere_adi: str = "", ogeler: bool = True) -> str:
                 x, y = g.goruntuye((k[0] + k[2]) / 2, (k[1] + k[3]) / 2)
                 if not (0 <= x <= g.genislik and 0 <= y <= g.yukseklik):
                     continue
-                satirlar.append(f"  {o.get('tur')}: {str(o.get('ad') or '')[:60]!r} @({x},{y})"
+                satirlar.append(f"  {o.get('tur')}: {_m.oge_etiketi(o)[:60]!r} @({x},{y})"
                                 + ("" if o.get("etkin", True) else " (pasif)")
                                 + (" [sifre]" if o.get("sifre") else ""))
     return "\n".join(satirlar)
@@ -1647,10 +1650,12 @@ def arac_masaustu_eylem(oturum: Oturum, args: dict):
                 return "HATA: x ve y gerekli (son goruntunun pikseli)."
             ex, ey = g.ekrana(a["x"], a["y"])
             if eylem != "kaydir":
-                oge = _m.oge_noktada(ex, ey) or {}
+                # OKUNAMAYAN OGE (09.10 canli olculdu): ad yoksa kapi riskli dugmeyi
+                # goremez -> 'okunamadi' isaretiyle SORULUR (kapali kalir).
+                oge = _m.oge_noktada(ex, ey) or {"okunamadi": True, "hata": _m.SON_HATA[0][:200]}
             pencere = _m.on_pencere() or {}
         elif eylem in ("yaz", "tus"):
-            oge = _m.odak_ogesi() or {}
+            oge = _m.odak_ogesi() or {"okunamadi": True, "hata": _m.SON_HATA[0][:200]}
             pencere = _m.on_pencere() or {}
         elif eylem == "pencere":
             pencere = _m.pencere_bul(str(a.get("pencere") or "")) or {}
