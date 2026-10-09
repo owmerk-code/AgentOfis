@@ -730,6 +730,45 @@ class Tahta:
                     dusen += 1
         return dusen
 
+    def alan_ekle(self, no: int, yollar, *, ekleyen: str) -> list:
+        """Suren isin yazma alanina yol EKLER (ve sahip calisiyorsa kilidini alir).
+
+        09.10 F1 canli (#6): ajan `web/panel.js` gerektigini bildirdi; lider
+        danismada "alani ben genisletemem" dedi -- oyle bir yol YOKTU, soru
+        patrona dustu. Ayni kapilar: kok-goreli, takimin kokunde olcum, baska
+        isin kilidiyle cakisma RET (Yasa 1). Doner: eklenen yollar."""
+        gorev = self.gorev(no)
+        if gorev["durum"] in (BITTI, IPTAL):
+            raise TahtaHatasi(f"#{no} kapali ('{gorev['durum']}'); alan eklenmez.")
+        _kok = self.kok_klasor(gorev.get("kanat_id") or None)
+        ham = [str(y).strip() for y in (yollar or []) if str(y).strip()]
+        self._alanlari_dogrula([y for y in ham if not kok_goreli(y, _kok)], kok=_kok)
+        yeni = [kok_goreli(y, _kok) for y in ham]
+        self._alanlari_dogrula(yeni, kok=_kok, uyar=False)
+        yeni = [y for y in dict.fromkeys(yeni) if y and y not in gorev["yazma_alani"]]
+        if not yeni:
+            return []
+        cakisan = [c for c in self.cakisan_kilitler(yeni, kok=self.gorev_koku(gorev))
+                   if c["gorev_id"] != gorev["id"]]
+        if cakisan:
+            detay = ", ".join(f"{c['yol_oneki']} -> {c['ajan_ad']}" for c in cakisan)
+            raise KilitCakismasi(f"#{no} alani genisletilemez: yol baskasinda ({detay}).")
+        an = simdi()
+        with self.db.baglanti() as conn:
+            conn.execute("UPDATE gorev SET yazma_alani = ?, guncellendi = ? WHERE id = ?",
+                         (json.dumps(gorev["yazma_alani"] + yeni, ensure_ascii=False), an,
+                          gorev["id"]))
+            if gorev["durum"] == CALISIYOR and gorev.get("sahip"):
+                for yol in yeni:
+                    conn.execute(
+                        "INSERT INTO yazma_kilidi (id, proje_id, yol_oneki, gorev_id, "
+                        "ajan_ad, alindi, son_nabiz) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                        (uuid.uuid4().hex, self.proje_id, yol, gorev["id"], gorev["sahip"], an, an))
+        self.db.olay_yaz(self.proje_id, "alan_eklendi",
+                         f"#{no} yazma alanina eklendi: {', '.join(yeni)} ({ekleyen})",
+                         ajan_ad=ekleyen, gorev_id=gorev["id"])
+        return yeni
+
     def kosani_yaz(self, no: int) -> None:
         """Isi BU surec kosturuyor: `kosan_surec` tazelenir.
 

@@ -68,6 +68,10 @@ class DanismaHatasi(RuntimeError):
     pass
 
 
+#: Liderin danisma cevabinda yazma alanini genisletme satiri.
+ALAN_EKLE = "ALAN_EKLE:"
+
+
 class Danisma:
     def __init__(self, ofis, *, motor_fabrikasi=motor_ac) -> None:
         self.ofis = ofis
@@ -159,6 +163,18 @@ class Danisma:
             satirlar += self._takim_ozeti(mesaj)
 
         satirlar += ["", "## SORUSU", "", mesaj["govde"], ""]
+        if self._alan_yetkisi(mesaj):
+            # ALAN GENISLETME (09.10 F1 canli, #6): isin LIDERI, isin sahibine
+            # cevap verirken alani genisletebilir; ofis olcer ve uygular.
+            satirlar += ["", "## YAZMA ALANI", "",
+                         "Bu isin LIDERI sensin. Soran ajan yazma alani DISINDA bir dosyaya",
+                         "yazmasi gerektigini soyluyorsa ve bu isin hedefi icin gerekliyse,",
+                         "cevabina AYRI bir satir ekle (yollar proje kokune gore):",
+                         "",
+                         f"{ALAN_EKLE} web/panel.js, testler/duman_x.py",
+                         "",
+                         "Ofis yolu olcer, baska isin kilidiyle cakisirsa eklemez ve sebebi",
+                         "cevabin sonuna yazar. Gereksizse ekleme; neden gereksiz oldugunu yaz.", ""]
         # TAKIM GOZU (06.10.2026): cevaplayan ajanin takimi (+ ortak).
         try:
             _kanat = self.ofis.kadro.ajan(mesaj["alici"]).get("kanat_id") or ""
@@ -239,11 +255,47 @@ class Danisma:
         if cevap.upper().startswith(BILMIYORUM):
             return self._yukselt(mesaj, f"'{alici}' bilmiyor: {cevap}")
 
+        cevap = self._alani_uygula(mesaj, cevap)
         self.ofis.postane.cevapla(mesaj["id"], cevap, cevaplayan=alici)
         self.db.olay_yaz(self.proje_id, "danisma",
                          f"{alici} -> {mesaj['gonderen']}: {cevap[:200]}",
                          ajan_ad=alici, gorev_id=mesaj.get("gorev_id"))
         return {"durum": "cevaplandi", "cevap": cevap, "ajan": alici}
+
+    def _alan_yetkisi(self, mesaj: dict) -> dict | None:
+        """Cevaplayan, soranin SURDUGU isin lideri mi? Oyleyse o is."""
+        if not mesaj.get("gorev_no") or mesaj.get("gonderen") == "insan":
+            return None
+        try:
+            g = self.ofis.tahta.gorev(mesaj["gorev_no"])
+            if g.get("sahip") != mesaj.get("gonderen") or g["durum"] in ("bitti", "iptal"):
+                return None
+            if self.ofis.kadro.gorevin_lideri(g)["ad"] != mesaj.get("alici"):
+                return None
+            return g
+        except Exception:                        # noqa: BLE001 -- olcemezsek yetki yok
+            return None
+
+    def _alani_uygula(self, mesaj: dict, cevap: str) -> str:
+        """Cevaptaki `ALAN_EKLE:` satirini (yalniz yetkili liderde) uygular;
+        SONUC cevaba eklenir -- ajan neyin eklendigini ya da neden
+        eklenmedigini gorur (uydurma 'ekledim' yok)."""
+        satirlar = [s for s in cevap.splitlines() if s.strip().upper().startswith(ALAN_EKLE)]
+        if not satirlar:
+            return cevap
+        g = self._alan_yetkisi(mesaj)
+        if g is None:
+            return cevap + "\n\n(ofis: ALAN_EKLE uygulanmadi -- yalniz isin lideri, isin sahibine cevap verirken ekleyebilir.)"
+        yollar = []
+        for s in satirlar:
+            yollar += [y.strip().strip("`") for y in s.strip()[len(ALAN_EKLE):].split(",")]
+        try:
+            eklenen = self.ofis.tahta.alan_ekle(g["no"], yollar, ekleyen=mesaj["alici"])
+        except TahtaHatasi as exc:
+            return cevap + f"\n\n(ofis: yazma alani GENISLETILMEDI: {exc})"
+        if not eklenen:
+            return cevap + "\n\n(ofis: yollar zaten yazma alanindaydi.)"
+        return cevap + f"\n\n(ofis: #{g['no']} yazma alanina eklendi: {', '.join(eklenen)})"
 
     def insana_cevapla(self, mesaj: dict, *, butce_usd=None,
                        zaman_asimi=None) -> dict:
