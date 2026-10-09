@@ -758,7 +758,8 @@ class Tahta:
             conn.execute("UPDATE gorev SET yazma_alani = ?, guncellendi = ? WHERE id = ?",
                          (json.dumps(gorev["yazma_alani"] + yeni, ensure_ascii=False), an,
                           gorev["id"]))
-            if gorev["durum"] == CALISIYOR and gorev.get("sahip"):
+            # INCELEMEDE de kilit sahipte kalir (geri gonderilince ayni ajan yazar).
+            if gorev["durum"] in (CALISIYOR, INCELEME) and gorev.get("sahip"):
                 for yol in yeni:
                     conn.execute(
                         "INSERT INTO yazma_kilidi (id, proje_id, yol_oneki, gorev_id, "
