@@ -283,5 +283,21 @@ sina("  gelistirme kopyasinda kok ev/ ATLANIR, kod ve alt klasordeki ev/ olculur
      str(_sonra))
 _sh.rmtree(_dk, ignore_errors=True)
 
+print("\n10. panel kapanip acilinca YARIM sinama yeniden kosar (09.10 canli: #5 karti hic gelmedi)")
+n9 = is_kapat("yarim kalan sinama", "yarim.py", "print('y')\n")
+bekle(n9)
+_d9 = G.teslim_durumu(db, ofis.proje_id, n9)
+_d9.update(durum="sinaniyor", sinama=None)
+G._yaz(db, ofis.proje_id, n9, _d9)                 # panel sinama SIRASINDA oldu
+_kart_once = len(kartlar())
+_ys = G.yarim_sinamalari_surdur(db, ofis.proje_id, arkada=False)
+_d9 = G.teslim_durumu(db, ofis.proje_id, n9)
+sina("acilista yarim sinama yeniden kostu, sonuc yazildi", _ys == [n9] and _d9.get("durum") in ("kart", "sinama_kaldi"),
+     str((_ys, _d9.get("durum"))))
+sina("  biten/kurulan teslime DOKUNULMAZ (ikinci acilista bos)",
+     G.yarim_sinamalari_surdur(db, ofis.proje_id, arkada=False) == [])
+_py = (OFIS_KODU / "ofis" / "panel.py").read_text(encoding="utf-8")
+sina("  panel acilisi bunu cagiriyor", "yarim_sinamalari_surdur(_db, pid)" in _py)
+
 print(f"\n== sonuc: {GECEN} gecti, {KALAN} kaldi ==")
 sys.exit(1 if KALAN else 0)

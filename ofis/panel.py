@@ -461,6 +461,9 @@ def acilista_toparla(db_yolu, proje_ad: str = None) -> dict:
             return {}
         from .toparla import acilista_toparla as _toparla
         sonuc = _toparla(Ofis(_db, pid))
+        # Gelistirme kopyasinda yarim kalan sinama (09.10 canli, #5).
+        from . import gelistirme as _gel
+        _gel.yarim_sinamalari_surdur(_db, pid)
     except Exception as exc:          # noqa: BLE001 -- panel yine acilir
         import traceback
         traceback.print_exc()

@@ -252,6 +252,44 @@ def kapanista(db, pid: str, kok: str, gorev: dict, *, arkada: bool = True) -> di
     return _sinan_ve_kartla(db, pid, gorev, d)
 
 
+def yarim_sinamalari_surdur(db, pid: str, *, arkada: bool = True) -> list:
+    """Panel ACILIRKEN: sinamasi yarim kalmis teslimleri yeniden sinar.
+
+    09.10 F1 canli (#5): sinama panelin ICINDE (arka iplik) kosuyordu; panel
+    kapaninca iplik oldu, defterde "TAM sinama basladi"dan sonra hicbir sey
+    yazilmadi, kurulum karti hic gelmedi ve bunu soyleyen de olmadi. Kayit
+    `sinaniyor`da kalan her teslim bastan sinanir (yarim sinama sonucu
+    olcu degildir). Doner: yeniden baslatilan is numaralari."""
+    with db.baglanti() as c:
+        satirlar = c.execute("SELECT anahtar, deger FROM ayar WHERE proje_id = ? AND anahtar LIKE ?",
+                             (pid, _kayit_anahtari("%"))).fetchall()
+    baslayan = []
+    for anahtar, deger in satirlar:
+        try:
+            d = json.loads(deger or "{}")
+        except ValueError:
+            continue
+        if d.get("durum") != "sinaniyor":
+            continue
+        with db.baglanti() as c:
+            g = c.execute("SELECT id, no, baslik FROM gorev WHERE proje_id = ? AND no = ?",
+                          (pid, d.get("no"))).fetchone()
+        if not g:
+            continue
+        gorev = {"id": g[0], "no": g[1], "baslik": g[2]}
+        d["basladi"] = time.time()
+        _yaz(db, pid, gorev["no"], d)
+        db.olay_yaz(pid, "gelistirme", f"#{gorev['no']}: panel kapanmadan once sinama YARIM "
+                    "kalmisti -- kopyada TAM sinama yeniden basladi.", gorev_id=gorev["id"])
+        if arkada:
+            threading.Thread(target=_sinan_ve_kartla, args=(db, pid, gorev, d), daemon=True,
+                             name=f"gelistirme-{gorev['no']}").start()
+        else:
+            _sinan_ve_kartla(db, pid, gorev, d)
+        baslayan.append(gorev["no"])
+    return baslayan
+
+
 def _sinan_ve_kartla(db, pid, gorev, d, *, dosyalar=None) -> dict:
     try:
         s = sinama_kos(d["kok"], dosyalar=dosyalar if dosyalar is not None else d.get("dosyalar"))
