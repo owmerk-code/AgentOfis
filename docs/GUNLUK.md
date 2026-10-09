@@ -15620,3 +15620,26 @@ KENDİSİ kanıtladı, önizleme panelinde ekran görüntüsü verdi.
 4. Tam takımda `duman_deneme` D17 kaldı: koltuğun ikinci `sahiplenildi`
    kaydını kaldırınca "(kaldigi yerden)" bilgisi de gitti → `tahta.sahiplen(
    devam=)` kendi kaydına yazar.
+
+### 09.10 (devam) — #5 sonucu: geliştirme yolu kendi sınamasından hiç geçemezdi
+
+5. **#5'in değişikliği YANLIŞTI ve ofisin incelemesi kaçırdı.** "İşin son
+   turu" çoğu zaman liderin inceleme turu: gerçek defterin kopyasında 5 kartın
+   5'i yanlış model gösterdi (kaan → Opus 5.5, ece → GPT-6.1 Sol…). asli'nin
+   sınaması yalnız işçi turu kurmuştu; lider ve codex incelemesi geçirdi; ben
+   kodu okurken yakaladım. (Açık: inceleyen, değişikliği gerçek defterin
+   kopyasında denemeli.)
+6. **Kopya sınaması panel kapanınca SESSİZCE öldü** (iplik panelin içinde) →
+   `gelistirme.yarim_sinamalari_surdur` panel açılışında; canlıda ölçüldü
+   (16:37:59 yeniden başladı).
+7. **Kopyadaki tam sınama HİÇBİR ZAMAN geçemezdi** (5428 geçti, 3 kaldı, hiçbiri
+   #5'ten değil): (a) kopya eski tabandaydı (D17) → sınamadan önce
+   `esitle` (rebase; çakışma = kurulamaz, sınanmaz, söylenir); (b) Remotion
+   paketleri kopyada yok (`node_modules` depoya girmez) → `bagimliliklari_kur`
+   (`npm ci --prefer-offline`, önbellekten 10 sn); çalışan ofisin paketlerine
+   BAĞLANTI verilmedi: kendi koduna yazma kapısı yolu metin olarak ölçüyor,
+   bağlantının arkasını görmez (ölçüldü); (c) "çalışan ofiste önizleme
+   açılmaz" sınaması kopyada ters ölçüyordu → koşul kurulur.
+8. **`reddet` yalan kayıt yazabiliyordu** (geri alma düşse de "geri alındı") →
+   düşerse hata; sınama sürerken ve ikinci kez reddedilmez. Sınaması geçmeyen
+   teslimin kartı yok → `kabuk gelistirme reddet <no>`. #5 böyle reddedildi.
