@@ -320,8 +320,13 @@ print("\n10. panel kapanip acilinca YARIM sinama yeniden kosar (09.10 canli: #5 
 n9 = is_kapat("yarim kalan sinama", "yarim.py", "print('y')\n")
 bekle(n9)
 _d9 = G.teslim_durumu(db, ofis.proje_id, n9)
-_d9.update(durum="sinaniyor", sinama=None)
-G._yaz(db, ofis.proje_id, n9, _d9)                 # panel sinama SIRASINDA oldu
+# SAHIBI YASAYAN sinamaya dokunulmaz (10.10 canli: panel acilisi baska surecteki
+# sinamayi ikinci kez baslatti, ikisi ayni kopyada yaristi).
+_d9.update(durum="sinaniyor", sinama=None, kosan=G._surec.kimlik())
+G._yaz(db, ofis.proje_id, n9, _d9)
+sina("sahibi YASAYAN sinama yeniden baslatilmaz", G.yarim_sinamalari_surdur(db, ofis.proje_id, arkada=False) == [])
+_d9.update(durum="sinaniyor", sinama=None, kosan="999999:1")   # sahibi OLU (panel sinama sirasinda oldu)
+G._yaz(db, ofis.proje_id, n9, _d9)
 _kart_once = len(kartlar())
 _ys = G.yarim_sinamalari_surdur(db, ofis.proje_id, arkada=False)
 _d9 = G.teslim_durumu(db, ofis.proje_id, n9)
@@ -462,6 +467,34 @@ _wt = git(kok, "worktree", "list")
 sina("  gecici agac silindi (worktree listesinde yalniz kopya)", len(_wt.splitlines()) == 1, _wt)
 git(kok, "checkout", "--", "testler/duman_ornek.py")
 Path(kok, "testler", "duman_kirli.py").unlink()
+
+print("\n17. kurulum sinanan ICERIGI kurar (hash degisse de); icerik degistiyse KURMAZ (10.10 canli: bad object)")
+git(kok, "fetch", "-q", "origin")
+git(kok, "reset", "-q", "--hard", "origin/main")
+n17 = is_kapat("tabani degisecek is", "is17.py", "print(17)\n")
+d17 = bekle(n17)
+sina("(sahne) kart acildi", d17.get("durum") == "kart", str(d17.get("durum")))
+_h_once = d17["kayitlar"][0]["commit"]
+(KAY / "sonradan.txt").write_text("x\n", encoding="utf-8")
+git(KAY, "add", "-A")
+git(KAY, "commit", "-qm", "calisan ofise sinamadan sonra giren kayit")
+G.esitle(kok)                                     # is basi esitlemesi gibi: yeni taban, yeni hash
+_h_simdi = G._isin_kayitlari(kok, n17)[0]["commit"]
+sina("(sahne) esitleme kaydin hash'ini DEGISTIRDI", _h_once != _h_simdi)
+sina("  yama kimligi AYNI", G._yama_kimligi(kok, _h_once) == G._yama_kimligi(kok, _h_simdi) is not None)
+_kd = G.kur(ofis, n17)
+sina("  kurulum GUNCEL kaydi kurdu (eskiden: bad object)", _kd.get("durum") == "kuruldu" and (KAY / "is17.py").is_file(), str(_kd.get("durum")))
+n18 = is_kapat("icerigi degisecek is", "is18.py", "print(18)\n")
+d18 = bekle(n18)
+Path(kok, "is18.py").write_text("print('sinanmamis')\n", encoding="utf-8")
+git(kok, "commit", "-qam", f"#{n18} sinamadan sonra degisiklik")
+try:
+    G.kur(ofis, n18)
+    sina("  sinamadan SONRA degisen icerik KURULMAZ", False)
+except G.GelistirmeHatasi as _e:
+    sina("  sinamadan SONRA degisen icerik KURULMAZ", "SINAMADAN SONRA" in str(_e) and not (KAY / "is18.py").exists(), str(_e)[:160])
+G.reddet(ofis, n18)
+sina("  ret GUNCEL kayitlari geri aldi", not Path(kok, "is18.py").exists())
 
 print(f"\n== sonuc: {GECEN} gecti, {KALAN} kaldi ==")
 sys.exit(1 if KALAN else 0)

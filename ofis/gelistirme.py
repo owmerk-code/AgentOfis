@@ -33,6 +33,7 @@ import threading
 import time
 from pathlib import Path
 
+from . import surec as _surec
 from .surec import PENCERE_YOK
 
 SABLON = "gelistirme"
@@ -483,7 +484,8 @@ def kapanista(db, pid: str, kok: str, gorev: dict, *, arkada: bool = True) -> di
                     gorev_id=gorev["id"])
         return None
     d = {"no": gorev["no"], "baslik": gorev.get("baslik", ""), "kok": str(kok),
-         "kayitlar": kayitlar, "durum": "sinaniyor", "basladi": time.time()}
+         "kayitlar": kayitlar, "durum": "sinaniyor", "basladi": time.time(),
+         "kosan": _surec.kimlik()}
     _yaz(db, pid, gorev["no"], d)
     db.olay_yaz(pid, "gelistirme", f"#{gorev['no']}: {len(kayitlar)} kayit -- kopyada TAM "
                 "sinama basladi (kurulum karti sinama gecince acilir).", gorev_id=gorev["id"])
@@ -512,6 +514,7 @@ def yeniden_sina(db, pid: str, no: int) -> dict:
     if d.get("durum") != "sinama_kaldi":
         raise GelistirmeHatasi(f"#{no} yeniden sinanmaz: durumu '{d.get('durum') or 'yok'}'.")
     d["durum"] = "sinaniyor"
+    d["kosan"] = ""                      # sahipsiz: asagidaki yoklama bu sureci sahip yapar
     _yaz(db, pid, no, d)
     sonuc = yarim_sinamalari_surdur(db, pid, arkada=False)
     return teslim_durumu(db, pid, no) if no in sonuc else d
@@ -536,6 +539,12 @@ def yarim_sinamalari_surdur(db, pid: str, *, arkada: bool = True) -> list:
             continue
         if d.get("durum") != "sinaniyor":
             continue
+        # SAHIBI YASIYORSA dokunulmaz (10.10 canli, #9): sinama baska bir
+        # surecte (kabuk, ya da kapanmadan once baslatilmis panel) surerken
+        # panel acildi, sinamayi "yarim" sanip IKINCI kez baslatti; ikisi ayni
+        # kopyada yaristi. Yalniz sahibi olu (ya da yazilmamis) sinama yeniden.
+        if d.get("kosan") and _surec.yasiyor(d["kosan"]) is not False:
+            continue
         with db.baglanti() as c:
             g = c.execute("SELECT id, no, baslik FROM gorev WHERE proje_id = ? AND no = ?",
                           (pid, d.get("no"))).fetchone()
@@ -545,6 +554,7 @@ def yarim_sinamalari_surdur(db, pid: str, *, arkada: bool = True) -> list:
         if d.get("kok") and _esitle_once(db, pid, d["kok"], gorev):
             d["kayitlar"] = _isin_kayitlari(d["kok"], gorev["no"]) or d.get("kayitlar") or []
         d["basladi"] = time.time()
+        d["kosan"] = _surec.kimlik()
         _yaz(db, pid, gorev["no"], d)
         db.olay_yaz(pid, "gelistirme", f"#{gorev['no']}: panel kapanmadan once sinama YARIM "
                     "kalmisti -- kopyada TAM sinama yeniden basladi.", gorev_id=gorev["id"])
@@ -628,6 +638,38 @@ def _calisan_temiz_mi(hedef) -> str:
     return "" if not kirli else ", ".join(s[3:] for s in kirli[:8])
 
 
+def _yama_kimligi(kok, kayit: str):
+    """Kaydin icerik kimligi (`git patch-id --stable`): ayni degisiklik baska
+    tabana tasininca kimlik (hash) degisir, yama kimligi DEGISMEZ. Kayit
+    kopyada yoksa None."""
+    goster = _git(kok, "show", "--format=", kayit)
+    if goster.returncode != 0 or not goster.stdout:
+        return None
+    r = subprocess.run(["git", "-C", str(kok), "patch-id", "--stable"], input=goster.stdout,
+                       capture_output=True, creationflags=PENCERE_YOK)
+    out = r.stdout.decode(errors="replace").split()
+    return out[0] if out else None
+
+
+def guncel_kayitlar(d: dict, no: int) -> list:
+    """Sinanan kayitlarin kopyadaki BUGUNKU hali. Icerik (yama kimligi)
+    sinanandan farkliysa ya da bulunamazsa KURULMAZ.
+
+    10.10 canli (#9): kart sinanan kaydin hash'ini sakliyordu; sinamadan sonra
+    kopya esitlendi (ayni yama, yeni taban -> yeni hash) ve kurulum "bad
+    object" ile dustu. Sinanan sey ICERIKTIR; tabani degil."""
+    guncel = _isin_kayitlari(d["kok"], no)
+    if not guncel:
+        raise GelistirmeHatasi(f"#{no} isin kaydi kopyada artik YOK; kurulmadi.")
+    eski = [_yama_kimligi(d["kok"], k["commit"]) for k in d.get("kayitlar") or []]
+    yeni = [_yama_kimligi(d["kok"], k["commit"]) for k in guncel]
+    if not eski or None in eski or eski != yeni:
+        raise GelistirmeHatasi(
+            f"#{no} kaydi SINAMADAN SONRA degismis (ya da sinanan kayit okunamiyor); sinanmayan sey "
+            f"kurulmaz. Yeniden sina: python -m ofis.kabuk gelistirme sina {no}")
+    return guncel
+
+
 def kur(ofis, no: int) -> dict:
     d = teslim_durumu(ofis.db, ofis.proje_id, no)
     if d.get("durum") == "kuruldu":
@@ -638,22 +680,23 @@ def kur(ofis, no: int) -> dict:
         raise GelistirmeHatasi(
             "Calisan ofiste KAYDEDILMEMIS degisiklik var (" + kirli + "); kurulum onu "
             "ezmesin diye DURDU. Once o degisiklik kaydedilsin, sonra karti yeniden onayla.")
+    kayitlar = guncel_kayitlar(d, no)
     r = _git(hedef, "fetch", "-q", d["kok"], "HEAD")
     if r.returncode != 0:
         raise GelistirmeHatasi("Kopyadan alinamadi: " + _metin(r)[:300])
     once = _git(hedef, "rev-parse", "HEAD").stdout.decode().strip()
-    r = _git(hedef, *_kimlik(), "cherry-pick", "-x", *[k["commit"] for k in d["kayitlar"]])
+    r = _git(hedef, *_kimlik(), "cherry-pick", "-x", *[k["commit"] for k in kayitlar])
     if r.returncode != 0:
         _git(hedef, "cherry-pick", "--abort")
         raise GelistirmeHatasi("Kurulum CAKISTI (calisan kod kopyadan beri degismis); hicbir "
                                "sey degismedi. Ayrinti: " + _metin(r)[:300])
     yeni = _git(hedef, "log", "--reverse", "--format=%H", f"{once}..HEAD").stdout.decode().split()
-    d.update(durum="kuruldu", kurulan=yeni, kuruldu=time.time())
+    d.update(durum="kuruldu", kurulan=yeni, kuruldu=time.time(), kayitlar=kayitlar)
     _yaz(ofis.db, ofis.proje_id, no, d)
     ofis.db.olay_yaz(ofis.proje_id, "gelistirme",
                      f"#{no} OFISE KURULDU ({len(yeni)} kayit). Paneli yeniden baslat. Geri alma: "
                      f"python -m ofis.kabuk gelistirme geri-al {no}", ajan_ad="insan")
-    esitle(d["kok"])
+    esitle(d["kok"], cikar=kararli_isler(ofis.db, ofis.proje_id))
     return d
 
 
@@ -667,7 +710,8 @@ def reddet(ofis, no: int) -> dict:
     # Sinama SURERKEN geri alinmaz: kopyanin dosyalari sinamanin altindan degisir.
     if d.get("durum") == "sinaniyor":
         raise GelistirmeHatasi(f"#{no} su an sinaniyor; sinama bitince reddedilir.")
-    hl = [k["commit"] for k in reversed(d.get("kayitlar") or [])]
+    # GUNCEL kayitlar (saklanan hash esitlemeden sonra bayatlamis olabilir).
+    hl = [k["commit"] for k in reversed(_isin_kayitlari(d["kok"], no) if d.get("kok") else [])]
     if hl:
         r = _git(d["kok"], *_kimlik(), "revert", "--no-edit", *hl)
         if r.returncode != 0:
