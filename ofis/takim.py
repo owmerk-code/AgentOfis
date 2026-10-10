@@ -587,6 +587,7 @@ def _ofis_notu_mu(metin: str) -> bool:
 
 #: Gelistirme teslim durumlarinin patrona gorunen adi.
 KURULUM_ADI = {"sinaniyor": "kopyada sınanıyor", "sinama_kaldi": "sınama geçmedi — kurulmadı",
+               "cakisti": "son kodla çakıştı — kurulmadı",
                "kart": "kurulum onayını bekliyor", "kuruldu": "ofise kuruldu",
                "reddedildi": "reddedildi — kurulmadı", "geri_alindi": "geri alındı"}
 

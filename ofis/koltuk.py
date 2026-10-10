@@ -312,8 +312,11 @@ class Koltuk:
         # bayrakla yonetseydik is kilitsiz kosardi ve Yasa 1 sessizce
         # delinirdi -- kilit makinesi bunu hic gormezdi.
         if gorev["sahip"] != ajan_ad or gorev["durum"] != "calisiyor":
+            _yeni_is = gorev["durum"] == "hazir" and not devam
             gorev = self.ofis.tahta.sahiplen(no, ajan_ad, gorev["revizyon"],
                                              devam=bool(devam))
+            if _yeni_is:
+                self._gelistirme_is_basi(gorev)
             yield self._olay(
                 "sahiplenildi",
                 f"#{no} {gorev['baslik']} -> {ajan_ad}"
@@ -2010,6 +2013,25 @@ class Koltuk:
             "· dokuman ~$2,18. Tavani yukseltmek ya da isi bolmek gerekir; "
             "ofis kendi yukseltmez, para karari senindir.",
             gorev_id=gorev["id"])
+
+    def _gelistirme_is_basi(self, gorev: dict) -> None:
+        """Gelistirme kopyasinda YENI is basliyor: kopya son koda esitlenir
+        (`gelistirme.is_basinda`). Ayni kopyada BASKA bir is suruyorsa
+        dokunulmaz -- o ajanin dosyalari altindan degismesin."""
+        try:
+            from . import gelistirme as _gel
+            kok = self.ofis.tahta.gorev_koku(gorev)
+            if not kok or not _gel.kopya_mi(kok):
+                return
+            baska = [g for g in self.ofis.tahta.liste()
+                     if g["no"] != gorev["no"] and g["durum"] in ("calisiyor", "inceleme")
+                     and str(self.ofis.tahta.gorev_koku(g) or "").lower() == str(kok).lower()]
+            if baska:
+                return
+            _gel.is_basinda(self.db, self.proje_id, kok, gorev)
+        except Exception as exc:                 # noqa: BLE001 -- is yine baslar, sebep yazili
+            self.db.olay_yaz(self.proje_id, "uyari",
+                             f"#{gorev.get('no')} is basi kopya esitlemesi dustu: {exc}"[:400])
 
     def _olay(self, tur: str, govde: str = "", ek: dict = None, *,
               yaz: bool = True, ajan_ad: str = "", gorev_id: str = None) -> dict:

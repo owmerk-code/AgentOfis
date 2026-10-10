@@ -118,21 +118,65 @@ def kopya_hazirla(hedef=None) -> str:
     return str(hedef.resolve())
 
 
-def esitle(kok) -> dict:
-    """Kopyayi calisan ofisin son KAYITLI koduna getirir. Kopyada bekleyen
-    (henuz karar verilmemis) kayit varsa onlar korunur (`rebase`); kurulmus
-    kaydin esi kopyada kendiliginden duser (ayni yama)."""
+def _kararli_mi(konu: str, cikar) -> bool:
+    """Kayit konusu karara baglanmis bir ise mi ait (`#n ...` ya da onun
+    `Revert "#n ..."` kaydi)."""
+    for n in cikar or ():
+        if konu.startswith(f"#{n} ") or konu.startswith(f'Revert "#{n} '):
+            return True
+    return False
+
+
+def esitle(kok, cikar=()) -> dict:
+    """Kopyayi calisan ofisin son KAYITLI koduna getirir; karar BEKLEYEN islerin
+    kayitlari onun ustune tasinir.
+
+    `cikar`: karara baglanmis (kurulmus/reddedilmis/geri alinmis) is numaralari
+    -- kayitlari ve geri-alma kayitlari kopyadan DUSER. 10.10 F1 canli (#9):
+    kopyada #5 (reddedildi) + onun geri alinisi + kurulmus #6 duruyordu; her
+    esitleme onlari yeniden son kodun ustune koymaya calisti, #5 son kodla
+    CAKISTI ve hic ilgisi olmayan #9 "kurulamaz" oldu."""
     r = _git(kok, "fetch", "-q", "origin")
     if r.returncode != 0:
         return {"tamam": False, "sebep": "fetch: " + _metin(r)[:200]}
     if _git(kok, "status", "--porcelain", "--untracked-files=no").stdout.strip():
         return {"tamam": False, "sebep": "kopyada kaydedilmemis degisiklik var (calisan is)"}
     dal = _git(kok, "rev-parse", "--abbrev-ref", "origin/HEAD").stdout.decode().strip() or "origin/main"
-    r = _git(kok, *_kimlik(), "rebase", "-q", dal)
-    if r.returncode != 0:
-        _git(kok, "rebase", "--abort")
-        return {"tamam": False, "sebep": "rebase cakisti: " + _metin(r)[:200]}
-    return {"tamam": True}
+    satirlar = _git(kok, "log", "--reverse", "--format=%H%x09%s", f"{dal}..HEAD").stdout.decode(
+        "utf-8", "replace").splitlines()
+    kayitlar = [s.partition("\t")[::2] for s in satirlar if s.strip()]
+    kalan = [h for h, konu in kayitlar if not _kararli_mi(konu, cikar)]
+    if len(kalan) == len(kayitlar):
+        r = _git(kok, *_kimlik(), "rebase", "-q", dal)
+        if r.returncode != 0:
+            _git(kok, "rebase", "--abort")
+            return {"tamam": False, "sebep": "rebase cakisti: " + _metin(r)[:200]}
+        return {"tamam": True}
+    # Kararlasmis kayitlar dusurulur: son kod + yalniz karar bekleyenler.
+    yedek = _git(kok, "rev-parse", "HEAD").stdout.decode().strip()
+    _git(kok, "reset", "-q", "--hard", dal)
+    for h in kalan:
+        r = _git(kok, *_kimlik(), "cherry-pick", h)
+        if r.returncode != 0:
+            _git(kok, "cherry-pick", "--abort")
+            _git(kok, "reset", "-q", "--hard", yedek)      # kopya eski haline doner
+            return {"tamam": False, "sebep": "rebase cakisti: " + _metin(r)[:200]}
+    return {"tamam": True, "dusen": len(kayitlar) - len(kalan)}
+
+
+def kararli_isler(db, pid: str) -> set:
+    """Teslimi karara baglanmis is numaralari (kopyadan dusulecek kayitlar)."""
+    out = set()
+    with db.baglanti() as c:
+        for (deger,) in c.execute("SELECT deger FROM ayar WHERE proje_id = ? AND anahtar LIKE ?",
+                                  (pid, _kayit_anahtari("%"))):
+            try:
+                d = json.loads(deger or "{}")
+            except ValueError:
+                continue
+            if d.get("durum") in ("kuruldu", "reddedildi", "geri_alindi") and d.get("no") is not None:
+                out.add(d["no"])
+    return out
 
 
 def _isin_kayitlari(kok, no: int) -> list:
@@ -365,6 +409,23 @@ def satir_sonu_onar(kok, no: int) -> list:
     return onarilan
 
 
+def is_basinda(db, pid: str, kok, gorev: dict) -> None:
+    """Gelistirme isi BASLARKEN kopya son koda esitlenir (kararlasmis kayitlar
+    duser). 10.10 F1 canli (#9): kopya yalniz is BITINCE esitleniyordu; ajan
+    eski kodun ustunde calisti, son koda giren degisiklikle cakisti. Kopyada
+    kaydedilmemis is (baska bir is suruyor) varsa dokunulmaz -- SOYLENIR."""
+    try:
+        if not kok or not kopya_mi(kok):
+            return
+        e = esitle(kok, cikar=kararli_isler(db, pid))
+    except Exception as exc:                     # noqa: BLE001 -- is yine baslar
+        e = {"tamam": False, "sebep": str(exc)}
+    if not e.get("tamam"):
+        db.olay_yaz(pid, "uyari", f"#{gorev.get('no')}: is basinda kopya son koda esitlenemedi "
+                    f"({str(e.get('sebep'))[:200]}); ajan kopyanin bugunku haliyle calisiyor.",
+                    gorev_id=gorev.get("id"))
+
+
 def _esitle_once(db, pid: str, kok, gorev: dict) -> bool:
     """Sinamadan ONCE kopya calisan ofisin son koduna esitlenir (isin kaydi
     ustune tasinir). Doner: sinama yapilabilir mi.
@@ -374,7 +435,7 @@ def _esitle_once(db, pid: str, kok, gorev: dict) -> bool:
     kaldi (D17). Sinanan sey, KURULACAK seyin aynisi olmali: kurulum zaten
     son koda cherry-pick'tir. Cakisma = kurulamaz -> sinanmaz, SOYLENIR."""
     try:
-        e = esitle(kok)
+        e = esitle(kok, cikar=kararli_isler(db, pid))
     except Exception as exc:                     # noqa: BLE001
         e = {"tamam": False, "sebep": str(exc)}
     try:
@@ -386,6 +447,10 @@ def _esitle_once(db, pid: str, kok, gorev: dict) -> bool:
         return True
     sebep = str(e.get("sebep") or "")
     if sebep.startswith("rebase cakisti"):
+        # Durum KAYDEDILIR (karta ve `kabuk gelistirme`ye gorunur; cakisma
+        # cozulunce `gelistirme sina <no>` yeniden dener).
+        _yaz(db, pid, gorev["no"], {"no": gorev["no"], "baslik": gorev.get("baslik", ""),
+                                    "kok": str(kok), "durum": "cakisti", "sebep": sebep[:500]})
         db.olay_yaz(pid, "gelistirme", f"#{gorev['no']}: isin kaydi calisan ofisin son koduyla "
                     f"CAKISTI, kurulamaz; sinanmadi. {sebep[:300]}", gorev_id=gorev.get("id"))
         return False
@@ -433,6 +498,17 @@ def yeniden_sina(db, pid: str, no: int) -> dict:
     """Sinamasi KALAN teslimi yeniden sinar (sebep ortamdaydi, isteydi degil:
     09.10 #6 -- kopyada ffmpeg yoktu). Kurulmus/reddedilmis teslime dokunmaz."""
     d = teslim_durumu(db, pid, no)
+    if d.get("durum") == "cakisti":
+        # Cakisma cozulduyse (ya da kararlasmis kayitlar dusunce) is bastan:
+        # esitle -> satir sonu -> sinama -> kart (kapanistaki yolun aynisi).
+        with db.baglanti() as c:
+            g = c.execute("SELECT id, no, baslik FROM gorev WHERE proje_id = ? AND no = ?",
+                          (pid, no)).fetchone()
+        if not g:
+            raise GelistirmeHatasi(f"#{no} bulunamadi.")
+        kapanista(db, pid, d.get("kok") or str(varsayilan_klasor()),
+                  {"id": g[0], "no": g[1], "baslik": g[2]}, arkada=False)
+        return teslim_durumu(db, pid, no)
     if d.get("durum") != "sinama_kaldi":
         raise GelistirmeHatasi(f"#{no} yeniden sinanmaz: durumu '{d.get('durum') or 'yok'}'.")
     d["durum"] = "sinaniyor"
