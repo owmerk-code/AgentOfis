@@ -1283,15 +1283,22 @@ def betik_degerlendir(arac: str, girdi: dict, kok: str) -> dict | None:
         if bulunan:
             ad, risk = SINIFLAR[sinif]
             kisa = os.path.basename(yol)
+            # ONAY KIMLIGI = BETIK + ISARET, komutun sarmalayicisi DEGIL (10.10
+            # canli, #11): ajan ayni sinamayi `grep`/`timeout`/`tail` ile her
+            # seferinde biraz farkli kosturdu, "bu is boyunca" onayi hic
+            # eslesmedi; tek iste 4 kart. Risk betikte ve bulunan isarette:
+            # ayni betik ayni isaretle bu is boyunca bir daha SORULMAZ; betige
+            # YENI bir tur silme/gonderim eklenirse yeniden sorulur.
+            kimlik = f"betik {os.path.normcase(os.path.abspath(yol))} :: {sinif} :: {bulunan.strip()}"
             return {
                 "sinif": sinif, "ad": ad, "risk": risk, "esles": bulunan.strip(),
-                "arac": arac, "hedef": komut[:200], "element": komut[:200],
+                "arac": arac, "hedef": komut[:200], "element": kimlik[:300],
                 "url": "", "sorulur": True,
                 "eylem": f"{ad}: {komut[:80]} (betik {kisa})",
                 "sebep": (f"`{kisa}` betiginin ICINDE {ad} isareti var "
                           f"({bulunan.strip()!r}). Betik KOSMADAN once patrona "
-                          "soruluyor; onaylanirsa ayni komut tekrar "
-                          "kosturuldugunda gecer."),
+                          "soruluyor; 'bu is boyunca' onaylanirsa bu betik ayni "
+                          "isaretle bu iste bir daha sorulmaz."),
             }
     return None
 

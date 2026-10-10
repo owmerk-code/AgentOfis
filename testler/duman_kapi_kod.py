@@ -135,6 +135,21 @@ b = R.betik_degerlendir("Bash", {"command": f'python "{D / "temizle.py"}"'}, "")
 sina("tirnakli MUTLAK yol cozuluyor", b is not None and b["sinif"] == "silme")
 b = R.betik_degerlendir("Bash", {"command": "python temizle.py"}, str(D))
 sina("  onay karti betigi ve buldugunu SOYLUYOR", b and "temizle.py" in b["sebep"] and "os.remove" in b["sebep"])
+# ONAY KIMLIGI betik + isaret (10.10 canli: ayni sinama farkli sarmalayicilarla 4 kart acti)
+from ofis.postane import Postane as _Pst  # noqa: E402
+_b1 = R.betik_degerlendir("Bash", {"command": "python temizle.py | tail -5"}, str(D))
+_b2 = R.betik_degerlendir("Bash", {"command": "cd x; timeout 50 python temizle.py 2>&1 | grep KALDI"}, str(D))
+sina("ayni betik farkli sarmalayici -> AYNI onay kimligi", _Pst.imza(_b1) == _Pst.imza(_b2))
+(D / "temizle.py").write_text('import os, shutil\nos.remove("a.txt")\nshutil.rmtree("b")\n', encoding="utf-8")
+(D / "temizle2.py").write_text('import shutil\nshutil.rmtree("b")\n', encoding="utf-8")
+_b3 = R.betik_degerlendir("Bash", {"command": "python temizle2.py"}, str(D))
+sina("  BASKA betik -> baska kimlik (yeniden sorulur)", _Pst.imza(_b3) != _Pst.imza(_b1))
+_b4 = R.betik_degerlendir("Bash", {"command": "python temizle.py"}, str(D))
+sina("  ayni betigin ilk isareti degismediyse kimlik ayni", _Pst.imza(_b4) == _Pst.imza(_b1))
+(D / "temizle.py").write_text('import shutil\nshutil.rmtree("b")\n', encoding="utf-8")
+_b5 = R.betik_degerlendir("Bash", {"command": "python temizle.py"}, str(D))
+sina("  betikteki silme ISARETI degisince yeni kimlik (yeniden sorulur)", _Pst.imza(_b5) != _Pst.imza(_b1))
+(D / "temizle.py").write_text('import os\nos.remove("a.txt")\n', encoding="utf-8")   # sonraki bolumler icin eski hali
 
 
 # ---------------------------------------------------------------------------
