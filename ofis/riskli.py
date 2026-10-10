@@ -1249,7 +1249,8 @@ def betik_degerlendir(arac: str, girdi: dict, kok: str) -> dict | None:
             if not os.path.isfile(yol) or os.path.getsize(yol) > 512_000:
                 continue
             with open(yol, encoding="utf-8", errors="replace") as f:
-                alt = f.read().lower()
+                ozgun = f.read()
+                alt = ozgun.lower()
         except OSError:
             continue
         # KODLA silme ve masaustu surme her zaman; kabuk kurallarinin
@@ -1268,7 +1269,7 @@ def betik_degerlendir(arac: str, girdi: dict, kok: str) -> dict | None:
             # (bkz. `_py_kabuk_metni`); ayristirilamazsa yine TAMAMI.
             hedef = alt
             if yol.lower().endswith(".py"):
-                hedef = _py_kabuk_metni(alt)
+                hedef = _py_kabuk_metni(ozgun)   # ozgun metin: kucuk harf ayristirmayi bozabilir
                 hedef = alt if hedef is None else hedef.lower()
             for s_, kaliplar in KABUK_KURALLARI:
                 bulunan = _esles(hedef, kaliplar)
