@@ -453,5 +453,15 @@ _kt = (OFIS_KODU / "ofis" / "koltuk.py").read_text(encoding="utf-8")
 sina("  koltuk yeni iste cagiriyor, ayni kopyada suren baska is varsa DOKUNMUYOR",
      "self._gelistirme_is_basi(gorev)" in _kt and 'g["durum"] in ("calisiyor", "inceleme")' in _kt)
 
+print("\n16. sinama KAYDIN ayri agacinda (kopyada suren is sinamaya karismaz)")
+Path(kok, "testler", "duman_kirli.py").write_text("import sys\nprint('  [KALDI] kaydedilmemis is')\nsys.exit(1)\n", encoding="utf-8")
+Path(kok, "testler", "duman_ornek.py").write_text("import sys\nsys.exit(1)\n", encoding="utf-8")   # kayitli dosya diskte bozuldu
+_ks = G.kayit_sinamasi(kok)
+sina("kopyadaki KAYDEDILMEMIS degisiklik sinamaya girmedi (yalniz kayit sinandi)", _ks.get("tamam"), str(_ks.get("kotu"))[:200])
+_wt = git(kok, "worktree", "list")
+sina("  gecici agac silindi (worktree listesinde yalniz kopya)", len(_wt.splitlines()) == 1, _wt)
+git(kok, "checkout", "--", "testler/duman_ornek.py")
+Path(kok, "testler", "duman_kirli.py").unlink()
+
 print(f"\n== sonuc: {GECEN} gecti, {KALAN} kaldi ==")
 sys.exit(1 if KALAN else 0)

@@ -557,9 +557,32 @@ def yarim_sinamalari_surdur(db, pid: str, *, arkada: bool = True) -> list:
     return baslayan
 
 
+def kayit_sinamasi(kok, *, dosyalar=None) -> dict:
+    """Sinama KOPYANIN KENDISINDE degil, kaydin AYRI calisma agacinda
+    (`git worktree`, gecici klasor) kosar; bitince silinir.
+
+    10.10.2026: sinama ~30 dk suruyor ve kopyanin icinde kosuyordu. O sirada
+    takima yeni is verilirse ajan dosyalari degistirir (sinanan sey kaydin
+    kendisi olmaktan cikar) ve is basi esitlemesi kopyayi sinamanin altindan
+    sifirlardi. Ayri agac yalniz KAYDI icerir: sinanan = kurulacak olan."""
+    import tempfile
+    agac = Path(tempfile.mkdtemp(prefix="ofis-gel-sinama-")) / "agac"
+    r = _git(kok, "worktree", "add", "--detach", str(agac), "HEAD")
+    if r.returncode != 0:
+        raise GelistirmeHatasi("sinama agaci acilamadi: " + _metin(r)[:200])
+    try:
+        bagimliliklari_kur(agac)
+        return sinama_kos(agac, dosyalar=dosyalar)
+    finally:
+        _git(kok, "worktree", "remove", "--force", str(agac))
+        _git(kok, "worktree", "prune")
+        import shutil
+        shutil.rmtree(agac.parent, ignore_errors=True)
+
+
 def _sinan_ve_kartla(db, pid, gorev, d, *, dosyalar=None) -> dict:
     try:
-        s = sinama_kos(d["kok"], dosyalar=dosyalar if dosyalar is not None else d.get("dosyalar"))
+        s = kayit_sinamasi(d["kok"], dosyalar=dosyalar if dosyalar is not None else d.get("dosyalar"))
     except Exception as exc:                     # noqa: BLE001
         s = {"tamam": False, "kotu": [{"dosya": "-", "kod": str(exc)}], "dosya": 0,
              "gecti": 0, "kaldi": 0}
