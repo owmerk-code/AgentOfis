@@ -234,6 +234,34 @@ with db.baglanti() as c:
         c.execute("DELETE FROM yazma_kilidi WHERE gorev_id = ?", (g_["id"],))
     c.execute("UPDATE onay SET durum = 'reddedildi' WHERE durum = 'bekliyor' AND eylem = 'git push origin dev'")
 
+print("\n1c. tur kosmuyor AMA ofis o takimin halkasini kosturuyor -> sirada (10.10)")
+ofis.kadro.ise_al("yigit", "arayuz", kanat_id=KA, motor="sahte", klasor=str(d))
+g_siradaki_tur = isaretli_is("Sirasi gelince surecek", "yigit", "a/sira", "bitti")
+ofis.kadro.ise_al("zafer", "arayuz", kanat_id=KA, motor="sahte", klasor=str(d))
+g_tur2 = isaretli_is("Tur kosan 2", "zafer", "a/tur2", "kosuyor")
+_asil_sorgu = DT.HALKA_SORGUSU["islev"]
+try:
+    DT.HALKA_SORGUSU["islev"] = lambda kanat: kanat == KA
+    x2 = {i["no"]: i for i in DT.tablo(ofis)["isler"]}
+    sina("takimin halkasi kosarken tur bekleyen is: SIRADA (Surdur'e bas DEGIL)",
+         x2[g_siradaki_tur["no"]]["tur"] == "sirada" and "sırada" in x2[g_siradaki_tur["no"]]["nerede"], str(x2[g_siradaki_tur["no"]]))
+    sina("  tur kosan is yine calisiyor", x2[g_tur2["no"]]["tur"] == "calisiyor")
+    DT.HALKA_SORGUSU["islev"] = lambda kanat: False
+    x3 = {i["no"]: i for i in DT.tablo(ofis)["isler"]}
+    sina("  halka kosmuyorsa ayni is DURDU (Surdur'e bas)", x3[g_siradaki_tur["no"]]["tur"] == "durdu")
+    DT.HALKA_SORGUSU["islev"] = None
+    sina("  sorgu bagli degilse (kabuk) eski gosterge: durdu", DT.halka_kosuyor(g_siradaki_tur) is False)
+finally:
+    DT.HALKA_SORGUSU["islev"] = _asil_sorgu
+import ofis.panel as _PNL  # noqa: E402
+_PNL._KOSU.update(calisiyor=True, takimlar={"baska-takim"})
+sina("panel sorgusu: yalniz KENDI takiminin seridi kosuyorsa evet", _PNL._halka_kosuyor_mu(KA) is False
+     and _PNL._halka_kosuyor_mu("baska-takim") is True)
+_PNL._KOSU.update(calisiyor=True, takimlar=set())
+sina("  tek basina kosan genel halka butun takimlari kapsar", _PNL._halka_kosuyor_mu(KA) is True)
+_PNL._KOSU.update(calisiyor=False, takimlar=set())
+sina("  ofis bosken hayir", _PNL._halka_kosuyor_mu(KA) is False)
+
 print("\n2. ajanlar ve sira")
 a = {j["ad"]: j for j in t["ajanlar"]}
 sina("ufuk calisiyor, sirasinda siradaki is", a["ufuk"]["hal"] == "calisiyor"

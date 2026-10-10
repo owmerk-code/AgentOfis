@@ -781,14 +781,16 @@ def kartlar(ofis, *, kanat_id=None, adet: int = 120, kosuyor: bool = False) -> l
         elif acik:
             durum = "calisiyor"
             # TUR OLCUMU (#9): acik islerin HEPSI `calisiyor` ve hepsi icin ofis
-            # tur kosturmuyorsa (olculdu: durum_tablosu.tur_olcumu -- kosan_surec
-            # olu ya da yazma_kilidi.son_nabiz > kira) kart 'durdu'. Biri bile
+            # tur kosturmuyorsa (durum_tablosu.tur_olcumu: koltugun TUR ISARETI) kart
+            # 'durdu'; ofis o takimin halkasini kosturuyorsa 'sirada'. Biri bile
             # kosuyorsa/olculemediyse (None) eskisi gibi 'calisiyor'.
             if all(i.get("durum") == "calisiyor" for i in acik):
                 from . import durum_tablosu as _dt
                 try:
-                    if all(_dt.tur_kosuyor_mu(ofis, ofis.tahta.gorev(i["no"])) is False for i in acik):
-                        durum = "durdu"
+                    _gl = [ofis.tahta.gorev(i["no"]) for i in acik]
+                    if all(_dt.tur_kosuyor_mu(ofis, g) is False for g in _gl):
+                        # Ofis o takimin halkasini kosturuyorsa is SIRADA (10.10).
+                        durum = "sirada" if any(_dt.halka_kosuyor(g) for g in _gl) else "durdu"
                 except Exception:                # noqa: BLE001 -- olculemedi: eskisi gibi
                     pass
         elif isler:

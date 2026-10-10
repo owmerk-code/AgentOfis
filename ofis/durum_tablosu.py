@@ -105,6 +105,29 @@ def tur_olcumu(ofis, gorev: dict):
     return False, f"ayar tur_kosuyor: isaret {yas_z} sn once tazelendi (> {KILIT_KIRA_SANIYE}): kosan tur yok"
 
 
+#: Panel kurulunca baglanir: `islev(kanat_id) -> bool` -- ofis o takimin halkasini
+#: (ya da butun ofisin halkasini) SU AN kosturuyor mu. Bos ise (kabuk, sinama)
+#: bilinmiyor sayilir ve eski gosterge kalir.
+HALKA_SORGUSU = {"islev": None}
+SIRADA_METNI = "sırada — ofis çalışıyor, sırası gelince sürer"
+
+
+def halka_kosuyor(gorev: dict) -> bool:
+    """Isin takiminin halkasi su an kosuyor mu (panelin `_KOSU`su).
+
+    10.10: tur kosmayan `calisiyor` is ofis CALISIRKEN de olur -- geri
+    gonderildikten sonraki birkac saniye, kabin baska takimdayken, ya da
+    ayni takimin baska isi kosarken. Ona "durdu -- Surdur'e bas" demek
+    yanlis: patron basar, panel "zaten kosuyor" der. Dogrusu "sirada"."""
+    islev = HALKA_SORGUSU.get("islev")
+    if islev is None:
+        return False
+    try:
+        return bool(islev(gorev.get("kanat_id") or ""))
+    except Exception:                            # noqa: BLE001 -- bilinmiyor: eski gosterge
+        return False
+
+
 def tur_kosuyor_mu(ofis, gorev: dict):
     """True: tur kosuyor. False: kosmuyor. None: olculemedi (bkz. `tur_olcumu`)."""
     return tur_olcumu(ofis, gorev)[0]
@@ -165,7 +188,9 @@ def isler(ofis) -> list:
             tur, nerede = "durdu", "durduruldu — devam için Sürdür"
         elif g["durum"] == "calisiyor":
             canli, olcum = tur_olcumu(ofis, g)
-            if canli is False:
+            if canli is False and halka_kosuyor(g):
+                tur, nerede = "sirada", SIRADA_METNI
+            elif canli is False:
                 tur, nerede = "durdu", DURDU_METNI
             else:
                 tur, nerede = "calisiyor", "çalışıyor"

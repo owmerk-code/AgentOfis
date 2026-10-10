@@ -81,6 +81,20 @@ _KOSU = {"calisiyor": False, "mesaj": "", "dur": False, "takimlar": set()}
 #: kosarsa ayni isi iki halka birden kostururdu.
 _DEVAM_SERIDI = "*"
 
+
+def _halka_kosuyor_mu(kanat_id: str) -> bool:
+    """Ofis bu takimin halkasini su an kosturuyor mu (durum gostergesi icin).
+    Tek basina kosan genel halka ve kesintiden devam BUTUN takimlari kapsar."""
+    if not _KOSU.get("calisiyor"):
+        return False
+    seritler = _KOSU.get("takimlar") or set()
+    return not seritler or _DEVAM_SERIDI in seritler or (kanat_id or "") in seritler
+
+
+def _durum_sorgusunu_bagla() -> None:
+    from . import durum_tablosu as _dt
+    _dt.HALKA_SORGUSU["islev"] = _halka_kosuyor_mu
+
 #: Ajana sorulan sorunun AYRI tek-ucus nobetcisi. Danisma salt okunurdur
 #: (yazamaz, kilit almaz), halka kosarken de sorulabilir -- ama ayni anda
 #: tek soru: cift tiklama iki tur yakardi.
@@ -1267,6 +1281,7 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
     db = Veritabani(db_yolu or VARSAYILAN_YOL)
     uygulama = FastAPI(title="AgentOfis", docs_url=None, redoc_url=None)
     uygulama.add_middleware(_UzakKapi, db=db)
+    _durum_sorgusunu_bagla()      # pano/kart: tur kosmayan is 'sirada' mi 'durdu' mu
 
     def ofis_ac() -> Ofis:
         with db.baglanti() as conn:

@@ -1309,6 +1309,8 @@ class Sohbet:
         if g.get("duraklatildi"):
             return "patron duraklattı"
         if g["durum"] == "calisiyor" and durum_tablosu.tur_kosuyor_mu(self.ofis, g) is False:
+            if durum_tablosu.halka_kosuyor(g):
+                return durum_tablosu.SIRADA_METNI
             return durum_tablosu.DURDU_METNI
         return durum_adi.get(g["durum"], g["durum"])
 
