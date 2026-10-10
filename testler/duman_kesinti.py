@@ -287,6 +287,17 @@ sina("kesintiyle birakilan is dagitimda ONCEKI SAHIBINE gider (baska bosta ajan 
      _gg1["durum"] == "hazir" and ofis.orkestra._uygun_ajan(_gg1) == "cinar",
      f"{_gg1['durum']} -> {ofis.orkestra._uygun_ajan(_gg1)}")
 
+print("\n9. takim klasoru kaybolduysa acilista UYARI (11.10 canli)")
+_kyok = ofis.kanat_ac("KAYIP", "KY")
+_kyer = kok / "kayip-takim"
+ofis.takim_klasoru_ayarla(_kyok, str(_kyer))
+import shutil as _shk  # noqa: E402
+_shk.rmtree(_kyer)                                 # klasor tasindi/silindi
+acilista_toparla(ofis)
+with db.baglanti() as c:
+    _ku = [r[0] for r in c.execute("SELECT govde FROM olay WHERE tur='uyari' AND govde LIKE '%BULUNAMADI%'")]
+sina("kaybolan takim klasoru acilista SOYLENDI", any("kayip-takim" in x for x in _ku), str(_ku)[:200])
+
 print(f"\n== sonuc: {GECEN} gecti, {KALAN} kaldi ==")
 print(f"klasor: {kok}")
 sys.exit(1 if KALAN else 0)

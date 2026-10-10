@@ -499,5 +499,15 @@ except G.GelistirmeHatasi as _e:
 G.reddet(ofis, n18)
 sina("  ret GUNCEL kayitlari geri aldi", not Path(kok, "is18.py").exists())
 
+print("\n18. takimin klasoru KAYBOLDUYSA sessiz kalinmaz (11.10 canli: kopya Ofisim'in icine tasinmisti)")
+with db.baglanti() as c:
+    _u0 = c.execute("SELECT COUNT(*) FROM olay WHERE tur='uyari' AND govde LIKE '%klasoru BULUNAMADI%'").fetchone()[0]
+_gy = ofis.tahta.gorev_ac("klasorsuz", neden="n", ana_hedef="h", kabul_olcutu="k", kanat_id=kid)
+sina("kapanista klasor yoksa teslim yapilmaz ve SOYLENIR",
+     G.kapanista(db, ofis.proje_id, str(D / "yok-boyle-klasor"), _gy, arkada=False) is None)
+with db.baglanti() as c:
+    _u1 = c.execute("SELECT COUNT(*) FROM olay WHERE tur='uyari' AND govde LIKE '%klasoru BULUNAMADI%'").fetchone()[0]
+sina("  uyari deftere dustu", _u1 == _u0 + 1, str((_u0, _u1)))
+
 print(f"\n== sonuc: {GECEN} gecti, {KALAN} kaldi ==")
 sys.exit(1 if KALAN else 0)

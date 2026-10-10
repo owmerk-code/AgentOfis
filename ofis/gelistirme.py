@@ -513,6 +513,11 @@ def kapanista(db, pid: str, kok: str, gorev: dict, *, arkada: bool = True) -> di
     """Is kapandi (`tahta.kapat`): kok gelistirme kopyasiysa teslimi baslat.
     Sinama uzun (tam takim) -> arka iplikte. Hata isi geri acmaz, SOYLENIR."""
     try:
+        if kok and not Path(kok).is_dir():
+            db.olay_yaz(pid, "uyari", f"#{gorev.get('no')}: takimin klasoru BULUNAMADI ({kok}); "
+                        "gelistirme teslimi (sinama, kurulum karti) YAPILAMADI. Klasoru yerine "
+                        "koyup `python -m ofis.kabuk gelistirme` ile bak.", gorev_id=gorev.get("id"))
+            return None
         if not kok or not kopya_mi(kok):
             return None
         if not _esitle_once(db, pid, kok, gorev):

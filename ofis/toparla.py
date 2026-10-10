@@ -28,6 +28,8 @@ kabuktan kosan bir halka olabilir.
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from . import kuyruk as _kuyruk
 from . import surec as _surec
 from .db import simdi
@@ -48,6 +50,15 @@ def acilista_toparla(ofis) -> dict:
     from .yollar import ofis_icinde_mi
     try:
         for _kok in ofis.kokler():   # proje + takim kokleri (06.10.2026)
+            # KAYBOLAN KLASOR (11.10.2026 canli): gelistirme kopyasi masaustunde
+            # Ofisim'in ICINE tasinmisti; ofis hicbir sey demedi -- gelistirme
+            # isinin kurulum yolu "kopya degil" deyip SESSIZCE atlanirdi.
+            if _kok and not Path(_kok).is_dir():
+                ofis.db.olay_yaz(ofis.proje_id, "uyari",
+                                 f"Takim/proje klasoru BULUNAMADI: {_kok} -- tasindi ya da silindi. "
+                                 "Bu klasorde calisan isler yurumez; klasoru yerine geri koy "
+                                 "(ya da Organizasyon'dan takimin klasorunu degistir).")
+                continue
             if _kok and ofis_icinde_mi(_kok):
                 ofis.db.olay_yaz(ofis.proje_id, "uyari",
                                  f"Bu projenin klasoru ({_kok}) ofisin KENDI yerinde: "
