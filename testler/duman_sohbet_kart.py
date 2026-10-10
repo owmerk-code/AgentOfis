@@ -16,6 +16,7 @@ from fastapi.testclient import TestClient  # noqa: E402
 
 from ofis import Ofis, Veritabani, takim  # noqa: E402
 from ofis import kuyruk as Q  # noqa: E402
+from ofis import surec  # noqa: E402
 from ofis import panel as _panel  # noqa: E402
 from ofis.motor.sahte import SahteMotor  # noqa: E402
 from ofis.sohbet import Sohbet  # noqa: E402
@@ -103,6 +104,7 @@ m3 = ofis.postane.soru_sor("insan", "lale", "c yap", mod="uyandiran")
 with ofis.db.baglanti() as c:
     c.execute("UPDATE gorev SET istek_id = ? WHERE id = ?", (m3["id"], g3["id"]))
 ofis.tahta.sahiplen(g3["no"], "cem", g3["revizyon"])
+surec.tur_isaretle(ofis.db, ofis.proje_id, g3["id"], True)   # gercek defterdeki gibi: tur kosuyor
 k3 = next(x for x in takim.kartlar(ofis) if x["id"] == m3["id"])
 sina("calisan is: durum 'calisiyor', canli satirda kim", k3["durum"] == "calisiyor" and (k3["canli"] or {}).get("kim") == "cem", str(k3.get("canli")))
 ofis.postane.onay_iste("cem", "git push", gorev_no=g3["no"])
@@ -190,6 +192,90 @@ sina("gelistirme isinde kurulum durumu: 'reddedildi — kurulmadi' (Bitti ofise 
 sina("  teslimi olmayan iste kurulum alani YOK", not any(i.get("kurulum") for i in _k1.get("isler") or []))
 sina("panel: takim etiketi yalniz Tum Ofis'te, kurulum etiketi bitti satirinda",
      'if (!D.kanat && k.takim) ust.prepend(el("span", "kart-takim", k.takim))' in js and "kart-kurulum" in js)
+
+print("\n7. rapordaki durum yazisi: tur olcumu (#9) -- pano ile AYNI olcum")
+from datetime import datetime, timedelta, timezone  # noqa: E402
+from ofis import durum_tablosu as DT  # noqa: E402
+
+
+def kilitli(baslik, yol, hal):
+    """hal: kosuyor (tur isareti taze) | bitti (isaret temizlenmis) | yok (hic tur baslamamis)
+    | bozuk (isaret zamani okunamaz). Yazma kilidi HER ZAMAN taze (sahiplen yazar)."""
+    g = ofis.tahta.gorev_ac(baslik, neden="n", ana_hedef="h", kabul_olcutu="k", kanat_id=kn, yazma_alani=[yol])
+    g = ofis.tahta.sahiplen(g["no"], "cem", g["revizyon"])
+    if hal != "yok":
+        surec.tur_isaretle(ofis.db, ofis.proje_id, g["id"], hal != "bitti")
+    if hal == "bozuk":
+        with ofis.db.baglanti() as c:
+            c.execute("UPDATE ayar SET deger = ? WHERE proje_id = ? AND anahtar = ?",
+                      (f"{surec.kimlik()}|bozuk", ofis.proje_id, surec.TUR_ANAHTARI + g["id"]))
+    return ofis.tahta.gorev(g["no"])
+
+
+def rapor_satiri(g):
+    return Sohbet(ofis)._gercek_durum({"gorevler": [{"no": g["no"]}]})
+
+
+r_tur = kilitli("r1 tur kosan", "r/a", "kosuyor")
+r_halka = kilitli("r2 tur bitti", "r/b", "bitti")
+r_yok = kilitli("r2b tur hic baslamadi", "r/e", "yok")
+sina("(a) tur koşan iş raporda 'çalışıyor'", "(çalışıyor)" in rapor_satiri(r_tur), rapor_satiri(r_tur)[-120:])
+sina("(b) tur koşmayan iş raporda 'durdu — Sürdür'e bas'", "durdu — Sürdür'e bas" in rapor_satiri(r_halka),
+     rapor_satiri(r_halka)[-120:])
+sina("(b) tur hic baslamamis (taze kilit) -> 'durdu — Sürdür'e bas'", "durdu — Sürdür'e bas" in rapor_satiri(r_yok),
+     rapor_satiri(r_yok)[-120:])
+r_ol = kilitli("r3 isaret bozuk", "r/d", "bozuk")
+sina("(d) olculemiyor (isaret okunamaz) -> eskisi gibi 'çalışıyor'",
+     DT.tur_kosuyor_mu(ofis, r_ol) is None and "(çalışıyor)" in rapor_satiri(r_ol), rapor_satiri(r_ol)[-120:])
+r_onay = kilitli("r4 onay bekleyen", "r/c", "bitti")
+ofis.postane.onay_iste("cem", "git push origin dev", gorev_no=r_onay["no"])
+sina("(c) onay bekleyen iş raporda 'seni bekliyor' (olcum ezmez)", "(seni bekliyor)" in rapor_satiri(r_onay),
+     rapor_satiri(r_onay)[-120:])
+sina("pano ve rapor AYNI islevi kullanir (durum_tablosu.tur_kosuyor_mu)",
+     "durum_tablosu.tur_kosuyor_mu(self.ofis, g)" in (Path(__file__).resolve().parent.parent / "ofis" / "sohbet.py").read_text(encoding="utf-8"))
+
+print("\n7. KART durumu (takim.kartlar) ayni olcumle")
+
+
+def kart_icin(baslik, yol, hal):
+    g = ofis.tahta.gorev_ac(baslik, neden="n", ana_hedef="h", kabul_olcutu="k", kanat_id=kn, yazma_alani=[yol])
+    m = ofis.postane.soru_sor("insan", "lale", baslik, mod="uyandiran")
+    with ofis.db.baglanti() as c:
+        c.execute("UPDATE gorev SET istek_id = ? WHERE id = ?", (m["id"], g["id"]))
+    g = ofis.tahta.sahiplen(g["no"], "cem", g["revizyon"])
+    if hal != "yok":
+        surec.tur_isaretle(ofis.db, ofis.proje_id, g["id"], hal != "bitti")
+    if hal == "bozuk":
+        with ofis.db.baglanti() as c:
+            c.execute("UPDATE ayar SET deger = ? WHERE proje_id = ? AND anahtar = ?",
+                      (f"{surec.kimlik()}|bozuk", ofis.proje_id, surec.TUR_ANAHTARI + g["id"]))
+    return g, m
+
+
+def kart_durumu(m):
+    return next(x for x in takim.kartlar(ofis) if x["id"] == m["id"])["durum"]
+
+
+_g, _m = kart_icin("kart-a tur kosan", "k/a", "kosuyor")
+sina("(a) kart: tur koşan -> 'calisiyor'", kart_durumu(_m) == "calisiyor", kart_durumu(_m))
+_g, _m = kart_icin("kart-b tur yeni bitti", "k/b", "bitti")
+sina("(b) kart: tur yeni bitti (taze kilit) -> 'durdu'", kart_durumu(_m) == "durdu", kart_durumu(_m))
+_g, _m = kart_icin("kart-b2 tur hic baslamadi", "k/b2", "yok")
+sina("(b) kart: tur hic baslamadi (taze kilit) -> 'durdu'", kart_durumu(_m) == "durdu", kart_durumu(_m))
+_g, _m = kart_icin("kart-d isaret bozuk", "k/d", "bozuk")
+sina("(d) kart: olculemiyor -> eskisi gibi 'calisiyor'", kart_durumu(_m) == "calisiyor", kart_durumu(_m))
+_g, _m = kart_icin("kart-c onay", "k/c", "bitti")
+ofis.postane.onay_iste("cem", "git push origin dev", gorev_no=_g["no"])
+sina("(c) kart: onay bekleyen -> 'karar' (olcum ezmez)", kart_durumu(_m) == "karar", kart_durumu(_m))
+
+# GECIS: isaret kaynagindan ONCE baslamis is -> olculemez -> rapor ve kart eskisi gibi 'calisiyor'
+_g, _m = kart_icin("kart-e eski kodla baslamis", "k/e", "yok")
+with ofis.db.baglanti() as c:
+    _eski = (datetime.now(timezone.utc) - timedelta(days=2)).isoformat(timespec="seconds")
+    c.execute("UPDATE gorev SET guncellendi = ? WHERE id = ?", (_eski, _g["id"]))
+    c.execute("UPDATE olay SET olusturuldu = ? WHERE gorev_id = ? AND tur = 'sahiplenildi'", (_eski, _g["id"]))
+sina("gecis: kart eskisi gibi 'calisiyor'", kart_durumu(_m) == "calisiyor", kart_durumu(_m))
+sina("gecis: rapor eskisi gibi 'calisiyor'", "(çalışıyor)" in rapor_satiri(ofis.tahta.gorev(_g["no"])))
 
 print(f"\n== sonuc: {GECEN} gecti, {KALAN} kaldi ==")
 sys.exit(1 if KALAN else 0)

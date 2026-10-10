@@ -1294,6 +1294,24 @@ class Sohbet:
                                   ajan_ad=lider_ad)
         return metin
 
+    def _gosterilen_durum(self, g: dict, durum_adi: dict) -> str:
+        """Raporda bir isin durum yazisi. Pano ile AYNI olcum ve ayni oncelik:
+        onay/soru bekleyen -> 'seni bekliyor', duraklatilmis -> 'patron
+        duraklatti', `calisiyor` ama OFIS TUR KOSTURMUYORSA -> 'durdu --
+        Surdur'e bas'. Olcum `durum_tablosu.tur_olcumu` (kaynagi orada yazar);
+        olculemezse eskisi gibi 'calisiyor'."""
+        from . import durum_tablosu
+        if g["durum"] in ("calisiyor", "inceleme", "hazir", "bekliyor"):
+            if (any(o.get("gorev_no") == g["no"] for o in self.ofis.postane.bekleyen_onaylar())
+                    or any(s.get("gorev_no") == g["no"] and s.get("alici") == "insan"
+                           for s in self.ofis.postane.bekleyen_sorular())):
+                return "seni bekliyor"
+        if g.get("duraklatildi"):
+            return "patron duraklattı"
+        if g["durum"] == "calisiyor" and durum_tablosu.tur_kosuyor_mu(self.ofis, g) is False:
+            return durum_tablosu.DURDU_METNI
+        return durum_adi.get(g["durum"], g["durum"])
+
     def _gercek_durum(self, plan: dict) -> str:
         """Raporun sonuna HESAPLANAN gercegi ekler.
 
@@ -1340,7 +1358,7 @@ class Sohbet:
             parca.append(
                 f"**Not (ofisin kaydı):** {len(acik)} iş henüz bitmedi — "
                 + "; ".join(f"#{g['no']} {g['baslik']} "
-                            f"({'patron duraklattı' if g.get('duraklatildi') else durum_adi.get(g['durum'], g['durum'])})"
+                            f"({self._gosterilen_durum(g, durum_adi)})"
                             for g, _ in acik) + ".")
         if bekleyen:
             parca.append(f"**{len(bekleyen)} karar seni bekliyor** "

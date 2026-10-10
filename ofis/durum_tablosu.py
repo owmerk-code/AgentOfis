@@ -33,6 +33,83 @@ def _yas_sn(zaman: str):
         return None
 
 
+DURDU_METNI = "durdu — Sürdür'e bas"
+#: (Pay yok: `Koltuk.akit` isareti SAHIPLENMEDEN ONCE yazar, sahiplenme turun icinde.)
+
+
+def tur_olcumu(ofis, gorev: dict):
+    """`calisiyor` bir isin icin OFIS O AN TUR KOSTURUYOR MU? -> (True/False/None, kaynak).
+
+    TEK OLCUM: durum panosu (`isler`), sohbet raporu (`sohbet._gercek_durum`) ve
+    sohbet karti (`takim.kartlar`) ayni cevabi buradan alir. Tahmin yok.
+
+    KAYNAK: `ayar` tablosundaki TUR ISARETI (`tur_kosuyor:<gorev_id>`,
+    surec.tur_isaretle/tur_isareti). Koltuk (`Koltuk.akit`) turu BASLATINCA
+    `surec_kimligi|zaman` yazar, tur sirasinda 15 sn'de bir tazeler, tur
+    NASIL biterse bitsin `|zaman` (kimliksiz) yapar. Yazma kilidinin
+    `son_nabiz`i KULLANILMAZ: o `sahiplen`de turdan once dogar ve tur
+    bittikten sonra 180 sn "taze" kalir (inceleme 10.10).
+
+    Karar (sirayla):
+    1. `gorev.kosan_surec` olu -> False.
+    2. Isaret yok: is, kaynagin ilk etkin oldugu andan (ayar `tur_isareti_ilk`)
+       SONRA sahiplenildiyse hic tur baslamamis -> False. Once sahiplenildiyse
+       (isaret yazmayan eski kod, gecis) ya da kaynak hic yazilmadiysa -> None.
+    3. Isaret temizlenmis (tur bitti) -> False.
+    4. Isaretin sureci olu -> False; zamani okunamadi -> None.
+    5. Isaret `tahta.KILIT_KIRA_SANIYE` icinde tazelenmis -> True, degilse False.
+    Okuma hatasi -> None: cagiran ESKI gostergeyi korur.
+
+    Onay/soru bekleyen ve duraklatilmis isleri cagiran AYIRIR.
+    """
+    from . import surec
+    from .tahta import KILIT_KIRA_SANIYE
+    kosan = gorev.get("kosan_surec") or ""
+    if kosan and surec.yasiyor(kosan) is False:
+        return False, "gorev.kosan_surec: isi ustlenen surec kapanmis"
+    try:
+        iz = surec.tur_isareti(ofis.db, ofis.proje_id, gorev["id"])
+    except Exception:                            # noqa: BLE001 -- okunamadi: olculemedi
+        return None, "ayar tur_kosuyor okunamadi"
+    if iz is None:
+        # Isaret yok: "tur kosmuyor" demek icin kaynagin BU ISTEN ONCE etkin
+        # olmasi sart. Isaret yazmayan ESKI kodla baslamis is (gecis) ya da
+        # kaynagin hic yazilmadigi defter -> OLCULEMEZ, eski gosterge kalir.
+        try:
+            ilk = surec.tur_kaynagi_ilk(ofis.db, ofis.proje_id)
+            with ofis.db.baglanti() as c:
+                r = c.execute("SELECT olusturuldu FROM olay WHERE proje_id = ? AND gorev_id = ? "
+                              "AND tur = 'sahiplenildi' ORDER BY rowid DESC LIMIT 1",
+                              (ofis.proje_id, gorev["id"])).fetchone()
+        except Exception:                        # noqa: BLE001
+            return None, "ayar tur_isareti_ilk okunamadi"
+        if not ilk:
+            return None, "tur isareti kaynagi bu defterde henuz hic yazilmamis (eski kod)"
+        yas_ilk = _yas_sn(ilk)
+        yas_alis = _yas_sn(r[0] if r else gorev.get("guncellendi"))
+        if yas_ilk is None or yas_alis is None:
+            return None, "sahiplenme/kaynak zamani okunamadi"
+        if yas_alis > yas_ilk:
+            return None, "is isaret kaynagindan ONCE baslamis (eski kod): olculemez"
+        return False, "ayar tur_kosuyor: bu is icin hic tur baslamamis"
+    kim, zaman = iz
+    yas_z = _yas_sn(zaman)
+    if not kim:
+        return False, f"ayar tur_kosuyor: tur {yas_z} sn once bitti"
+    if surec.yasiyor(kim) is False:
+        return False, "ayar tur_kosuyor: turu kosturan surec kapanmis"
+    if yas_z is None:
+        return None, "ayar tur_kosuyor zamani okunamadi"
+    if yas_z <= KILIT_KIRA_SANIYE:
+        return True, f"ayar tur_kosuyor: isaret {yas_z} sn once tazelendi (<= {KILIT_KIRA_SANIYE})"
+    return False, f"ayar tur_kosuyor: isaret {yas_z} sn once tazelendi (> {KILIT_KIRA_SANIYE}): kosan tur yok"
+
+
+def tur_kosuyor_mu(ofis, gorev: dict):
+    """True: tur kosuyor. False: kosmuyor. None: olculemedi (bkz. `tur_olcumu`)."""
+    return tur_olcumu(ofis, gorev)[0]
+
+
 def _onay_turu(o: dict) -> str:
     from . import giris
     from .tarayici import KREDI_PAKETI_ISARETI
@@ -70,7 +147,7 @@ def isler(ofis) -> list:
         no = g["no"]
         bekleyen_onay = [o for o in onaylar if o.get("gorev_no") == no]
         bekleyen_soru = [s for s in sorular if s.get("gorev_no") == no]
-        tur, nerede = "", ""
+        tur, nerede, olcum = "", "", ""
         if bekleyen_onay:
             o = bekleyen_onay[0]
             ot = _onay_turu(o)
@@ -87,9 +164,9 @@ def isler(ofis) -> list:
         elif g.get("duraklatildi"):
             tur, nerede = "durdu", "durduruldu — devam için Sürdür"
         elif g["durum"] == "calisiyor":
-            canli = surec.yasiyor(g.get("kosan_surec") or "") if g.get("kosan_surec") else None
+            canli, olcum = tur_olcumu(ofis, g)
             if canli is False:
-                tur, nerede = "durdu", "çalışan süreç kapanmış — kesintiden devam bekliyor"
+                tur, nerede = "durdu", DURDU_METNI
             else:
                 tur, nerede = "calisiyor", "çalışıyor"
         elif g["durum"] == "inceleme":
@@ -113,6 +190,7 @@ def isler(ofis) -> list:
         adim = son_adim.get(g["id"]) or {}
         ajan = kadro.get(g.get("sahip") or "") or {}
         out.append({
+            "olcum": olcum,
             "no": no, "baslik": g["baslik"], "takim": g.get("takim") or "",
             "sahip": g.get("sahip") or "", "durum": g["durum"], "tur": tur, "nerede": nerede,
             "model": g.get("patron_modeli") or "/".join(x for x in (ajan.get("motor"), ajan.get("model")) if x),

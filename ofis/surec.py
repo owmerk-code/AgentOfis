@@ -69,6 +69,43 @@ def _olusma(pid: int):
         k32.CloseHandle(tut)
 
 
+#: TUR ISARETI (10.10.2026, #9): koltuk bir gorevin turunu BASLATINCA yazar,
+#: tur NASIL biterse bitsin temizler; tur surerken 15 sn'de bir tazeler.
+#: Deger `surec_kimligi|zaman`; temizlenince `|zaman`. Anahtar:
+#: `ayar` tablosunda `tur_kosuyor:<gorev_id>`. Kilit nabzindan farki: nabiz
+#: `sahiplen`de turdan ONCE dogar ve tur bitince 180 sn daha "taze" kalir;
+#: bu isaret yalniz tur boyunca vardir.
+TUR_ANAHTARI = "tur_kosuyor:"
+TUR_ILK_ANAHTARI = "tur_isareti_ilk"
+
+
+def tur_isaretle(db, proje_id: str, gorev_id: str, kosuyor: bool) -> None:
+    from datetime import datetime, timezone
+    an = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    # Kaynagin ILK ETKIN OLDUGU an (bir kez): isaret yazmayan ESKI kodla baslamis
+    # isler, isaret yok diye "tur kosmuyor" sayilmasin (tur_kaynagi_ilk).
+    if not db.ayar_oku(proje_id, TUR_ILK_ANAHTARI, ""):
+        db.ayar_yaz(proje_id, TUR_ILK_ANAHTARI, an)
+    db.ayar_yaz(proje_id, TUR_ANAHTARI + gorev_id, f"{kimlik() if kosuyor else ''}|{an}")
+
+
+def tur_kaynagi_ilk(db, proje_id: str) -> str:
+    """Tur isaretinin bu defterde ilk yazildigi an; hic yazilmadiysa ''."""
+    return db.ayar_oku(proje_id, TUR_ILK_ANAHTARI, "")
+
+
+def tur_isareti(db, proje_id: str, gorev_id: str):
+    """None: bu gorev icin hic isaret yazilmamis. Aksi halde (kimlik, zaman);
+    kimlik bos = tur bitti (zaman: bitis ani)."""
+    with db.baglanti() as c:
+        r = c.execute("SELECT deger FROM ayar WHERE proje_id = ? AND anahtar = ?",
+                      (proje_id, TUR_ANAHTARI + gorev_id)).fetchone()
+    if r is None:
+        return None
+    kim, _, zaman = str(r[0]).partition("|")
+    return kim, zaman
+
+
 def kimlik(pid: int = None) -> str:
     """`pid:olusma` -- bu surecin (ya da verilen pid'in) kimligi."""
     pid = int(pid or os.getpid())

@@ -53,7 +53,7 @@ from pathlib import Path
 
 import subprocess
 
-from . import baglayici, degisim, geri_al, hesap, kullanim, roller, tarayici, tavan
+from . import baglayici, degisim, geri_al, hesap, kullanim, roller, surec, tarayici, tavan
 from .roller import RolHatasi
 from .db import simdi
 from .mcp_sunucu import (yapilandirma as mcp_yapilandirmasi,
@@ -215,9 +215,22 @@ class Koltuk:
         yarida birakilan akis) kabinin indirme klasoru eski haline doner.
         Tutucu yerel: paralel islerde koltuk ortak, durum orneğe yazilmaz."""
         tutucu = {}
+        # TUR ISARETI (#9): panodaki "calisiyor" gostergesinin kaynagi. Tur
+        # basinda yazilir, NASIL biterse bitsin (finally) temizlenir.
+        gid = None
+        try:
+            gid = self.ofis.tahta.gorev(no)["id"]
+            surec.tur_isaretle(self.db, self.proje_id, gid, True)
+        except Exception:                        # noqa: BLE001 -- olculemez: isaret yok
+            gid = None
         try:
             yield from self._akit(no, ajan_ad, _indirme=tutucu, **ayar)
         finally:
+            if gid:
+                try:
+                    surec.tur_isaretle(self.db, self.proje_id, gid, False)
+                except Exception:                # noqa: BLE001
+                    pass
             if tutucu.get("indirme") is not None:
                 tutucu["indirme"].bitir()
 
@@ -947,6 +960,7 @@ class Koltuk:
                     # Kilidin kirasi: motor sessizken bile tazelenir.
                     if simdiki - son_nabiz >= NABIZ_ARALIGI_S:
                         self.ofis.tahta.nabiz(no)
+                        surec.tur_isaretle(self.db, self.proje_id, gorev["id"], True)
                         son_nabiz = simdiki
 
                     # Canli tarama da nabizdan ONCE: motor sessizken
