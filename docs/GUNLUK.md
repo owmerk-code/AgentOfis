@@ -15681,3 +15681,47 @@ Yolda çıkan açıklar (hepsi testli, mutasyonla kalıyor):
    Sınama panelinde (8911, defter kopyası) ekranda ölçüldü.
 Gözlem: lider bu sefer dürüst ara rapor yazdı ("Henüz bitmedi: ..."); inceleme #6'da
 gerçek bir hatayı yakaladı (takma ad sızması) ve UI eksikliğini doğru reddetti.
+
+## 10.10.2026 (öğleden sonra) — F1 İKİ TAKIM AYNI ANDA: sıra tek şeritti
+
+Patron: "pc başında olmayacağım, onay sende, 1 ve 2'yi bitir". Panel kapalıydı;
+patronun yetkisiyle `python -m ofis.panel` ayrı pencerede başlatıldı. GENEL'e
+"harcama-takip" (çok dosyalı web uygulaması, #8), OFİS GELİŞTİRME'ye "koşmayan
+'çalışıyor' iş → 'durdu — Sürdür'e bas'" (#9) AYNI ANDA verildi.
+
+**Ölçülen (eski kod):** geliştirme isteği 4 dk SIRADA bekledi (10:42:35 →
+10:46:34) — ece'nin uzun turu halkanın tek adımıydı, `ara_ver` ancak adım
+sonunda bakıyordu. Sonra GENEL'in isteği sırayı bırakınca "bitti" sayıldı ve
+#8 incelemede SAHİPSİZ kaldı (geliştirme halkası yalnız kendi takımına bakar);
+onu koşu-sırasında-gelen-onay bayrağının açtığı genel halka kurtardı.
+
+**Düzeltme (2266cd7):** iş sırası TAKIM BAŞINA ŞERİT (aynı takım sırayla,
+farklı takımlar aynı anda; `_KOSU["takimlar"]`, `kuyruk.sira_al(yalniz_takim=)`,
+`takim_bekleyeni_var`); kesintiden devam (bütün ofisin halkası) tek başına ve
+ofis boşken; Durdur bütün şeritleri durdurur, ofis SON şerit bitince boşalır.
+Güvenlik: kabin kirası halkanın içinden OFİS GENELİNE (`orkestra.kabin_kirala`;
+iki halka aynı kabini iki işe veremez — 22.09'da ölçülen sayfa karışması), kabin
+açma tek iplikten; danışma aynı soruyu tek sefer (`Danisma._ISLENEN`).
+`duman_takim_paralel.py` 23/23; mutasyonla eskisi kalıyor.
+
+#8 doğrulandı (kendim): 7/7 node testi, istenen her durum testte, dış kütüphane
+yok, localStorage. Lider işi bölmedi (tek ajan); karar liderin.
+
+**Geliştirme yolunda yeni açıklar (hepsi testli):**
+- `ALAN_EKLE` canlıda ilk kez çalıştı (ada, `ofis/takim.py`'yi #9'a ekledi).
+- #9 iki ret yedi (ikisi de yerinde: kilit nabzıyla ölçüm; eski kayıtla geçiş).
+- #9 "son kodla ÇAKIŞTI": sebep #9 değil, kopyada KARARLAŞMIŞ kayıtlar (#5
+  reddedildi + geri alınışı, #6 kuruldu) her eşitlemede yeniden konuyordu →
+  `esitle(cikar=kararli_isler)` onları düşürür; çakışma durumu KAYDEDİLİR
+  (`cakisti`, kartta "son kodla çakıştı — kurulmadı"), `gelistirme sina <no>`
+  çözülünce baştan yürütür; kopya İŞ BAŞINDA da eşitlenir (koltuk, aynı kopyada
+  süren başka iş yoksa).
+- Kalan tek gerçek çakışma test dosyasının sonuydu (benim bölümüm + asli'ninki)
+  → ikisi korunarak çözüldü. TUZAK: `cherry-pick --continue` düzenleyiciyle
+  `#9 ...` başlığını YORUM sayıp sildi (git `#` satırları atar); ofis "kayıt yok"
+  dedi → `--amend -C` ile geri alındı. Ofisin kendi kodu düzenleyicisiz yazar.
+- Tam sınama kopyanın İÇİNDE koşuyordu; o sırada takıma iş verilirse ajan
+  sınanan dosyaları değiştirir → `kayit_sinamasi`: kaydın ayrı `git worktree`'si,
+  bitince silinir (2e7094b).
+- Kapı: bozuk (ayrıştırılamayan) betik dosyasında temkinle tamamı taranır —
+  doğru; ama ayrıştırma küçük harfe çevrilmiş metinle yapılıyordu → özgün metin.
