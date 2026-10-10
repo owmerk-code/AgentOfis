@@ -15643,3 +15643,41 @@ KENDİSİ kanıtladı, önizleme panelinde ekran görüntüsü verdi.
 8. **`reddet` yalan kayıt yazabiliyordu** (geri alma düşse de "geri alındı") →
    düşerse hata; sınama sürerken ve ikinci kez reddedilmez. Sınaması geçmeyen
    teslimin kartı yok → `kabuk gelistirme reddet <no>`. #5 böyle reddedildi.
+
+## 10.10.2026 — F1 OFİS GELİŞTİRME: ilk kurulum (#6) ve geliştirme yolunun açıkları
+
+Patron (09.10 gece): "benim yerime gereken onayları ver, ofis geliştirmeyi sorunsuz,
+ileride sorun çıkarmayacak şekilde devam et". Onay kuralı: yalnız ölçtüğüm güvenli
+kartlar; para/kopya dışı silme sorulur; kurulum kartı ancak gerçek defterin kopyasında
+doğrulandıktan sonra.
+
+**Sonuç:** #6 (asli kod, baris doğrulama) kopyada 108 dosya / 5528 geçti / 0 kaldı →
+kurulum kartı patron adına onaylandı → çalışan depoda `#6` (fffc801). Gerçek defter
+kopyasında 7 işin 7'si doğru model. Ofisin kendini ilk uçtan uca geliştirmesi.
+
+Yolda çıkan açıklar (hepsi testli, mutasyonla kalıyor):
+1. **Yazma alanı genişletilemiyordu:** ajan `web/panel.js` gerektiğini sordu, lider
+   danışmada "genişletemem" dedi, soru patrona düştü; patronun "evet"i de alana
+   geçmedi (ajan kurala uydu, dosyaya dokunmadı). → `tahta.alan_ekle` + danışmada
+   `ALAN_EKLE:` (yalnız işin lideri, işin sahibine; kilit çakışması RET, sonuç cevaba).
+2. **Kapı yanlış alarmı:** subprocess'li sınama dosyasındaki örnek "git push" metni
+   DIŞARIYA GÖNDERİM sayıldı (patron yarım saat bekledi). → Python betiğinde yalnız alt
+   sürece giden metin (ast). Mutasyon gösterdi: ESKİ kapı `["git","push"]` listesini ve
+   `from subprocess import run` gönderimini HİÇ yakalamıyordu; yenisi yakalıyor.
+3. **`sed -i` satır sonlarını bozdu:** 7 satırlık değişiklik 14.793 satırlık fark
+   (karışık CRLF/LF → hep CRLF); ajan onu yine `sed` ile düzeltmeye kalktı (kart
+   reddedildi, not bırakıldı). → kapanışta `satir_sonu_onar` (fark satır sonu yok
+   sayılınca yarıdan fazla küçülüyorsa kayıtlı satır sonları geri konur, `#no` kaydı).
+   Not: gerçek depo `core.autocrlf=true`; kayıtta CR olan dosyayı git normalleştirmez.
+4. **Kopyada ffmpeg yoktu** (5514 geçti, 1 kaldı) → `arac_ortami` (çalışan ofisin
+   ffmpeg/RIFE'si çalıştırılır, kopyalanmaz) + `gelistirme sina <no>`.
+5. **Sonuçsuz inceleme** aynı turda bir kez yeniden; açılışta incelemede iş varsa halka sürer.
+6. **Bitti tanımı** (geliştirme kiti): gerçek defterin kopyasında deneme (yol ile),
+   satır sonu koruma, `ALAN_EKLE`; eski varsayılan kit güncellenir, patronun elle
+   yazdığına dokunulmaz.
+7. **Sohbet kartları:** Tüm Ofis bütün takımların kartlarını gösteriyordu, kartın
+   takımı yazmıyordu (patron: "her takımın sohbeti neden aynı?") → takım etiketi;
+   geliştirme işi "Bitti" ama kurulmamış görünüyordu → kurulum durumu etiketi.
+   Sınama panelinde (8911, defter kopyası) ekranda ölçüldü.
+Gözlem: lider bu sefer dürüst ara rapor yazdı ("Henüz bitmedi: ..."); inceleme #6'da
+gerçek bir hatayı yakaladı (takma ad sızması) ve UI eksikliğini doğru reddetti.
