@@ -78,7 +78,8 @@ def bekleyenler(ofis) -> list:
     return [_sozluk(r) for r in rows]
 
 
-def sira_al(ofis, seri: str, *, atla_takimlar=frozenset()):
+def sira_al(ofis, seri: str, *, atla_takimlar=frozenset(), yalniz_takim: str = None,
+            yalniz_devam: bool = False):
     """Siradaki isi ALIR (bekliyor -> kosuyor). Yoksa None.
 
     Tek satirlik kosullu guncelleme: iki iplik ayni isi alamaz (ikincisinin
@@ -86,21 +87,27 @@ def sira_al(ofis, seri: str, *, atla_takimlar=frozenset()):
 
     `atla_takimlar` (06.10.2026, takim kota payi): kota payi DOLU takimlarin
     mesajlari atlanir -- BEKLIYOR kalir, silinmez; oteki takimlarinki surer.
+
+    TAKIM SERIDI (10.10.2026): `yalniz_takim` verilirse yalniz o takimin
+    (liderinin takimi) olagan istekleri; `yalniz_devam` ise yalniz kesintiden
+    devam kayitlari (butun ofisin halkasi -- takim seridi degildir).
     """
     atla = set(atla_takimlar or ())
+    kosul, deger = ["k.proje_id = ?", "k.durum = 'bekliyor'"], [ofis.proje_id]
+    if atla:
+        kosul.append(f"COALESCE(a.kanat_id, '') NOT IN ({','.join('?' * len(atla))})")
+        deger += list(atla)
+    if yalniz_takim is not None:
+        kosul += ["COALESCE(a.kanat_id, '') = ?", "COALESCE(k.devam, 0) = 0"]
+        deger.append(yalniz_takim)
+    if yalniz_devam:
+        kosul.append("COALESCE(k.devam, 0) = 1")
     while True:
         with ofis.db.baglanti() as c:
-            if atla:
-                soru = ",".join("?" * len(atla))
-                r = c.execute(
-                    "SELECT k.id FROM kuyruk k LEFT JOIN ajan a ON a.proje_id = k.proje_id "
-                    "AND a.ad = k.lider_ad WHERE k.proje_id = ? AND k.durum = 'bekliyor' "
-                    f"AND COALESCE(a.kanat_id, '') NOT IN ({soru}) "
-                    "ORDER BY k.olusturuldu, k.rowid LIMIT 1",
-                    (ofis.proje_id, *atla)).fetchone()
-            else:
-                r = c.execute("SELECT id FROM kuyruk WHERE proje_id = ? AND durum = 'bekliyor' "
-                              "ORDER BY olusturuldu, rowid LIMIT 1", (ofis.proje_id,)).fetchone()
+            r = c.execute(
+                "SELECT k.id FROM kuyruk k LEFT JOIN ajan a ON a.proje_id = k.proje_id "
+                "AND a.ad = k.lider_ad WHERE " + " AND ".join(kosul)
+                + " ORDER BY k.olusturuldu, k.rowid LIMIT 1", deger).fetchone()
             if not r:
                 return None
             sinir = c.execute("SELECT COALESCE(MAX(rowid), 0) FROM gorev").fetchone()[0]
@@ -115,6 +122,17 @@ def sira_al(ofis, seri: str, *, atla_takimlar=frozenset()):
             if n:
                 return _sozluk(c.execute("SELECT * FROM kuyruk WHERE id = ?",
                                          (r["id"],)).fetchone())
+
+
+def takim_bekleyeni_var(ofis, takim: str) -> bool:
+    """Bu takimin (liderinin takimi) bekleyen olagan istegi var mi.
+    Takim seridinin halkasi YALNIZ kendi takiminin yeni istegine yol verir
+    (10.10.2026; oteki takimlar zaten kendi seridinde yurur)."""
+    with ofis.db.baglanti() as c:
+        return c.execute(
+            "SELECT 1 FROM kuyruk k LEFT JOIN ajan a ON a.proje_id = k.proje_id AND a.ad = k.lider_ad "
+            "WHERE k.proje_id = ? AND k.durum = 'bekliyor' AND COALESCE(k.devam, 0) = 0 "
+            "AND COALESCE(a.kanat_id, '') = ? LIMIT 1", (ofis.proje_id, takim or "")).fetchone() is not None
 
 
 def bitir(ofis, kayit_id: str, durum: str = "bitti", not_: str = "") -> None:

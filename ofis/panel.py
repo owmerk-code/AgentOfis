@@ -74,7 +74,12 @@ PANEL_TUR_TAVANI_USD = None
 #: TEK UCUS nobetcisi. Panelden ayni anda iki lider turu baslatilamaz:
 #: cift tiklama jetonu ikiye katlar ve iki lider ayni ofiste ayni ise
 #: ayri kararlar verir.
-_KOSU = {"calisiyor": False, "mesaj": "", "dur": False}
+_KOSU = {"calisiyor": False, "mesaj": "", "dur": False, "takimlar": set()}
+
+#: Kesintiden devam (butun ofisin halkasi): takim seridi DEGILDIR, tek basina
+#: kosar -- butun takimlarin islerine dokunur; bir takim seridiyle ayni anda
+#: kosarsa ayni isi iki halka birden kostururdu.
+_DEVAM_SERIDI = "*"
 
 #: Ajana sorulan sorunun AYRI tek-ucus nobetcisi. Danisma salt okunurdur
 #: (yazamaz, kilit almaz), halka kosarken de sorulabilir -- ama ayni anda
@@ -277,13 +282,24 @@ def _lideri_kostur(db_yolu, proje_ad: str, mesaj: str,
 
 
 def _kuyrugu_baslat(db_yolu, proje_ad: str) -> bool:
-    """Siradaki isleri isleyen ipligi baslatir -- ofis bossa. Doner: basladi mi.
+    """Bekleyen istekler icin SERIT acar: TAKIM BASINA bir isci. Doner: en az
+    bir serit basladi mi.
 
-    Ofis mesgulse bir sey yapmaz: kosan is (lider turu ya da halka) bitince
-    `_arkada_calistir` sirayi yeniden yoklar. Yani bekleyen is ASILI KALMAZ.
+    TAKIMLAR PARALEL (10.10.2026, F1 canli olculdu): sira TEK seritti; GENEL'in
+    isi kosarken OFIS GELISTIRME'nin istegi 4 dk bekledi (ece'nin uzun turu tek
+    adimdi), sonra GENEL'in incelemesi de oteki takimin turunu bekledi --
+    takimlar birbirini sirayla bekletiyordu. Oysa her takim ayri (06.10 patron):
+    kendi koku, kendi ajanlari. Ayni takimin istekleri yine SIRAYLA islenir.
+
+    Tek basina kosan is (panelden halka/Surdur) varken serit acilmaz; kesintiden
+    devam (`_DEVAM_SERIDI`) ancak ofis bosken ve tek basina kosar. Durdur
+    istenmisse yeni serit acilmaz. Mesgulken siraya giren is, kosan bitince
+    `_arkada_calistir`in yoklamasiyla baslar -- ASILI KALMAZ.
     """
+    baslayan = []
     with _KUYRUK_KILIDI:
-        if _KOSU["calisiyor"]:
+        takimlar = _KOSU.setdefault("takimlar", set())
+        if _KOSU.get("dur") or (_KOSU["calisiyor"] and not takimlar) or _DEVAM_SERIDI in takimlar:
             return False
         try:
             _db = Veritabani(db_yolu)
@@ -292,18 +308,39 @@ def _kuyrugu_baslat(db_yolu, proje_ad: str) -> bool:
                 return False
             from . import kuyruk as _kuyruk
             o = Ofis(_db, pid)
-            if not _kuyruk.bekleyenler(o):
+            bekleyen = _kuyruk.bekleyenler(o)
+            if not bekleyen:
                 return False
-            durdurma_temizle(o.db, o.proje_id)
+            takim_of = {a["ad"]: a.get("kanat_id") or "" for a in o.kadro.liste(arsivli=True)}
+            try:
+                from . import pay as _pay
+                dolu = set(_pay.dolu_takimlar(o.db, o.proje_id))
+            except Exception:            # noqa: BLE001 -- olcum sirayi durdurmaz
+                dolu = set()
+            if not _KOSU["calisiyor"]:
+                durdurma_temizle(o.db, o.proje_id)
         except Exception:                # noqa: BLE001 -- basaramazsa baslatmaz
             return False
+        for k in bekleyen:
+            if k.get("devam"):
+                if not takimlar and not baslayan:
+                    baslayan.append(_DEVAM_SERIDI)
+                break                    # sira korunur: arkasindakiler ofis bosalinca
+            t = takim_of.get(k.get("lider_ad") or "", "")
+            if t in takimlar or t in baslayan or t in dolu:
+                continue
+            baslayan.append(t)
+        if not baslayan:
+            return False
+        takimlar.update(baslayan)
         _KOSU.update(dur=False, calisiyor=True, mesaj="sira isleniyor")
-    threading.Thread(target=_kuyrugu_kostur, args=(db_yolu, proje_ad),
-                     daemon=True).start()
+    for t in baslayan:
+        threading.Thread(target=_kuyrugu_kostur, args=(db_yolu, proje_ad, t),
+                         daemon=True, name=f"sira-{t or 'takimsiz'}").start()
     return True
 
 
-def _kuyrugu_kostur(db_yolu, proje_ad: str) -> None:
+def _kuyrugu_kostur(db_yolu, proje_ad: str, takim: str = "") -> None:
     """Sirayi BOSALANA kadar isler; seri bitince donus raporu yazar.
 
     Bir isin dusmesi sirayi DURDURMAZ: o is `hata` olur, sebebi deftere
@@ -325,7 +362,10 @@ def _kuyrugu_kostur(db_yolu, proje_ad: str) -> None:
                     _dolu = set(_pay.dolu_takimlar(o.db, o.proje_id))
                 except Exception:        # noqa: BLE001 -- olcum sirayi durdurmaz
                     _dolu = set()
-                k = _kuyruk.sira_al(o, seri, atla_takimlar=_dolu)
+                if takim == _DEVAM_SERIDI:
+                    k = _kuyruk.sira_al(o, seri, atla_takimlar=_dolu, yalniz_devam=True)
+                else:
+                    k = _kuyruk.sira_al(o, seri, atla_takimlar=_dolu, yalniz_takim=takim)
                 if k is None:
                     break
                 _KOSU["mesaj"] = k["metin"][:80]
@@ -363,7 +403,9 @@ def _kuyrugu_kostur(db_yolu, proje_ad: str) -> None:
                                               kaynak=("ekip" if k.get("kaynak") == "ekip" else ""),
                                               # Sirada yeni istek varsa halka ona birakilir
                                               # (09.10 F1: doviz istegi 2 saat bekledi).
-                                              ara_ver=lambda: bool(_kuyruk.bekleyenler(o))):
+                                              # YALNIZ kendi takiminin istegi: oteki takimlar
+                                              # kendi seridinde yurur (10.10).
+                                              ara_ver=lambda: _kuyruk.takim_bekleyeni_var(o, takim)):
                         if _durdurulduysa(o, "Lider turu"):
                             break
                     _kuyruk.bitir(o, k["id"], "bitti")
@@ -384,7 +426,7 @@ def _kuyrugu_kostur(db_yolu, proje_ad: str) -> None:
                 _kuyruk.askida_kalanlari_kapat(o)
             except Exception:            # noqa: BLE001 -- ozet sirayi dusurmez
                 pass
-    _arkada_calistir(db_yolu, proje_ad, isi, "sira")
+    _arkada_calistir(db_yolu, proje_ad, isi, "sira", takim=takim)
 
 
 #: Zamanlayici ne siklikla bakar. Vakit dakikalik konusulur; 20 sn
@@ -532,7 +574,7 @@ def _ajana_sor_kostur(db_yolu, proje_ad: str, mesaj_id: str) -> None:
         _DANISMA.update(calisiyor=False, ajan="")
 
 
-def _arkada_calistir(db_yolu, proje_ad: str, isi, adi: str) -> None:
+def _arkada_calistir(db_yolu, proje_ad: str, isi, adi: str, takim: str = None) -> None:
     """Panelden baslatilan HER arka plan isinin tek iskeleti.
 
     TEK ISKELET: lider turu ve halka ayni kodu kullanir. Iki kopya
@@ -570,9 +612,17 @@ def _arkada_calistir(db_yolu, proje_ad: str, isi, adi: str) -> None:
             pass
         traceback.print_exc()
     finally:
-        durduruldu = bool(_KOSU.get("dur"))
-        yeniden = bool(_KOSU.pop("yeniden", False))
-        _KOSU.update(calisiyor=False, mesaj="", dur=False)
+        # TAKIM SERIDI (10.10): ofis ancak SON serit bitince bosalir; oteki
+        # takimlarin seritleri surerken "calisiyor" dusmez.
+        with _KUYRUK_KILIDI:
+            _seritler = _KOSU.setdefault("takimlar", set())
+            if takim is not None:
+                _seritler.discard(takim)
+            _son = not _seritler
+            durduruldu = bool(_KOSU.get("dur"))
+            yeniden = bool(_KOSU.pop("yeniden", False)) if _son else False
+            if _son:
+                _KOSU.update(calisiyor=False, mesaj="", dur=False)
         # SIRA YOKLAMASI (01.10.2026): halka kosarken siraya giren is ya da
         # isci cikarken gelen is burada baslar -- yoksa ASILI kalirdi.
         # Insan durdurduysa sira kendiliginden SURMEZ.

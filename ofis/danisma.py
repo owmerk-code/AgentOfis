@@ -48,6 +48,8 @@ baska varsayimla calisir. Bu yuzden:
 
 from __future__ import annotations
 
+import threading
+
 from . import kullanim, roller
 from .guncelleme import model_coz as _model_coz
 from .motor import motor_ac, MotorHatasi
@@ -326,16 +328,36 @@ class Danisma:
         self.ofis.postane.cevapla(mesaj["id"], cevap, cevaplayan=alici)
         return {"cevap": cevap, "ajan": alici}
 
+    #: Su an cevaplanan sorular -- SUREC GENELINDE (10.10.2026): takimlar paralel
+    #: kosunca iki halka ayni bekleyen soruyu ayni anda cevaplardi (iki tur,
+    #: iki cevap). Soru once burada ALINIR, sonra cevaplanir.
+    _ISLENEN: set = set()
+    _ISLENEN_KILIDI = threading.Lock()
+
     def bekleyenleri_cevapla(self, *, butce_usd=None, zaman_asimi=None) -> list:
         """Ajana yonelmis butun bekleyen sorulari teslim eder."""
         sonuclar = []
         for m in self.ofis.postane.ajana_bekleyenler():
+            with Danisma._ISLENEN_KILIDI:
+                if m["id"] in Danisma._ISLENEN:
+                    continue                  # baska halka cevapliyor
+                Danisma._ISLENEN.add(m["id"])
             try:
+                if not self._hala_bekliyor(m["id"]):
+                    continue                  # alirken baskasi cevaplamis
                 sonuclar.append(self.cevapla(m, butce_usd=butce_usd,
                                              zaman_asimi=zaman_asimi))
             except Exception as exc:          # tek soru butun turu dusurmesin
                 sonuclar.append(self._yukselt(m, f"Danisma dustu: {exc}"))
+            finally:
+                with Danisma._ISLENEN_KILIDI:
+                    Danisma._ISLENEN.discard(m["id"])
         return sonuclar
+
+    def _hala_bekliyor(self, mesaj_id) -> bool:
+        with self.db.baglanti() as c:
+            r = c.execute("SELECT cevaplandi FROM mesaj WHERE id = ?", (mesaj_id,)).fetchone()
+        return bool(r) and r[0] is None
 
     # -- ic isleyis --------------------------------------------------------
 

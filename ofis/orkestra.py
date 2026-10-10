@@ -66,6 +66,7 @@ from __future__ import annotations
 
 import json
 import re
+import threading
 from concurrent.futures import ThreadPoolExecutor
 
 from . import baglayici, izin as izin_mod, kullanim, roller, sartname, tarayici, tavan
@@ -138,20 +139,51 @@ def _tarayici_puani(g: dict) -> int:
     return sum(1 for i in _TARAYICI_IPUCU if i in metin)
 
 
+#: KABIN KIRASI -- OFIS GENELINDE (10.10.2026). Kabin tek yuzeydir (22.09
+#: olculdu: ayni anda baglanan iki is birbirinin sayfasini okudu). Kira
+#: once halkanin ICINDE tutuluyordu (`kabin_alindi`); takimlar paralel
+#: kosunca iki halka ayni kabini iki ise verirdi. Kiraci = is numarasi.
+_KABIN_KIRASI = {"is": None}
+_KABIN_KILIDI = threading.Lock()
+_KABIN_ACMA_KILIDI = threading.Lock()
+
+
+def kabin_kirala(is_no) -> bool:
+    """Kabin bossa (ya da zaten bu isteyse) bu ise verir. Doner: alindi mi."""
+    with _KABIN_KILIDI:
+        if _KABIN_KIRASI["is"] in (None, is_no):
+            _KABIN_KIRASI["is"] = is_no
+            return True
+        return False
+
+
+def kabin_birak(is_no) -> None:
+    with _KABIN_KILIDI:
+        if _KABIN_KIRASI["is"] == is_no:
+            _KABIN_KIRASI["is"] = None
+
+
+def kabin_kiracisi():
+    with _KABIN_KILIDI:
+        return _KABIN_KIRASI["is"]
+
+
 def _kabin_ucnoktasi() -> str:
     """Kabin aciksa CDP ucnoktasi. Kapaliysa ve panel bir acici verdiyse
     kabini ACAR (ajan tarayici gereken ise basliyor); acilamazsa bos --
-    is kendi gorunmez tarayicisiyla surer. OLCER, varsaymaz."""
+    is kendi gorunmez tarayicisiyla surer. OLCER, varsaymaz. Acma TEK
+    iplikten (iki takimin halkasi ayni anda Chrome acmasin)."""
     from . import kabin as _kab, tarayici as _tar
-    if _kab.acik_mi():
-        return _tar.cdp_adresi()
-    acici = KABIN_ACICI.get("islev")
-    if acici:
-        try:
-            return acici() or ""
-        except Exception:                # noqa: BLE001 -- is gorunmez tarayiciyla surer
-            return ""
-    return ""
+    with _KABIN_ACMA_KILIDI:
+        if _kab.acik_mi():
+            return _tar.cdp_adresi()
+        acici = KABIN_ACICI.get("islev")
+        if acici:
+            try:
+                return acici() or ""
+            except Exception:            # noqa: BLE001 -- is gorunmez tarayiciyla surer
+                return ""
+        return ""
 
 
 #: Tasimadan (01.10.2026) once ofisin proje kokunun adi. Plan bu adla
@@ -1389,7 +1421,10 @@ class Orkestra:
                                                "'Ofise geri ver' ile surer"})
                 continue
             cdp = tarayici_kabini
-            if not cdp and g["no"] == izleme_adayi and not kabin_alindi:
+            # Izleme kabini istege bagli: kabin baska takimin isindeyse bu is
+            # kendi gorunmez tarayicisiyla kosar (engel degil).
+            if (not cdp and g["no"] == izleme_adayi and not kabin_alindi
+                    and kabin_kiracisi() in (None, g["no"])):
                 if _kabin_simdi is None:
                     _kabin_simdi = self.kabin_ucnoktasi() or ""
                 if _kabin_simdi:
@@ -1421,6 +1456,15 @@ class Orkestra:
             if not ajan:
                 continue
             if tarayicili:
+                # Ofis genelinde kira: baska takimin halkasi kabini tutuyorsa
+                # bu is kabinsiz KOSMAZ (girisli sayfa bekleyebilir) -- bekler,
+                # sebebi gorunur.
+                if not kabin_kirala(g["no"]):
+                    ozet["engel"].append(
+                        {"gorev_no": g["no"],
+                         "sebep": f"kabin #{kabin_kiracisi()} isinde (baska takim) -- "
+                                  "kabin TEK yuzeydir; o is bitince bu is kabinle surer"})
+                    continue
                 kabin_alindi = True
             rezerve.add(ajan)
             atamalar.append((g, ajan))
@@ -1449,6 +1493,8 @@ class Orkestra:
                 return ("kilit", g, ajan, exc)
             except Exception as exc:
                 return ("hata", g, ajan, exc)
+            finally:
+                kabin_birak(g["no"])     # tur bitti: kabin oteki islere (takimlara) acilir
 
         if paralel > 1 and len(atamalar) > 1:
             ozet["paralel"] = min(paralel, len(atamalar))
