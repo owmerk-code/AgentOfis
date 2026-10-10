@@ -47,6 +47,8 @@ Resim uretimi (katalogda 0 kredi) hic sorulmaz.
 - Katalogda yeni model gorursen (Flow degisti) dene ve patrona oner.
 
 ## 3. Taslak kareden video (tutarlilik icin varsayilan yol)
+- Flow'un ekrani degisebilir (dugme adi, menu yeri). Bu beceri yolu
+  tarif eder; ekranda farkli gorursen EKRANA uy ve farki kanita yaz.
 - Ayar penceresi ("Ayarlar tetikleyicisi"): Video, tur **Kareler**, oran,
   model, cozunurluk/sure, adet.
 - Istem cubugunda **"Başlat"** = ilk kare: "Çerçeve resmi seçin" penceresi
@@ -99,8 +101,24 @@ Sonuc kotu gelirse hangi kilit tutmadiysa onu GUCLENDIR (patronun
 istemlerinde olcek kilidi, sise buyuk cikinca sonradan eklenmis).
 
 ## 5. Uret, bekle, indir
-- "Oluşturmaya başla"ya bir kez bas; uretim dakikalar surer, araliklarla
-  `browser_snapshot` al. Bitmeden yeniden basma (cift kredi).
+HIZ (11.10.2026, patron: "1 saatte 1 video alirsak anlami kalmaz"). Sureyi
+uretimin kendisi degil, sirayla calismak ve gereksiz ekran okumak yiyor:
+- **Butun klipleri ARD ARDA baslat, sonra TOPLU bekle.** Paketteki her
+  sahne (birden cok urun varsa HEPSININ sahneleri) icin: kare/ogeler +
+  istem + ayar -> "Oluşturmaya başla" -> bitmesini BEKLEMEDEN siradaki
+  sahne. Flow uretimleri proje icinde yan yana surdurur; ayni anda kac
+  tanesini kabul ettigi OLCULMEDI -- ilk iste kac klibin ayni anda
+  surdugunu (ve reddederse ne yazdigini) kanita yaz, reddederse sirayla
+  devam et.
+- **Beklerken ekrani surekli okuma.** `browser_snapshot` her seferinde
+  sayfanin tamamini doker (jeton + sure). Uretim baslayinca
+  `browser_wait_for` ile 30-60 sn bekle, sonra BIR snapshot; bitmeyen varsa
+  yine bekle.
+- Bir klip bitince digerlerini beklerken onu indir ve `video_denetle` ile
+  olc; kurgu son klip inince hemen baslar.
+- Ayni sahne icin "Oluşturmaya başla"ya bitmeden IKINCI KEZ basma (cift
+  kredi). Kusurlu klibi ancak denetimden sonra, paketteki yeniden cekim
+  payindan yeniden uret.
 - Indir: "Medyayı indir" -> **"1080p Yükseltilmiş"** (OLCULDU 08.10: 0 kredi,
   8 sn klip ~45 sn; gercek 1080x1920). Teslim kurgusu 1080p kliplerle yapilir;
   720p yalniz hizli taslak icin. Ilk 1080p indirmede bakiyeyi once/sonra oku:

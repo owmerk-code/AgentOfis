@@ -15725,3 +15725,54 @@ yok, localStorage. Lider işi bölmedi (tek ajan); karar liderin.
   bitince silinir (2e7094b).
 - Kapı: bozuk (ayrıştırılamayan) betik dosyasında temkinle tamamı taranır —
   doğru; ama ayrıştırma küçük harfe çevrilmiş metinle yapılıyordu → özgün metin.
+
+## 10–11.10.2026 — F1 İKİ TAKIM (devam): #9 ve #11 kuruldu, canlıda bulunan 7 açık
+
+Patron yokken (onay bende) iki takım aynı anda sürdü. İkinci ölçüm (yeni
+kodla): geliştirme isteği **17 sn**'de iş oldu (eski kodla 4 dk sırada).
+
+**#9 kuruldu (66f72e2).** Kurulum ilk denemede "bad object" ile düştü: kart
+sınanan kaydın hash'ini saklıyordu, sınamadan sonra kopya eşitlenince aynı yama
+yeni hash aldı → kurulum ve ret güncel kayıtları YAMA KİMLİĞİYLE bulur
+(`guncel_kayitlar`, 8693e59). Aynı turda panel açılışı başka süreçte süren
+sınamayı "yarım" sanıp ikinci kez başlattı → teslim kaydı sınamanın SAHİBİNİ
+(`kosan`, pid:oluşma) yazar; açılışta yalnız sahibi ölüyse yeniden başlar.
+
+**Canlı #11'de bulunanlar (hepsi testli):**
+- Tur koşmayan iş, ofis o takımın halkasını koştururken "durdu — Sürdür'e
+  bas" görünüyordu → "sırada" (`durum_tablosu.HALKA_SORGUSU`, 3f46f4e).
+- Geliştirme şeridi iş onay beklerken kapandı, onay 2 sn sonra geldi; bayrak
+  yalnız SON şerit bitince işlediği için iş GENEL'in işini 1,5 dk bekledi →
+  şeridi kapalı takımın halkası onayda hemen döner. Onaydan sonra yeniden
+  sahiplenilen iş "yeni" sanılıp kopya eşitlenmeye kalkıldı → iş başı
+  eşitlemesi yalnız HİÇ TUR GÖRMEMİŞ işte (b4f8275).
+- Kapı: aynı sınama betiği grep/timeout/tail ile farklı sarmalanınca "bu iş
+  boyunca" onayı eşleşmedi, tek işte 4 kart → betik bulgusunun onay kimliği
+  betik yolu + sınıf + işaret (c395a7b).
+- Paralel koşan GENEL'in turu (başka klasör) geliştirme işinin değişimini "atıf
+  belirsiz" yaptı, `ofis/kabuk.py` işin kaydına girmedi → belirsizlik yalnız
+  AYNI KÖKTE koşan iş varsa (`_komsu_kostu_mu`).
+- Bitti tanımı "gerçek defterin kopyasında dene" derken kapı, defterin yolunu
+  içeren komutu "çalışan ofisin koduna yazma" saydı → salt okunur
+  `python -m ofis.gelistirme defter-kopyasi`. Kit her satırı 300 harfte kesiyordu
+  (defter maddesi yarım kalmıştı) → maddeler kısaltıldı, sınır testte (3d3d136).
+- Geliştirme kopyası masaüstünde `Ofisim`'in İÇİNE taşınmış bulundu (kod değil;
+  büyük olasılıkla sürüklendi). Ofis hiçbir şey demedi, teslim yolu "kopya
+  değil" deyip sessizce atlanacaktı → yerine geri kondu; kaybolan takım/proje
+  klasörü açılışta ve geliştirme teslimi sırasında UYARI (ac3eaf8).
+
+**#11 kuruldu (8a0742c):** `kabuk gelistirme` durum listesi panelin Türkçe
+adıyla (`takim.KURULUM_ADI`, tek kaynak) + sınama süresi (dk). Kopyada tam
+sınama 109 dosya 5625/5625 (34 dk); kod kendim okundu; kurulum temiz,
+çıktı gerçek defterde doğru ("ofise kuruldu (sinama 5625 gecti, 0 kaldi, 34 dk)").
+
+**Görsel/video sorusu (patron):** E44 "Gemini Pro alınınca" diyordu — ESKİMİŞ
+(25.09'da yazılmış). Patronun Pro hesabıyla Veo (Flow) 07.10 ve 08.10'da canlı
+üretildi, Nano Banana 08.10'da ölçüldü. Gerçekten açık olan: müzik ve
+seslendirmenin Flow'dan alınması (C2) ve UGC. Flow kataloğunda (09.10) "İçerik
+öğeleri" kipi var (karakter + ürün referansı) ama onunla HİÇ üretim yapılmadı;
+konuşan karakterin iki klipte tutarlılığı ölçülmedi. Higgsfield Marketing
+Studio (şablon, ürün fotoğrafı/adres girdisi) ücretli; bağlayıcı yetki
+bekliyor; UGC video başına kredi bedeli hiçbir kaynakta yok. Patrona öneri:
+önce Veo İçerik öğeleriyle tek 8 sn Belle UGC klibi (20 kredi), yetmezse
+bir ay Higgsfield Starter ile yan yana.

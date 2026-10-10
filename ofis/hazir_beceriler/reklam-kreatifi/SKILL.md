@@ -63,6 +63,14 @@ fotografi `referanslar`, sahnenin `oran`i; olculdu: urun ve kutu birebir).
 Flow'da gorsel URETILMEZ (kapida reddedilir). Bu kareler hem patrona onizlemedir hem de videoda BASLANGIC KARESI
 olur -- urun ve kompozisyon boylece korunur.
 
+## 6b. Birden cok urun / is (HIZ, 11.10.2026)
+Patron ayni istekte birden cok urun ya da cikti istediyse (or. "Brave ve
+Belle'ye birer video + birer gorsel"): butun urunlerin kimlik kartlarini,
+taslak karelerini ve sahnelerini TEK pakette topla, TEK onay iste. Kareleri
+urun urun bekleme: `gorsel_uret` cagrilarini art arda yap. Uretimde Flow
+butun sahneleri ard arda alir (`flow-video` 5. madde) -- urun basina ayri
+tur ve ayri onay sureyi katlar.
+
 ## 7. Senaryo paketi -> patron
 `sohbete_yaz` ile: kisa brif, fikir, sahne listesi (model + kredi), TOPLAM
 kredi (+ yeniden cekim payi), kredi bakiyesi, varsayimlar; `ekler`de taslak

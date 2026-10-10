@@ -33,6 +33,7 @@ başlar.
 | **C — Medya ve tasarım (kalanlar)** | | |
 | C1 | GÖRSEL uçtan uca, profesyonel, genel | 08.10 ölçüldü (Brave): Flow Nano Banana kutuyu UYDURDU; ürün görseli GPT + referans fotoğraf (`gorsel_uret(referanslar)`) birebir → beceri/lider bloğu buna göre; 4:5/1:1/9:16 teslim |
 | C2 | Müzik ve seslendirme FLOW'UN KENDİSİNDEN (08.10 patron: "flow'da var"; dış servis yok); kurguda ses katmanı | YOK |
+| C10 | UGC: yapay zekâ karakteri ürünü tanıtır (konuşma, mimik; 11.10 patron, Higgsfield Marketing Studio örnekleri). Flow "İçerik öğeleri" (karakter + ürün referansı) ile HİÇ üretilmedi; iki klipte karakter tutarlılığı ölçülmedi. Önce tek 8 sn Belle klibi (Veo Fast, 20 kredi, patron başındayken); yetmezse Higgsfield (ücretli, bağlayıcı yetki bekliyor) yan yana | AÇIK |
 | C3 | Flow 1080p "Yükseltilmiş" bedeli; teslim çözünürlüğü kararı | BİTTİ 08.10: ölçüldü 0 kredi (896→896, 8 sn klip ~45 sn); kapı 1080p'yi sormaz, 4K sorar; teslim 1080p kliplerle (keskinlik farkı görüldü) |
 | C4 | Flow'u süren belirlenimci araç (Belle işi 1,21 M jeton / 48 dk; güç kısmaz, hız+kota) | ERTELENDİ 08.10: Sonnet'le Flow turu ~3 dk'ya indi; çok video işi gelince süre/kota rakamıyla yeniden bakılır |
 | C5 | Tasarım akışı: bir istekten 3 seçenek, telefon/masaüstü önizlemesi, sürümler (41-liste #26) | İPTAL 08.10 (patron: gerek yok) |
@@ -206,7 +207,7 @@ Her eksik bir faza bağlı; hiçbiri sahipsiz değil.
 ### G. Medya ve bilgisayar kullanımı
 | No | Eksik | Faz |
 |---|---|---|
-| E44 | Gemini kredisiyle görsel, Veo, seslendirme ve müzik ölçülmedi ve bağlanmadı | F7 |
+| E44 | ~~Gemini kredisiyle görsel, Veo, seslendirme ve müzik~~ **11.10 düzeltme:** Pro alındı; Veo (Flow) 07.10/08.10 canlı, Nano Banana 08.10 ölçüldü. Kalan: müzik/seslendirme → C2, UGC karakter → C10 | F7 |
 | E45 | Higgsfield bağlantısı hazır değil | F7 |
 | E46 | Codex'le tek görsel ~220k jeton tutuyor; optimize edilmedi | F7 |
 | E47 | Bilgisayar kullanımı (fare/klavye) yok, ölçülmedi | F0/F7 |

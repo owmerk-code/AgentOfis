@@ -50,20 +50,22 @@ def acilista_toparla(ofis) -> dict:
     from .yollar import ofis_icinde_mi
     try:
         for _kok in ofis.kokler():   # proje + takim kokleri (06.10.2026)
-            # KAYBOLAN KLASOR (11.10.2026 canli): gelistirme kopyasi masaustunde
-            # Ofisim'in ICINE tasinmisti; ofis hicbir sey demedi -- gelistirme
-            # isinin kurulum yolu "kopya degil" deyip SESSIZCE atlanirdi.
-            if _kok and not Path(_kok).is_dir():
-                ofis.db.olay_yaz(ofis.proje_id, "uyari",
-                                 f"Takim/proje klasoru BULUNAMADI: {_kok} -- tasindi ya da silindi. "
-                                 "Bu klasorde calisan isler yurumez; klasoru yerine geri koy "
-                                 "(ya da Organizasyon'dan takimin klasorunu degistir).")
-                continue
             if _kok and ofis_icinde_mi(_kok):
                 ofis.db.olay_yaz(ofis.proje_id, "uyari",
                                  f"Bu projenin klasoru ({_kok}) ofisin KENDI yerinde: "
                                  "ajanlar ofisin kodunu ve kurallarini gorur. Masaustune tasi: "
                                  "python -m ofis.kabuk tasi")
+                continue
+            # KAYBOLAN KLASOR (11.10.2026 canli): gelistirme kopyasi masaustunde
+            # Ofisim'in ICINE tasinmisti; ofis hicbir sey demedi -- gelistirme
+            # isinin kurulum yolu "kopya degil" deyip SESSIZCE atlanirdi.
+            # SIRA: once "ofisin icinde" (duman_ayrim), cunku o uyari TASIMA
+            # komutunu soyler; yoklugu ondan sonra.
+            if _kok and not Path(_kok).is_dir():
+                ofis.db.olay_yaz(ofis.proje_id, "uyari",
+                                 f"Takim/proje klasoru BULUNAMADI: {_kok} -- tasindi ya da silindi. "
+                                 "Bu klasorde calisan isler yurumez; klasoru yerine geri koy "
+                                 "(ya da Organizasyon'dan takimin klasorunu degistir).")
     except Exception:                 # noqa: BLE001 -- uyari toparlamayi durdurmaz
         pass
     birakilan, yeniden, devam = [], 0, 0
