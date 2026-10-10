@@ -209,6 +209,40 @@ try:
         _ce = c.execute("SELECT COUNT(*) FROM olay WHERE tur = 'danisma'").fetchone()[0]
     sina("iki halka ayni anda: soru BIR KEZ cevaplandi (tek tur, tek cevap)",
          len(_cagri) == 1 and _ce == 1, f"tur={len(_cagri)} cevap={_ce}")
+    print("\n7. seritler surerken gelen onay: seridi KAPALI takimin halkasi hemen doner (10.10 canli: #11 1,5 dk bekledi)")
+    _halka_kos, _asil_kos2 = [], _O.Orkestra.kos
+
+    def _kos_kaydet(self, **kw):
+        _halka_kos.append(kw.get("kanat_id"))
+        return iter(())
+
+    _O.Orkestra.kos = _kos_kaydet
+    try:
+        gb = ofis.tahta.gorev_ac("B isi", neden="n", ana_hedef="h", kabul_olcutu="k", kanat_id=B)
+        ofis.kadro.ise_al("asli", "backend", kanat_id=B, motor="sahte", klasor=str(D / "kok"))
+        gb = ofis.tahta.sahiplen(gb["no"], "asli", gb["revizyon"])
+        C = ofis.kanat_ac("UCUNCU", "UC")
+        ofis.kadro.ise_al("cem", "backend", kanat_id=C, motor="sahte", klasor=str(D / "kok"))
+        gc = ofis.tahta.gorev_ac("C onay bekleyen", neden="n", ana_hedef="h", kabul_olcutu="k", kanat_id=C)
+        gc = ofis.tahta.sahiplen(gc["no"], "cem", gc["revizyon"])
+        ofis.postane.onay_iste("cem", "git push", gorev_no=gc["no"])
+        _P._KOSU.update(calisiyor=True, takimlar={"baska"})            # baska takimin seridi suruyor
+        _ac = _P._takim_halkalarini_baslat(str(db_yolu), PROJE)
+        sina("onayi gelen B isinin takimi icin halka HEMEN acildi", B in _ac, str(_ac))
+        sina("  yalniz insani bekleyen isi olan takim (C) icin ACILMADI (bos dongu yok)", C not in _ac, str(_ac))
+        _son = _t.time() + 10
+        while _t.time() < _son and set(_ac) & _P._KOSU.get("takimlar", set()):
+            _t.sleep(0.05)
+        sina("  her halka KENDI takimiyla kostu, bitince seritler kapandi",
+             sorted(_halka_kos) == sorted(_ac) and _P._KOSU.get("takimlar") == {"baska"}, str((_halka_kos, _P._KOSU.get("takimlar"))))
+        _P._KOSU.update(calisiyor=True, takimlar=set())                # tek basina genel halka
+        sina("  tek basina genel halka kosarken takim halkasi ACILMAZ", _P._takim_halkalarini_baslat(str(db_yolu), PROJE) == [])
+        _py = (Path(__file__).resolve().parent.parent / "ofis" / "panel.py").read_text(encoding="utf-8")
+        sina("  seritten cikarken ve onay gelince cagriliyor",
+             _py.count("_takim_halkalarini_baslat") >= 3)
+    finally:
+        _O.Orkestra.kos = _asil_kos2
+        _P._KOSU.update(calisiyor=False, takimlar=set())
 finally:
     _S.Sohbet.konus = _asil_konus
     _P.MOTOR_FABRIKASI = None

@@ -325,7 +325,9 @@ class Koltuk:
         # bayrakla yonetseydik is kilitsiz kosardi ve Yasa 1 sessizce
         # delinirdi -- kilit makinesi bunu hic gormezdi.
         if gorev["sahip"] != ajan_ad or gorev["durum"] != "calisiyor":
-            _yeni_is = gorev["durum"] == "hazir" and not devam
+            # YENI is = hic tur kosmamis (10.10 canli: onaydan sonra yeniden
+            # sahiplenilen #11 "yeni" sanildi, kopya esitlenmeye kalkildi).
+            _yeni_is = gorev["durum"] == "hazir" and not devam and not self._tur_gormus_mu(gorev)
             gorev = self.ofis.tahta.sahiplen(no, ajan_ad, gorev["revizyon"],
                                              devam=bool(devam))
             if _yeni_is:
@@ -2027,6 +2029,16 @@ class Koltuk:
             "· dokuman ~$2,18. Tavani yukseltmek ya da isi bolmek gerekir; "
             "ofis kendi yukseltmez, para karari senindir.",
             gorev_id=gorev["id"])
+
+    def _tur_gormus_mu(self, gorev: dict) -> bool:
+        """Bu iste daha once tur basladi mi (defterde `basladi`/`tur_ozeti`)."""
+        try:
+            with self.db.baglanti() as c:
+                return c.execute("SELECT 1 FROM olay WHERE proje_id = ? AND gorev_id = ? AND tur IN "
+                                 "('basladi', 'tur_ozeti') LIMIT 1",
+                                 (self.proje_id, gorev["id"])).fetchone() is not None
+        except Exception:                        # noqa: BLE001 -- bilinmiyor: yeni sayma (dokunma)
+            return True
 
     def _gelistirme_is_basi(self, gorev: dict) -> None:
         """Gelistirme kopyasinda YENI is basliyor: kopya son koda esitlenir

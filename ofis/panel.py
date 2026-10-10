@@ -634,15 +634,74 @@ def _arkada_calistir(db_yolu, proje_ad: str, isi, adi: str, takim: str = None) -
                 _seritler.discard(takim)
             _son = not _seritler
             durduruldu = bool(_KOSU.get("dur"))
-            yeniden = bool(_KOSU.pop("yeniden", False)) if _son else False
+            yeniden = bool(_KOSU.pop("yeniden", False))
             if _son:
                 _KOSU.update(calisiyor=False, mesaj="", dur=False)
         # SIRA YOKLAMASI (01.10.2026): halka kosarken siraya giren is ya da
         # isci cikarken gelen is burada baslar -- yoksa ASILI kalirdi.
         # Insan durdurduysa sira kendiliginden SURMEZ.
         if not durduruldu:
-            if not _kuyrugu_baslat(db_yolu, proje_ad) and yeniden:
+            _basladi = _kuyrugu_baslat(db_yolu, proje_ad)
+            if yeniden and _son and not _basladi:
                 _halkayi_yeniden_baslat(db_yolu, proje_ad)
+            elif yeniden and not _son:
+                # OTEKI SERITLER SURERKEN gelen onay/cevap (10.10 canli, #11):
+                # gelistirme seridi is onay beklerken "ilerleme yok" deyip
+                # kapandi, onay 2 sn sonra geldi; bayrak yalniz SON serit
+                # bitince isliyordu -> is GENEL'in isi bitene kadar bekleyecekti.
+                # Surdurulecek isi olup seridi acik OLMAYAN takimlarin halkasi
+                # hemen doner. Bayrak bir kez tuketilir: bos donguye girmez.
+                _takim_halkalarini_baslat(db_yolu, proje_ad)
+
+
+def _takim_halkalarini_baslat(db_yolu, proje_ad: str) -> list:
+    """Surdurulecek isi olan (hazir/calisiyor/inceleme, duraklatilmamis, insani
+    beklemeyen) ve seridi ACIK OLMAYAN takimlarin halkasini serit olarak acar.
+    Doner: acilan takimlar."""
+    try:
+        _db = Veritabani(db_yolu)
+        pid = _proje_id_bul(_db, proje_ad)
+        if pid is None:
+            return []
+        o = Ofis(_db, pid)
+        if durdurma_istendi(o.db, o.proje_id):
+            return []
+        insan_bekleyen = ({x.get("gorev_no") for x in o.postane.bekleyen_onaylar()}
+                          | {x.get("gorev_no") for x in o.postane.insan_bekleyenler()})
+        adaylar = {g.get("kanat_id") or "" for g in o.tahta.liste()
+                   if g["durum"] in ("hazir", "calisiyor", "inceleme")
+                   and not g.get("duraklatildi") and g["no"] not in insan_bekleyen}
+    except Exception:                    # noqa: BLE001 -- olcemezsek baslatmayiz
+        return []
+    acilan = []
+    with _KUYRUK_KILIDI:
+        seritler = _KOSU.setdefault("takimlar", set())
+        if _KOSU.get("dur") or _DEVAM_SERIDI in seritler or (_KOSU["calisiyor"] and not seritler):
+            return []
+        for t in sorted(adaylar - seritler):
+            seritler.add(t)
+            acilan.append(t)
+        if acilan:
+            _KOSU.update(calisiyor=True, mesaj="takim halkasi suruyor (onay/cevap geldi)")
+    for t in acilan:
+        threading.Thread(target=_takim_halkasini_kostur, args=(db_yolu, proje_ad, t),
+                         daemon=True, name=f"halka-{t or 'takimsiz'}").start()
+    return acilan
+
+
+def _takim_halkasini_kostur(db_yolu, proje_ad: str, takim: str) -> None:
+    """Tek takimin halkasi (yeni hedef vermeden) -- serit olarak kayitli."""
+    def isi(o):
+        from .orkestra import Orkestra
+        ork = (o.orkestra if MOTOR_FABRIKASI is None
+               else Orkestra(o, motor_fabrikasi=MOTOR_FABRIKASI))
+        for adim in ork.kos(azami_tik=12, butce_usd=PANEL_TUR_TAVANI_USD, paralel=3,
+                            kanat_id=takim or None):
+            if adim.get("bitti") or _durdurulduysa(o, "Takim halkasi"):
+                break
+        from . import kuyruk as _kq
+        _kq.askida_kalanlari_kapat(o)
+    _arkada_calistir(db_yolu, proje_ad, isi, "takim halkasi", takim=takim)
 
 
 def _halkayi_yeniden_baslat(db_yolu, proje_ad: str) -> bool:
@@ -2479,6 +2538,11 @@ def olustur(db_yolu=None, proje_ad: str = None) -> FastAPI:
             # denip birakildi, tur bitince isi kimse surdurmedi (#4 asili
             # kaldi). Kosu bitince halka BIR KEZ daha doner.
             _KOSU["yeniden"] = True
+            # TAKIM SERITLERI suruyorsa (10.10): seridi o an KAPALI takimin isi
+            # oteki takimin bitmesini beklemesin -- halkasi hemen doner.
+            if _KOSU.get("takimlar"):
+                threading.Thread(target=_takim_halkalarini_baslat, args=(db.yol, proje_ad),
+                                 daemon=True).start()
             return {"surduruldu": False,
                     "sebep": "ofis su an kosuyor; bitince is kendiliginden surer ("
                              + (_KOSU["mesaj"] or "?") + ")"}
