@@ -264,8 +264,53 @@ _k = subprocess.run([sys.executable, "-m", "ofis.kabuk", "--db", str(db_yolu), "
                     capture_output=True, text=True, encoding="utf-8", errors="replace",
                     cwd=str(OFIS_KODU), creationflags=PENCERE_YOK)
 sina("kabuk 'gelistirme': teslimler ve durumlari listelenir",
-     f"#{n1}" in _k.stdout and "geri_alindi" in _k.stdout and "1 kaldi" in _k.stdout and "reddedildi" in _k.stdout,
+     f"#{n1}" in _k.stdout and "geri alındı" in _k.stdout and "1 kaldi" in _k.stdout and "reddedildi" in _k.stdout,
      repr(_k.stdout[-600:]) + ' ERR ' + _k.stderr[-600:])
+
+# #11: kabuk durum listesi Turkce ad (takim.KURULUM_ADI, tek kaynak) + sinama suresi (dk).
+# Sahne gercek defterdeki gibi: ayar tablosu, gelistirme_teslim:<no>, JSON deger.
+from ofis import takim as _tk  # noqa: E402
+_db11 = Veritabani(D / "k11.sqlite3")
+_o11 = Ofis.proje_ac(_db11, "K11", amac="a", basari_olcutu="b", kok_klasor=str(D / "proje11"))
+for _no, _bas, _dur, _sin in (
+        (9101, "kurulan is", "kuruldu", {"dosya": 3, "gecti": 3, "kaldi": 0, "sure_sn": 840}),
+        (9102, "cakisan is", "cakisti", {"dosya": 3, "gecti": 3, "kaldi": 0, "sure_sn": 20}),
+        (9103, "sinamasiz is", "reddedildi", None),
+        (9104, "bilinmeyen durum", "yepyeni_kod", {"dosya": 1, "gecti": 1, "kaldi": 0})):
+    _d11 = {"no": _no, "baslik": _bas, "durum": _dur}
+    if _sin:
+        _d11["sinama"] = _sin
+    G._yaz(_db11, _o11.proje_id, _no, _d11)
+def _durum11(ortam=None):
+    return subprocess.run([sys.executable, "-m", "ofis.kabuk", "--db", str(D / "k11.sqlite3"), "gelistirme"],
+                          capture_output=True, text=True, encoding="utf-8", errors="replace",
+                          cwd=str(OFIS_KODU), creationflags=PENCERE_YOK,
+                          env={**os.environ, **(ortam or {})}).stdout
+_c11 = _durum11()
+_sat11 = {s_.split()[0]: s_ for s_ in _c11.splitlines() if s_.strip().startswith("#")}
+sina("durum listesi: 'ofise kuruldu' ve 'son kodla çakıştı — kurulmadı' yazar, kod adi yok",
+     "ofise kuruldu" in _sat11.get("#9101", "") and "son kodla çakıştı — kurulmadı" in _sat11.get("#9102", "")
+     and "kuruldu" not in _sat11.get("#9102", "").replace("kurulmadı", "") and "cakisti" not in _c11, repr(_c11[-500:]))
+sina("  sinama suresi dakika: 840 sn -> '14 dk', 60 sn alti '1 dk'dan kisa'",
+     "14 dk" in _sat11.get("#9101", "") and "1 dk'dan kisa" in _sat11.get("#9102", ""), repr(_c11[-500:]))
+sina("  sinamasiz ya da suresiz satirda 'dk' yok, satir bozulmaz",
+     "dk" not in _sat11.get("#9103", "") and "dk" not in _sat11.get("#9104", "")
+     and "sinama 1 gecti, 0 kaldi)" in _sat11.get("#9104", ""), repr(_sat11.get("#9103")) + repr(_sat11.get("#9104")))
+sina("  bilinmeyen kod adi oldugu gibi kalir", "yepyeni_kod" in _sat11.get("#9104", ""))
+# Tek kaynak: sozlukteki deger degisince cikti degisir (alt surecte, ayni ortamla).
+_ts11 = tempfile.NamedTemporaryFile("w", suffix=".py", delete=False, encoding="utf-8", dir=str(D))
+_ts11.write("import sys\n"
+            "from ofis import takim\n"
+            "takim.KURULUM_ADI['kuruldu'] = 'DEGISTI-ADI'\n"
+            "sys.argv = ['kabuk', '--db', sys.argv[1], 'gelistirme']\n"
+            "from ofis import kabuk\n"
+            "kabuk.main()\n")
+_ts11.close()
+_r11 = subprocess.run([sys.executable, _ts11.name, str(D / "k11.sqlite3")], capture_output=True, text=True,
+                      encoding="utf-8", errors="replace", cwd=str(OFIS_KODU), creationflags=PENCERE_YOK,
+                      env={**os.environ, "PYTHONPATH": str(OFIS_KODU)})
+sina("  adlar TEK kaynaktan: takim.KURULUM_ADI degisince cikti degisir", "DEGISTI-ADI" in _r11.stdout,
+     repr(_r11.stdout[-300:]) + ' ERR ' + _r11.stderr[-300:])
 
 print("\n10. kopyanin KENDI paneli (onizleme)")
 # ORTAMDAN BAGIMSIZ (09.10 canli): bu sinama gelistirme KOPYASINDA da kosar

@@ -1313,12 +1313,19 @@ def komut_gelistirme(a) -> None:
     yaz(f"kopya: {G.varsayilan_klasor()}")
     if not satirlar:
         yaz("teslim yok")
+    from . import takim as _takim
     for an, deger in satirlar:
         import json as _j
         d = _j.loads(deger or "{}")
         s_ = d.get("sinama") or {}
-        yaz(f"  #{d.get('no')} {d.get('baslik', '')[:50]} -- {d.get('durum')}"
-            + (f" (sinama {s_.get('gecti')} gecti, {s_.get('kaldi')} kaldi)" if s_ else ""))
+        # Durum adi TEK yerden: panelin sohbet kartiyla ayni (takim.KURULUM_ADI).
+        ad = _takim.KURULUM_ADI.get(d.get("durum"), d.get("durum"))
+        sure_sn = s_.get("sure_sn") or 0
+        sure = ""
+        if isinstance(sure_sn, (int, float)) and sure_sn > 0:
+            sure = ", " + ("1 dk'dan kisa" if sure_sn < 60 else f"{round(sure_sn / 60)} dk")
+        yaz(f"  #{d.get('no')} {d.get('baslik', '')[:50]} -- {ad}"
+            + (f" (sinama {s_.get('gecti')} gecti, {s_.get('kaldi')} kaldi{sure})" if s_ else ""))
 
 
 def komut_eksikler(a) -> None:
