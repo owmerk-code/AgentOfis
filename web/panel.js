@@ -4205,6 +4205,8 @@ function kartCiz(k, adlar, bekleyen) {
   const ust = el("div", "kart-ust");
   const kime = k.tip === "soru_sana" ? (k.kimden + " sana soruyor") : ("sen → " + (k.kime || "lider"));
   ust.append(el("b", null, kime), el("span", "sohbet-saat", " · " + saat(k.an)));
+  // TUM OFIS butun takimlarin kartlarini gosterir: kart takimini soyler (10.10).
+  if (!D.kanat && k.takim) ust.prepend(el("span", "kart-takim", k.takim));
   ist.append(ust);
   const y = el("div", "kart-metin"); kalinYaz(y, k.metin); ist.append(y);
   if ((k.ekler || []).length) ist.append(eklerKutusu(k.ekler));
@@ -4226,6 +4228,10 @@ function kartCiz(k, adlar, bekleyen) {
   } else if (k.durum === "bitti" || k.durum === "iptal") {
     if (kimler.length) ds.append(document.createTextNode(" · " + kimler.join(", ")));
     if (k.sure_sn != null) ds.append(document.createTextNode(" · " + sureYazi(k.sure_sn)));
+    // GELISTIRME ISI: "Bitti" kodun ofise girdigi anlamina gelmez; kurulum durumu.
+    const kurulum = isler.map((i) => i.kurulum).filter(Boolean).filter((v, i, a) => a.indexOf(v) === i);
+    if (kurulum.length) ds.append(el("span", "kart-kurulum " + (kurulum.every((x) => x === "ofise kuruldu") ? "iyi" : "uyari"),
+                                     kurulum.join(", ")));
   } else if (k.durum === "sirada") {
     ds.append(document.createTextNode(` · ${k.sira_no}. sırada`));
   } else if (k.durum === "iletilemedi" && k.sebep) {

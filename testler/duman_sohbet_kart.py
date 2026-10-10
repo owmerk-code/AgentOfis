@@ -169,5 +169,27 @@ if _m and shutil.which("node"):
                         capture_output=True, text=True).stdout.strip()
     sina("adModel: 'cem (GPT-5.6 Sol)' ve model yokken yalniz 'cem'", _o == "cem (GPT-5.6 Sol)|cem", _o)
 
+print("\n6. Tum Ofis: kart TAKIMINI soyler; gelistirme isinde KURULUM durumu (10.10, patron)")
+import json as _json6  # noqa: E402
+kn2 = ofis.kanat_ac("GELISTIRME", "GL")
+ofis.kadro.ise_al("ada", "lider", lider_mi=True, kanat_id=kn2, motor="sahte", klasor=str(K))
+m6 = ofis.postane.soru_sor("insan", "ada", "kartta model yazsin", mod="uyandiran")
+g6 = ofis.tahta.gorev_ac("kart modeli", neden="n", ana_hedef="h", kabul_olcutu="k", kanat_id=kn2)
+with ofis.db.baglanti() as c:
+    c.execute("UPDATE gorev SET istek_id = ? WHERE id = ?", (m6["id"], g6["id"]))
+ofis.db.ayar_yaz(ofis.proje_id, f"gelistirme_teslim:{g6['no']}", _json6.dumps({"no": g6["no"], "durum": "reddedildi"}))
+_hep = takim.kartlar(ofis)
+_k6 = next(x for x in _hep if x["id"] == m6["id"])
+_k1 = next(x for x in _hep if x["tip"] == "istek" and x.get("kime") == "lale")
+sina("Tum Ofis gorunumunde her kart kendi takimini tasir", _k6.get("takim") == "GELISTIRME" and _k1.get("takim") == "A",
+     str((_k6.get("takim"), _k1.get("takim"))))
+sina("  takim sekmesinde yalniz o takimin kartlari", all(x.get("takim") == "GELISTIRME" for x in takim.kartlar(ofis, kanat_id=kn2)
+     if x["tip"] == "istek"))
+sina("gelistirme isinde kurulum durumu: 'reddedildi — kurulmadi' (Bitti ofise girdi demek degil)",
+     _k6["isler"][0].get("kurulum", "").startswith("reddedildi"), str(_k6["isler"]))
+sina("  teslimi olmayan iste kurulum alani YOK", not any(i.get("kurulum") for i in _k1.get("isler") or []))
+sina("panel: takim etiketi yalniz Tum Ofis'te, kurulum etiketi bitti satirinda",
+     'if (!D.kanat && k.takim) ust.prepend(el("span", "kart-takim", k.takim))' in js and "kart-kurulum" in js)
+
 print(f"\n== sonuc: {GECEN} gecti, {KALAN} kaldi ==")
 sys.exit(1 if KALAN else 0)

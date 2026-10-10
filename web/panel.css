@@ -2090,6 +2090,11 @@ details > summary.hf-bas { cursor: pointer; }
 .kart.kd-calisiyor .kart-nokta, .kart.kd-dusunuyor .kart-nokta { animation: kart-nabiz 1.4s infinite; }
 @keyframes kart-nabiz { 50% { opacity: .3; } }
 .kart-son { color: var(--metin-3); }
+.kart-takim { font-size: var(--yz-mikro); letter-spacing: .04em; text-transform: uppercase; color: var(--bilgi);
+  border: 1px solid color-mix(in srgb, var(--bilgi) 45%, var(--cizgi)); border-radius: 4px; padding: 0 5px; margin-right: 6px; }
+.kart-kurulum { font-size: var(--yz-kucuk); border-radius: 4px; padding: 0 6px; margin-left: 4px; border: 1px solid; }
+.kart-kurulum.iyi { color: var(--iyi); border-color: color-mix(in srgb, var(--iyi) 45%, var(--cizgi)); }
+.kart-kurulum.uyari { color: var(--uyari); border-color: color-mix(in srgb, var(--uyari) 45%, var(--cizgi)); }
 .kart-dugmeler { margin-left: auto; display: inline-flex; gap: 4px; }
 .kart-sonuc { border-left: 3px solid color-mix(in srgb, var(--iyi) 60%, var(--cizgi)); padding: 2px 0 2px 9px; }
 .kart-sonuc.katli .kart-metin { max-height: 12.5em; overflow: hidden; }

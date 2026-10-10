@@ -585,6 +585,42 @@ def _ofis_notu_mu(metin: str) -> bool:
     return str(metin or "").lstrip().startswith(_OFIS_NOTLARI)
 
 
+#: Gelistirme teslim durumlarinin patrona gorunen adi.
+KURULUM_ADI = {"sinaniyor": "kopyada sınanıyor", "sinama_kaldi": "sınama geçmedi — kurulmadı",
+               "kart": "kurulum onayını bekliyor", "kuruldu": "ofise kuruldu",
+               "reddedildi": "reddedildi — kurulmadı", "geri_alindi": "geri alındı"}
+
+
+def _kurulum_durumlari(ofis) -> dict:
+    """{is_no: okunur kurulum durumu} -- yalniz gelistirme teslimi olan isler."""
+    import json as _json
+    out = {}
+    try:
+        with ofis.db.baglanti() as c:
+            for (deger,) in c.execute("SELECT deger FROM ayar WHERE proje_id = ? AND anahtar LIKE ?",
+                                      (ofis.proje_id, "gelistirme_teslim:%")):
+                try:
+                    d = _json.loads(deger or "{}")
+                except ValueError:
+                    continue
+                if d.get("no") is not None and d.get("durum"):
+                    out[d["no"]] = KURULUM_ADI.get(d["durum"], d["durum"])
+    except Exception:                            # noqa: BLE001 -- olcemezsek yazmayiz
+        return {}
+    return out
+
+
+def _ajan_takimlari(ofis) -> dict:
+    """{ajan_adi: takim adi} (arsivdekiler dahil degil; bilinmezse yok)."""
+    try:
+        with ofis.db.baglanti() as c:
+            return {r[0]: r[1] for r in c.execute(
+                "SELECT a.ad, k.ad FROM ajan a JOIN kanat k ON k.id = a.kanat_id "
+                "WHERE a.proje_id = ?", (ofis.proje_id,))}
+    except Exception:                            # noqa: BLE001
+        return {}
+
+
 def _sahip_modelleri(ofis, kartlar_) -> dict:
     """{(is_no, sahip_ajan): okunur model adi}. Yalniz `olay.ajan_ad == sahip`
     olan tur_ozeti'leri; modeli bos (olculmemis) turlar atlanir, sonuncusu kazanir."""
@@ -715,6 +751,19 @@ def kartlar(ofis, *, kanat_id=None, adet: int = 120, kosuyor: bool = False) -> l
     for _k in kartlar_:
         for _i in _k.get("isler") or []:
             _i["model_ad"] = model_sec.get((_i.get("no"), _i.get("sahip") or "")) or ""
+    # KURULUM DURUMU (09.10 F1 canli): gelistirme takiminin isi "Bitti" gorunuyordu
+    # ama degisiklik reddedilmis/kurulmamisti. Teslim kaydi olan iste yazilir.
+    kurulum = _kurulum_durumlari(ofis)
+    for _k in kartlar_:
+        for _i in _k.get("isler") or []:
+            if kurulum.get(_i.get("no")):
+                _i["kurulum"] = kurulum[_i["no"]]
+    # TAKIM ADI (09.10, patron: "her takimin sohbeti neden ayni?"): Tum Ofis
+    # gorunumu butun takimlarin kartlarini birlikte gosterir; kart takimini soyler.
+    _takim = _ajan_takimlari(ofis)
+    for _k in kartlar_:
+        _ad = _k.get("kime") or _k.get("kimden") or ""
+        _k["takim"] = _takim.get(_ad, "")
     for k in kartlar_:
         if k["tip"] not in ("istek", "soru_ajana"):
             continue
