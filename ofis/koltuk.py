@@ -1526,8 +1526,22 @@ class Koltuk:
         silmeye kalkti (kapi durdurdu). Yanlis suclama, olcmemekten
         pahalidir: pencere turun BASINDAN SONUNA kadar bakilir.
         """
+        # YALNIZ AYNI KOKTE (10.10 canli, #11): takimlar paralel kosmaya
+        # baslayinca BASKA klasorde calisan GENEL'in turu gelistirme isinin
+        # degisimini "atif belirsiz" yapti ve `ofis/kabuk.py` isin git
+        # kaydina ALINMADI. Baska kokteki is bu koke yazamaz (kilit de koke
+        # gore); belirsizlik yalniz ayni kokte kosan islerden dogar.
+        kok = str(self.ofis.tahta.gorev_koku(gorev) or "").lower()
+
+        def _ayni_kok(g) -> bool:
+            try:
+                return str(self.ofis.tahta.gorev_koku(g) or "").lower() == kok
+            except Exception:                    # noqa: BLE001 -- bilinmiyor: ayni say
+                return True
+
         try:
-            if len(self.ofis.tahta.liste(durum="calisiyor")) > 1:
+            if any(g["id"] != gorev["id"] and _ayni_kok(g)
+                   for g in self.ofis.tahta.liste(durum="calisiyor")):
                 return True
         except TahtaHatasi:
             return True
@@ -1535,13 +1549,24 @@ class Koltuk:
         if bas is None:
             return True          # pencere bilinmiyor: suclamayiz
         with self.db.baglanti() as c:
-            n = c.execute(
-                "SELECT count(*) FROM olay WHERE proje_id = ? AND rowid > ?"
-                " AND ajan_ad NOT IN ('', ?) AND tur IN"
+            satirlar = c.execute(
+                "SELECT o.gorev_id, o.ajan_ad FROM olay o WHERE o.proje_id = ? AND o.rowid > ?"
+                " AND o.ajan_ad NOT IN ('', ?) AND o.tur IN"
                 " ('sahiplenildi', 'basladi', 'tur_ozeti', 'arac', 'degisim')"
-                " AND (gorev_id IS NULL OR gorev_id != ?)",
-                (self.proje_id, bas, ajan_ad, gorev["id"])).fetchone()[0]
-        return n > 0
+                " AND (o.gorev_id IS NULL OR o.gorev_id != ?)",
+                (self.proje_id, bas, ajan_ad, gorev["id"])).fetchall()
+        for gid, kim in satirlar:
+            if gid:
+                if _ayni_kok(gid):
+                    return True
+                continue
+            try:                                 # isle bagsiz olay: ajanin takiminin koku
+                a = self.ofis.kadro.ajan(kim)
+                if str(self.ofis.tahta.kok_klasor(a.get("kanat_id") or None) or "").lower() == kok:
+                    return True
+            except Exception:                    # noqa: BLE001 -- bilinmiyor: belirsiz say
+                return True
+        return False
 
     def _degisimi_olc_ic(self, no, ajan_ad, gorev, once_anlik, kok_klasor):
         if once_anlik is None or not kok_klasor:

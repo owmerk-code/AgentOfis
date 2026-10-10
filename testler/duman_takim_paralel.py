@@ -243,6 +243,31 @@ try:
     finally:
         _O.Orkestra.kos = _asil_kos2
         _P._KOSU.update(calisiyor=False, takimlar=set())
+    print("\n8. degisim atfi: BASKA klasordeki takimin turu belirsizlik DEGIL (10.10 canli: #11 kabuk.py kayda girmedi)")
+    from ofis.koltuk import Koltuk as _Kol  # noqa: E402
+    _kokB = D / "kokB"
+    _kokB.mkdir(exist_ok=True)
+    with ofis.db.baglanti() as c:
+        c.execute("UPDATE gorev SET durum = 'iptal' WHERE durum IN ('hazir', 'calisiyor', 'inceleme')")
+        c.execute("DELETE FROM yazma_kilidi")
+    ofis.takim_klasoru_ayarla(B, str(_kokB))
+    ofis.kadro.ise_al("ali", "backend", kanat_id=A, motor="sahte", klasor=str(D / "kok"))
+    ofis.kadro.ise_al("bora", "backend", kanat_id=B, motor="sahte", klasor=str(_kokB))
+    ofis.kadro.ise_al("can", "backend", kanat_id=A, motor="sahte", klasor=str(D / "kok"))
+    g8 = ofis.tahta.gorev_ac("A isi", neden="n", ana_hedef="h", kabul_olcutu="k", kanat_id=A, yazma_alani=["a8/"])
+    g8 = ofis.tahta.sahiplen(g8["no"], "ali", g8["revizyon"])
+    _kol = _Kol(ofis)
+    with ofis.db.baglanti() as c:
+        _bas = c.execute("SELECT COALESCE(MAX(rowid), 0) FROM olay").fetchone()[0]
+    gB = ofis.tahta.gorev_ac("B isi", neden="n", ana_hedef="h", kabul_olcutu="k", kanat_id=B, yazma_alani=["b8/"])
+    gB = ofis.tahta.sahiplen(gB["no"], "bora", gB["revizyon"])
+    ofis.db.olay_yaz(ofis.proje_id, "arac", "bora yazdi", ajan_ad="bora", gorev_id=gB["id"])
+    _kol._tur_basi[g8["id"]] = _bas
+    sina("BASKA klasorde kosan takimin turu: atif BELIRSIZ DEGIL", _kol._komsu_kostu_mu(g8, "ali") is False)
+    gA2 = ofis.tahta.gorev_ac("A ikinci", neden="n", ana_hedef="h", kabul_olcutu="k", kanat_id=A, yazma_alani=["a9/"])
+    gA2 = ofis.tahta.sahiplen(gA2["no"], "can", gA2["revizyon"])
+    _kol._tur_basi[g8["id"]] = _bas
+    sina("  AYNI klasorde kosan is: atif BELIRSIZ (eskisi gibi)", _kol._komsu_kostu_mu(g8, "ali") is True)
 finally:
     _S.Sohbet.konus = _asil_konus
     _P.MOTOR_FABRIKASI = None

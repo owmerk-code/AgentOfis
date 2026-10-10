@@ -249,6 +249,9 @@ sina("gelistirme takiminin bitti tanimi yazildi (kopya, sinama, onizleme, kurulu
 sina("  bitti taniminda 09.10 dersleri: defter kopyasi (yol), satir sonu, alan genisletme",
      any("GERCEK DEFTERIN KOPYASINDA" in x and "/veri/ofis.sqlite3" in x for x in _bt)
      and any("sed -i" in x for x in _bt) and any("ALAN_EKLE" in x for x in _bt), str(_bt)[-300:])
+sina("  kit maddeleri KESILMEDEN yazildi (her madde kit satir sinirinin altinda)",
+     _bt == G.bitti_tanimi() and all(len(m) <= G.KIT_SATIR_SINIRI for m in G.bitti_tanimi()),
+     str([len(m) for m in G.bitti_tanimi()]))
 _kid = r.json().get("id", "")
 _kit.yaz(db, ofis.proje_id, _kid, bitti_tanimi=G.BITTI_TANIMI)          # eski varsayilan
 G.takimi_hazirla(db, ofis.proje_id, _kid)

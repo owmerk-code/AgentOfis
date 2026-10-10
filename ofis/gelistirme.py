@@ -58,6 +58,43 @@ def kaynak() -> Path:
     return OFIS_KODU.resolve()
 
 
+def calisan_ofis_kodu() -> Path:
+    """Calisan ofisin kod klasoru -- kopyanin ICINDEN de (kopyanin `origin`i)."""
+    from .yollar import OFIS_KODU
+    if kopya_mi(OFIS_KODU):
+        r = _git(OFIS_KODU, "remote", "get-url", "origin")
+        yol = r.stdout.decode(errors="replace").strip()
+        if r.returncode == 0 and yol and Path(yol).is_dir():
+            return Path(yol).resolve()
+    return kaynak()
+
+
+def defter_kopyasi() -> Path:
+    """Calisan ofisin defterinin SALT OKUNUR acilmis, gecici klasore alinmis
+    kopyasi. Doner: kopyanin yolu.
+
+    10.10 canli (#11): bitti tanimi "gercek defterin kopyasinda dene" diyordu,
+    ajan defteri salt okunur acan komutu yazdi, kapi komutta calisan ofisin
+    yolunu ve bir `>` gorunce "koduna yazma" sayip REDDETTI -- iki kural ajani
+    sikistirdi. Bu komut yolu ajana yazdirmadan, yalniz OKUYARAK kopyalar."""
+    import sqlite3
+    import tempfile
+    kay = calisan_ofis_kodu() / "veri" / "ofis.sqlite3"
+    if not kay.is_file():
+        raise GelistirmeHatasi(f"calisan ofisin defteri bulunamadi: {kay}")
+    hedef = Path(tempfile.mkdtemp(prefix="ofis-defter-kopyasi-")) / "ofis.sqlite3"
+    kaynak_db = sqlite3.connect(f"file:{kay.as_posix()}?mode=ro", uri=True)
+    try:
+        hedef_db = sqlite3.connect(hedef)
+        try:
+            kaynak_db.backup(hedef_db)
+        finally:
+            hedef_db.close()
+    finally:
+        kaynak_db.close()
+    return hedef
+
+
 def varsayilan_klasor() -> Path:
     ozel = (os.environ.get("OFIS_GELISTIRME_KLASOR") or "").strip()
     if ozel:
@@ -214,17 +251,24 @@ BITTI_TANIMI = [
 ]
 #: 09.10 F1 canli dersleri (#5, #6). Defter yolu kurulurken eklenir (bkz. `bitti_tanimi`).
 BITTI_TANIMI_EK = [
-    "Defterden OKUYAN/YAZAN degisiklik (kart, pano, rapor, hafiza) GERCEK DEFTERIN KOPYASINDA "
-    "denendi: {defter} dosyasini sqlite3 backup ile gecici klasore kopyala (aslina YAZMA), "
-    "her kayit icin sonucu kanita yaz. Sahte sinama sahnesi gercek defterdeki gibi kurulur "
-    "(isci turu + liderin BASKA modelle inceleme turu, ret, kesinti). #5 yalniz isci turu "
-    "kuran sinamayla gecti, gercek defterde 5 kartin 5'i yanlisti.",
+    # HER MADDE <= KIT_SATIR_SINIRI harf: kit satiri orada keser (10.10: ilk surum
+    # kesilmisti, maddenin sonu kitte yoktu).
+    "Defterden okuyan/yazan degisiklik GERCEK DEFTERIN KOPYASINDA denendi: kopyayi "
+    "`python -m ofis.gelistirme defter-kopyasi` verir. Defterin yolunu ({defter}) komuta "
+    "YAZMA (kapi kod yazmasi sayar).",
+    "Sahte sinama sahnesi gercek defterdeki gibi kurulur: isci turu + liderin BASKA modelle "
+    "inceleme turu, ret, kesinti. #5 yalniz isci turu kuran sinamayla gecti; gercek defterde "
+    "5 kartin 5'i yanlisti.",
     "Satir sonlari KORUNUR: `sed -i` ya da dosyayi toptan yeniden yazma YOK (dosyalar karisik "
     "CRLF/LF). Python ile newline='' oku, tek yeri degistir (s.count(eski)==1), ayni bicimde yaz; "
     "`git diff --stat` yalniz gercek degisikligi gostermeli.",
     "Yazma alani DISINDA bir dosya gerekiyorsa yazmadan once lidere `soru_sor` ile sor; lider "
     "danisma cevabinda `ALAN_EKLE: yol` yazar, ofis kilidi olcer ve alani genisletir.",
 ]
+
+
+#: `kit.yaz` her satiri bu uzunlukta keser.
+KIT_SATIR_SINIRI = 300
 
 
 def bitti_tanimi() -> list:
@@ -238,8 +282,13 @@ def takimi_hazirla(db, proje_id: str, kanat_id: str) -> None:
     hala ESKI varsayilansa (patron degistirmediyse) yenisi yazilir; patronun
     elle yazdigina dokunulmaz."""
     from . import kit
-    mevcut = kit.oku(db, kanat_id).get("bitti_tanimi") or []
-    if not mevcut or list(mevcut) == list(BITTI_TANIMI):
+    mevcut = list(kit.oku(db, kanat_id).get("bitti_tanimi") or [])
+    # Patron degistirmediyse (eski varsayilanlardan biri) yenisi yazilir.
+    ofisin = (mevcut[:len(BITTI_TANIMI)] == list(BITTI_TANIMI)
+              and all(m.startswith(("Defterden OKUYAN", "Defterden okuyan", "Sahte sinama sahnesi",
+                                    "Satir sonlari", "Yazma alani DISINDA"))
+                      for m in mevcut[len(BITTI_TANIMI):]))
+    if not mevcut or (ofisin and mevcut != bitti_tanimi()):
         kit.yaz(db, proje_id, kanat_id, bitti_tanimi=bitti_tanimi())
 
 
@@ -801,10 +850,12 @@ def onizleme_hazirla() -> dict:
 
 
 if __name__ == "__main__":
-    if sys.argv[1:2] == ["onizle"]:
+    if sys.argv[1:2] == ["defter-kopyasi"]:
+        print(defter_kopyasi())
+    elif sys.argv[1:2] == ["onizle"]:
         h = onizleme_hazirla()
         print(f"ONIZLEME PANELI: {h['adres']}  (kabin {h['kabin']}, defter {h['db']})", flush=True)
         from .panel import kos
         kos("127.0.0.1", h["kapi"], h["db"], "Onizleme")
     else:
-        print("kullanim: python -m ofis.gelistirme onizle   (gelistirme kopyasinin icinden)")
+        print("kullanim: python -m ofis.gelistirme onizle | defter-kopyasi   (gelistirme kopyasinin icinden)")
