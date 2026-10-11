@@ -141,6 +141,20 @@ sina("  insanin isi KABINDE kostu (sirada sonra olsa da)",
 sina("  izleme adayi BEKLETILMEDI, kendi tarayicisiyla kostu",
      g_web["no"] in c and not c[g_web["no"]]["cdp"], str(c))
 ofis.tahta.iptal_et(g_ins["no"], sebep="sinama bitti", iptal_eden="insan")
+# KREDI SITESI KABINDE (11.10.2026 canli, Brave+Belle #14): patronun mesajinda
+# Flow adresi yoktu -> lider kabin isaretlemedi -> video isi BOS gizli
+# tarayicida Flow'un tanitim sayfasina dustu, patrona "giris yap" denildi;
+# kabini tarayiciya ihtiyaci olmayan is "izleme" icin almisti.
+g_flow = ofis.tahta.gorev_ac("Flow klipleri", neden="n", ana_hedef="flow'da video",
+                             kabul_olcutu="k", yazma_alani=["video.md"], kanat_id=kn,
+                             tarayici_alani=["https://flow.google.com"])
+sina("Flow isinde kabin isareti YOK (lider vermedi)", not ofis.tahta.gorev(g_flow["no"])["tarayici_kabin"])
+c = tik_koş()
+sina("Flow isi yine de KABINDE kostu (patronun 04.10 kalici karari)",
+     g_flow["no"] in c and c[g_flow["no"]]["cdp"] == CDP, str(c))
+sina("  Flow isi varken kabin IZLEME icin baska ise verilmedi",
+     not any(x["izleme"] for x in c.values()), str(c))
+ofis.tahta.iptal_et(g_flow["no"], sebep="sinama bitti", iptal_eden="insan")
 
 # ---------------------------------------------------------------------------
 print("\n3. KOLTUK: izlemedeki ajan ne aliyor")

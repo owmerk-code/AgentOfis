@@ -150,5 +150,19 @@ try:
 finally:
     KI.karar = _asil
 
+print("\n8. Flow tanitim sayfasindaki GIRIS dugmesi kredi tiklamasi DEGIL (11.10 canli: paketten hak dustu)")
+from ofis import riskli as R  # noqa: E402
+
+
+def _tik(url):
+    return (R.degerlendir("browser_click", {"element": "Google Flow ile oluştur", "target": "e1"}, url=url,
+                          sayfa_metni="Google Flow ile oluştur", uretim_ayari="Video · 720p · 8 sn. x1")
+            or {}).get("sinif")
+
+
+sina("/about sayfasinda 'Google Flow ile oluştur' kredi sayilmaz", _tik("https://flow.google.com/about") is None)
+sina("ana sayfada da sayilmaz", _tik("https://flow.google.com/") is None)
+sina("PROJE sayfasinda ayni dugme kredi (sorulur)", _tik("https://flow.google.com/project/x") == "kredi")
+
 print(f"\n== sonuc: {GECEN} gecti, {KALAN} kaldi ==")
 sys.exit(1 if KALAN else 0)

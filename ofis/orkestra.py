@@ -195,6 +195,22 @@ ESKI_KOK_ADLARI = ("calisma",)
 #: cok bu kadar kez koşar (ret -> yeniden tur -> ret ...); fazlasi bir sonraki
 #: adimi bekler. Ret freni (3 ret) ayrica isler.
 ARA_ADIM_TUR_SINIRI = 3
+
+
+def _kabin_gerekli(g: dict) -> bool:
+    """Is PAYLASILAN kabinde (patronun oturumlariyla) mi kosmali.
+
+    Lider kabini yalniz patronun mesajinda isaret ettigi siteye verir.
+    KREDI SITELERI (Flow) bunun disinda: patronun 04.10 kalici karari "ajan
+    kabinde BENIM Flow hesabimla uretir". 11.10 canli (Brave+Belle #14):
+    mesajda Flow adresi gecmedigi icin video isi BOS gizli tarayicida koştu,
+    Flow tanitim sayfasina atti, ajan patrona "giris yap" dedi -- oysa patron
+    kabinde girisliydi; kabini ise tarayiciya ihtiyaci olmayan gorsel isi
+    "izleme" icin almisti."""
+    if g.get("tarayici_kabin"):
+        return True
+    from . import riskli as _riskli
+    return any(_riskli.kredi_sitesi_mi(str(k)) for k in (g.get("tarayici_alani") or []))
 #: Kol bitmese de ara adimin bakma araligi (sn; yalniz defter sorgusu).
 ARA_ADIM_YOKLAMA_SN = 20
 
@@ -1391,7 +1407,7 @@ class Orkestra:
         # Kabinli (insanin isaret ettigi) bir is varsa oncelik onundur.
         izleme_adayi = None
         if (not kabin_dolu and kabin_izle_acik_mi(self.db, self.proje_id)
-                and not any(g.get("tarayici_kabin") for g in kosulacak)):
+                and not any(_kabin_gerekli(g) for g in kosulacak)):
             adaylar = [g for g in kosulacak
                        if not (g.get("tarayici_alani") or [])
                        and not _devral.devralinmis(self.db, self.proje_id, g["id"])]
@@ -1415,7 +1431,7 @@ class Orkestra:
                 if _kabin_simdi:
                     cdp = _kabin_simdi
                     izleme_is.add(g["no"])
-            if not cdp and g.get("tarayici_kabin") and (g.get("tarayici_alani") or []):
+            if not cdp and _kabin_gerekli(g) and (g.get("tarayici_alani") or []):
                 if _kabin_simdi is None:
                     _kabin_simdi = self.kabin_ucnoktasi() or ""
                 if not _kabin_simdi:

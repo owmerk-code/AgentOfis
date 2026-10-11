@@ -434,6 +434,17 @@ KREDISIZ_YUKSELTME = _kur((r"\b1080p\b",))
 KREDI_PARA = _kur((r"\byukselt\b", r"\bupgrade\b"))
 
 
+def _flow_proje_disi(url: str) -> bool:
+    """Adres BILINIYOR, Flow'un kendisi ve proje sayfasi DEGIL (uretim yok)."""
+    from urllib.parse import urlparse
+    try:
+        p = urlparse(url or "")
+    except ValueError:
+        return False
+    host = (p.hostname or "").lower()
+    return host in ("flow.google.com",) and "/project/" not in (p.path or "")
+
+
 def kredi_sitesi_mi(url: str) -> bool:
     m = re.match(r"^https?://([^/?#:]+)", (url or "").strip(), re.I)
     host = m.group(1).lower() if m else ""
@@ -582,6 +593,13 @@ def degerlendir(arac: str, argumanlar: dict, *, url: str = "",
                 (arac == "browser_press_key" and sadelestir(a.get("key")) == "enter")
                 or (arac == "browser_type" and a.get("submit"))):
             bulunan = "Enter (istemi gonderir)"
+        # FLOW'DA URETIM YALNIZ PROJE SAYFASINDA (11.10.2026 canli): oturum
+        # kapaliyken flow.google.com /about tanitim sayfasina dusuyor; oradaki
+        # "Google Flow ile oluştur" GIRIS dugmesi kredi tiklamasi sayildi ve
+        # patronun kredi paketinden bir hak bosuna dustu. Adres bilinmiyorsa
+        # yine sorulur (temkin).
+        if bulunan and _flow_proje_disi(url):
+            bulunan = ""
         if bulunan and "yukseltilmis" in bulunan.lower() and _esles(okunur, KREDISIZ_YUKSELTME) \
                 and not _esles(okunur, _kur((r"\b4k\b", r"\b2160p\b"))):
             bulunan = ""                         # 1080p yukseltilmis: olculmus 0 kredi
