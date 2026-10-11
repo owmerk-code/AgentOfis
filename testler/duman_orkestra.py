@@ -362,6 +362,12 @@ def _yavas_fabrika(ad, **ayar):
                       cevap="Bitti KANIT terminal: kos -> gecti")
 
 
+# ARA ADIM (11.10.2026): uzun kol surerken biten is ayni adimda incelenip
+# yeniden koşabilir; bu sahne yalniz ILK turlarin paralelligini olcer,
+# o yuzden is basina tek tur (ara adim ayrica: duman_ara_adim.py).
+import ofis.orkestra as _orkmod  # noqa: E402
+_ara_sinir = _orkmod.ARA_ADIM_TUR_SINIRI
+_orkmod.ARA_ADIM_TUR_SINIRI = 1
 _sureler = {}
 for _p in (1, 3):
     _o = _paralel_ofis()
@@ -372,6 +378,7 @@ for _p in (1, 3):
     if _p == 3:
         _ajanlar = [x["ajan"] for x in _oz["baslatilan"]]
 
+_orkmod.ARA_ADIM_TUR_SINIRI = _ara_sinir
 sina("uc is de kosuldu", len(_ajanlar) == 3, f"-- {_ajanlar}")
 # Ayni ajana iki is verilemez: atama tek iplikte yapilip ajan REZERVE
 # edilmeseydi, iki iplik ayni bos ajani secerdi.

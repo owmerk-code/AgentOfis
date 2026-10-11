@@ -177,7 +177,7 @@ matrisin ölçümüyle karşılaştırır.
 | `ofis/brifing.py` | Dört katmanlı brifing (K1 kimlik/rol · K2 künye+kural+olgu · K3 kararlar · K4 iş+kanıt+not), devir paketi. |
 | `ofis/koltuk.py` | Seat Runner: kilit → brifing → motor → olaylar → nabız → kanıt → inceleme. Zincir/devir, kaçak freni, not/durdurma kanalı, disk ölçümü, gölge anlık, kabin izleme. |
 | `ofis/lider.py` | Fan-out · ayrık alan · kanıta karşı inceleme (temiz bağlam, salt okunur, yapan inceleyemez); ret ≥2'de kapı modeline yükseltme; lider zinciri. |
-| `ofis/orkestra.py` | Halka (`tik`/`kos`): planlama JSON'u + kapılar ("ret öğretir"), paralel atama (rezerv), kabin kiralama, danışma teslimi. |
+| `ofis/orkestra.py` | Halka (`tik`/`kos`): planlama JSON'u + kapılar ("ret öğretir"), paralel atama (rezerv), kabin kiralama, danışma teslimi; BİTEN KOL BEKLEMEZ (11.10 ara adım: uzun tur sürerken biten iş incelenir, yeniden koşar). |
 | `ofis/sohbet.py` | Liderin ön kapısı: triyaj (cevap/kendi/dağıt/kadro), ofis özeti, rapor, cevap akışı (`AkisYazici`). |
 | `ofis/takim.py` | Takım sohbeti: `@ajan` yönlendirme (lider · not · soru · `iş:`), tek akış. |
 | `ofis/kuyruk.py` | İş kuyruğu (F5/1): lidere giden her panel mesajı sıraya girer (`kuyruk` tablosu, kalıcı); panel işçisi sırayı boşaltır, düşen iş sırayı durdurmaz; seri bitince MODELSİZ dönüş raporu. |
@@ -273,7 +273,7 @@ matrisin ölçümüyle karşılaştırır.
 - **F5 "ben yokken" altyapısı (01.10):** kuyruk + dönüş raporu, kesintiden devam, masaüstü bildirimi, zamanlayıcı — dördü canlı (8911, gerçek motor) ölçüldü. Kalan F5: telefon, onay yorgunluğu (E80), bağlam göstergesi, ses (en son).
 - **Güncelleme hemen:** 30 dakikada bir ölçer, uyguladıktan sonra yeniden
   ölçer (`olc_ve_ilerle`). CLI güncellemesinin deneme turu, ofis gerçek terminal kipindeyse terminalde de koşar (30.09).
-- **Sınamalar:** **5536/5536** (10.10; 108 dosya; tam takım ÇIKIŞ KODUYLA koşulur — kod 3 = artık klasör) + gerçek set (`gercek_set.py`, her gece 03:30). Deneme seti 15/15
+- **Sınamalar:** **5642/5642** (11.10; 110 dosya; tam takım ÇIKIŞ KODUYLA koşulur — kod 3 = artık klasör) + gerçek set (`gercek_set.py`, her gece 03:30). Deneme seti 15/15
   (Claude ve Codex, işçi+lider).
 - **MALİYET (03.10, `testler/carpan.py`):** basit iş ofiste doğrudan Claude'un ~1,6–1,8×'i; Claude önbelleği 5 dk; ret ölçüte bağlı (`lider.ret_dayanagi`); triyaj+plan tek tur; KARMA (karne + çapraz kontrol) 20 işte 19/20, Claude payı %40 az. Yalın lider ve `--fork-session` denendi, geri alındı. Tam metin: günlük "08.10 ANAYASADAN TAŞINAN: MALİYET".
 - **Kalan işler:** `PLAN.md` "00. KALAN İŞLER — 08.10" (A–F; ses, görünüş, uygulama en son).

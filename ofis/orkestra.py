@@ -191,6 +191,14 @@ def _kabin_ucnoktasi() -> str:
 ESKI_KOK_ADLARI = ("calisma",)
 
 
+#: ARA ADIM (11.10.2026): uzun bir tur surerken ayni adim icinde bir is en
+#: cok bu kadar kez koşar (ret -> yeniden tur -> ret ...); fazlasi bir sonraki
+#: adimi bekler. Ret freni (3 ret) ayrica isler.
+ARA_ADIM_TUR_SINIRI = 3
+#: Kol bitmese de ara adimin bakma araligi (sn; yalniz defter sorgusu).
+ARA_ADIM_YOKLAMA_SN = 20
+
+
 class Orkestra:
     def __init__(self, ofis, *, motor_fabrikasi=motor_ac, zincir=None) -> None:
         self.ofis = ofis
@@ -1246,31 +1254,12 @@ class Orkestra:
                 return a["ad"]
         return ""
 
-    def tik(self, *, butce_usd: float = None, zaman_asimi: float = None,
-            izinli_araclar: tuple = (), paralel: int = 3,
-            tarayici_gorunur: bool = False,
-            tarayici_profili: str = "",
-            tarayici_kabini: str = "", kanat_id=None) -> dict:
-        """Halkanin bir adimi. Ne yapildigini anlatan ozet doner.
-
-        Sira onemli: ONCE inceleme (biten isi kapat, yeri ac), SONRA yeni
-        is baslat. Tersi olsaydi tahta incelenmemis islerle dolar ve lider
-        hep geride kalirdi.
-        """
-        ozet = {"incelenen": [], "baslatilan": [], "bekleyen": [],
-                "engel": [], "danisilan": [], "ilerleme": False, "paralel": 1}
-        self.ofis.tahta.kilit_dusenleri_temizle()
-        # LIMITLER TAZE OLSUN (27.09.2026): onceden gecis zinciri kurarken
-        # hesabin yuzdesine bakar; insan CLI'i elle kullandiysa tur sonu
-        # olcumu bayattir. Seyreltilmis (2 dk), kota harcamaz, patlarsa
-        # halkayi durdurmaz.
-        try:
-            from . import kullanim
-            kullanim.tazele(self.ofis.db, self.ofis.proje_id,
-                            fabrika=self.motor_fabrikasi)
-        except Exception:        # noqa: BLE001 -- olcum isi durdurmaz
-            pass
-
+    def _inceleme_ve_danisma(self, ozet: dict, kanat_id, *, butce_usd, zaman_asimi,
+                             paralel: int, haric_no=frozenset()) -> None:
+        """Halka adiminin (a) inceleme ve (b) danisma kismi. Adim basinda VE
+        adim icinde (uzun bir tur surerken, `tik`teki ARA ADIM) cagrilir.
+        `haric_no`: turu hala kosan isler (onlar incelemede olamaz ama
+        kural acikca yazili)."""
         # a) incelemedekileri lidere incelet -- PARALEL (30.09.2026).
         #
         # Olculdu (gercek set G08, codex): iki is 67. ve 74. saniyede
@@ -1278,7 +1267,8 @@ class Orkestra:
         # birbirinden bagimsizdir (her biri kendi isinin kanitina bakar,
         # kapatma CAS'li); isciler gibi paralel kosar, en fazla `paralel`.
         incelenecek = [g for g in self.ofis.tahta.liste(durum="inceleme")
-                       if self.takimin_isi(g, kanat_id)]
+                       if self.takimin_isi(g, kanat_id)
+                       and g["no"] not in haric_no]
 
         def _incele(g):
             try:
@@ -1333,18 +1323,14 @@ class Orkestra:
                 ozet["engel"].append(
                     f"danisma yukseldi ({d['ajan']}): {d.get('sebep', '')}")
 
-        # c) bekleyenleri bildir -- cevap uydurup devam ETMEZ.
-        # Yalnizca INSANA dusenler: bir ajana sorulmus soruyu insana
-        # gostermek, yanlis kisiyi bekletir.
-        for m in self.ofis.postane.insan_bekleyenler():
-            ozet["bekleyen"].append(
-                {"tur": "soru", "kim": m["gonderen"], "metin": m["govde"],
-                 "gorev_no": m["gorev_no"]})
-        for o in self.ofis.postane.bekleyen_onaylar():
-            ozet["bekleyen"].append(
-                {"tur": "onay", "kim": o["isteyen"], "metin": o["eylem"],
-                 "gorev_no": o["gorev_no"], "risk": o["risk"]})
-
+    def _atamalari_kur(self, ozet: dict, kanat_id, *, tarayici_kabini: str,
+                       cdp_is: dict, izleme_is: set, rezerve=frozenset(),
+                       haric_no=frozenset(), kabin_dolu: bool = False,
+                       en_cok: int = None) -> list:
+        """Halka adiminin (d) ATAMA kismi: hangi is hangi ajanla, hangi
+        tarayiciyla kosacak. Adim basinda VE adim icinde (ARA ADIM) cagrilir:
+        `rezerve` turu kosan ajanlar, `haric_no` turu kosan isler,
+        `kabin_dolu` kabini kosan bir tur tutuyor, `en_cok` bos kol sayisi."""
         # d) ATAMA once (tek iplik), KOSU sonra (paralel)
         #
         # Sira onemli: atamayi da paralel yapsaydik iki iplik ayni bos
@@ -1353,10 +1339,11 @@ class Orkestra:
         kosulacak = [g for g in (self.ofis.tahta.liste(durum="hazir")
                                  + self.ofis.tahta.liste(durum="calisiyor"))
                      if self.takimin_isi(g, kanat_id)
+                     and g["no"] not in haric_no
                      and not g.get("duraklatildi")
                      and not self._takildi_mi(g) and not self.bayat_mi(g)]
         atamalar = []
-        rezerve = set()
+        rezerve = set(rezerve)
         # TAKIM KOTA PAYI (06.10.2026): payi dolu takimin YENI (hazir) isi
         # baslamaz, sebebi soylenir; calisan is kesilmez. Pay yoksa olcum
         # bile yapilmaz (`pay.dolu_takimlar` yalniz payli takimlara bakar).
@@ -1389,15 +1376,13 @@ class Orkestra:
         #
         # Kabin DISINDA boyle bir sorun yok -- her is kendi tarayicisini
         # alir (`--isolated`). Sinir yalnizca paylasilan kabine ait.
-        kabin_alindi = False
+        kabin_alindi = kabin_dolu
         # ISE YAZILI KABIN. Halka kabinsiz koşsa bile (ornegin panelde
         # "Surdur"), kabin verilmis bir is kabinle koşar. Kabin
         # KAPALIYSA is BEKLETILIR ve sebebi soylenir: oturumsuz bir
         # tarayicida kosturmak, girisli sayfayi bekleyen isi sessizce
         # baska bir dunyada kosturmak olurdu.
         _kabin_simdi = None
-        cdp_is = {}
-        izleme_is = set()
         from . import devral as _devral
         # IZLEME KABINI (29.09.2026, kullanici: "muratin sisteminde ajanlar
         # gomulu tarayiciyi kullaniyor, bizde de olmali"). Anahtar ACIK ve
@@ -1405,7 +1390,7 @@ class Orkestra:
         # (panelde canli) kosar; otekiler kendi gorunmez tarayicisiyla.
         # Kabinli (insanin isaret ettigi) bir is varsa oncelik onundur.
         izleme_adayi = None
-        if (kabin_izle_acik_mi(self.db, self.proje_id)
+        if (not kabin_dolu and kabin_izle_acik_mi(self.db, self.proje_id)
                 and not any(g.get("tarayici_kabin") for g in kosulacak)):
             adaylar = [g for g in kosulacak
                        if not (g.get("tarayici_alani") or [])
@@ -1468,6 +1453,55 @@ class Orkestra:
                 kabin_alindi = True
             rezerve.add(ajan)
             atamalar.append((g, ajan))
+            if en_cok is not None and len(atamalar) >= en_cok:
+                break
+
+        return atamalar
+
+    def tik(self, *, butce_usd: float = None, zaman_asimi: float = None,
+            izinli_araclar: tuple = (), paralel: int = 3,
+            tarayici_gorunur: bool = False,
+            tarayici_profili: str = "",
+            tarayici_kabini: str = "", kanat_id=None) -> dict:
+        """Halkanin bir adimi. Ne yapildigini anlatan ozet doner.
+
+        Sira onemli: ONCE inceleme (biten isi kapat, yeri ac), SONRA yeni
+        is baslat. Tersi olsaydi tahta incelenmemis islerle dolar ve lider
+        hep geride kalirdi.
+        """
+        ozet = {"incelenen": [], "baslatilan": [], "bekleyen": [],
+                "engel": [], "danisilan": [], "ilerleme": False, "paralel": 1}
+        self.ofis.tahta.kilit_dusenleri_temizle()
+        # LIMITLER TAZE OLSUN (27.09.2026): onceden gecis zinciri kurarken
+        # hesabin yuzdesine bakar; insan CLI'i elle kullandiysa tur sonu
+        # olcumu bayattir. Seyreltilmis (2 dk), kota harcamaz, patlarsa
+        # halkayi durdurmaz.
+        try:
+            from . import kullanim
+            kullanim.tazele(self.ofis.db, self.ofis.proje_id,
+                            fabrika=self.motor_fabrikasi)
+        except Exception:        # noqa: BLE001 -- olcum isi durdurmaz
+            pass
+
+        self._inceleme_ve_danisma(ozet, kanat_id, butce_usd=butce_usd,
+                                  zaman_asimi=zaman_asimi, paralel=paralel)
+
+        # c) bekleyenleri bildir -- cevap uydurup devam ETMEZ.
+        # Yalnizca INSANA dusenler: bir ajana sorulmus soruyu insana
+        # gostermek, yanlis kisiyi bekletir.
+        for m in self.ofis.postane.insan_bekleyenler():
+            ozet["bekleyen"].append(
+                {"tur": "soru", "kim": m["gonderen"], "metin": m["govde"],
+                 "gorev_no": m["gorev_no"]})
+        for o in self.ofis.postane.bekleyen_onaylar():
+            ozet["bekleyen"].append(
+                {"tur": "onay", "kim": o["isteyen"], "metin": o["eylem"],
+                 "gorev_no": o["gorev_no"], "risk": o["risk"]})
+
+        cdp_is = {}
+        izleme_is = set()
+        atamalar = self._atamalari_kur(ozet, kanat_id, tarayici_kabini=tarayici_kabini,
+                                       cdp_is=cdp_is, izleme_is=izleme_is)
 
         def tek_is(g, ajan):
             """Tek isi kosturur. Istisna KENDI icinde kalir -- bir kol
@@ -1496,15 +1530,7 @@ class Orkestra:
             finally:
                 kabin_birak(g["no"])     # tur bitti: kabin oteki islere (takimlara) acilir
 
-        if paralel > 1 and len(atamalar) > 1:
-            ozet["paralel"] = min(paralel, len(atamalar))
-            with ThreadPoolExecutor(max_workers=ozet["paralel"]) as havuz:
-                sonuclar = list(havuz.map(lambda p: tek_is(*p), atamalar))
-        else:
-            ozet["paralel"] = 1
-            sonuclar = [tek_is(g, a) for g, a in atamalar]
-
-        for hal, g, ajan, veri in sonuclar:
+        def _isle(hal, g, ajan, veri):
             if hal == "kilit":
                 ozet["engel"].append(f"#{g['no']} kilit: {veri}")
             elif hal == "hata":
@@ -1512,6 +1538,88 @@ class Orkestra:
             else:
                 ozet["baslatilan"].append({"no": g["no"], "ajan": ajan, **veri})
                 ozet["ilerleme"] = True
+
+        if paralel <= 1 or not atamalar:
+            ozet["paralel"] = 1
+            for g, a in atamalar:
+                _isle(*tek_is(g, a))
+            return ozet
+
+        # BITEN KOL BEKLEMEZ (11.10.2026, olculdu: 08.10 Brave gosterisinin
+        # defteri). Gorsel ajaninin turu 09:23'te bitti, isi incelemeye dustu;
+        # ayni adimdaki video ajaninin Flow turu 09:37'ye kadar surdu ve
+        # inceleme 09:38'de koştu -- 15 dk SIRADA (43 dk'lik isin en buyuk
+        # kalemi). Adim, kollarin HEPSINI bekliyordu (`havuz.map`). Simdi bir
+        # kol bitince, oteki kollar surerken ARA ADIM: biten is incelenir,
+        # sorusu cevaplanir, reddedilen/hazir is bos kola verilir.
+        # Sinir: ara adimda bir is bu adimda en cok ARA_ADIM_TUR_SINIRI kez
+        # koşar ve dusen (hata/kilit) is bu adimda yeniden denenmez --
+        # aninda dusen bir is uzun turun golgesinde dakikada yuz kez
+        # donmesin (eskiden bir sonraki adimi beklerdi).
+        from collections import Counter
+        from concurrent.futures import FIRST_COMPLETED, wait as _bekle
+        havuz = ThreadPoolExecutor(max_workers=paralel)
+        kosan = {}
+        kosu_sayisi = Counter()
+        dusen = set()
+        # Bu adimda turu bitmis bir is ara adimda YALNIZ incelemede geri
+        # donduyse yeniden koşar. Turunu bitirip isi 'calisiyor' birakan ajan
+        # eskisi gibi SONRAKI ADIMI bekler (11.10 olculdu: her bitiste hemen
+        # yeniden koşturmak bos donen turlarin sinirini uce katladi,
+        # duman_panel_senaryo halkasi bitmedi).
+        tekrar_hakki = set()
+
+        def _gonder(g, a):
+            kosu_sayisi[g["no"]] += 1
+            tekrar_hakki.discard(g["no"])
+            kosan[havuz.submit(tek_is, g, a)] = (g, a)
+
+        try:
+            for g, a in atamalar:
+                _gonder(g, a)
+            ozet["paralel"] = min(paralel, len(atamalar))
+            while kosan:
+                # Kol bitmese de ARA_ADIM_YOKLAMA_SN'de bir bakilir: uzun tur
+                # surerken gelen onay / hazir olan is de beklemesin.
+                bitenler, _ = _bekle(list(kosan), timeout=ARA_ADIM_YOKLAMA_SN,
+                                     return_when=FIRST_COMPLETED)
+                for f in bitenler:
+                    g, a = kosan.pop(f)
+                    hal = f.result()
+                    if hal[0] != "tamam":
+                        dusen.add(g["no"])
+                    _isle(*hal)
+                if not kosan or durdurma_istendi(self.db, self.proje_id):
+                    continue
+                kosan_no = {g["no"] for g, _ in kosan.values()}
+                _n_inc = len(ozet["incelenen"])
+                self._inceleme_ve_danisma(ozet, kanat_id, butce_usd=butce_usd,
+                                          zaman_asimi=zaman_asimi, paralel=paralel,
+                                          haric_no=kosan_no)
+                tekrar_hakki.update(x["no"] for x in ozet["incelenen"][_n_inc:])
+                bos = paralel - len(kosan)
+                if bos <= 0:
+                    continue
+                kabinli = any(cdp_is.get(g["no"]) and ((g.get("tarayici_alani") or [])
+                                                       or g["no"] in izleme_is)
+                              for g, _ in kosan.values())
+                yasak = kosan_no | dusen | {n for n, k in kosu_sayisi.items()
+                                            if k >= ARA_ADIM_TUR_SINIRI
+                                            or n not in tekrar_hakki}
+                ara_ozet = {"engel": []}     # engeller adim basinda zaten soylendi
+                for g, a in self._atamalari_kur(
+                        ara_ozet, kanat_id, tarayici_kabini=tarayici_kabini,
+                        cdp_is=cdp_is, izleme_is=izleme_is,
+                        rezerve={a for _, a in kosan.values()}, haric_no=yasak,
+                        kabin_dolu=kabinli, en_cok=bos):
+                    _gonder(g, a)
+                    self.db.olay_yaz(self.proje_id, "ara_adim",
+                                     f"#{g['no']} -> {a}: baska kol surerken basladi "
+                                     f"(beklemeden; kosan: {', '.join('#' + str(n) for n in sorted(kosan_no))})",
+                                     ajan_ad=a, gorev_id=g["id"])
+                ozet["paralel"] = max(ozet["paralel"], len(kosan))
+        finally:
+            havuz.shutdown(wait=True)
         return ozet
 
     def kos(self, *, azami_tik: int = 12, butce_usd: float = None,

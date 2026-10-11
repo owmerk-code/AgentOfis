@@ -15776,3 +15776,57 @@ Studio (şablon, ürün fotoğrafı/adres girdisi) ücretli; bağlayıcı yetki
 bekliyor; UGC video başına kredi bedeli hiçbir kaynakta yok. Patrona öneri:
 önce Veo İçerik öğeleriyle tek 8 sn Belle UGC klibi (20 kredi), yetmezse
 bir ay Higgsfield Starter ile yan yana.
+
+## 11.10.2026 — MEDYA HIZI: 43 dakikanın dökümü ve "biten kol beklemez"
+
+Patron: "uçtan uca, profesyonel, hızlı olmalı; 1 saatte 1 video + görsel
+alırsak anlamı kalmaz". İlk önerim Flow'u kodla süren araçtı (C4); patron:
+"Flow güncellenirse araç işe yaramaz, en iyi çalışan Sonnet 5.5 ise o
+yapsın" → araç YAPILMADI (kabin açılıp yalnız okundu, kapatıldı; üretim yok).
+
+**Ölçüm (08.10 Brave 2 gösterisinin defter kopyası, `%TEMP%\ofis-kopya-…`):**
+#8 hikâye görseli (selin) ve #9 15 sn video (kerem) aynı adımda başladı.
+#9 (09:14:58 → 09:48:46):
+- 2,5 dk eksik fotoğraf (ek takıma gelmiyordu; DÜZELTİLDİ `ekler.takima_getir`)
+- 3,3 dk taslak kareler (3 GPT) + senaryo paketi; 1 dk patron onayı
+- 15 dk Flow turu: kurulum ~3 dk; klipler 09:25:04 / 09:26:54 / 09:28:08'de
+  ARD ARDA başlatıldı (bitmeyi beklemeden) ve üçü 09:31:11'de inmişti →
+  **Flow en az 3 Veo Fast üretimini aynı anda sürdürüyor, üretim ≤ ~3–6 dk**;
+  kurgu ~5 dk
+- 4,5 dk inceleme (codex düştü + "onay doğrulanmıyor" yanlış reddi; DÜZELTİLDİ)
+- 3,7 dk jeton tavanı hatası (önbellek okuması sayılıyordu; DÜZELTİLDİ)
+- 3,5 dk kapanış kartı yenileme; ardından #10 yazı yeri 7 dk (yazı-ürün
+  çarpışması artık OFİSÇE ÖLÇÜLÜYOR)
+#8: 3 sürüm, 2 ret (biri yanlış: "meyve eklenmiş" — etikette var). ASIL BULGU:
+selin'in turu 09:23:29'da bitti, inceleme 09:38:27'de koştu → **15 dk SIRADA**:
+halka adımı kollarının HEPSİNİ bekliyordu (`havuz.map`), kerem'in Flow turu
+09:37'ye kadar sürdü.
+
+**Düzeltme (orkestra, "biten kol beklemez"):** adım içinde ARA ADIM — bir kol
+bitince (ya da 20 sn'de bir, `ARA_ADIM_YOKLAMA_SN`) öteki kollar sürerken
+biten iş incelenir, ajana sorulan soru cevaplanır, reddedilen/hazır iş boş kola
+verilir (`ara_adim` olayı). Sınırlar: bir iş bir adımda en çok 3 tur
+(`ARA_ADIM_TUR_SINIRI`), düşen iş aynı adımda yeniden denenmez, kabin kirası
+aynı kural. Adımın (a)(b) ve (d) kısımları metoda ayrıldı (`_inceleme_ve_danisma`,
+`_atamalari_kur`) — kod kelimesi kelimesine taşındı. `duman_ara_adim.py` 10/10;
+mutasyon (ara adım kapalı) farkı yakalıyor. `duman_orkestra` 7b (paralellik)
+iş başına tek turla ölçülür.
+
+**Becerilerde hız (Sonnet'in çalışma sırası):** `flow-video` bütün klipleri ard
+arda başlat, toplu bekle, beklerken snapshot değil `browser_wait_for`;
+`reklam-kreatifi` çok ürün tek paket/tek onay; lider bloğu çok ürünlü işin
+klipleri tek video ajanında, görseller tasarımda paralel (blok 445/450 jeton).
+
+Temiz yolda (bulunan hatalar düzeltilmiş hâliyle) aynı iş kabaca: kareler +
+paket ~3 dk, onay ~1 dk, Flow ~15 dk, inceleme ~1,5 dk ≈ 20 dk; görsel paralel.
+Bu bir HESAP, ölçüm değil — ilk gerçek koşuda ölçülecek.
+
+**Tam takımda yakalanan (aynı gün):** ilk sürüm, turunu bitirip işi AÇIK
+bırakan ajanı da ara adımda hemen yeniden koşturuyordu; boş dönen turların
+sınırı (eskiden adım başına 1, `azami_tik` 12) üç katına çıktı ve
+`duman_panel_senaryo`'nun halkası 60 sn'de bitmedi. Kural: ara adımda yalnız
+o ara adımda İNCELEMEDE GERİ DÖNEN iş (ve bu adımda hiç koşmamış iş) yeniden
+koşar; açık bırakılan iş eskisi gibi sonraki adımı bekler. `duman_ara_adim` 6.
+madde; mutasyonla (kural kaldırılınca 3 tur) ateş ediyor. Bilerek DIŞARIDA:
+ara adımda cevaplanan sorunun işi de sonraki adımı bekler (cevap `ajan`ı soranı
+değil cevaplayanı taşıyor; eşlemesi ayrı iş).
