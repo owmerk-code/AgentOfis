@@ -506,11 +506,26 @@ def arac_onay_iste(oturum: Oturum, args: dict) -> str:
             return "HATA: kredi paketi bir ise baglidir; bu turda gorev yok."
         eylem = f"KREDI PAKETI ({kredi} kredi, {uretim} uretim): {eylem}"
         ayrinti = f"{KREDI_PAKETI_ISARETI} kredi={kredi} uretim={uretim}\n" + ayrinti
+        # PATRONUN KREDI SINIRI (11.10.2026, `ofis/kredi_izni.py`): patron
+        # isteginde sinir yazdiysa ve paket icindeyse SORULMAZ; ajan durmaz.
+        from ofis import kredi_izni as _ki
+        _k = _ki.karar(oturum.ofis.db, oturum.ofis.proje_id,
+                       oturum.ofis.tahta.gorev(oturum.gorev_no), kredi)
+        if _k["gecer"]:
+            oturum.ofis.postane.onay_soz_ile(
+                oturum.ajan_ad, eylem, ayrinti=ayrinti, risk=risk,
+                gorev_no=oturum.gorev_no, not_=_ki.not_metni(_k, kredi))
+            return (f"ONAYLANDI -- patronun sozuyle (\"{_k['alinti'][:160]}\"; sinir {_k['sinir']}, "
+                    f"bu paketle {_k['kullanilan'] + kredi} kullanildi, kalan {_k['kalan'] - kredi}).\n"
+                    f"Bu paketteki {uretim} kredili uretim kapida SORULMAZ.\n"
+                    "TURU BITIRME: simdi uret.")
     oturum.ofis.postane.onay_iste(
         oturum.ajan_ad, eylem, ayrinti=ayrinti,
         risk=risk, gorev_no=oturum.gorev_no)
     if kredi not in (None, ""):
-        return ("Kredi paketi onaya gonderildi. Patron onaylarsa bu isteki kredili "
+        return ("Kredi paketi onaya gonderildi"
+                + (f" ({_k['sebep']})" if _k.get("sinir") is not None else "")
+                + ". Patron onaylarsa bu isteki kredili "
                 f"uretimlerden {uretim} tanesi kapida TEKRAR SORULMAZ; fazlasi sorulur.\n"
                 "SIMDI DUR: uretme, turu burada bitir.")
     return ("Onay istegi kaydedildi, insan cevabi bekleniyor.\n"

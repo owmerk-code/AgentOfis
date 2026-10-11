@@ -77,8 +77,10 @@ kredi (+ yeniden cekim payi), kredi bakiyesi, varsayimlar; `ekler`de taslak
 kareler (en cok 5; fazlasi tek bir kontak gorselinde). Ardindan
 `onay_iste(..., kredi=<TOPLAM>, uretim=<kredili tiklama sayisi>)` ile TEK
 onay iste ve turu bitir: onaylanan paket o kadar uretimi kapida bir daha
-sordurmaz (cift onay yok). Patron duzeltme isterse paketi guncelle (kredi
-harcamaz) ve yeniden gonder.
+sordurmaz (cift onay yok). Patron isteginde kredi SINIRI yazdiysa (brifingde
+"KREDI IZNI") ve paket icindeyse cevap "ONAYLANDI (patronun sozuyle)" gelir:
+turu BITIRME, hemen uretime gec. Patron duzeltme isterse paketi guncelle
+(kredi harcamaz) ve yeniden gonder.
 
 ## 8. Paylasim metni (teslimle birlikte)
 URUN BILGISI UYDURULMAZ (08.10.2026 olculdu: arka etikette olmayan koku notalari ve var olmayan bir site adresi yazildi). Yalniz KAYNAGI olani yaz: patronun sozu, urunun etiketi/kutusu, verilen site ya da magaza kaydi. Koku notasi, kalicilik, fiyat, indirim, site/adres bilinmiyorsa YAZMA ya da [SITE] gibi yer tutucu birak ve teslimde patrona sor.

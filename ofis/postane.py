@@ -501,6 +501,29 @@ class Postane:
                          ajan_ad=isteyen, gorev_id=gorev_id)
         return {"id": onay_id, "eylem": eylem, "risk": risk, "durum": "bekliyor"}
 
+    def onay_soz_ile(self, isteyen: str, eylem: str, *, ayrinti: str, not_: str,
+                     risk: str = "orta", gorev_no=None) -> dict:
+        """PATRONUN SOZUYLE onayli kayit (11.10.2026, `kredi_izni`): patron
+        isteginde kredi siniri yazdi, paket sinirin icinde. Kayit dogrudan
+        'onaylandi' girer ve cevap notu patronun alintisini tasir (inceleme ve
+        kartlar gorur). `onay_istendi`/`onay_cevabi` olayi YAZILMAZ: biri patrona
+        bildirim atardi (sorulmayan seyi soruyor gibi), oteki koltugun "onay tur
+        surerken geldi, is incelemeye gitmesin" kuralini tetiklerdi -- oysa ajan
+        ayni turda uretmeye devam ediyor."""
+        gorev_id = self.ofis.tahta.gorev(gorev_no)["id"] if gorev_no is not None else None
+        onay_id = uuid.uuid4().hex
+        an = simdi()
+        with self.db.baglanti() as conn:
+            conn.execute(
+                "INSERT INTO onay (id, proje_id, gorev_id, isteyen, eylem, "
+                "ayrinti, risk, durum, cevap_notu, olusturuldu, cevaplandi, kapsam) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, 'onaylandi', ?, ?, ?, 'eylem')",
+                (onay_id, self.proje_id, gorev_id, isteyen, eylem, ayrinti, risk, not_, an, an))
+        self.db.olay_yaz(self.proje_id, "kredi_izni",
+                         f"{isteyen}: {eylem[:160]} -> patronun sozuyle ONAYLANDI. {not_}"[:600],
+                         ajan_ad=isteyen, gorev_id=gorev_id)
+        return {"id": onay_id, "eylem": eylem, "durum": "onaylandi"}
+
     def onay_cevapla(self, onay_id: str, *, onayla: bool, not_: str = "",
                      cevaplayan: str = "insan", kapsam: str = "eylem") -> dict:
         """Reddin gerekcesi zorunludur -- ajan neden olmadigini bilmeli.

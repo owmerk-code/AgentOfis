@@ -15830,3 +15830,30 @@ koşar; açık bırakılan iş eskisi gibi sonraki adımı bekler. `duman_ara_ad
 madde; mutasyonla (kural kaldırılınca 3 tur) ateş ediyor. Bilerek DIŞARIDA:
 ara adımda cevaplanan sorunun işi de sonraki adımı bekler (cevap `ajan`ı soranı
 değil cevaplayanı taşıyor; eşlemesi ayrı iş).
+
+## 11.10.2026 — KREDİ SINIRI: "mesajında sınır verirsen sorulmasın" (patron)
+
+Patron kararı (07.10'daki "videoyu üretmeden önce bana gelsin" kuralını
+genişletir): istekte kredi SINIRI yazılırsa o isteğin kredi paketleri sınıra
+kadar SORULMAZ, ajan aynı turda üretime geçer. Ölçülen kazanç kaynağı: 08.10
+Brave'de paket → tur sonu → patron onayı → YENİ tur = 2–3 dk + patronun
+cevap süresi.
+
+`ofis/kredi_izni.py`: sınırı OFİS okur (patronun `patron_sozu` metni; lider
+yorumlamaz). Kural: aynı cümle parçasında sayı + "kredi" + sınır sözcüğü
+(kadar, en fazla, geçmesin, aşmasın, sınır, bütçe, ≤…); cümlede onay
+İSTEYEN biçim varsa ("sor", "onayımı al", "onaya gönder") izin DEĞİL; "onaylı /
+onayladım" izindir; birden çok sınırda en küçüğü; 0 izin değil. Sınır ISTEĞİN
+toplamıdır (`istek_id` kardeşleri: lider iki ürünü iki işe bölse de 150 iki
+kez 150 olmaz). `onay_iste(kredi, uretim)` sınır içindeyse kayıt doğrudan
+'onaylandi' girer (`postane.onay_soz_ile`), notunda patronun alıntısı; olay
+`kredi_izni` (sohbet akışında görünür). `onay_istendi`/`onay_cevabi`
+YAZILMAZ: biri gereksiz bildirim atardı, öteki koltuğun "onay tur sürerken
+geldi → incelemeye gitmesin" kuralını tetiklerdi. Tarayıcı kapısı paketi
+zaten tanıyor (`_kredi_paketi`, üretim sayısı kadar). Sınırı aşan paket
+eskisi gibi patrona gider ve cevapta kalan yazılır. Brifingde "KREDI IZNI"
+satırı; `flow-video`/`reklam-kreatifi` "ONAYLANDI ise turu bitirme".
+`duman_kredi_izni.py` 29/29 (14 cümle, kapı 3 geçer 4. sorar, kardeş iş
+toplamı, sınırsız istek eskisi gibi). İlk sürümde "onaylı" kelimesi soru
+sanılıyordu, "150'ye kadar ama önce onayımı al" izin sanılıyordu — ikisi de
+sınamada yakalandı ve düzeltildi.

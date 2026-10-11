@@ -444,6 +444,12 @@ class Brifing:
                          "'kaydet', 'yayinla') icin `onay_iste` CAGIRMA: dogrudan "
                          "yap. Gercekten riskliyse (para, silme) ofis kapisi "
                          "kendisi sorar."]
+            # KREDI SINIRI (11.10.2026): patron sinir yazdiysa ajan paketi
+            # sordugunda DURMAYACAGINI bastan bilir.
+            from .kredi_izni import brifing_satiri as _kredi_satiri
+            _ks = _kredi_satiri(self.db, self.proje_id, g)
+            if _ks:
+                satirlar += [_ks]
         # PATRONUN IZINLERI her turda (devam dahil) soylenir: ajan izinli
         # bir eylem icin `onay_iste` cagirip bosuna durmasin.
         from .izin import brifing_blogu as izin_blogu

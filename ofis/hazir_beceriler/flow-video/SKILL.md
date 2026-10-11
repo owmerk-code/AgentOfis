@@ -26,8 +26,10 @@ indirme OLCULDU 0 kredi, sorulmaz). Bu yuzden:
 1. paketi (sahneler, model, toplam kredi, taslak kareler) `sohbete_yaz` ile
    gonder;
 2. `onay_iste(eylem="... paketi", ayrinti=<paket ozeti>, kredi=<TOPLAM>,
-   uretim=<kredili tiklama sayisi, yeniden cekim payi dahil>)` ile sor ve
-   turu bitir;
+   uretim=<kredili tiklama sayisi, yeniden cekim payi dahil>)` ile sor;
+   cevap **ONAYLANDI (patronun sozuyle)** ise DURMA, hemen uret (patron
+   isteginde kredi SINIRI yazmis, paket icinde -- brifingde "KREDI IZNI");
+   "onaya gonderildi" ise turu bitir;
 3. patron onaylayinca uret: paketteki `uretim` kadar tiklama kapida TEKRAR
    SORULMAZ; fazlasi sorulur (gerekirse yeni paket iste).
 Resim uretimi (katalogda 0 kredi) hic sorulmaz.

@@ -237,7 +237,7 @@ matrisin ölçümüyle karşılaştırır.
   satırlı komut çevrilmez; tanınmayan bağlayıcı aracı yalnız ADIYLA açılır,
   lider bunu plana yazamaz). Panelde günlük sayaç (`izin.gun_sayaci`).
   Kabuk izni SIKI eşleşir (gevşek eşleşme yalnız tarayıcı tıklamasında).
-  **Üretim kredisi (07.10, patron: "videoyu üretmeden önce bana gelsin"):** kredi sitesinde (Flow) üretim tıklaması / Enter / büyütme indirmesi HER ZAMAN sorulur (patronun sözü ve "bu projede hep" açmaz); kart üretim ayarını (ekrandan) gösterir; "bu iş boyunca" onayı o işin üretimlerini açar (tarayıcı kapısı bu kapsamı o güne dek tanımıyordu, her tıklamada yeniden soruyordu). Ölçülmüş katalogda 0 kredi olan resim üretimi (taslak kareler) sorulmaz. Ajanın `onay_iste(kredi, uretim)` paketi onaylanınca o kadar üretim tıklaması sorulmaz (çift onay yok); onay ajanın turu sürerken gelirse iş incelemeye gitmez (`onay_geldi`). `duman_kredi`.
+  **Üretim kredisi (07.10, patron: "videoyu üretmeden önce bana gelsin"):** kredi sitesinde (Flow) üretim tıklaması / Enter / büyütme indirmesi sorulur ("bu projede hep" açmaz; 11.10: patron mesajında SINIR yazarsa — "150 krediye kadar" — isteğin toplamı o sınıra kadar sorulmaz, ajan durmaz, `kredi_izni.py`); kart üretim ayarını (ekrandan) gösterir; "bu iş boyunca" onayı o işin üretimlerini açar (tarayıcı kapısı bu kapsamı o güne dek tanımıyordu, her tıklamada yeniden soruyordu). Ölçülmüş katalogda 0 kredi olan resim üretimi (taslak kareler) sorulmaz. Ajanın `onay_iste(kredi, uretim)` paketi onaylanınca o kadar üretim tıklaması sorulmaz (çift onay yok); onay ajanın turu sürerken gelirse iş incelemeye gitmez (`onay_geldi`). `duman_kredi`.
 - **Tarayıcı:** her işte serbest; riskli tıklama ve beyan edilmemiş site
   (daraltılmış işte) sorulur; sayfadaki gizli talimat işaretlenir.
 - **Zincir:** limit/oturum düşünce aynı turda sıradaki hesaba devreder, devir
@@ -262,7 +262,7 @@ matrisin ölçümüyle karşılaştırır.
   güvenlik). Açık: **F4** model seçimi + hafıza · **F5** gece otopilotu,
   bildirim, **sesli komut** · **F6** şirket yapısı, yeni motorlar · **F7**
   medya · **F8** panel · **F9** masaüstü · **F10** kabul. Ayrıntı `PLAN.md`.
-- **Codex ajanı kapı varken tam erişimle** koşar (workspace-write'ta `git add` bile yapamıyordu, push sandbox kullanıcısı yüzünden düşüyordu); riskli adım kapıda.
+- **Codex ajanı kapı varken tam erişimle** koşar (workspace-write'ta `git add`/push düşüyordu); riskli adım kapıda.
 - **TEMİZ BAŞLANGIÇ (08.10, patron: "gerçek iş yapmadık, denemeler yaptık"):** deneme izleri `kabuk sifirla` ile silindi (1.431 kalem; yedek `AgentOfis-yedek-20261008-021420-sifirlama-oncesi.zip`). "Her şey gerçek": sahte motor ve örnek ofis (`testler/ornek_ofis.py`) yalnız sınamada; ilk açılış (`baslat.bat`) GERÇEK ofis kurar (Ofisim + GENEL + lider arda/Opus); deneme kipi ve arka plan kipi kaldırıldı.
 - **Gerçek terminal kipi** tek kip (ajan panosu = gerçek terminal; lider de gerçek terminalde, her tur temiz).
 - **Aşama 1 (gerçek iş kalitesi):** `testler/gercek_set.py` patron gibi sohbetten iş verir (18 iş); 01.10'da 18'in 18'i iki motorda geçti, 08.10'da G01 Gemini ile gerçek terminalde geçti. Gündüz koşulur (gece görevi kapalı). Kural: gerçek motorla geçmeyen "bitti" değil. Ayrıntı günlükte.
@@ -271,7 +271,7 @@ matrisin ölçümüyle karşılaştırır.
 - **GÖMÜLÜ TARAYICI (02.10):** tarayıcı gereken işte kabin kapalıysa ofis AÇAR (yalnız çalışan panel); başsız Chrome normal kimlikle; Chrome gibi sekmeler; sınama kabini ayrı kapıda (`OFIS_KABIN_KAPI`). Motorların KENDİ Chrome eklentileri KAPALI (Claude `--no-chrome`). İki motor aynı tarayıcı işinde temiz. Ayrıntı günlükte.
 - **F5 "ben yokken" altyapısı (01.10):** kuyruk + dönüş raporu, kesintiden devam, masaüstü bildirimi, zamanlayıcı — dördü canlı (8911, gerçek motor) ölçüldü. Kalan F5: telefon, onay yorgunluğu (E80), bağlam göstergesi, ses (en son).
 - **Güncelleme hemen:** 30 dakikada bir ölçer, uyguladıktan sonra yeniden
-  ölçer (`olc_ve_ilerle`). CLI güncellemesinin deneme turu, ofis gerçek terminal kipindeyse terminalde de koşar (30.09).
+  ölçer (`olc_ve_ilerle`). Deneme turu gerçek terminalde.
 - **Sınamalar:** **5642/5642** (11.10; 110 dosya; tam takım ÇIKIŞ KODUYLA koşulur — kod 3 = artık klasör) + gerçek set (`gercek_set.py`, her gece 03:30). Deneme seti 15/15
   (Claude ve Codex, işçi+lider).
 - **MALİYET (03.10, `testler/carpan.py`):** basit iş ofiste doğrudan Claude'un ~1,6–1,8×'i; Claude önbelleği 5 dk; ret ölçüte bağlı (`lider.ret_dayanagi`); triyaj+plan tek tur; KARMA (karne + çapraz kontrol) 20 işte 19/20, Claude payı %40 az. Yalın lider ve `--fork-session` denendi, geri alındı. Tam metin: günlük "08.10 ANAYASADAN TAŞINAN: MALİYET".
