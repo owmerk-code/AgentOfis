@@ -50,8 +50,8 @@ motor matrisinden geçmeden deftere girmez.
 
 - **Hesaplar:** Claude **Max 5x** · ChatGPT **Plus** (şu an; **Pro 5x'e geçilecek**,
   henüz alınmadı — tasarım Plus'a sabitlenmez; ofisin codex evi:
-  omerjob34). `codex2` hesabı kayıp (kapalı). Gemini defterden çıkarıldı
-  (24.09); Pro alınınca eklenti olarak geri takılır.
+  omerjob34). `codex2` hesabı kayıp (kapalı). Google AI Pro VAR: Flow/Veo
+  kabinde, Gemini ajanları Antigravity (`agy`).
 - **Kullanıcı API değil ABONELİK kullanıyor:** maliyet **kota diliyle**
   anlatılır (5 saat / 7 gün penceresi yüzdesi), dolar yalnız API hesabında.
 - **fable / astra YALNIZ PATRONUN SÖZÜYLE** (08.10, patron: "ben eklersem,
@@ -177,7 +177,7 @@ matrisin ölçümüyle karşılaştırır.
 | `ofis/brifing.py` | Dört katmanlı brifing (K1 kimlik/rol · K2 künye+kural+olgu · K3 kararlar · K4 iş+kanıt+not), devir paketi. |
 | `ofis/koltuk.py` | Seat Runner: kilit → brifing → motor → olaylar → nabız → kanıt → inceleme. Zincir/devir, kaçak freni, not/durdurma kanalı, disk ölçümü, gölge anlık, kabin izleme. |
 | `ofis/lider.py` | Fan-out · ayrık alan · kanıta karşı inceleme (temiz bağlam, salt okunur, yapan inceleyemez); ret ≥2'de kapı modeline yükseltme; lider zinciri. |
-| `ofis/orkestra.py` | Halka (`tik`/`kos`): planlama JSON'u + kapılar ("ret öğretir"), paralel atama (rezerv), kabin kiralama, danışma teslimi; BİTEN KOL BEKLEMEZ (11.10 ara adım: uzun tur sürerken biten iş incelenir, yeniden koşar). |
+| `ofis/orkestra.py` | Halka (`tik`/`kos`): planlama JSON'u + kapılar ("ret öğretir"), paralel atama (rezerv), kabin kiralama, danışma teslimi; BİTEN KOL BEKLEMEZ (11.10, ara adım). |
 | `ofis/sohbet.py` | Liderin ön kapısı: triyaj (cevap/kendi/dağıt/kadro), ofis özeti, rapor, cevap akışı (`AkisYazici`). |
 | `ofis/takim.py` | Takım sohbeti: `@ajan` yönlendirme (lider · not · soru · `iş:`), tek akış. |
 | `ofis/kuyruk.py` | İş kuyruğu (F5/1): lidere giden her panel mesajı sıraya girer (`kuyruk` tablosu, kalıcı); panel işçisi sırayı boşaltır, düşen iş sırayı durdurmaz; seri bitince MODELSİZ dönüş raporu. |
@@ -244,11 +244,10 @@ matrisin ölçümüyle karşılaştırır.
   paketiyle kaldığı yerden sürer; pencere eşikteyse (işçi %80/%85, lider
   %95/%97) hesap önceden sona alınır.
 - **Tur içi not ve Durdur:** defter üzerinden; Claude stdin/interrupt, Codex
-- **Ret freni (09.10):** 3. retten sonra iş ajana dönmez; duraklar, patrona seçenekli soru (kabul / bir tur daha / iptal), cevap uygulanır (`lider.RET_FRENI`, `tahta.insan_kabul`). Lider eksiklerin HEPSİNİ bir kerede yazar. **Sıra:** yeni istek önceki işin bitmesini beklemez (`konus(ara_ver=)`).
   steer/interrupt. Durdurulan iş arıza değil, Sürdür aynı oturumdan devam.
+- **Ret freni (09.10):** 3. retten sonra iş ajana dönmez; duraklar, patrona seçenekli soru (kabul / bir tur daha / iptal), cevap uygulanır (`lider.RET_FRENI`, `tahta.insan_kabul`). Lider eksiklerin HEPSİNİ bir kerede yazar. **Sıra:** yeni istek önceki işin bitmesini beklemez (`konus(ara_ver=)`).
 - **Genel kanal:** çok takımlı ofiste "Tüm ofis"ten `@TAKIM` o takımın liderine; adres yoksa ofis takım ÖNERİR (model yok), insan seçer.
 - **Takım sohbeti (09.10, KARTLAR):** her istek TEK kart (`takim.kartlar`, `/api/kartlar`): tek durum, canlı satır, sonuç, son dosyalar, kararlar kartın içinde, ayrıntı katlı; ofis notları sohbete girmez; ajanın yanında SAHİBİNİN turundan ölçülen model, Tüm Ofis'te takım etiketi, geliştirme işinde kurulum durumu. Adres yok → lider; `@ajan` → işi varsa not, boşsa soru; `@ajan iş:` → lider planlar ama sahip o ajan.
-  `@ajan iş:` → lider planlar ama sahip o ajan.
 - **Bağlam (06.10):** her tur `baglam` {dolu, sınır, oran} bildirir (son çağrı; sınır motorun kendi bildirimi, Claude terminal kipinde arka kipte öğrenilen); panel ajan başlığında %; aynı işte %80'i geçince sonraki tur devir paketli TEMİZ oturum (`oturum_tazelendi`). Sınır bilinmezse karar yok.
 - **Güncelleme penceresi (06.10):** model/CLI yalnız `guncelleme.mesgul` boşken (canlı süreçli `calisiyor` iş, sıradaki mesaj); incelemedeki iş ve ölü süreç kaydı engellemez; insan CLI onayı meşgulken ret.
 - **Hafıza satırı (06.10):** işçi bitirirken ZORUNLU `BILGI: konu -> değer (nereden)` ya da `HAFIZA: yok` yazar; ofis `bilgi_onerisi` kaydeder (hafızaya doğrudan GİTMEZ), lider kanıtla doğrulayıp kendi `BILGI:` satırıyla yazar; `hafiza_adimi` işçinin satırını da sayar.
